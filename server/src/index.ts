@@ -677,11 +677,8 @@ app.post(
           try {
             text = fs.readFileSync(file, 'utf8');
             const parsed = parseRuleYaml(text);
-            const { load } = await import('js-yaml');
-            const doc = load(text) as { rules?: Array<{ languages?: unknown }> } | null;
-            const langs = doc?.rules?.[0]?.languages;
-            if (!language && Array.isArray(langs) && typeof langs[0] === 'string') {
-              language = langs[0];
+            if (!language && parsed.firstLanguage) {
+              language = parsed.firstLanguage;
             }
             for (const id of parsed.ruleIds) {
               if (ids.has(id)) throw new Error(`存在重复的规则 id：${id}`);
@@ -742,14 +739,13 @@ app.post(
       if (!name) throw new HttpError(400, '请输入规则包名称');
       if (name.length > 50) throw new HttpError(400, '规则包名称不能超过 50 个字符');
       let language = String(req.body?.language ?? '').trim();
-      if (!language) {
-        try {
-          const { load } = await import('js-yaml');
-          const doc = load(content) as { rules?: Array<{ languages?: unknown }> } | null;
-          const langs = doc?.rules?.[0]?.languages;
-          if (Array.isArray(langs) && typeof langs[0] === 'string') language = langs[0];
-        } catch {
-        }
+      try {
+        // 坏 YAML 在这里就拦下（否则 saveNewRulePack 内部抛普通 Error 会变成 500）
+        language = language || parseRuleYaml(content).firstLanguage;
+      } catch (error) {
+        throw new HttpError(400, `规则文件 ${looseFiles[0].name} 不合法：${
+          error instanceof Error ? error.message : String(error)
+        }`);
       }
       const pack = saveNewRulePack(name, language || 'Other', content, req.file.originalname);
       res.status(201).json({ ...pack, message: '导入成功（单文件包，无样本，basic 档）' });

@@ -3,14 +3,11 @@ import path from 'node:path';
 import { load as yamlLoad, dump as yamlDump } from 'js-yaml';
 import { config } from './config.js';
 import { engineInstallHint, runEngine } from './engine.js';
+import { normalizePath, stripRuleIdPrefix } from './engine-output.js';
 import { parseRuleYaml } from './rule-yaml.js';
 import { readSampleText, scanPackSamples } from './pack-format.js';
 import { collectRuleFiles } from './rulepacks.js';
 import { extractTaintFlow, relativizeTaintFlow, type TaintStep } from './taint.js';
-
-function normalizePath(p: string): string {
-  return p.replace(/\\/g, '/');
-}
 
 /** 规则语言 → 样本文件扩展名（generic 用 .txt 匹配任意文本） */
 export const LANG_EXT: Record<string, string> = {
@@ -109,14 +106,6 @@ function errorResult(
   };
 }
 
-
-function stripRuleIdPrefix(checkId: string, knownRuleIds: string[]): string {
-  for (const ruleId of knownRuleIds) {
-    if (checkId === ruleId || checkId.endsWith(`.${ruleId}`)) return ruleId;
-  }
-  const parts = checkId.split('.');
-  return parts[parts.length - 1];
-}
 
 function sampleKindOf(findingPath: string): 'positive' | 'negative' | undefined {
   const base = path.basename(findingPath).toLowerCase();
