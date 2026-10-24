@@ -1,8 +1,8 @@
 <div align="center">
-<img src="docs/images/banner.png" alt="OpenGrep Studio Banner" width="880"/>
-<h1>OpenGrep Studio</h1>
+<img src="docs/images/banner.png" alt="Opengrep Studio Banner" width="880"/>
+<h1>Opengrep Studio</h1>
 <p><strong>Find weaknesses before attackers do.</strong></p>
-<p>A local-first code-audit workbench on top of <a href="https://github.com/opengrep/opengrep">OpenGrep</a>: import source, scan with rules, triage findings, diff against a baseline, and ship a report — <strong>your code never leaves your machine</strong>.</p>
+<p>A local-first code-audit workbench on top of <a href="https://github.com/opengrep/opengrep">Opengrep</a>: import source, scan with rules, triage findings, diff against a baseline, and ship a report — <strong>your code never leaves your machine</strong>.</p>
 <p><a href="./README.md">简体中文</a> · <a href="#quick-start">Quick Start</a> · <a href="#highlights">Highlights</a> · <a href="#security-model">Security Model</a></p>
 <p>
 <a href="https://github.com/Lyfxxk/OpenGrep-Studio/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/Lyfxxk/OpenGrep-Studio/ci.yml?branch=main&label=CI&style=flat-square" alt="CI"/></a>
@@ -19,7 +19,7 @@
 
 ## Why
 
-The OpenGrep engine (the community continuation of Semgrep OSS) is powerful, but driving a real audit from a CLI means: reading raw JSON in a terminal, English-only rule messages, no baseline concept (which findings are new? which were fixed?), and hand-assembled reports. OpenGrep Studio orchestrates the local engine binary and turns scan output into a reviewable, comparable, deliverable audit workflow. The analysis power belongs to the upstream engine — Studio is the workflow around it.
+The Opengrep engine (the community continuation of Semgrep OSS) is powerful, but driving a real audit from a CLI means: reading raw JSON in a terminal, English-only rule messages, no baseline concept (which findings are new? which were fixed?), and hand-assembled reports. Opengrep Studio orchestrates the local engine binary and turns scan output into a reviewable, comparable, deliverable audit workflow. The analysis power belongs to the upstream engine — Studio is the workflow around it.
 
 ## Highlights
 

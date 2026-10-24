@@ -180,7 +180,7 @@ export default function LoginPage() {
             <div>
               <div className="brand-name-row">
                 <div className="brand-name">Opengrep Studio</div>
-                <span className="ver-badge">V{__APP_VERSION__}</span>
+                <span className="ver-badge">v{__APP_VERSION__}</span>
               </div>
               <div className="brand-tagline" style={{ fontSize: '20px' }}>
                 码审工作台
