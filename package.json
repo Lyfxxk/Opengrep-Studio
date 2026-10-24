@@ -1,0 +1,26 @@
+{
+  "name": "opengrep-studio",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Opengrep Studio —— opengrep 静态代码分析工作台（前端 + 后端联调仓）",
+  "scripts": {
+    "install:all": "npm install && npm --prefix server install && npm --prefix code install",
+    "setup:engine": "node server/scripts/setup-engine.mjs",
+    "seed": "node server/scripts/seed-demo.mjs",
+    "test": "npm --prefix server test",
+    "test-packs": "npm --prefix server run test-packs",
+    "version": "node server/scripts/sync-version.mjs",
+    "predev": "node server/scripts/kill-port.mjs 8787 1022 && node server/scripts/preflight.mjs",
+    "dev:server": "npm --prefix server run dev",
+    "predev:server": "node server/scripts/kill-port.mjs 8787",
+    "dev:web": "npm --prefix code run dev",
+    "predev:web": "node server/scripts/kill-port.mjs 1022",
+    "dev": "concurrently --kill-others -n server,web -c blue,green \"npm run dev:server\" \"npm run dev:web\"",
+    "e2e": "node server/scripts/e2e.mjs",
+    "docker:build": "docker build -t opengrep-studio .",
+    "docker:run": "docker run --rm -p 8787:8787 -v ogstudio-data:/data opengrep-studio"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

@@ -1,0 +1,13 @@
+# Opengrep Studio —— 可选的 compose 启动方式（等价于 docker run，附数据卷与自动重启）
+# 启动：docker compose up -d   停止：docker compose down
+services:
+  studio:
+    build: .
+    image: opengrep-studio
+    ports:
+      - "8787:8787"
+    volumes:
+      # 数据卷：SQLite + 源码快照 + 自定义规则包，重建容器不丢失
+      - ogstudio-data:/data
+volumes:
+  ogstudio-data:

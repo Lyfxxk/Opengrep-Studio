@@ -1,0 +1,795 @@
+# Opengrep Studio 内置安全规则包（security）
+# 来源: https://github.com/opengrep/opengrep-rules （精选子集）
+# 许可: LGPL 2.1 + Commons Clause（不得将规则单独出售；保留本出处声明）
+# 精选标准: 含安全元数据的优先、每语言 ≤ 50 条（官方不足 50 条时全量收录），剔除 correctness 目录
+# 校验: opengrep validate --config server/rules/security
+rules:
+- id: dockerfile.last-user-is-root
+  patterns:
+  - pattern: USER root
+  - pattern-not-inside:
+      patterns:
+      - pattern: 'USER root
+
+          ...
+
+          USER $X
+
+          '
+      - metavariable-pattern:
+          metavariable: $X
+          patterns:
+          - pattern-not: root
+  message: The last user in the container is 'root'. This is a security hazard because if an attacker gains control of the container they will have root access. Switch back to another user after running commands as 'root'.
+  severity: ERROR
+  languages:
+  - dockerfile
+  metadata:
+    cwe:
+    - 'CWE-269: Improper Privilege Management'
+    source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3002
+    references:
+    - https://github.com/hadolint/hadolint/wiki/DL3002
+    category: security
+    technology:
+    - dockerfile
+    confidence: MEDIUM
+    owasp:
+    - A04:2021 - Insecure Design
+    subcategory:
+    - audit
+    likelihood: MEDIUM
+    impact: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: dockerfile/security/last-user-is-root.yaml
+      upstream-id: last-user-is-root
+- id: dockerfile.missing-user
+  patterns:
+  - pattern: 'CMD $...VARS
+
+      '
+  - pattern-not-inside: 'USER $USER
+
+      ...
+
+      '
+  fix: 'USER non-root
+
+    CMD $...VARS
+
+    '
+  message: By not specifying a USER, a program in the container may run as 'root'. This is a security hazard. If an attacker can control a process running as root, they may have control over the container. Ensure that the last USER in a Dockerfile is a USER other than 'root'.
+  severity: ERROR
+  languages:
+  - dockerfile
+  metadata:
+    cwe:
+    - 'CWE-269: Improper Privilege Management'
+    category: security
+    technology:
+    - dockerfile
+    confidence: MEDIUM
+    owasp:
+    - A04:2021 - Insecure Design
+    references:
+    - https://owasp.org/Top10/A04_2021-Insecure_Design
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: dockerfile/security/missing-user.yaml
+      upstream-id: missing-user
+- id: dockerfile.missing-user-entrypoint
+  patterns:
+  - pattern: 'ENTRYPOINT $...VARS
+
+      '
+  - pattern-not-inside: 'USER $USER
+
+      ...
+
+      '
+  fix: 'USER non-root
+
+    ENTRYPOINT $...VARS
+
+    '
+  message: By not specifying a USER, a program in the container may run as 'root'. This is a security hazard. If an attacker can control a process running as root, they may have control over the container. Ensure that the last USER in a Dockerfile is a USER other than 'root'.
+  severity: ERROR
+  languages:
+  - dockerfile
+  metadata:
+    cwe:
+    - 'CWE-269: Improper Privilege Management'
+    category: security
+    technology:
+    - dockerfile
+    confidence: MEDIUM
+    owasp:
+    - A04:2021 - Insecure Design
+    references:
+    - https://owasp.org/Top10/A04_2021-Insecure_Design
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: dockerfile/security/missing-user-entrypoint.yaml
+      upstream-id: missing-user-entrypoint
+- id: dockerfile.no-sudo-in-dockerfile
+  patterns:
+  - pattern: 'RUN sudo ...
+
+      '
+  message: Avoid using sudo in Dockerfiles. Running processes as a non-root user can help  reduce the potential impact of configuration errors and security vulnerabilities.
+  metadata:
+    category: security
+    technology:
+    - dockerfile
+    cwe:
+    - 'CWE-250: Execution with Unnecessary Privileges'
+    owasp:
+    - A05:2021 - Security Misconfiguration
+    references:
+    - https://cwe.mitre.org/data/definitions/250.html
+    - https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#user
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    confidence: HIGH
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: dockerfile/security/no-sudo-in-dockerfile.yaml
+      upstream-id: no-sudo-in-dockerfile
+  languages:
+  - dockerfile
+  severity: WARNING
+- id: dockerfile.secret-in-build-arg
+  patterns:
+  - pattern-either:
+    - pattern: ARG $ARG
+    - pattern: ARG $ARG=...
+  - metavariable-regex:
+      metavariable: $ARG
+      regex: (?i).*(password|secret|token|key|cert|api|auth)
+  message: Docker build time arguments are not suited for secrets, because the argument values are saved with the image. Running `docker image history` on the image will show information on how the image was built, including arguments. If these contain plain text secrets, anyone with access to the docker image can access those secrets and exploit them.
+  metadata:
+    category: security
+    technology:
+    - dockerfile
+    cwe:
+    - 'CWE-538: Insertion of Sensitive Information into Externally-Accessible File or Directory'
+    owasp:
+    - A01:2021 - Broken Access Control
+    references:
+    - https://cwe.mitre.org/data/definitions/538.html
+    - https://docs.docker.com/engine/reference/builder/#arg
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: HIGH
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: dockerfile/security/secret-in-build-arg.yaml
+      upstream-id: secret-in-build-arg
+  languages:
+  - dockerfile
+  severity: WARNING
+- id: dockerfile.avoid-apk-upgrade
+  languages:
+  - dockerfile
+  message: Packages in base images should be up-to-date, removing the need for 'apk upgrade'. If packages are out-of-date, consider contacting the base image maintainer.
+  severity: INFO
+  metadata:
+    source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3017
+    references:
+    - https://github.com/hadolint/hadolint/wiki/DL3017
+    category: best-practice
+    technology:
+    - dockerfile
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: dockerfile/best-practice/avoid-apk-upgrade.yaml
+      upstream-id: avoid-apk-upgrade
+  pattern: RUN ... apk upgrade ...
+- id: dockerfile.avoid-apt-get-upgrade
+  message: Packages in base containers should be up-to-date, removing the need to upgrade or dist-upgrade. If a package is out of date, contact the maintainers.
+  languages:
+  - dockerfile
+  severity: WARNING
+  metadata:
+    source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3005
+    references:
+    - https://github.com/hadolint/hadolint/wiki/DL3005
+    category: best-practice
+    technology:
+    - dockerfile
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: dockerfile/best-practice/avoid-apt-get-upgrade.yaml
+      upstream-id: avoid-apt-get-upgrade
+  pattern-either:
+  - pattern: RUN ... apt-get upgrade ...
+  - pattern: RUN ... apt-get dist-upgrade ...
+- id: dockerfile.avoid-dnf-update
+  severity: INFO
+  languages:
+  - dockerfile
+  message: Packages in base images should be up-to-date, removing the need for 'dnf update'. If packages are out-of-date, consider contacting the base image maintainer.
+  metadata:
+    source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3039
+    references:
+    - https://github.com/hadolint/hadolint/wiki/DL3039
+    category: best-practice
+    technology:
+    - dockerfile
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: dockerfile/best-practice/avoid-dnf-update.yaml
+      upstream-id: avoid-dnf-update
+  pattern: dnf update
+- id: dockerfile.avoid-latest-version
+  message: Images should be tagged with an explicit version to produce deterministic container images. The 'latest' tag may change the base container without warning.
+  severity: WARNING
+  languages:
+  - dockerfile
+  metadata:
+    source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3007
+    references:
+    - https://github.com/hadolint/hadolint/wiki/DL3007
+    category: best-practice
+    technology:
+    - dockerfile
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: dockerfile/best-practice/avoid-latest-version.yaml
+      upstream-id: avoid-latest-version
+  pattern: FROM $FROM:latest
+- id: dockerfile.avoid-platform-with-from
+  severity: INFO
+  languages:
+  - dockerfile
+  pattern: FROM --platform=$PLATFORM $IMAGE
+  message: Using '--platform' with FROM restricts the image to build on a single platform. Further, this must be the same as the build platform. If you intended to specify the target platform, use the utility 'docker buildx --platform=' instead.
+  metadata:
+    source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3029
+    references:
+    - https://github.com/hadolint/hadolint/wiki/DL3029
+    - https://docs.docker.com/buildx/working-with-buildx/
+    category: best-practice
+    technology:
+    - dockerfile
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: dockerfile/best-practice/avoid-platform-with-from.yaml
+      upstream-id: avoid-platform-with-from
+- id: dockerfile.avoid-yum-update
+  severity: INFO
+  languages:
+  - dockerfile
+  message: Packages in base images should be up-to-date, removing the need for 'yum update'. If packages are out-of-date, consider contacting the base image maintainer.
+  metadata:
+    source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3031
+    references:
+    - https://github.com/hadolint/hadolint/wiki/DL3031
+    category: best-practice
+    technology:
+    - dockerfile
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: dockerfile/best-practice/avoid-yum-update.yaml
+      upstream-id: avoid-yum-update
+  pattern: yum update
+- id: dockerfile.avoid-zypper-update
+  severity: INFO
+  languages:
+  - dockerfile
+  message: Packages in base images should be up-to-date, removing the need for 'zypper update'. If packages are out-of-date, consider contacting the base image maintainer.
+  metadata:
+    source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3035
+    references:
+    - https://github.com/hadolint/hadolint/wiki/DL3035
+    category: best-practice
+    technology:
+    - dockerfile
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: dockerfile/best-practice/avoid-zypper-update.yaml
+      upstream-id: avoid-zypper-update
+  pattern: zypper update ...
+- id: dockerfile.dockerfile-source-not-pinned
+  patterns:
+  - pattern-either:
+    - patterns:
+      - pattern: FROM $IMAGE:$VERSION@$HASH
+      - metavariable-regex:
+          metavariable: $HASH
+          regex: (?!sha256:)
+    - patterns:
+      - pattern: FROM $IMAGE
+      - pattern: FROM $IMAGE:$VERSION
+      - pattern-not-inside: FROM $IMAGE:$VERSION@$HASH
+  message: To ensure reproducible builds, pin Dockerfile `FROM` commands to a specific hash. You can find the hash by running `docker pull $IMAGE` and then  specify it with `$IMAGE:$VERSION@sha256:<hash goes here>`
+  languages:
+  - dockerfile
+  severity: INFO
+  metadata:
+    references:
+    - https://stackoverflow.com/a/33511811/4965
+    category: best-practice
+    technology:
+    - docker
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: dockerfile/audit/dockerfile-source-not-pinned.yaml
+      upstream-id: dockerfile-source-not-pinned
+- id: dockerfile.maintainer-is-deprecated
+  severity: INFO
+  languages:
+  - dockerfile
+  pattern: MAINTAINER $NAME
+  message: MAINTAINER has been deprecated.
+  metadata:
+    source-rule-url: https://github.com/hadolint/hadolint/wiki/DL4000
+    references:
+    - https://github.com/hadolint/hadolint/wiki/DL4000
+    category: best-practice
+    technology:
+    - dockerfile
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: dockerfile/best-practice/maintainer-is-deprecated.yaml
+      upstream-id: maintainer-is-deprecated
+  fix: '# MAINTAINER $NAME'
+- id: dockerfile.missing-apk-no-cache
+  patterns:
+  - pattern: 'RUN apk $COMMAND ...
+
+      '
+  - pattern-not-inside: 'RUN apk ... --no-cache ...
+
+      '
+  languages:
+  - dockerfile
+  message: This apk command is missing '--no-cache'. This forces apk to use a package index instead of a local package cache, removing the need for '--update' and the deletion of '/var/cache/apk/*'. Add '--no-cache' to your apk command.
+  severity: INFO
+  metadata:
+    source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3019
+    references:
+    - https://github.com/hadolint/hadolint/wiki/DL3019
+    category: best-practice
+    technology:
+    - dockerfile
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: dockerfile/best-practice/missing-apk-no-cache.yaml
+      upstream-id: missing-apk-no-cache
+- id: dockerfile.missing-dnf-assume-yes-switch
+  severity: WARNING
+  languages:
+  - dockerfile
+  patterns:
+  - pattern: 'RUN ... dnf install ...
+
+      '
+  - pattern-not-inside: 'RUN ... dnf install ... -y ...
+
+      '
+  - pattern-not-inside: 'RUN ... dnf ... --assumeyes ...
+
+      '
+  message: This 'dnf install' is missing the '-y' switch. This might stall builds because it requires human intervention. Add the '-y' switch.
+  metadata:
+    source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3038
+    references:
+    - https://github.com/hadolint/hadolint/wiki/DL3038
+    category: best-practice
+    technology:
+    - dockerfile
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: dockerfile/best-practice/missing-dnf-assume-yes-switch.yaml
+      upstream-id: missing-dnf-assume-yes-switch
+- id: dockerfile.missing-dnf-clean-all
+  severity: WARNING
+  languages:
+  - dockerfile
+  patterns:
+  - pattern: RUN ... dnf ...
+  - pattern-not-inside: RUN ... && dnf clean all
+  - pattern-not-inside: RUN ... && \ dnf clean all
+  message: This dnf command does not end with '&& dnf clean all'. Running 'dnf clean all' will remove cached data and reduce package size. (This must be performed in the same RUN step.)
+  metadata:
+    source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3038
+    references:
+    - https://github.com/hadolint/hadolint/wiki/DL3038
+    category: best-practice
+    technology:
+    - dockerfile
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: dockerfile/best-practice/missing-dnf-clean-all.yaml
+      upstream-id: missing-dnf-clean-all
+- id: dockerfile.missing-image-version
+  patterns:
+  - pattern-either:
+    - pattern: FROM $IMAGE
+  - pattern-not: FROM $IMAGE:$VERSION
+  - pattern-not: FROM $IMAGE@$DIGEST
+  - pattern-not: FROM $IMAGE:$VERSION@$DIGEST
+  - pattern-not: FROM scratch
+  message: Detected docker image with no explicit version attached. Images should be tagged with an explicit version to produce deterministic container images -- attach a version when using  `FROM <image>`.
+  severity: WARNING
+  languages:
+  - dockerfile
+  metadata:
+    source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3006
+    references:
+    - https://github.com/hadolint/hadolint/wiki/DL3006
+    category: best-practice
+    technology:
+    - dockerfile
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: dockerfile/best-practice/missing-image-version.yaml
+      upstream-id: missing-image-version
+- id: dockerfile.missing-no-install-recommends
+  patterns:
+  - pattern: 'RUN apt-get install ...
+
+      '
+  - pattern-not: RUN apt-get install ... --no-install-recommends ...
+  languages:
+  - dockerfile
+  message: This 'apt-get install' is missing '--no-install-recommends'. This prevents unnecessary packages from being installed, thereby reducing image size. Add '--no-install-recommends'.
+  severity: INFO
+  metadata:
+    source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3015
+    references:
+    - https://github.com/hadolint/hadolint/wiki/DL3015
+    category: best-practice
+    technology:
+    - dockerfile
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: dockerfile/best-practice/missing-no-install-recommends.yaml
+      upstream-id: missing-no-install-recommends
+- id: dockerfile.missing-pip-no-cache-dir
+  severity: INFO
+  languages:
+  - dockerfile
+  patterns:
+  - patterns:
+    - pattern: 'RUN ... $PIP install ...
+
+        '
+    - pattern-not-inside: 'RUN ... $PIP install ... --no-cache-dir ...
+
+        '
+    - pattern-not-inside: 'RUN ... $PIP install . ...
+
+        '
+    - pattern-not-inside: 'ENV ... PIP_NO_CACHE_DIR=$BOOL ...
+
+        ...
+
+        RUN ... $PIP install ...
+
+        '
+    - pattern-not-inside: 'ENV ... PIP_NO_CACHE_DIR ...
+
+        ...
+
+        RUN ... $PIP install ...
+
+        '
+  - metavariable-regex:
+      metavariable: $PIP
+      regex: (pip|pip2|pip3|python -m pip|python3 -m pip)
+  message: This '$PIP install' is missing '--no-cache-dir'. This flag prevents package archives from being kept around, thereby reducing image size. Add '--no-cache-dir'.
+  metadata:
+    source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3042
+    references:
+    - https://github.com/hadolint/hadolint/wiki/DL3042
+    category: best-practice
+    technology:
+    - dockerfile
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: dockerfile/best-practice/missing-pip-no-cache-dir.yaml
+      upstream-id: missing-pip-no-cache-dir
+- id: dockerfile.missing-yum-assume-yes-switch
+  severity: WARNING
+  languages:
+  - dockerfile
+  patterns:
+  - pattern: 'RUN ... yum install ...
+
+      '
+  - pattern-not: 'RUN ... yum install ... -y ...
+
+      '
+  - pattern-not: 'RUN ... yum ... --assumeyes ...
+
+      '
+  message: This 'yum install' is missing the '-y' switch. This might stall builds because it requires human intervention. Add the '-y' switch.
+  metadata:
+    source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3030
+    references:
+    - https://github.com/hadolint/hadolint/wiki/DL3030
+    category: best-practice
+    technology:
+    - dockerfile
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: dockerfile/best-practice/missing-yum-assume-yes-switch.yaml
+      upstream-id: missing-yum-assume-yes-switch
+- id: dockerfile.missing-zypper-clean
+  severity: WARNING
+  languages:
+  - dockerfile
+  patterns:
+  - pattern: RUN ... zypper $COMMAND ...
+  - pattern-not-inside: RUN ... zypper clean
+  - pattern-not-inside: RUN ... zypper clean
+  message: This zypper command does not end with '&& zypper clean'. Running 'zypper clean' will remove cached data and reduce package size. (This must be performed in the same RUN step.)
+  metadata:
+    source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3036
+    references:
+    - https://github.com/hadolint/hadolint/wiki/DL3036
+    category: best-practice
+    technology:
+    - dockerfile
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: dockerfile/best-practice/missing-zypper-clean.yaml
+      upstream-id: missing-zypper-clean
+- id: dockerfile.nonsensical-command
+  patterns:
+  - pattern: RUN $CMD ...
+  - metavariable-regex:
+      metavariable: $CMD
+      regex: (shutdown|service|ps|free|top|kill|mount|ifconfig|nano|vim)
+  message: Some commands such as `$CMD` do not make sense in a container. Do not use these.
+  severity: WARNING
+  languages:
+  - dockerfile
+  metadata:
+    source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3001
+    references:
+    - https://github.com/hadolint/hadolint/wiki/DL3001
+    category: best-practice
+    technology:
+    - dockerfile
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: dockerfile/best-practice/nonsensical-command.yaml
+      upstream-id: nonsensical-command
+- id: dockerfile.prefer-apt-get
+  severity: INFO
+  languages:
+  - dockerfile
+  patterns:
+  - pattern: RUN apt ...
+  - pattern-not: RUN apt-get ...
+  message: '''apt-get'' is preferred as an unattended tool for stability. ''apt'' is discouraged.'
+  metadata:
+    source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3027
+    references:
+    - https://github.com/hadolint/hadolint/wiki/DL3027
+    category: best-practice
+    technology:
+    - dockerfile
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: dockerfile/best-practice/prefer-apt-get.yaml
+      upstream-id: prefer-apt-get
+- id: dockerfile.prefer-copy-over-add
+  severity: INFO
+  languages:
+  - dockerfile
+  message: The ADD command will accept and include files from a URL and automatically extract archives. This potentially exposes the container to a man-in-the-middle attack or other attacks if a malicious actor can tamper with the source archive. Since ADD can have this and other unexpected side effects, the use of the more explicit COPY command is preferred.
+  metadata:
+    references:
+    - https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
+    category: best-practice
+    technology:
+    - dockerfile
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: dockerfile/best-practice/prefer-copy-over-add.yaml
+      upstream-id: prefer-copy-over-add
+  patterns:
+  - pattern: 'ADD $FROM $TO
+
+      '
+  - metavariable-regex:
+      metavariable: $FROM
+      regex: (^[A-Za-z]+:\/\/|.*[.](gz|bz2|zip|tar)$)
+  - focus-metavariable: $FROM
+- id: dockerfile.prefer-json-notation
+  severity: INFO
+  languages:
+  - dockerfile
+  message: Prefer JSON notation when using CMD or ENTRYPOINT. This allows signals to be passed from the OS.
+  metadata:
+    source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3025
+    references:
+    - https://github.com/hadolint/hadolint/wiki/DL3025
+    - https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#cmd
+    category: best-practice
+    technology:
+    - dockerfile
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: dockerfile/best-practice/prefer-json-notation.yaml
+      upstream-id: prefer-json-notation
+  pattern-either:
+  - patterns:
+    - pattern: CMD $WORD ...
+    - pattern-not-inside: CMD [...]
+  - patterns:
+    - pattern: ENTRYPOINT $WORD ...
+    - pattern-not-inside: ENTRYPOINT [...]
+- id: dockerfile.remove-package-cache
+  patterns:
+  - pattern-not-inside: RUN ... && apt-get clean ...
+  - pattern: RUN ... apt-get update ...
+  - pattern: apt-get update
+  message: The package cache was not deleted after running 'apt-get update', which increases the size of the image. Remove the package cache by appending '&& apt-get clean' at the end of apt-get command chain.
+  severity: WARNING
+  languages:
+  - dockerfile
+  metadata:
+    source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3009
+    references:
+    - https://github.com/hadolint/hadolint/wiki/DL3009
+    category: best-practice
+    technology:
+    - dockerfile
+    license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: dockerfile/best-practice/remove-package-cache.yaml
+      upstream-id: remove-package-cache
+- id: dockerfile.remove-package-lists
+  patterns:
+  - pattern-not-inside: RUN ... rm -rf /var/lib/apt/lists/*
+  - pattern: RUN apt-get update ...
+  - pattern: apt-get update
+  message: The package lists were not deleted after running 'apt-get update', which increases the size of the image. Remove the package lists by appending '&& rm -rf /var/lib/apt/lists/*' at the end of apt-get command chain.
+  severity: WARNING
+  languages:
+  - dockerfile
+  metadata:
+    source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3009
+    references:
+    - https://github.com/hadolint/hadolint/wiki/DL3009
+    category: best-practice
+    technology:
+    - dockerfile
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: dockerfile/best-practice/remove-package-lists.yaml
+      upstream-id: remove-package-lists
+- id: dockerfile.set-pipefail
+  languages:
+  - dockerfile
+  message: Only the exit code from the final command in this RUN instruction will be evaluated unless 'pipefail' is set. If you want to fail the command at any stage in the pipe, set 'pipefail' by including 'SHELL ["/bin/bash", "-o", "pipefail", "-c"] before the command. If you're using alpine and don't have bash installed, communicate this explicitly with `SHELL ["/bin/ash"]`.
+  metadata:
+    references:
+    - https://github.com/hadolint/hadolint/wiki/DL4006
+    source-rule-url: https://github.com/hadolint/hadolint/wiki/DL4006
+    category: best-practice
+    technology:
+    - dockerfile
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: dockerfile/best-practice/set-pipefail.yaml
+      upstream-id: set-pipefail
+  patterns:
+  - pattern-either:
+    - pattern: RUN ... | ...
+    - pattern: RUN ... || ...
+  - pattern-not-inside: 'SHELL [..., "pipefail", ...]
+
+      ...
+
+      RUN ... | ...
+
+      '
+  - pattern-not-inside: 'SHELL ["/bin/ash", ...]
+
+      ...
+
+      RUN ... | ...
+
+      '
+  severity: WARNING
+- id: dockerfile.use-either-wget-or-curl
+  severity: INFO
+  languages:
+  - dockerfile
+  message: '''wget'' and ''curl'' are similar tools. Choose one and do not install the other to decrease image size.'
+  metadata:
+    source-rule-url: https://github.com/hadolint/hadolint/wiki/DL4001
+    references:
+    - https://github.com/hadolint/hadolint/wiki/DL4001
+    category: best-practice
+    technology:
+    - dockerfile
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: dockerfile/best-practice/use-either-wget-or-curl.yaml
+      upstream-id: use-either-wget-or-curl
+  pattern-either:
+  - pattern: 'RUN wget ...
+
+      ...
+
+      RUN curl ...
+
+      '
+  - pattern: 'RUN curl ...
+
+      ...
+
+      RUN wget ...
+
+      '
+- id: dockerfile.use-shell-instruction
+  severity: WARNING
+  languages:
+  - dockerfile
+  pattern: 'RUN ln ... $SHELL /bin/sh
+
+    '
+  message: Use the SHELL instruction to set the default shell instead of overwriting '/bin/sh'.
+  metadata:
+    source-rule-url: https://github.com/hadolint/hadolint/wiki/DL4005
+    references:
+    - https://github.com/hadolint/hadolint/wiki/DL4005
+    category: best-practice
+    technology:
+    - dockerfile
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: dockerfile/best-practice/use-shell-instruction.yaml
+      upstream-id: use-shell-instruction
+  fix: SHELL ["$SHELL", "-c"]
+- id: dockerfile.use-workdir
+  options:
+    implicit_deep_exprstmt: false
+  patterns:
+  - pattern-either:
+    - pattern-inside: 'RUN $ CMD ...
+
+        '
+    - pattern-inside: 'RUN $CMD ... && ...
+
+        '
+  - metavariable-pattern:
+      metavariable: $CMD
+      pattern: cd
+  - focus-metavariable: $CMD
+  message: As recommended by Docker's documentation, it is best to use 'WORKDIR' instead of 'RUN cd ...' for improved clarity and reliability. Also, 'RUN cd ...' may not work as expected in a container.
+  severity: WARNING
+  languages:
+  - dockerfile
+  metadata:
+    source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3003
+    references:
+    - https://github.com/hadolint/hadolint/wiki/DL3003
+    category: best-practice
+    technology:
+    - dockerfile
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: dockerfile/best-practice/use-workdir.yaml
+      upstream-id: use-workdir

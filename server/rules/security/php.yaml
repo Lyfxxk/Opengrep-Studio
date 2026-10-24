@@ -1,0 +1,2396 @@
+# Opengrep Studio 内置安全规则包（security）
+# 来源: https://github.com/opengrep/opengrep-rules （精选子集）
+# 许可: LGPL 2.1 + Commons Clause（不得将规则单独出售；保留本出处声明）
+# 精选标准: 含安全元数据的优先、每语言 ≤ 50 条（官方不足 50 条时全量收录），剔除 correctness 目录
+# 校验: opengrep validate --config server/rules/security
+rules:
+- id: php.assert-use
+  mode: taint
+  pattern-sources:
+  - pattern-either:
+    - patterns:
+      - pattern-either:
+        - pattern: $_GET
+        - pattern: $_POST
+        - pattern: $_COOKIE
+        - pattern: $_REQUEST
+        - pattern: $_SERVER
+    - patterns:
+      - pattern: 'Route::$METHOD($ROUTENAME, function(..., $ARG, ...) { ... })
+
+          '
+      - focus-metavariable: $ARG
+  pattern-sinks:
+  - patterns:
+    - pattern: assert($SINK, ...);
+    - pattern-not: assert("...", ...);
+    - pattern: $SINK
+  message: Calling assert with user input is equivalent to eval'ing.
+  metadata:
+    owasp:
+    - A03:2021 - Injection
+    cwe:
+    - 'CWE-95: Improper Neutralization of Directives in Dynamically Evaluated Code (''Eval Injection'')'
+    references:
+    - https://www.php.net/manual/en/function.assert
+    - https://github.com/FloeDesignTechnologies/phpcs-security-audit/blob/master/Security/Sniffs/BadFunctions/AssertsSniff.php
+    category: security
+    technology:
+    - php
+    confidence: HIGH
+    subcategory:
+    - vuln
+    likelihood: MEDIUM
+    impact: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/lang/security/assert-use.yaml
+      upstream-id: assert-use
+  languages:
+  - php
+  severity: ERROR
+- id: php.assert-use-audit
+  patterns:
+  - pattern: assert($ASSERT, ...);
+  - pattern-not: assert("...", ...);
+  - metavariable-regex:
+      metavariable: $ASSERT
+      regex: \A\$[A-Za-z\[\]\-_'"\$]+(\-\>\w+)?\Z
+  message: Calling assert with user input is equivalent to eval'ing.
+  metadata:
+    owasp:
+    - A03:2021 - Injection
+    cwe:
+    - 'CWE-95: Improper Neutralization of Directives in Dynamically Evaluated Code (''Eval Injection'')'
+    references:
+    - https://www.php.net/manual/en/function.assert
+    - https://github.com/FloeDesignTechnologies/phpcs-security-audit/blob/master/Security/Sniffs/BadFunctions/AssertsSniff.php
+    category: security
+    technology:
+    - php
+    confidence: LOW
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: HIGH
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/lang/security/audit/assert-use-audit.yaml
+      upstream-id: assert-use-audit
+  languages:
+  - php
+  severity: ERROR
+- id: php.backticks-use
+  pattern: '`...`;'
+  message: Backticks use may lead to command injection vulnerabilities.
+  metadata:
+    cwe:
+    - 'CWE-94: Improper Control of Generation of Code (''Code Injection'')'
+    references:
+    - https://www.php.net/manual/en/language.operators.execution.php
+    - https://github.com/FloeDesignTechnologies/phpcs-security-audit/blob/master/Security/Sniffs/BadFunctions/BackticksSniff.php
+    category: security
+    technology:
+    - php
+    owasp:
+    - A03:2021 - Injection
+    cwe2022-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: HIGH
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/lang/security/backticks-use.yaml
+      upstream-id: backticks-use
+  languages:
+  - php
+  severity: ERROR
+- id: php.curl-ssl-verifypeer-off
+  patterns:
+  - pattern-either:
+    - pattern: '$ARG = $IS_VERIFIED;
+
+        ...
+
+        curl_setopt(..., CURLOPT_SSL_VERIFYPEER, $ARG);
+
+        '
+    - pattern: curl_setopt(..., CURLOPT_SSL_VERIFYPEER, $IS_VERIFIED)
+  - metavariable-regex:
+      metavariable: $IS_VERIFIED
+      regex: 0|false|null
+  message: SSL verification is disabled but should not be (currently CURLOPT_SSL_VERIFYPEER= $IS_VERIFIED)
+  metadata:
+    cwe:
+    - 'CWE-319: Cleartext Transmission of Sensitive Information'
+    references:
+    - https://www.saotn.org/dont-turn-off-curlopt_ssl_verifypeer-fix-php-configuration/
+    category: security
+    technology:
+    - php
+    owasp:
+    - A03:2017 - Sensitive Data Exposure
+    - A02:2021 - Cryptographic Failures
+    subcategory:
+    - vuln
+    likelihood: LOW
+    impact: LOW
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/lang/security/curl-ssl-verifypeer-off.yaml
+      upstream-id: curl-ssl-verifypeer-off
+  languages:
+  - php
+  severity: ERROR
+- id: php.echoed-request
+  mode: taint
+  message: '`Echo`ing user input risks cross-site scripting vulnerability. You should use `htmlentities()` when showing data to users.'
+  languages:
+  - php
+  severity: ERROR
+  pattern-sources:
+  - pattern: $_REQUEST
+  - pattern: $_GET
+  - pattern: $_POST
+  pattern-sinks:
+  - pattern: echo $...VARS;
+  pattern-sanitizers:
+  - pattern: htmlentities(...)
+  - pattern: htmlspecialchars(...)
+  - pattern: strip_tags(...)
+  - pattern: isset(...)
+  - pattern: empty(...)
+  - pattern: esc_html(...)
+  - pattern: esc_attr(...)
+  - pattern: wp_kses(...)
+  - pattern: e(...)
+  - pattern: twig_escape_filter(...)
+  - pattern: xss_clean(...)
+  - pattern: html_escape(...)
+  - pattern: Html::escape(...)
+  - pattern: Xss::filter(...)
+  - pattern: escapeHtml(...)
+  - pattern: escapeHtml(...)
+  - pattern: escapeHtmlAttr(...)
+  fix: echo htmlentities($...VARS);
+  metadata:
+    technology:
+    - php
+    cwe:
+    - 'CWE-79: Improper Neutralization of Input During Web Page Generation (''Cross-site Scripting'')'
+    owasp:
+    - A07:2017 - Cross-Site Scripting (XSS)
+    - A03:2021 - Injection
+    category: security
+    references:
+    - https://www.php.net/manual/en/function.htmlentities.php
+    - https://www.php.net/manual/en/reserved.variables.request.php
+    - https://www.php.net/manual/en/reserved.variables.post.php
+    - https://www.php.net/manual/en/reserved.variables.get.php
+    - https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: MEDIUM
+    impact: MEDIUM
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/lang/security/injection/echoed-request.yaml
+      upstream-id: echoed-request
+- id: php.eval-use
+  patterns:
+  - pattern: eval(...);
+  - pattern-not: eval('...');
+  message: Evaluating non-constant commands. This can lead to command injection.
+  metadata:
+    cwe:
+    - 'CWE-78: Improper Neutralization of Special Elements used in an OS Command (''OS Command Injection'')'
+    references:
+    - https://www.php.net/manual/en/function.eval
+    - https://github.com/FloeDesignTechnologies/phpcs-security-audit/blob/master/Security/Sniffs/BadFunctions/NoEvalsSniff.php
+    category: security
+    technology:
+    - php
+    owasp:
+    - A01:2017 - Injection
+    - A03:2021 - Injection
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: HIGH
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/lang/security/eval-use.yaml
+      upstream-id: eval-use
+  languages:
+  - php
+  severity: ERROR
+- id: php.exec-use
+  patterns:
+  - pattern: $FUNC(...);
+  - pattern-not: $FUNC('...', ...);
+  - metavariable-regex:
+      metavariable: $FUNC
+      regex: exec|passthru|proc_open|popen|shell_exec|system|pcntl_exec
+  message: Executing non-constant commands. This can lead to command injection.
+  metadata:
+    cwe:
+    - 'CWE-94: Improper Control of Generation of Code (''Code Injection'')'
+    references:
+    - https://github.com/FloeDesignTechnologies/phpcs-security-audit/blob/master/Security/Sniffs/BadFunctions/SystemExecFunctionsSniff.php
+    category: security
+    technology:
+    - php
+    owasp:
+    - A03:2021 - Injection
+    cwe2022-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: HIGH
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/lang/security/exec-use.yaml
+      upstream-id: exec-use
+  languages:
+  - php
+  severity: ERROR
+- id: php.extract-user-data
+  mode: taint
+  pattern-sources:
+  - pattern-either:
+    - pattern: $_GET[...]
+    - pattern: $_FILES[...]
+    - pattern: $_POST[...]
+  pattern-sinks:
+  - pattern: extract(...)
+  pattern-sanitizers:
+  - pattern: extract($VAR, EXTR_SKIP,...)
+  message: Do not call 'extract()' on user-controllable data. If you must, then you must also provide the EXTR_SKIP flag to prevent overwriting existing variables.
+  languages:
+  - php
+  metadata:
+    category: security
+    cwe:
+    - 'CWE-502: Deserialization of Untrusted Data'
+    owasp:
+    - A08:2017 - Insecure Deserialization
+    - A08:2021 - Software and Data Integrity Failures
+    technology:
+    - php
+    references:
+    - https://www.php.net/manual/en/function.extract.php#refsect1-function.extract-notes
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: MEDIUM
+    impact: MEDIUM
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/lang/security/deserialization.yaml
+      upstream-id: extract-user-data
+  severity: ERROR
+- id: php.file-inclusion
+  message: Detected non-constant file inclusion. This can lead to local file inclusion (LFI) or remote file inclusion (RFI) if user input reaches this statement. LFI and RFI could lead to sensitive files being obtained by attackers. Instead, explicitly specify what to include. If that is not a viable solution, validate user input thoroughly.
+  metadata:
+    cwe:
+    - 'CWE-98: Improper Control of Filename for Include/Require Statement in PHP Program (''PHP Remote File Inclusion'')'
+    references:
+    - https://www.php.net/manual/en/function.include.php
+    - https://github.com/FloeDesignTechnologies/phpcs-security-audit/blob/master/Security/Sniffs/BadFunctions/EasyRFISniff.php
+    - https://en.wikipedia.org/wiki/File_inclusion_vulnerability#Types_of_Inclusion
+    category: security
+    technology:
+    - php
+    owasp:
+    - A03:2021 - Injection
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: MEDIUM
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/lang/security/file-inclusion.yaml
+      upstream-id: file-inclusion
+  languages:
+  - php
+  severity: ERROR
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - pattern: $_GET
+      - pattern: $_POST
+      - pattern: $_COOKIE
+      - pattern: $_REQUEST
+      - pattern: $_SERVER
+  pattern-sanitizers:
+  - patterns:
+    - pattern-either:
+      - pattern-inside: basename($PATH, ...)
+      - pattern-inside: linkinfo($PATH, ...)
+      - pattern-inside: readlink($PATH, ...)
+      - pattern-inside: realpath($PATH, ...)
+      - pattern-inside: include_safe(...)
+  pattern-sinks:
+  - patterns:
+    - pattern-inside: $FUNC(...);
+    - pattern: $VAR
+    - metavariable-regex:
+        metavariable: $FUNC
+        regex: \b(include|include_once|require|require_once)\b
+- id: php.ftp-use
+  patterns:
+  - pattern: $FUNC(...);
+  - metavariable-regex:
+      metavariable: $FUNC
+      regex: ftp_.+
+  message: FTP allows for unencrypted file transfers. Consider using an encrypted alternative.
+  metadata:
+    cwe:
+    - 'CWE-319: Cleartext Transmission of Sensitive Information'
+    references:
+    - https://www.php.net/manual/en/intro.ftp.php
+    - https://github.com/FloeDesignTechnologies/phpcs-security-audit/blob/master/Security/Sniffs/BadFunctions/FringeFunctionsSniff.php
+    category: security
+    technology:
+    - php
+    owasp:
+    - A03:2017 - Sensitive Data Exposure
+    - A02:2021 - Cryptographic Failures
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: MEDIUM
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/lang/security/ftp-use.yaml
+      upstream-id: ftp-use
+  languages:
+  - php
+  severity: ERROR
+- id: php.laravel-active-debug-code
+  patterns:
+  - pattern-either:
+    - pattern: 'putenv("APP_DEBUG=true")
+
+        '
+    - pattern: 'config([''app.debug'' => ''true''])
+
+        '
+    - pattern: '$_ENV["APP_DEBUG"] = ''true''
+
+        '
+  message: Found an instance setting the APP_DEBUG environment variable to true. In your production environment, this should always be false. Otherwise, you risk exposing sensitive configuration values to potential attackers. Instead, set this to false.
+  languages:
+  - php
+  severity: ERROR
+  metadata:
+    category: security
+    cwe:
+    - 'CWE-489: Active Debug Code'
+    owasp:
+    - A05:2021 - Security Misconfiguration
+    technology:
+    - php
+    - laravel
+    references:
+    - https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Laravel_Cheat_Sheet.md
+    - https://laravel.com/docs/9.x/configuration
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/laravel/security/laravel-active-debug-code.yaml
+      upstream-id: laravel-active-debug-code
+- id: php.laravel-cookie-http-only
+  patterns:
+  - pattern: '''cookie''
+
+      '
+  - pattern-inside: "return [\n  ...,\n  'cookie' => env(...),\n  ...\n];\n"
+  - pattern-not-inside: "return [\n  ...,\n  'http_only' => true,\n  ...\n];\n"
+  - pattern-not-inside: "return [\n  ...,\n  'http_only' => env('$NAME', $DEFAULT),\n  ...\n];\n"
+  paths:
+    include:
+    - '*session.php'
+  message: 'Found a configuration file where the HttpOnly attribute is not set to true. Setting `http_only` to true makes sure that your cookies are inaccessible from Javascript, which mitigates XSS attacks. Instead, set the ''http_only'' like so: `http_only` => true '
+  languages:
+  - php
+  severity: ERROR
+  metadata:
+    category: security
+    cwe:
+    - 'CWE-1004: Sensitive Cookie Without ''HttpOnly'' Flag'
+    owasp:
+    - A05:2021 - Security Misconfiguration
+    technology:
+    - php
+    - laravel
+    references:
+    - https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Laravel_Cheat_Sheet.md
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/laravel/security/laravel-cookie-http-only.yaml
+      upstream-id: laravel-cookie-http-only
+- id: php.laravel-cookie-long-timeout
+  patterns:
+  - pattern: '''lifetime''
+
+      '
+  - pattern-inside: "return [\n  ...,\n  'lifetime' => $TIME,\n  ...\n];\n"
+  - pattern-not-inside: "return [\n  ...,\n  'lifetime' => env(\"$VAR\", $DEFAULT),\n  ...\n];\n"
+  - metavariable-comparison:
+      metavariable: $TIME
+      comparison: $TIME > 30
+  paths:
+    include:
+    - '*session.php'
+  message: Found a configuration file where the lifetime attribute is over 30 minutes.
+  languages:
+  - php
+  severity: ERROR
+  metadata:
+    category: security
+    cwe:
+    - 'CWE-1004: Sensitive Cookie Without ''HttpOnly'' Flag'
+    owasp:
+    - A05:2021 - Security Misconfiguration
+    technology:
+    - php
+    - laravel
+    references:
+    - https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Laravel_Cheat_Sheet.md
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/laravel/security/laravel-cookie-long-timeout.yaml
+      upstream-id: laravel-cookie-long-timeout
+- id: php.laravel-cookie-null-domain
+  patterns:
+  - pattern: '''cookie''
+
+      '
+  - pattern-inside: "return [\n  ...,\n  'cookie' => env(...),\n  ...\n];\n"
+  - pattern-not-inside: "return [\n  ...,\n  'domain' => null,\n  ...\n];\n"
+  - pattern-not-inside: "return [\n  ...,\n  'domain' => env('$NAME', $DEFAULT),\n  ...\n];\n"
+  paths:
+    include:
+    - '*session.php'
+  message: 'Found a configuration file where the domain attribute is not set to null. It is recommended (unless you are using sub-domain route registrations) to set this attribute to null so that only the same origin can set the cookie, thus protecting your cookies. '
+  languages:
+  - php
+  severity: ERROR
+  metadata:
+    category: security
+    cwe:
+    - 'CWE-200: Exposure of Sensitive Information to an Unauthorized Actor'
+    owasp:
+    - A01:2021 - Broken Access Control
+    technology:
+    - php
+    - laravel
+    references:
+    - https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Laravel_Cheat_Sheet.md
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/laravel/security/laravel-cookie-null-domain.yaml
+      upstream-id: laravel-cookie-null-domain
+- id: php.laravel-cookie-same-site
+  patterns:
+  - pattern: '''cookie''
+
+      '
+  - pattern-inside: "return [\n  ...,\n  'cookie' => env(...),\n  ...\n];\n"
+  - pattern-not-inside: "return [\n  ...,\n  'same_site' => 'lax',\n  ...\n];\n"
+  - pattern-not-inside: "return [\n  ...,\n  'same_site' => 'strict',\n  ...\n];\n"
+  - pattern-not-inside: "return [\n  ...,\n  'same_site' => env('$NAME', $DEFAULT),\n  ...\n];\n"
+  paths:
+    include:
+    - '*session.php'
+  message: Found a configuration file where the same_site attribute is not set to 'lax' or 'strict'. Setting 'same_site' to 'lax' or 'strict' restricts cookies to a first-party or same-site context, which will protect your cookies and prevent CSRF.
+  languages:
+  - php
+  severity: ERROR
+  metadata:
+    category: security
+    cwe:
+    - 'CWE-1275: Sensitive Cookie with Improper SameSite Attribute'
+    owasp:
+    - A01:2021 - Broken Access Control
+    technology:
+    - php
+    - laravel
+    references:
+    - https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Laravel_Cheat_Sheet.md
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/laravel/security/laravel-cookie-same-site.yaml
+      upstream-id: laravel-cookie-same-site
+- id: php.laravel-cookie-secure-set
+  patterns:
+  - pattern: '''cookie''
+
+      '
+  - pattern-inside: "return [\n  ...,\n  'cookie' => env(...),\n  ...\n];\n"
+  - pattern-not-inside: "return [\n  ...,\n  'secure' => true,\n  ...\n];\n"
+  - pattern-not-inside: "return [\n  ...,\n  'secure' => env('$NAME', $DEFAULT),\n  ...\n];\n"
+  paths:
+    include:
+    - '*session.php'
+  message: 'Found a configuration file where the secure attribute is not set to ''true''. Setting ''secure'' to ''true'' prevents the client from transmitting the cookie over unencrypted channels and therefore prevents cookies from being stolen through man in the middle attacks. '
+  languages:
+  - php
+  severity: ERROR
+  metadata:
+    category: security
+    cwe:
+    - 'CWE-614: Sensitive Cookie in HTTPS Session Without ''Secure'' Attribute'
+    owasp:
+    - A05:2021 - Security Misconfiguration
+    technology:
+    - php
+    - laravel
+    references:
+    - https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Laravel_Cheat_Sheet.md
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/laravel/security/laravel-cookie-secure-set.yaml
+      upstream-id: laravel-cookie-secure-set
+- id: php.laravel-dangerous-model-construction
+  patterns:
+  - pattern: '$guarded = [];
+
+      '
+  - pattern-inside: "class $CLASS extends Model {\n  ...\n}\n"
+  message: Setting `$guarded` to an empty array allows mass assignment to every property in a Laravel model. This explicitly overrides Eloquent's safe-by-default mass assignment protections.
+  languages:
+  - php
+  metadata:
+    category: security
+    technology:
+    - php
+    - laravel
+    - eloquent
+    references:
+    - https://laravel.com/docs/9.x/eloquent#allowing-mass-assignment
+    - https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Laravel_Cheat_Sheet.md
+    cwe:
+    - 'CWE-915: Improperly Controlled Modification of Dynamically-Determined Object Attributes'
+    owasp:
+    - A08:2021 - Software and Data Integrity Failures
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: MEDIUM
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/laravel/security/laravel-dangerous-model-construction.yaml
+      upstream-id: laravel-dangerous-model-construction
+  severity: ERROR
+- id: php.laravel-unsafe-validator
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern: 'public function $F(...,Request $R,...){...}
+
+        '
+    - focus-metavariable: $R
+  - patterns:
+    - pattern-either:
+      - pattern: '$this->$PROPERTY
+
+          '
+      - pattern: '$this->$PROPERTY->$GET
+
+          '
+    - metavariable-pattern:
+        metavariable: $PROPERTY
+        patterns:
+        - pattern-either:
+          - pattern: query
+          - pattern: request
+          - pattern: headers
+          - pattern: cookies
+          - pattern: cookie
+          - pattern: files
+          - pattern: file
+          - pattern: allFiles
+          - pattern: input
+          - pattern: all
+          - pattern: post
+          - pattern: json
+    - pattern-either:
+      - pattern-inside: 'class $CL extends Illuminate\Http\Request {...}
+
+          '
+      - pattern-inside: 'class $CL extends Illuminate\Foundation\Http\FormRequest {...}
+
+          '
+  pattern-sinks:
+  - patterns:
+    - pattern: 'Illuminate\Validation\Rule::unique(...)->ignore(...,$IGNORE,...)
+
+        '
+    - focus-metavariable: $IGNORE
+  message: Found a request argument passed to an `ignore()` definition in a Rule constraint. This can lead to SQL injection.
+  languages:
+  - php
+  severity: ERROR
+  metadata:
+    category: security
+    cwe:
+    - 'CWE-89: Improper Neutralization of Special Elements used in an SQL Command (''SQL Injection'')'
+    owasp:
+    - A01:2017 - Injection
+    - A03:2021 - Injection
+    technology:
+    - php
+    - laravel
+    references:
+    - https://laravel.com/docs/9.x/validation#rule-unique
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: HIGH
+    impact: MEDIUM
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/laravel/security/laravel-unsafe-validator.yaml
+      upstream-id: laravel-unsafe-validator
+- id: php.mb-ereg-replace-eval
+  patterns:
+  - pattern: mb_ereg_replace($PATTERN, $REPL, $STR, $OPTIONS);
+  - pattern-not: mb_ereg_replace($PATTERN, $REPL, $STR, "...");
+  message: Calling mb_ereg_replace with user input in the options can lead to arbitrary code execution. The eval modifier (`e`) evaluates the replacement argument as code.
+  metadata:
+    cwe:
+    - 'CWE-94: Improper Control of Generation of Code (''Code Injection'')'
+    references:
+    - https://www.php.net/manual/en/function.mb-ereg-replace.php
+    - https://www.php.net/manual/en/function.mb-regex-set-options.php
+    category: security
+    technology:
+    - php
+    owasp:
+    - A03:2021 - Injection
+    cwe2022-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: MEDIUM
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/lang/security/mb-ereg-replace-eval.yaml
+      upstream-id: mb-ereg-replace-eval
+  languages:
+  - php
+  severity: ERROR
+- id: php.mcrypt-use
+  patterns:
+  - pattern: $FUNC(...);
+  - metavariable-regex:
+      metavariable: $FUNC
+      regex: (mcrypt_|mdecrypt_).+
+  message: Mcrypt functionality has been deprecated and/or removed in recent PHP versions. Consider using Sodium or OpenSSL.
+  metadata:
+    cwe:
+    - 'CWE-676: Use of Potentially Dangerous Function'
+    references:
+    - https://www.php.net/manual/en/intro.mcrypt.php
+    - https://github.com/FloeDesignTechnologies/phpcs-security-audit/blob/master/Security/Sniffs/BadFunctions/CryptoFunctionsSniff.php
+    category: security
+    technology:
+    - php
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: MEDIUM
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/lang/security/mcrypt-use.yaml
+      upstream-id: mcrypt-use
+  languages:
+  - php
+  severity: ERROR
+- id: php.md5-loose-equality
+  patterns:
+  - pattern-either:
+    - pattern: $X == $FUNC(...)
+    - pattern: $FUNC(...) == $X
+    - pattern: $FUNC(...) == $FUNC(...)
+  - metavariable-regex:
+      metavariable: $FUNC
+      regex: md5|md5_file
+  message: Make sure comparisons involving md5 values are strict (use `===` not `==`) to avoid type juggling issues
+  metadata:
+    cwe:
+    - 'CWE-697: Incorrect Comparison'
+    references:
+    - https://www.php.net/manual/en/types.comparisons.php
+    - https://www.whitehatsec.com/blog/magic-hashes/
+    category: security
+    technology:
+    - php
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/lang/security/md5-loose-equality.yaml
+      upstream-id: md5-loose-equality
+  languages:
+  - php
+  severity: ERROR
+- id: php.openssl-cbc-static-iv
+  patterns:
+  - pattern-either:
+    - pattern: openssl_encrypt($D, $M, $K, $FLAGS, "...",...);
+    - pattern: openssl_decrypt($D, $M, $K, $FLAGS, "...",...);
+  - metavariable-comparison:
+      metavariable: $M
+      comparison: re.match(".*-CBC",$M)
+  message: Static IV used with AES in CBC mode. Static IVs enable chosen-plaintext attacks against encrypted data.
+  languages:
+  - php
+  severity: ERROR
+  metadata:
+    cwe:
+    - 'CWE-329: Generation of Predictable IV with CBC Mode'
+    references:
+    - https://csrc.nist.gov/publications/detail/sp/800-38a/final
+    owasp:
+    - A02:2021 - Cryptographic Failures
+    technology:
+    - php
+    - openssl
+    category: security
+    subcategory:
+    - vuln
+    likelihood: HIGH
+    impact: MEDIUM
+    confidence: HIGH
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/lang/security/openssl-cbc-static-iv.yaml
+      upstream-id: openssl-cbc-static-iv
+- id: php.php-ssrf
+  patterns:
+  - pattern-either:
+    - pattern: '$VAR=$DATA;
+
+        ...
+
+        $FUNCS(...,$VAR, ...);
+
+        '
+    - pattern: $FUNCS(...,$DATA, ...);
+  - metavariable-pattern:
+      metavariable: $DATA
+      patterns:
+      - pattern-either:
+        - pattern: $_GET
+        - pattern: $_POST
+        - pattern: $_COOKIE
+        - pattern: $_REQUEST
+  - metavariable-pattern:
+      metavariable: $FUNCS
+      patterns:
+      - pattern-either:
+        - pattern: curl_setopt
+        - pattern: fopen
+        - pattern: file_get_contents
+        - pattern: curl_init
+        - pattern: readfile
+  message: The web server receives a URL or similar request from an upstream component and retrieves the contents of this URL, but it does not sufficiently ensure that the request is being sent to the expected destination. Dangerous function $FUNCS with payload $DATA
+  metadata:
+    references:
+    - https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
+    license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    cwe:
+    - 'CWE-918: Server-Side Request Forgery (SSRF)'
+    category: security
+    technology:
+    - php
+    owasp:
+    - A10:2021 - Server-Side Request Forgery (SSRF)
+    cwe2022-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: HIGH
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/lang/security/php-ssrf.yaml
+      upstream-id: php-ssrf
+  languages:
+  - php
+  severity: ERROR
+- id: php.phpinfo-use
+  pattern: phpinfo(...);
+  message: The 'phpinfo' function may reveal sensitive information about your environment.
+  metadata:
+    cwe:
+    - 'CWE-200: Exposure of Sensitive Information to an Unauthorized Actor'
+    references:
+    - https://www.php.net/manual/en/function.phpinfo
+    - https://github.com/FloeDesignTechnologies/phpcs-security-audit/blob/master/Security/Sniffs/BadFunctions/PhpinfosSniff.php
+    category: security
+    technology:
+    - php
+    owasp:
+    - A01:2021 - Broken Access Control
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: MEDIUM
+    impact: MEDIUM
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/lang/security/phpinfo-use.yaml
+      upstream-id: phpinfo-use
+  languages:
+  - php
+  severity: ERROR
+- id: php.printed-request
+  mode: taint
+  message: '`Printing user input risks cross-site scripting vulnerability. You should use `htmlentities()` when showing data to users.'
+  languages:
+  - php
+  severity: ERROR
+  pattern-sources:
+  - pattern: $_REQUEST
+  - pattern: $_GET
+  - pattern: $_POST
+  pattern-sinks:
+  - pattern: print($...VARS);
+  pattern-sanitizers:
+  - pattern: htmlentities(...)
+  - pattern: htmlspecialchars(...)
+  - pattern: strip_tags(...)
+  - pattern: isset(...)
+  - pattern: empty(...)
+  - pattern: esc_html(...)
+  - pattern: esc_attr(...)
+  - pattern: wp_kses(...)
+  - pattern: e(...)
+  - pattern: twig_escape_filter(...)
+  - pattern: xss_clean(...)
+  - pattern: html_escape(...)
+  - pattern: Html::escape(...)
+  - pattern: Xss::filter(...)
+  - pattern: escapeHtml(...)
+  - pattern: escapeHtml(...)
+  - pattern: escapeHtmlAttr(...)
+  fix: print(htmlentities($...VARS));
+  metadata:
+    technology:
+    - php
+    cwe:
+    - 'CWE-79: Improper Neutralization of Input During Web Page Generation (''Cross-site Scripting'')'
+    owasp:
+    - A07:2017 - Cross-Site Scripting (XSS)
+    - A03:2021 - Injection
+    category: security
+    references:
+    - https://www.php.net/manual/en/function.htmlentities.php
+    - https://www.php.net/manual/en/reserved.variables.request.php
+    - https://www.php.net/manual/en/reserved.variables.post.php
+    - https://www.php.net/manual/en/reserved.variables.get.php
+    - https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: MEDIUM
+    impact: MEDIUM
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/lang/security/injection/printed-request.yaml
+      upstream-id: printed-request
+- id: php.tainted-exec
+  mode: taint
+  pattern-sources:
+  - pattern: $_REQUEST
+  - pattern: $_GET
+  - pattern: $_POST
+  - pattern: $_COOKIE
+  pattern-sinks:
+  - pattern: exec(...)
+  - pattern: system(...)
+  - pattern: popen(...)
+  - pattern: passthru(...)
+  - pattern: shell_exec(...)
+  - pattern: pcntl_exec(...)
+  - pattern: proc_open(...)
+  pattern-sanitizers:
+  - pattern: escapeshellarg(...)
+  message: Executing non-constant commands. This can lead to command injection. You should use `escapeshellarg()` when using command.
+  metadata:
+    cwe:
+    - 'CWE-94: Improper Control of Generation of Code (''Code Injection'')'
+    references:
+    - https://www.stackhawk.com/blog/php-command-injection/
+    - https://brightsec.com/blog/code-injection-php/
+    - https://www.acunetix.com/websitesecurity/php-security-2/
+    category: security
+    technology:
+    - php
+    owasp:
+    - A03:2021 - Injection
+    cwe2022-top25: true
+    subcategory:
+    - vuln
+    likelihood: HIGH
+    impact: HIGH
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/lang/security/tainted-exec.yaml
+      upstream-id: tainted-exec
+  languages:
+  - php
+  severity: ERROR
+- id: php.tainted-sql-string
+  languages:
+  - php
+  severity: ERROR
+  message: User data flows into this manually-constructed SQL string. User data can be safely inserted into SQL strings using prepared statements or an object-relational mapper (ORM). Manually-constructed SQL strings is a possible indicator of SQL injection, which could let an attacker steal or manipulate data from the database. Instead, use prepared statements (`$mysqli->prepare("INSERT INTO test(id, label) VALUES (?, ?)");`) or a safe library.
+  metadata:
+    cwe:
+    - 'CWE-89: Improper Neutralization of Special Elements used in an SQL Command (''SQL Injection'')'
+    owasp:
+    - A01:2017 - Injection
+    - A03:2021 - Injection
+    references:
+    - https://owasp.org/www-community/attacks/SQL_Injection
+    category: security
+    technology:
+    - php
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: HIGH
+    impact: MEDIUM
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/lang/security/injection/tainted-sql-string.yaml
+      upstream-id: tainted-sql-string
+  mode: taint
+  pattern-sanitizers:
+  - pattern-either:
+    - pattern: mysqli_real_escape_string(...)
+    - pattern: real_escape_string(...)
+    - pattern: $MYSQLI->real_escape_string(...)
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - pattern: $_GET
+      - pattern: $_POST
+      - pattern: $_COOKIE
+      - pattern: $_REQUEST
+  pattern-sinks:
+  - pattern-either:
+    - patterns:
+      - pattern: 'sprintf($SQLSTR, ...)
+
+          '
+      - metavariable-regex:
+          metavariable: $SQLSTR
+          regex: .*\b(?i)(select|delete|insert|create|update|alter|drop)\b.*
+    - patterns:
+      - pattern: '"...$EXPR..."
+
+          '
+      - metavariable-regex:
+          metavariable: $EXPR
+          regex: .*\b(?i)(select|delete|insert|create|update|alter|drop)\b.*
+    - patterns:
+      - pattern: '"$SQLSTR".$EXPR
+
+          '
+      - metavariable-regex:
+          metavariable: $SQLSTR
+          regex: .*\b(?i)(select|delete|insert|create|update|alter|drop)\b.*
+- id: php.weak-crypto
+  patterns:
+  - pattern: $FUNC(...);
+  - metavariable-regex:
+      metavariable: $FUNC
+      regex: crypt|md5|md5_file|sha1|sha1_file|str_rot13
+  message: Detected usage of weak crypto function. Consider using stronger alternatives.
+  metadata:
+    cwe:
+    - 'CWE-328: Use of Weak Hash'
+    references:
+    - https://www.php.net/manual/en/book.sodium.php
+    - https://github.com/FloeDesignTechnologies/phpcs-security-audit/blob/master/Security/Sniffs/BadFunctions/CryptoFunctionsSniff.php
+    category: security
+    technology:
+    - php
+    owasp:
+    - A03:2017 - Sensitive Data Exposure
+    - A02:2021 - Cryptographic Failures
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: MEDIUM
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/lang/security/weak-crypto.yaml
+      upstream-id: weak-crypto
+  languages:
+  - php
+  severity: ERROR
+- id: php.base-convert-loses-precision
+  message: The function base_convert uses 64-bit numbers internally, and does not correctly convert large numbers. It is not suitable for random tokens such as those used for session tokens or CSRF tokens.
+  metadata:
+    references:
+    - https://www.php.net/base_convert
+    - https://www.sjoerdlangkemper.nl/2017/03/15/dont-use-base-convert-on-random-tokens/
+    category: security
+    technology:
+    - php
+    cwe:
+    - 'CWE-190: Integer Overflow or Wraparound'
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    confidence: HIGH
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/lang/security/base-convert-loses-precision.yaml
+      upstream-id: base-convert-loses-precision
+  languages:
+  - php
+  severity: WARNING
+  mode: taint
+  pattern-sources:
+  - pattern: hash(...)
+  - pattern: hash_hmac(...)
+  - pattern: sha1(...)
+  - pattern: md5(...)
+  - patterns:
+    - pattern: random_bytes($N)
+    - metavariable-comparison:
+        metavariable: $N
+        comparison: $N > 7
+  - patterns:
+    - pattern: openssl_random_pseudo_bytes($N)
+    - metavariable-comparison:
+        metavariable: $N
+        comparison: $N > 7
+  - patterns:
+    - pattern: $OBJ->get_random_bytes($N)
+    - metavariable-comparison:
+        metavariable: $N
+        comparison: $N > 7
+  pattern-sinks:
+  - pattern: base_convert(...)
+  pattern-sanitizers:
+  - patterns:
+    - pattern: substr(..., $LENGTH)
+    - metavariable-comparison:
+        metavariable: $LENGTH
+        comparison: $LENGTH <= 7
+- id: php.doctrine-dbal-dangerous-query
+  languages:
+  - php
+  message: Detected string concatenation with a non-literal variable in a Doctrine DBAL query method. This could lead to SQL injection if the variable is user-controlled and not properly sanitized. In order to prevent SQL injection, use parameterized queries or prepared statements instead.
+  metadata:
+    category: security
+    cwe:
+    - 'CWE-89: Improper Neutralization of Special Elements used in an SQL Command (''SQL Injection'')'
+    license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    owasp:
+    - A01:2017 - Injection
+    - A03:2021 - Injection
+    references:
+    - https://www.doctrine-project.org/projects/doctrine-dbal/en/current/reference/security.html
+    - https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html
+    technology:
+    - doctrine
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: HIGH
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/doctrine/security/audit/doctrine-dbal-dangerous-query.yaml
+      upstream-id: doctrine-dbal-dangerous-query
+  patterns:
+  - pattern-either:
+    - pattern: $CONNECTION->prepare($QUERY,...)
+    - pattern: $CONNECTION->createQuery($QUERY,...)
+    - pattern: $CONNECTION->executeQuery($QUERY,...)
+  - pattern-either:
+    - pattern-inside: 'use Doctrine\DBAL\Connection;
+
+        ...
+
+        '
+    - pattern-inside: '$CONNECTION = $SMTH->getConnection(...);
+
+        ...
+
+        '
+  - pattern-not: $CONNECTION->prepare("...",...)
+  - pattern-not: $CONNECTION->createQuery("...",...)
+  - pattern-not: $CONNECTION->executeQuery("...",...)
+  severity: WARNING
+- id: php.doctrine-orm-dangerous-query
+  languages:
+  - php
+  message: '`$QUERY` Detected string concatenation with a non-literal variable in a Doctrine QueryBuilder method. This could lead to SQL injection if the variable is user-controlled and not properly sanitized. In order to prevent SQL injection, use parameterized queries or prepared statements instead.'
+  metadata:
+    category: security
+    cwe:
+    - 'CWE-89: Improper Neutralization of Special Elements used in an SQL Command (''SQL Injection'')'
+    license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    owasp:
+    - A01:2017 - Injection
+    - A03:2021 - Injection
+    references:
+    - https://www.doctrine-project.org/projects/doctrine-dbal/en/current/reference/query-builder.html#security-safely-preventing-sql-injection
+    - https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html
+    technology:
+    - doctrine
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: MEDIUM
+    impact: MEDIUM
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/doctrine/security/audit/doctrine-orm-dangerous-query.yaml
+      upstream-id: doctrine-orm-dangerous-query
+  mode: taint
+  pattern-sinks:
+  - patterns:
+    - focus-metavariable: $SINK
+    - pattern-either:
+      - pattern: $QUERY->add(...,$SINK,...)
+      - pattern: $QUERY->select(...,$SINK,...)
+      - pattern: $QUERY->addSelect(...,$SINK,...)
+      - pattern: $QUERY->delete(...,$SINK,...)
+      - pattern: $QUERY->update(...,$SINK,...)
+      - pattern: $QUERY->insert(...,$SINK,...)
+      - pattern: $QUERY->from(...,$SINK,...)
+      - pattern: $QUERY->join(...,$SINK,...)
+      - pattern: $QUERY->innerJoin(...,$SINK,...)
+      - pattern: $QUERY->leftJoin(...,$SINK,...)
+      - pattern: $QUERY->rightJoin(...,$SINK,...)
+      - pattern: $QUERY->where(...,$SINK,...)
+      - pattern: $QUERY->andWhere(...,$SINK,...)
+      - pattern: $QUERY->orWhere(...,$SINK,...)
+      - pattern: $QUERY->groupBy(...,$SINK,...)
+      - pattern: $QUERY->addGroupBy(...,$SINK,...)
+      - pattern: $QUERY->having(...,$SINK,...)
+      - pattern: $QUERY->andHaving(...,$SINK,...)
+      - pattern: $QUERY->orHaving(...,$SINK,...)
+      - pattern: $QUERY->orderBy(...,$SINK,...)
+      - pattern: $QUERY->addOrderBy(...,$SINK,...)
+      - pattern: $QUERY->set($SINK,...)
+      - pattern: $QUERY->setValue($SINK,...)
+    - pattern-either:
+      - pattern-inside: '$Q = $X->createQueryBuilder();
+
+          ...
+
+          '
+      - pattern-inside: '$Q = new QueryBuilder(...);
+
+          ...
+
+          '
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - pattern: sprintf(...)
+      - pattern: '"...".$SMTH
+
+          '
+  severity: WARNING
+- id: php.laravel-api-route-sql-injection
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - focus-metavariable: $ARG
+    - pattern-inside: 'Route::$METHOD($ROUTE_NAME, function(...,$ARG,...){...})
+
+        '
+  pattern-sanitizers:
+  - patterns:
+    - pattern: 'DB::raw("...",[...])
+
+        '
+  pattern-sinks:
+  - patterns:
+    - pattern: 'DB::raw(...)
+
+        '
+  message: HTTP method [$METHOD] to Laravel route $ROUTE_NAME is vulnerable to SQL injection via string concatenation or unsafe interpolation.
+  languages:
+  - php
+  severity: WARNING
+  metadata:
+    category: security
+    cwe:
+    - 'CWE-89: Improper Neutralization of Special Elements used in an SQL Command (''SQL Injection'')'
+    owasp:
+    - A01:2017 - Injection
+    - A03:2021 - Injection
+    references:
+    - https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Laravel_Cheat_Sheet.md
+    technology:
+    - php
+    - laravel
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: HIGH
+    impact: MEDIUM
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/laravel/security/laravel-api-route-sql-injection.yaml
+      upstream-id: laravel-api-route-sql-injection
+- id: php.laravel-sql-injection
+  metadata:
+    owasp:
+    - A01:2017 - Injection
+    - A03:2021 - Injection
+    cwe:
+    - 'CWE-89: Improper Neutralization of Special Elements used in an SQL Command (''SQL Injection'')'
+    category: security
+    technology:
+    - laravel
+    references:
+    - https://laravel.com/docs/8.x/queries
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: HIGH
+    impact: MEDIUM
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/laravel/security/laravel-sql-injection.yaml
+      upstream-id: laravel-sql-injection
+  severity: WARNING
+  message: Detected a SQL query based on user input. This could lead to SQL injection, which could potentially result in sensitive data being exfiltrated by attackers. Instead, use parameterized queries and prepared statements.
+  languages:
+  - php
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - pattern: $_GET
+      - pattern: $_POST
+      - pattern: $_COOKIE
+      - pattern: $_REQUEST
+      - pattern: $_SERVER
+  pattern-sinks:
+  - patterns:
+    - pattern-either:
+      - patterns:
+        - pattern: $SQL
+        - pattern-either:
+          - pattern-inside: DB::table(...)->whereRaw($SQL, ...)
+          - pattern-inside: DB::table(...)->orWhereRaw($SQL, ...)
+          - pattern-inside: DB::table(...)->groupByRaw($SQL, ...)
+          - pattern-inside: DB::table(...)->havingRaw($SQL, ...)
+          - pattern-inside: DB::table(...)->orHavingRaw($SQL, ...)
+          - pattern-inside: DB::table(...)->orderByRaw($SQL, ...)
+      - patterns:
+        - pattern: $EXPRESSION
+        - pattern-either:
+          - pattern-inside: DB::table(...)->selectRaw($EXPRESSION, ...)
+          - pattern-inside: DB::table(...)->fromRaw($EXPRESSION, ...)
+      - patterns:
+        - pattern: $COLUMNS
+        - pattern-either:
+          - pattern-inside: DB::table(...)->whereNull($COLUMNS, ...)
+          - pattern-inside: DB::table(...)->orWhereNull($COLUMN)
+          - pattern-inside: DB::table(...)->whereNotNull($COLUMNS, ...)
+          - pattern-inside: DB::table(...)->whereRowValues($COLUMNS, ...)
+          - pattern-inside: DB::table(...)->orWhereRowValues($COLUMNS, ...)
+          - pattern-inside: DB::table(...)->find($ID, $COLUMNS)
+          - pattern-inside: DB::table(...)->paginate($PERPAGE, $COLUMNS, ...)
+          - pattern-inside: DB::table(...)->simplePaginate($PERPAGE, $COLUMNS, ...)
+          - pattern-inside: DB::table(...)->cursorPaginate($PERPAGE, $COLUMNS, ...)
+          - pattern-inside: DB::table(...)->getCountForPagination($COLUMNS)
+          - pattern-inside: DB::table(...)->aggregate($FUNCTION, $COLUMNS)
+          - pattern-inside: DB::table(...)->numericAggregate($FUNCTION, $COLUMNS)
+          - pattern-inside: DB::table(...)->insertUsing($COLUMNS, ...)
+          - pattern-inside: DB::table(...)->select($COLUMNS)
+          - pattern-inside: DB::table(...)->get($COLUMNS)
+          - pattern-inside: DB::table(...)->count($COLUMNS)
+      - patterns:
+        - pattern: $COLUMN
+        - pattern-either:
+          - pattern-inside: DB::table(...)->whereIn($COLUMN, ...)
+          - pattern-inside: DB::table(...)->orWhereIn($COLUMN, ...)
+          - pattern-inside: DB::table(...)->whereNotIn($COLUMN, ...)
+          - pattern-inside: DB::table(...)->orWhereNotIn($COLUMN, ...)
+          - pattern-inside: DB::table(...)->whereIntegerInRaw($COLUMN, ...)
+          - pattern-inside: DB::table(...)->orWhereIntegerInRaw($COLUMN, ...)
+          - pattern-inside: DB::table(...)->whereIntegerNotInRaw($COLUMN, ...)
+          - pattern-inside: DB::table(...)->orWhereIntegerNotInRaw($COLUMN, ...)
+          - pattern-inside: DB::table(...)->whereBetweenColumns($COLUMN, ...)
+          - pattern-inside: DB::table(...)->orWhereBetween($COLUMN, ...)
+          - pattern-inside: DB::table(...)->orWhereBetweenColumns($COLUMN, ...)
+          - pattern-inside: DB::table(...)->whereNotBetween($COLUMN, ...)
+          - pattern-inside: DB::table(...)->whereNotBetweenColumns($COLUMN, ...)
+          - pattern-inside: DB::table(...)->orWhereNotBetween($COLUMN, ...)
+          - pattern-inside: DB::table(...)->orWhereNotBetweenColumns($COLUMN, ...)
+          - pattern-inside: DB::table(...)->orWhereNotNull($COLUMN)
+          - pattern-inside: DB::table(...)->whereDate($COLUMN, ...)
+          - pattern-inside: DB::table(...)->orWhereDate($COLUMN, ...)
+          - pattern-inside: DB::table(...)->whereTime($COLUMN, ...)
+          - pattern-inside: DB::table(...)->orWhereTime($COLUMN, ...)
+          - pattern-inside: DB::table(...)->whereDay($COLUMN, ...)
+          - pattern-inside: DB::table(...)->orWhereDay($COLUMN, ...)
+          - pattern-inside: DB::table(...)->whereMonth($COLUMN, ...)
+          - pattern-inside: DB::table(...)->orWhereMonth($COLUMN, ...)
+          - pattern-inside: DB::table(...)->whereYear($COLUMN, ...)
+          - pattern-inside: DB::table(...)->orWhereYear($COLUMN, ...)
+          - pattern-inside: DB::table(...)->whereJsonContains($COLUMN, ...)
+          - pattern-inside: DB::table(...)->orWhereJsonContains($COLUMN, ...)
+          - pattern-inside: DB::table(...)->whereJsonDoesntContain($COLUMN, ...)
+          - pattern-inside: DB::table(...)->orWhereJsonDoesntContain($COLUMN, ...)
+          - pattern-inside: DB::table(...)->whereJsonLength($COLUMN, ...)
+          - pattern-inside: DB::table(...)->orWhereJsonLength($COLUMN, ...)
+          - pattern-inside: DB::table(...)->having($COLUMN, ...)
+          - pattern-inside: DB::table(...)->orHaving($COLUMN, ...)
+          - pattern-inside: DB::table(...)->havingBetween($COLUMN, ...)
+          - pattern-inside: DB::table(...)->orderBy($COLUMN, ...)
+          - pattern-inside: DB::table(...)->orderByDesc($COLUMN)
+          - pattern-inside: DB::table(...)->latest($COLUMN)
+          - pattern-inside: DB::table(...)->oldest($COLUMN)
+          - pattern-inside: DB::table(...)->forPageBeforeId($PERPAGE, $LASTID, $COLUMN)
+          - pattern-inside: DB::table(...)->forPageAfterId($PERPAGE, $LASTID, $COLUMN)
+          - pattern-inside: DB::table(...)->value($COLUMN)
+          - pattern-inside: DB::table(...)->pluck($COLUMN, ...)
+          - pattern-inside: DB::table(...)->implode($COLUMN, ...)
+          - pattern-inside: DB::table(...)->min($COLUMN)
+          - pattern-inside: DB::table(...)->max($COLUMN)
+          - pattern-inside: DB::table(...)->sum($COLUMN)
+          - pattern-inside: DB::table(...)->avg($COLUMN)
+          - pattern-inside: DB::table(...)->average($COLUMN)
+          - pattern-inside: DB::table(...)->increment($COLUMN, ...)
+          - pattern-inside: DB::table(...)->decrement($COLUMN, ...)
+          - pattern-inside: DB::table(...)->where($COLUMN, ...)
+          - pattern-inside: DB::table(...)->orWhere($COLUMN, ...)
+          - pattern-inside: DB::table(...)->addSelect($COLUMN)
+      - patterns:
+        - pattern: $QUERY
+        - pattern-inside: DB::unprepared($QUERY)
+- id: php.ldap-bind-without-password
+  patterns:
+  - pattern-either:
+    - pattern: ldap_bind($LDAP, $DN, NULL)
+    - pattern: ldap_bind($LDAP, $DN, '')
+    - patterns:
+      - pattern: ldap_bind(...)
+      - pattern-not: ldap_bind($LDAP, $DN, $PASSWORD)
+  message: Detected anonymous LDAP bind. This permits anonymous users to execute LDAP statements. Consider enforcing authentication for LDAP.
+  metadata:
+    references:
+    - https://www.php.net/manual/en/function.ldap-bind.php
+    cwe:
+    - 'CWE-287: Improper Authentication'
+    owasp:
+    - A02:2017 - Broken Authentication
+    - A07:2021 - Identification and Authentication Failures
+    category: security
+    technology:
+    - php
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/lang/security/ldap-bind-without-password.yaml
+      upstream-id: ldap-bind-without-password
+  languages:
+  - php
+  severity: WARNING
+- id: php.md5-used-as-password
+  severity: WARNING
+  message: It looks like MD5 is used as a password hash. MD5 is not considered a secure password hash because it can be cracked by an attacker in a short amount of time. Use a suitable password hashing function such as bcrypt. You can use `password_hash($PASSWORD, PASSWORD_BCRYPT, $OPTIONS);`.
+  languages:
+  - php
+  metadata:
+    cwe:
+    - 'CWE-327: Use of a Broken or Risky Cryptographic Algorithm'
+    owasp:
+    - A03:2017 - Sensitive Data Exposure
+    - A02:2021 - Cryptographic Failures
+    references:
+    - https://tools.ietf.org/html/rfc6151
+    - https://crypto.stackexchange.com/questions/44151/how-does-the-flame-malware-take-advantage-of-md5-collision
+    - https://security.stackexchange.com/questions/211/how-to-securely-hash-passwords
+    - https://github.com/returntocorp/semgrep-rules/issues/1609
+    - https://www.php.net/password_hash
+    category: security
+    technology:
+    - md5
+    subcategory:
+    - vuln
+    likelihood: HIGH
+    impact: MEDIUM
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/lang/security/md5-used-as-password.yaml
+      upstream-id: md5-used-as-password
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - pattern: md5(...)
+      - pattern: hash('md5', ...)
+  pattern-sinks:
+  - patterns:
+    - pattern: $FUNCTION(...)
+    - metavariable-regex:
+        metavariable: $FUNCTION
+        regex: (?i)(.*password.*)
+- id: php.openssl-decrypt-validate
+  patterns:
+  - pattern: openssl_decrypt(...);
+  - pattern-not-inside: "$DECRYPTED_STRING = openssl_decrypt(...);\n...\nif($DECRYPTED_STRING === false){\n  ...\n}\n"
+  - pattern-not-inside: "$DECRYPTED_STRING = openssl_decrypt(...);\n...\nif($DECRYPTED_STRING == false){\n  ...\n}\n"
+  - pattern-not-inside: "$DECRYPTED_STRING = openssl_decrypt(...);\n...\nif(false === $DECRYPTED_STRING){\n  ...\n}\n"
+  - pattern-not-inside: "$DECRYPTED_STRING = openssl_decrypt(...);\n...\nif(false == $DECRYPTED_STRING){\n  ...\n}\n"
+  - pattern-not-inside: '$DECRYPTED_STRING = openssl_decrypt(...);
+
+      ...
+
+      assertTrue(false !== $DECRYPTED_STRING,...);
+
+      '
+  - pattern-not-inside: '$DECRYPTED_STRING = openssl_decrypt(...);
+
+      ...
+
+      assertTrue($DECRYPTED_STRING !== false,...);
+
+      '
+  - pattern-not-inside: '$DECRYPTED_STRING = openssl_decrypt(...);
+
+      ...
+
+      $REFERENCE::assertTrue(false !== $DECRYPTED_STRING,...);
+
+      '
+  - pattern-not-inside: '$DECRYPTED_STRING = openssl_decrypt(...);
+
+      ...
+
+      $REFERENCE::assertTrue($DECRYPTED_STRING !== false,...);
+
+      '
+  - pattern-not-inside: '$DECRYPTED_STRING = openssl_decrypt(...);
+
+      ...
+
+      assert(false !== $DECRYPTED_STRING,...);
+
+      '
+  - pattern-not-inside: '$DECRYPTED_STRING = openssl_decrypt(...);
+
+      ...
+
+      assert($DECRYPTED_STRING !== false,...);
+
+      '
+  message: The function `openssl_decrypt` returns either a string of the decrypted data on success or `false` on failure. If the failure case is not handled, this could lead to undefined behavior in your application. Please handle the case where `openssl_decrypt` returns `false`.
+  languages:
+  - php
+  severity: WARNING
+  metadata:
+    references:
+    - https://www.php.net/manual/en/function.openssl-decrypt.php
+    cwe:
+    - 'CWE-252: Unchecked Return Value'
+    owasp:
+    - A02:2021 - Cryptographic Failures
+    technology:
+    - php
+    - openssl
+    category: security
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: MEDIUM
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/lang/security/audit/openssl-decrypt-validate.yaml
+      upstream-id: openssl-decrypt-validate
+- id: php.php-permissive-cors
+  patterns:
+  - pattern: header($VALUE,...)
+  - pattern-either:
+    - pattern: header("...",...)
+    - pattern-inside: '$VALUE = "...";
+
+        ...
+
+        '
+  - metavariable-regex:
+      metavariable: $VALUE
+      regex: (\'|\")\s*(Access-Control-Allow-Origin|access-control-allow-origin)\s*:\s*(\*)\s*(\'|\")
+  message: Access-Control-Allow-Origin response header is set to "*". This will disable CORS Same Origin Policy restrictions.
+  metadata:
+    references:
+    - https://developer.mozilla.org/ru/docs/Web/HTTP/Headers/Access-Control-Allow-Origin
+    owasp:
+    - A07:2021 - Identification and Authentication Failures
+    cwe:
+    - 'CWE-346: Origin Validation Error'
+    category: security
+    technology:
+    - php
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/lang/security/php-permissive-cors.yaml
+      upstream-id: php-permissive-cors
+  languages:
+  - php
+  severity: WARNING
+- id: php.redirect-to-request-uri
+  patterns:
+  - pattern-either:
+    - pattern: 'header(''$LOCATION'' . $_SERVER[''REQUEST_URI'']);
+
+        '
+    - pattern: 'header(''$LOCATION'' . $_SERVER[''REQUEST_URI''] . $MORE);
+
+        '
+  - metavariable-regex:
+      metavariable: $LOCATION
+      regex: ^(?i)location:\s*$
+  message: Redirecting to the current request URL may redirect to another domain, if the current path starts with two slashes.  E.g. in https://www.example.com//attacker.com, the value of REQUEST_URI is //attacker.com, and redirecting to it will redirect to that domain.
+  metadata:
+    references:
+    - https://www.php.net/manual/en/reserved.variables.server.php
+    - https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control.html
+    category: security
+    technology:
+    - php
+    owasp:
+    - A05:2017 - Broken Access Control
+    - A01:2021 - Broken Access Control
+    cwe:
+    - 'CWE-601: URL Redirection to Untrusted Site (''Open Redirect'')'
+    likelihood: MEDIUM
+    impact: LOW
+    confidence: MEDIUM
+    subcategory:
+    - vuln
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/lang/security/redirect-to-request-uri.yaml
+      upstream-id: redirect-to-request-uri
+  languages:
+  - php
+  severity: WARNING
+- id: php.symfony-csrf-protection-disabled
+  patterns:
+  - pattern-either:
+    - pattern: $X->createForm($TYPE, $TASK, [..., 'csrf_protection' => false, ...], ...)
+    - pattern: $X->prependExtensionConfig('framework', [..., 'csrf_protection' => false, ...], ...)
+    - pattern: $X->loadFromExtension('framework', [..., 'csrf_protection' => false, ...], ...)
+    - pattern: $X->setDefaults([..., 'csrf_protection' => false, ...], ...)
+    - patterns:
+      - pattern-either:
+        - pattern: $X->createForm($TYPE, $TASK, [..., 'csrf_protection' => $VAL, ...], ...)
+        - pattern: $X->prependExtensionConfig('framework', [..., 'csrf_protection' => $VAL, ...], ...)
+        - pattern: $X->loadFromExtension('framework', [..., 'csrf_protection' => $VAL, ...], ...)
+        - pattern: $X->setDefaults([..., 'csrf_protection' => $VAL, ...], ...)
+      - pattern-inside: '$VAL = false;
+
+          ...
+
+          '
+  message: CSRF protection is disabled for this configuration. This is a security risk. Make sure that it is safe or consider setting `csrf_protection` property to `true`.
+  metadata:
+    references:
+    - https://symfony.com/doc/current/security/csrf.html
+    cwe:
+    - 'CWE-352: Cross-Site Request Forgery (CSRF)'
+    owasp:
+    - A01:2021 - Broken Access Control
+    category: security
+    technology:
+    - symfony
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: MEDIUM
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/symfony/security/audit/symfony-csrf-protection-disabled.yaml
+      upstream-id: symfony-csrf-protection-disabled
+  languages:
+  - php
+  severity: WARNING
+- id: php.symfony-non-literal-redirect
+  patterns:
+  - pattern: $this->redirect(...)
+  - pattern-not: $this->redirect("...")
+  - pattern-not: $this->redirect()
+  message: The `redirect()` method does not check its destination in any way. If you redirect to a URL provided by end-users, your application may be open to the unvalidated redirects security vulnerability. Consider using literal values or an allowlist to validate URLs.
+  languages:
+  - php
+  metadata:
+    references:
+    - https://symfony.com/doc/current/controller.html#redirecting
+    - https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
+    owasp:
+    - A01:2021 - Broken Access Control
+    cwe:
+    - 'CWE-601: URL Redirection to Untrusted Site (''Open Redirect'')'
+    category: security
+    technology:
+    - symfony
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: MEDIUM
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/symfony/security/audit/symfony-non-literal-redirect.yaml
+      upstream-id: symfony-non-literal-redirect
+  severity: WARNING
+- id: php.symfony-permissive-cors
+  patterns:
+  - pattern-inside: 'use Symfony\Component\HttpFoundation\Response;
+
+      ...
+
+      '
+  - pattern-either:
+    - patterns:
+      - pattern-either:
+        - pattern: 'new Symfony\Component\HttpFoundation\Response($X, $Y, $HEADERS, ...)
+
+            '
+        - pattern: new Response($X, $Y, $HEADERS, ...)
+      - pattern-either:
+        - pattern: new $R($X, $Y, [$KEY => $VALUE], ...)
+        - pattern-inside: '$HEADERS = [$KEY => $VALUE];
+
+            ...
+
+            '
+    - patterns:
+      - pattern: $RES->headers->set($KEY, $VALUE)
+  - metavariable-regex:
+      metavariable: $KEY
+      regex: (\'|\")\s*(Access-Control-Allow-Origin|access-control-allow-origin)\s*(\'|\")
+  - metavariable-regex:
+      metavariable: $VALUE
+      regex: (\'|\")\s*(\*)\s*(\'|\")
+  message: Access-Control-Allow-Origin response header is set to "*". This will disable CORS Same Origin Policy restrictions.
+  metadata:
+    references:
+    - https://developer.mozilla.org/ru/docs/Web/HTTP/Headers/Access-Control-Allow-Origin
+    owasp:
+    - A07:2021 - Identification and Authentication Failures
+    cwe:
+    - 'CWE-346: Origin Validation Error'
+    category: security
+    technology:
+    - symfony
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: MEDIUM
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/symfony/security/audit/symfony-permissive-cors.yaml
+      upstream-id: symfony-permissive-cors
+  languages:
+  - php
+  severity: WARNING
+- id: php.tainted-callable
+  severity: WARNING
+  message: Callable based on user input risks remote code execution.
+  metadata:
+    technology:
+    - php
+    category: security
+    cwe:
+    - 'CWE-94: Improper Control of Generation of Code (''Code Injection'')'
+    owasp:
+    - A03:2021 - Injection
+    references:
+    - https://www.php.net/manual/en/language.types.callable.php
+    subcategory:
+    - vuln
+    impact: HIGH
+    likelihood: MEDIUM
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/lang/security/injection/tainted-callable.yaml
+      upstream-id: tainted-callable
+  languages:
+  - php
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - pattern: $_GET
+      - pattern: $_POST
+      - pattern: $_COOKIE
+      - pattern: $_REQUEST
+      - pattern: file_get_contents('php://input')
+  pattern-sinks:
+  - patterns:
+    - pattern: $CALLABLE
+    - pattern-either:
+      - pattern-inside: $ARRAYITERATOR->uasort($CALLABLE)
+      - pattern-inside: $ARRAYITERATOR->uksort($CALLABLE)
+      - pattern-inside: $EVENTHTTP->setCallback($CALLABLE, ...)
+      - pattern-inside: $EVENTHTTPCONNECTION->setCloseCallback($CALLABLE, ...)
+      - pattern-inside: $EVLOOP->fork($CALLABLE, ...)
+      - pattern-inside: $EVLOOP->idle($CALLABLE, ...)
+      - pattern-inside: $EVLOOP->prepare($CALLABLE, ...)
+      - pattern-inside: $EVWATCHER->setCallback($CALLABLE)
+      - pattern-inside: $GEARMANCLIENT->setClientCallback($CALLABLE)
+      - pattern-inside: $GEARMANCLIENT->setCompleteCallback($CALLABLE)
+      - pattern-inside: $GEARMANCLIENT->setCreatedCallback($CALLABLE)
+      - pattern-inside: $GEARMANCLIENT->setDataCallback($CALLABLE)
+      - pattern-inside: $GEARMANCLIENT->setExceptionCallback($CALLABLE)
+      - pattern-inside: $GEARMANCLIENT->setFailCallback($CALLABLE)
+      - pattern-inside: $GEARMANCLIENT->setStatusCallback($CALLABLE)
+      - pattern-inside: $GEARMANCLIENT->setWarningCallback($CALLABLE)
+      - pattern-inside: $GEARMANCLIENT->setWorkloadCallback($CALLABLE)
+      - pattern-inside: $IMAGICK->setProgressMonitor($CALLABLE)
+      - pattern-inside: $OAUTHPROVIDER->consumerHandler($CALLABLE)
+      - pattern-inside: $OAUTHPROVIDER->tokenHandler($CALLABLE)
+      - pattern-inside: $PDO->sqliteCreateCollation($NAME, $CALLABLE)
+      - pattern-inside: $PDOSTATEMENT->fetchAll(PDO::FETCH_FUNC, $CALLABLE)
+      - pattern-inside: $SQLITE3->createCollation($NAME, $CALLABLE)
+      - pattern-inside: $SQLITE3->setAuthorizer($CALLABLE)
+      - pattern-inside: $ZIPARCHIVE->registerCancelCallback($CALLABLE)
+      - pattern-inside: $ZIPARCHIVE->registerProgressCallback($RATE, $CALLABLE)
+      - pattern-inside: $ZMQDEVICE->setIdleCallback($CALLABLE, ...)
+      - pattern-inside: $ZMQDEVICE->setTimerCallback($CALLABLE, ...)
+      - pattern-inside: apcu_entry($KEY, $CALLABLE, ...)
+      - pattern-inside: array_filter($ARRAY, $CALLABLE, ...)
+      - pattern-inside: array_map($CALLABLE, ...)
+      - pattern-inside: array_reduce($ARRAY, $CALLABLE, ...)
+      - pattern-inside: array_walk_recursive($ARRAY, $CALLABLE, ...)
+      - pattern-inside: array_walk($ARRAY, $CALLABLE, ...)
+      - pattern-inside: call_user_func_array($CALLABLE, ...)
+      - pattern-inside: call_user_func($CALLABLE, ...)
+      - pattern-inside: Closure::fromCallable($CALLABLE)
+      - pattern-inside: createCollation($NAME, $CALLABLE)
+      - pattern-inside: eio_grp($CALLABLE, ...)
+      - pattern-inside: eio_nop($PRI, $CALLABLE, ...)
+      - pattern-inside: eio_sync($PRI, $CALLABLE, ...)
+      - pattern-inside: EvPrepare::createStopped($CALLABLE, ...)
+      - pattern-inside: fann_set_callback($ANN, $CALLABLE)
+      - pattern-inside: fdf_enum_values($FDF_DOCUMENT, $CALLABLE, ...)
+      - pattern-inside: forward_static_call_array($CALLABLE, ...)
+      - pattern-inside: forward_static_call($CALLABLE, ...)
+      - pattern-inside: header_register_callback($CALLABLE)
+      - pattern-inside: ibase_set_event_handler($CALLABLE, ...)
+      - pattern-inside: IntlChar::enumCharTypes($CALLABLE)
+      - pattern-inside: iterator_apply($ITERATOR, $CALLABLE)
+      - pattern-inside: ldap_set_rebind_proc($LDAP, $CALLABLE)
+      - pattern-inside: libxml_set_external_entity_loader($CALLABLE, ...)
+      - pattern-inside: new CallbackFilterIterator($ITERATOR, $CALLABLE)
+      - pattern-inside: new EvCheck($CALLABLE, ...)
+      - pattern-inside: new EventHttpRequest($CALLABLE, ...)
+      - pattern-inside: new EvFork($CALLABLE, ...)
+      - pattern-inside: new EvIdle($CALLABLE, ...)
+      - pattern-inside: new Fiber($CALLABLE)
+      - pattern-inside: new Memcached($PERSISTENT_ID, $CALLABLE, ...)
+      - pattern-inside: new RecursiveCallbackFilterIterator($ITERATOR, $CALLABLE)
+      - pattern-inside: new Zookeeper($HOST, $CALLABLE, ...)
+      - pattern-inside: ob_start($CALLABLE, ...)
+      - pattern-inside: oci_register_taf_callback($CONNECTION, $CALLABLE)
+      - pattern-inside: readline_callback_handler_install($PROMPT, $CALLABLE)
+      - pattern-inside: readline_completion_function($CALLABLE)
+      - pattern-inside: register_shutdown_function($CALLABLE, ...)
+      - pattern-inside: register_tick_function($CALLABLE, ...)
+      - pattern-inside: rnp_ffi_set_pass_provider($FFI, $CALLABLE)
+      - pattern-inside: sapi_windows_set_ctrl_handler($CALLABLE, ...)
+      - pattern-inside: set_error_handler($CALLABLE, ...)
+      - pattern-inside: set_exception_handler($CALLABLE)
+      - pattern-inside: setAuthorizer($CALLABLE)
+      - pattern-inside: spl_autoload_register($CALLABLE, ...)
+      - pattern-inside: uasort($ARRAY, $CALLABLE)
+      - pattern-inside: uksort($ARRAY, $CALLABLE)
+      - pattern-inside: usort($ARRAY, $CALLABLE)
+      - pattern-inside: xml_set_character_data_handler($PARSER, $CALLABLE)
+      - pattern-inside: xml_set_default_handler($PARSER, $CALLABLE)
+      - pattern-inside: xml_set_element_handler($PARSER, $CALLABLE, $CALLABLE)
+      - pattern-inside: xml_set_notation_decl_handler($PARSER, $CALLABLE)
+      - pattern-inside: Yar_Concurrent_Client::loop($CALLABLE, ...)
+- id: php.tainted-filename
+  severity: WARNING
+  message: File name based on user input risks server-side request forgery.
+  metadata:
+    technology:
+    - php
+    category: security
+    cwe:
+    - 'CWE-918: Server-Side Request Forgery (SSRF)'
+    owasp:
+    - A10:2021 - Server-Side Request Forgery (SSRF)
+    references:
+    - https://owasp.org/Top10/A10_2021-Server-Side_Request_Forgery_%28SSRF%29
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    impact: MEDIUM
+    likelihood: MEDIUM
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/lang/security/injection/tainted-filename.yaml
+      upstream-id: tainted-filename
+  languages:
+  - php
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - pattern: $_GET
+      - pattern: $_POST
+      - pattern: $_COOKIE
+      - pattern: $_REQUEST
+      - pattern: $_SERVER
+  pattern-sanitizers:
+  - patterns:
+    - pattern-either:
+      - pattern-inside: basename($PATH, ...)
+      - pattern-inside: linkinfo($PATH, ...)
+      - pattern-inside: readlink($PATH, ...)
+      - pattern-inside: realpath($PATH, ...)
+  pattern-sinks:
+  - patterns:
+    - pattern-either:
+      - pattern-inside: opcache_compile_file($FILENAME, ...)
+      - pattern-inside: opcache_invalidate($FILENAME, ...)
+      - pattern-inside: opcache_is_script_cached($FILENAME, ...)
+      - pattern-inside: runkit7_import($FILENAME, ...)
+      - pattern-inside: readline_read_history($FILENAME, ...)
+      - pattern-inside: readline_write_history($FILENAME, ...)
+      - pattern-inside: rar_open($FILENAME, ...)
+      - pattern-inside: zip_open($FILENAME, ...)
+      - pattern-inside: gzfile($FILENAME, ...)
+      - pattern-inside: gzopen($FILENAME, ...)
+      - pattern-inside: readgzfile($FILENAME, ...)
+      - pattern-inside: hash_file($ALGO, $FILENAME, ...)
+      - pattern-inside: hash_update_file($CONTEXT, $FILENAME, ...)
+      - pattern-inside: pg_trace($FILENAME, ...)
+      - pattern-inside: dio_open($FILENAME, ...)
+      - pattern-inside: finfo_file($FINFO, $FILENAME, ...)
+      - pattern-inside: mime_content_type($FILENAME, ...)
+      - pattern-inside: chgrp($FILENAME, ...)
+      - pattern-inside: chmod($FILENAME, ...)
+      - pattern-inside: chown($FILENAME, ...)
+      - pattern-inside: clearstatcache($CLEAR_REALPATH_CACHE, $FILENAME, ...)
+      - pattern-inside: file_exists($FILENAME, ...)
+      - pattern-inside: file_get_contents($FILENAME, ...)
+      - pattern-inside: file_put_contents($FILENAME, ...)
+      - pattern-inside: file($FILENAME, ...)
+      - pattern-inside: fileatime($FILENAME, ...)
+      - pattern-inside: filectime($FILENAME, ...)
+      - pattern-inside: filegroup($FILENAME, ...)
+      - pattern-inside: fileinode($FILENAME, ...)
+      - pattern-inside: filemtime($FILENAME, ...)
+      - pattern-inside: fileowner($FILENAME, ...)
+      - pattern-inside: fileperms($FILENAME, ...)
+      - pattern-inside: filesize($FILENAME, ...)
+      - pattern-inside: filetype($FILENAME, ...)
+      - pattern-inside: fnmatch($PATTERN, $FILENAME, ...)
+      - pattern-inside: fopen($FILENAME, ...)
+      - pattern-inside: is_dir($FILENAME, ...)
+      - pattern-inside: is_executable($FILENAME, ...)
+      - pattern-inside: is_file($FILENAME, ...)
+      - pattern-inside: is_link($FILENAME, ...)
+      - pattern-inside: is_readable($FILENAME, ...)
+      - pattern-inside: is_uploaded_file($FILENAME, ...)
+      - pattern-inside: is_writable($FILENAME, ...)
+      - pattern-inside: lchgrp($FILENAME, ...)
+      - pattern-inside: lchown($FILENAME, ...)
+      - pattern-inside: lstat($FILENAME, ...)
+      - pattern-inside: parse_ini_file($FILENAME, ...)
+      - pattern-inside: readfile($FILENAME, ...)
+      - pattern-inside: stat($FILENAME, ...)
+      - pattern-inside: touch($FILENAME, ...)
+      - pattern-inside: unlink($FILENAME, ...)
+      - pattern-inside: xattr_get($FILENAME, ...)
+      - pattern-inside: xattr_list($FILENAME, ...)
+      - pattern-inside: xattr_remove($FILENAME, ...)
+      - pattern-inside: xattr_set($FILENAME, ...)
+      - pattern-inside: xattr_supported($FILENAME, ...)
+      - pattern-inside: enchant_broker_request_pwl_dict($BROKER, $FILENAME, ...)
+      - pattern-inside: pspell_config_personal($CONFIG, $FILENAME, ...)
+      - pattern-inside: pspell_config_repl($CONFIG, $FILENAME, ...)
+      - pattern-inside: pspell_new_personal($FILENAME, ...)
+      - pattern-inside: exif_imagetype($FILENAME, ...)
+      - pattern-inside: getimagesize($FILENAME, ...)
+      - pattern-inside: image2wbmp($IMAGE, $FILENAME, ...)
+      - pattern-inside: imagecreatefromavif($FILENAME, ...)
+      - pattern-inside: imagecreatefrombmp($FILENAME, ...)
+      - pattern-inside: imagecreatefromgd2($FILENAME, ...)
+      - pattern-inside: imagecreatefromgd2part($FILENAME, ...)
+      - pattern-inside: imagecreatefromgd($FILENAME, ...)
+      - pattern-inside: imagecreatefromgif($FILENAME, ...)
+      - pattern-inside: imagecreatefromjpeg($FILENAME, ...)
+      - pattern-inside: imagecreatefrompng($FILENAME, ...)
+      - pattern-inside: imagecreatefromtga($FILENAME, ...)
+      - pattern-inside: imagecreatefromwbmp($FILENAME, ...)
+      - pattern-inside: imagecreatefromwebp($FILENAME, ...)
+      - pattern-inside: imagecreatefromxbm($FILENAME, ...)
+      - pattern-inside: imagecreatefromxpm($FILENAME, ...)
+      - pattern-inside: imageloadfont($FILENAME, ...)
+      - pattern-inside: imagexbm($IMAGE, $FILENAME, ...)
+      - pattern-inside: iptcembed($IPTC_DATA, $FILENAME, ...)
+      - pattern-inside: mailparse_msg_extract_part_file($MIMEMAIL, $FILENAME, ...)
+      - pattern-inside: mailparse_msg_extract_whole_part_file($MIMEMAIL, $FILENAME, ...)
+      - pattern-inside: mailparse_msg_parse_file($FILENAME, ...)
+      - pattern-inside: fdf_add_template($FDF_DOCUMENT, $NEWPAGE, $FILENAME, ...)
+      - pattern-inside: fdf_get_ap($FDF_DOCUMENT, $FIELD, $FACE, $FILENAME, ...)
+      - pattern-inside: fdf_open($FILENAME, ...)
+      - pattern-inside: fdf_save($FDF_DOCUMENT, $FILENAME, ...)
+      - pattern-inside: fdf_set_ap($FDF_DOCUMENT, $FIELD_NAME, $FACE, $FILENAME, ...)
+      - pattern-inside: ps_add_launchlink($PSDOC, $LLX, $LLY, $URX, $URY, $FILENAME, ...)
+      - pattern-inside: ps_add_pdflink($PSDOC, $LLX, $LLY, $URX, $URY, $FILENAME, ...)
+      - pattern-inside: ps_open_file($PSDOC, $FILENAME, ...)
+      - pattern-inside: ps_open_image_file($PSDOC, $TYPE, $FILENAME, ...)
+      - pattern-inside: posix_access($FILENAME, ...)
+      - pattern-inside: posix_mkfifo($FILENAME, ...)
+      - pattern-inside: posix_mknod($FILENAME, ...)
+      - pattern-inside: ftok($FILENAME, ...)
+      - pattern-inside: fann_cascadetrain_on_file($ANN, $FILENAME, ...)
+      - pattern-inside: fann_read_train_from_file($FILENAME, ...)
+      - pattern-inside: fann_train_on_file($ANN, $FILENAME, ...)
+      - pattern-inside: highlight_file($FILENAME, ...)
+      - pattern-inside: php_strip_whitespace($FILENAME, ...)
+      - pattern-inside: stream_resolve_include_path($FILENAME, ...)
+      - pattern-inside: swoole_async_read($FILENAME, ...)
+      - pattern-inside: swoole_async_readfile($FILENAME, ...)
+      - pattern-inside: swoole_async_write($FILENAME, ...)
+      - pattern-inside: swoole_async_writefile($FILENAME, ...)
+      - pattern-inside: swoole_load_module($FILENAME, ...)
+      - pattern-inside: tidy_parse_file($FILENAME, ...)
+      - pattern-inside: tidy_repair_file($FILENAME, ...)
+      - pattern-inside: get_meta_tags($FILENAME, ...)
+      - pattern-inside: yaml_emit_file($FILENAME, ...)
+      - pattern-inside: yaml_parse_file($FILENAME, ...)
+      - pattern-inside: curl_file_create($FILENAME, ...)
+      - pattern-inside: ftp_chmod($FTP, $PERMISSIONS, $FILENAME, ...)
+      - pattern-inside: ftp_delete($FTP, $FILENAME, ...)
+      - pattern-inside: ftp_mdtm($FTP, $FILENAME, ...)
+      - pattern-inside: ftp_size($FTP, $FILENAME, ...)
+      - pattern-inside: rrd_create($FILENAME, ...)
+      - pattern-inside: rrd_fetch($FILENAME, ...)
+      - pattern-inside: rrd_graph($FILENAME, ...)
+      - pattern-inside: rrd_info($FILENAME, ...)
+      - pattern-inside: rrd_last($FILENAME, ...)
+      - pattern-inside: rrd_lastupdate($FILENAME, ...)
+      - pattern-inside: rrd_tune($FILENAME, ...)
+      - pattern-inside: rrd_update($FILENAME, ...)
+      - pattern-inside: snmp_read_mib($FILENAME, ...)
+      - pattern-inside: ssh2_sftp_chmod($SFTP, $FILENAME, ...)
+      - pattern-inside: ssh2_sftp_realpath($SFTP, $FILENAME, ...)
+      - pattern-inside: ssh2_sftp_unlink($SFTP, $FILENAME, ...)
+      - pattern-inside: apache_lookup_uri($FILENAME, ...)
+      - pattern-inside: md5_file($FILENAME, ...)
+      - pattern-inside: sha1_file($FILENAME, ...)
+      - pattern-inside: simplexml_load_file($FILENAME, ...)
+    - pattern: $FILENAME
+- id: php.tainted-object-instantiation
+  languages:
+  - php
+  severity: WARNING
+  message: <- A new object is created where the class name is based on user input. This could lead to remote code execution, as it allows to instantiate any class in the application.
+  metadata:
+    cwe:
+    - 'CWE-470: Use of Externally-Controlled Input to Select Classes or Code (''Unsafe Reflection'')'
+    category: security
+    technology:
+    - php
+    owasp:
+    - A03:2021 - Injection
+    references:
+    - https://owasp.org/Top10/A03_2021-Injection
+    subcategory:
+    - vuln
+    impact: MEDIUM
+    likelihood: MEDIUM
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/lang/security/injection/tainted-object-instantiation.yaml
+      upstream-id: tainted-object-instantiation
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - pattern: $_GET
+      - pattern: $_POST
+      - pattern: $_COOKIE
+      - pattern: $_REQUEST
+      - pattern: $_SERVER
+  pattern-sinks:
+  - patterns:
+    - pattern-either:
+      - pattern-inside: new $SINK(...)
+    - pattern: $SINK
+- id: php.tainted-session
+  severity: WARNING
+  message: Session key based on user input risks session poisoning. The user can determine the key used for the session, and thus write any session variable. Session variables are typically trusted to be set only by the application, and manipulating the session can result in access control issues.
+  metadata:
+    technology:
+    - php
+    category: security
+    cwe:
+    - 'CWE-284: Improper Access Control'
+    owasp:
+    - A01:2021 - Broken Access Control
+    references:
+    - https://en.wikipedia.org/wiki/Session_poisoning
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    impact: MEDIUM
+    likelihood: MEDIUM
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/lang/security/injection/tainted-session.yaml
+      upstream-id: tainted-session
+  languages:
+  - php
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - pattern: $_GET
+      - pattern: $_POST
+      - pattern: $_COOKIE
+      - pattern: $_REQUEST
+  pattern-sanitizers:
+  - patterns:
+    - pattern-either:
+      - pattern: $A . $B
+      - pattern: bin2hex(...)
+      - pattern: crc32(...)
+      - pattern: crypt(...)
+      - pattern: filter_input(...)
+      - pattern: filter_var(...)
+      - pattern: hash(...)
+      - pattern: md5(...)
+      - pattern: preg_filter(...)
+      - pattern: preg_grep(...)
+      - pattern: preg_match_all(...)
+      - pattern: sha1(...)
+      - pattern: sprintf(...)
+      - pattern: str_contains(...)
+      - pattern: str_ends_with(...)
+      - pattern: str_starts_with(...)
+      - pattern: strcasecmp(...)
+      - pattern: strchr(...)
+      - pattern: stripos(...)
+      - pattern: stristr(...)
+      - pattern: strnatcasecmp(...)
+      - pattern: strnatcmp(...)
+      - pattern: strncmp(...)
+      - pattern: strpbrk(...)
+      - pattern: strpos(...)
+      - pattern: strripos(...)
+      - pattern: strrpos(...)
+      - pattern: strspn(...)
+      - pattern: strstr(...)
+      - pattern: strtok(...)
+      - pattern: substr_compare(...)
+      - pattern: substr_count(...)
+      - pattern: vsprintf(...)
+  pattern-sinks:
+  - patterns:
+    - pattern-inside: $_SESSION[$KEY] = $VAL;
+    - pattern: $KEY
+- id: php.tainted-url-host
+  languages:
+  - php
+  severity: WARNING
+  message: User data flows into the host portion of this manually-constructed URL. This could allow an attacker to send data to their own server, potentially exposing sensitive data such as cookies or authorization information sent with this request. They could also probe internal servers or other resources that the server running this code can access. (This is called server-side request forgery, or SSRF.) Do not allow arbitrary hosts. Instead, create an allowlist for approved hosts, or hardcode the correct host.
+  metadata:
+    cwe:
+    - 'CWE-918: Server-Side Request Forgery (SSRF)'
+    owasp:
+    - A10:2021 - Server-Side Request Forgery (SSRF)
+    references:
+    - https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
+    category: security
+    technology:
+    - php
+    license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    impact: MEDIUM
+    likelihood: MEDIUM
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/lang/security/injection/tainted-url-host.yaml
+      upstream-id: tainted-url-host
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - pattern: $_GET
+      - pattern: $_POST
+      - pattern: $_COOKIE
+      - pattern: $_REQUEST
+  pattern-sinks:
+  - pattern-either:
+    - patterns:
+      - pattern: 'sprintf($URLSTR, ...)
+
+          '
+      - metavariable-pattern:
+          metavariable: $URLSTR
+          language: generic
+          pattern: $SCHEME://%s
+    - patterns:
+      - pattern: '"...{$EXPR}..."
+
+          '
+      - pattern-regex: '.*://\{.*
+
+          '
+    - patterns:
+      - pattern: '"...$EXPR..."
+
+          '
+      - pattern-regex: '.*://\$.*
+
+          '
+    - patterns:
+      - pattern: '"...".$EXPR
+
+          '
+      - pattern-regex: '.*://["''].*
+
+          '
+- id: php.unlink-use
+  patterns:
+  - pattern: unlink(...)
+  - pattern-not: unlink("...",...)
+  message: Using user input when deleting files with `unlink()` is potentially dangerous. A malicious actor could use this to modify or access files they have no right to.
+  metadata:
+    references:
+    - https://www.php.net/manual/en/function.unlink
+    - https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control.html
+    category: security
+    technology:
+    - php
+    owasp:
+    - A05:2017 - Broken Access Control
+    - A01:2021 - Broken Access Control
+    cwe:
+    - 'CWE-22: Improper Limitation of a Pathname to a Restricted Directory (''Path Traversal'')'
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: MEDIUM
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/lang/security/unlink-use.yaml
+      upstream-id: unlink-use
+  languages:
+  - php
+  severity: WARNING
+- id: php.unserialize-use
+  patterns:
+  - pattern: unserialize(...)
+  - pattern-not: unserialize("...",...)
+  message: Calling `unserialize()` with user input in the pattern can lead to arbitrary code execution. Consider using JSON or structured data approaches (e.g. Google Protocol Buffers).
+  metadata:
+    references:
+    - https://www.php.net/manual/en/function.unserialize.php
+    - https://owasp.org/www-project-top-ten/2017/A8_2017-Insecure_Deserialization.html
+    category: security
+    technology:
+    - php
+    owasp:
+    - A08:2017 - Insecure Deserialization
+    - A08:2021 - Software and Data Integrity Failures
+    cwe:
+    - 'CWE-502: Deserialization of Untrusted Data'
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/lang/security/unserialize-use.yaml
+      upstream-id: unserialize-use
+  languages:
+  - php
+  severity: WARNING
+- id: php.wp-ajax-no-auth-and-auth-hooks-audit
+  patterns:
+  - pattern: add_action($HOOK,...)
+  - metavariable-regex:
+      metavariable: $HOOK
+      regex: '''wp_ajax_.*'''
+  message: These hooks allow the developer to handle the custom AJAX endpoints."wp_ajax_$action" hook get fires for any authenticated user and "wp_ajax_nopriv_$action" hook get fires for non-authenticated users.
+  paths:
+    include:
+    - wp-content/plugins/**/*.php
+  languages:
+  - php
+  severity: WARNING
+  metadata:
+    category: security
+    confidence: LOW
+    likelihood: LOW
+    impact: MEDIUM
+    subcategory:
+    - audit
+    technology:
+    - Wordpress Plugins
+    references:
+    - https://github.com/wpscanteam/wpscan/wiki/WordPress-Plugin-Security-Testing-Cheat-Sheet#authorisation
+    - https://developer.wordpress.org/reference/hooks/wp_ajax_action/
+    owasp:
+    - A01:2021 - Broken Access Control
+    cwe:
+    - 'CWE-285: Improper Authorization'
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/wordpress-plugins/security/audit/wp-ajax-no-auth-and-auth-hooks-audit.yaml
+      upstream-id: wp-ajax-no-auth-and-auth-hooks-audit
+- id: php.wp-authorisation-checks-audit
+  patterns:
+  - pattern: $FUNCTION(...)
+  - metavariable-regex:
+      metavariable: $FUNCTION
+      regex: current_user_can|is_admin|is_user_logged_in|is_user_admin
+  message: These are some of the patterns used for authorisation. Look properly if the authorisation is proper or not.
+  paths:
+    include:
+    - wp-content/plugins/**/*.php
+  languages:
+  - php
+  severity: WARNING
+  metadata:
+    category: security
+    confidence: LOW
+    likelihood: LOW
+    impact: MEDIUM
+    subcategory:
+    - audit
+    technology:
+    - Wordpress Plugins
+    references:
+    - https://github.com/wpscanteam/wpscan/wiki/WordPress-Plugin-Security-Testing-Cheat-Sheet#authorisation
+    owasp:
+    - A01:2021 - Broken Access Control
+    cwe:
+    - 'CWE-285: Improper Authorization'
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/wordpress-plugins/security/audit/wp-authorisation-checks-audit.yaml
+      upstream-id: wp-authorisation-checks-audit

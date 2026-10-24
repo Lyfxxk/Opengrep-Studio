@@ -1,0 +1,2566 @@
+# Opengrep Studio 内置安全规则包（security）
+# 来源: https://github.com/opengrep/opengrep-rules （精选子集）
+# 许可: LGPL 2.1 + Commons Clause（不得将规则单独出售；保留本出处声明）
+# 精选标准: 含安全元数据的优先、每语言 ≤ 50 条（官方不足 50 条时全量收录），剔除 correctness 目录
+# 校验: opengrep validate --config server/rules/security
+rules:
+- id: go.dangerous-command-write
+  patterns:
+  - pattern: '$CW.Write($BYTE)
+
+      '
+  - pattern-inside: '$CW,$ERR := $CMD.StdinPipe()
+
+      ...
+
+      '
+  - pattern-not: '$CW.Write("...")
+
+      '
+  - pattern-not: '$CW.Write([]byte("..."))
+
+      '
+  - pattern-not: '$CW.Write([]byte("..."+"..."))
+
+      '
+  - pattern-not-inside: '$BYTE = []byte("...");
+
+      ...
+
+      '
+  - pattern-not-inside: '$BYTE = []byte("..."+"...");
+
+      ...
+
+      '
+  - pattern-inside: 'import "os/exec"
+
+      ...
+
+      '
+  message: Detected non-static command inside Write. Audit the input to '$CW.Write'. If unverified user data can reach this call site, this is a code injection vulnerability. A malicious actor can inject a malicious script to execute arbitrary code.
+  severity: ERROR
+  languages:
+  - go
+  metadata:
+    cwe:
+    - 'CWE-78: Improper Neutralization of Special Elements used in an OS Command (''OS Command Injection'')'
+    category: security
+    technology:
+    - go
+    confidence: LOW
+    owasp:
+    - A01:2017 - Injection
+    - A03:2021 - Injection
+    references:
+    - https://owasp.org/Top10/A03_2021-Injection
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: HIGH
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/audit/dangerous-command-write.yaml
+      upstream-id: dangerous-command-write
+- id: go.dangerous-exec-cmd
+  patterns:
+  - pattern-either:
+    - patterns:
+      - pattern: 'exec.Cmd {...,Path: $CMD,...}
+
+          '
+      - pattern-not: 'exec.Cmd {...,Path: "...",...}
+
+          '
+      - pattern-not-inside: '$CMD,$ERR := exec.LookPath("...");
+
+          ...
+
+          '
+      - pattern-not-inside: '$CMD = "...";
+
+          ...
+
+          '
+    - patterns:
+      - pattern: 'exec.Cmd {...,Args: $ARGS,...}
+
+          '
+      - pattern-not: 'exec.Cmd {...,Args: []string{...},...}
+
+          '
+      - pattern-not-inside: '$ARGS = []string{"...",...};
+
+          ...
+
+          '
+      - pattern-not-inside: '$CMD = "...";
+
+          ...
+
+          $ARGS = []string{$CMD,...};
+
+          ...
+
+          '
+      - pattern-not-inside: '$CMD = exec.LookPath("...");
+
+          ...
+
+          $ARGS = []string{$CMD,...};
+
+          ...
+
+          '
+    - patterns:
+      - pattern: 'exec.Cmd {...,Args: []string{$CMD,...},...}
+
+          '
+      - pattern-not: 'exec.Cmd {...,Args: []string{"...",...},...}
+
+          '
+      - pattern-not-inside: '$CMD,$ERR := exec.LookPath("...");
+
+          ...
+
+          '
+      - pattern-not-inside: '$CMD = "...";
+
+          ...
+
+          '
+    - patterns:
+      - pattern-either:
+        - pattern: 'exec.Cmd {...,Args: []string{"=~/(sh|bash|ksh|csh|tcsh|zsh)/","-c",$EXE,...},...}
+
+            '
+        - patterns:
+          - pattern: 'exec.Cmd {...,Args: []string{$CMD,"-c",$EXE,...},...}
+
+              '
+          - pattern-inside: '$CMD,$ERR := exec.LookPath("=~/(sh|bash|ksh|csh|tcsh|zsh)/");
+
+              ...
+
+              '
+      - pattern-not: 'exec.Cmd {...,Args: []string{"...","...","...",...},...}
+
+          '
+      - pattern-not-inside: '$EXE = "...";
+
+          ...
+
+          '
+  - pattern-inside: 'import "os/exec"
+
+      ...
+
+      '
+  message: Detected non-static command inside exec.Cmd. Audit the input to 'exec.Cmd'. If unverified user data can reach this call site, this is a code injection vulnerability. A malicious actor can inject a malicious script to execute arbitrary code.
+  metadata:
+    cwe:
+    - 'CWE-94: Improper Control of Generation of Code (''Code Injection'')'
+    owasp:
+    - A03:2021 - Injection
+    category: security
+    technology:
+    - go
+    confidence: MEDIUM
+    references:
+    - https://owasp.org/Top10/A03_2021-Injection
+    cwe2022-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: HIGH
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/audit/dangerous-exec-cmd.yaml
+      upstream-id: dangerous-exec-cmd
+  severity: ERROR
+  languages:
+  - go
+- id: go.dangerous-exec-command
+  patterns:
+  - pattern-either:
+    - patterns:
+      - pattern-either:
+        - pattern: 'exec.Command($CMD,...)
+
+            '
+        - pattern: 'exec.CommandContext($CTX,$CMD,...)
+
+            '
+      - pattern-not: 'exec.Command("...",...)
+
+          '
+      - pattern-not: 'exec.CommandContext($CTX,"...",...)
+
+          '
+    - patterns:
+      - pattern-either:
+        - pattern: 'exec.Command("=~/(sh|bash|ksh|csh|tcsh|zsh)/","-c",$CMD,...)
+
+            '
+        - pattern: 'exec.CommandContext($CTX,"=~/(sh|bash|ksh|csh|tcsh|zsh)/","-c",$CMD,...)
+
+            '
+      - pattern-not: 'exec.Command("...","...","...",...)
+
+          '
+      - pattern-not: 'exec.CommandContext($CTX,"...","...","...",...)
+
+          '
+    - pattern-either:
+      - pattern: 'exec.Command("=~/\/bin\/env/","=~/(sh|bash|ksh|csh|tcsh|zsh)/","-c",$CMD,...)
+
+          '
+      - pattern: 'exec.CommandContext($CTX,"=~/\/bin\/env/","=~/(sh|bash|ksh|csh|tcsh|zsh)/","-c",$CMD,...)
+
+          '
+  - pattern-inside: 'import "os/exec"
+
+      ...
+
+      '
+  - pattern-not-inside: '$CMD,$ERR := exec.LookPath("...");
+
+      ...
+
+      '
+  - pattern-not-inside: '$CMD = "...";
+
+      ...
+
+      '
+  message: Detected non-static command inside Command. Audit the input to 'exec.Command'. If unverified user data can reach this call site, this is a code injection vulnerability. A malicious actor can inject a malicious script to execute arbitrary code.
+  metadata:
+    cwe:
+    - 'CWE-94: Improper Control of Generation of Code (''Code Injection'')'
+    owasp:
+    - A03:2021 - Injection
+    category: security
+    technology:
+    - go
+    confidence: LOW
+    references:
+    - https://owasp.org/Top10/A03_2021-Injection
+    cwe2022-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: HIGH
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/audit/dangerous-exec-command.yaml
+      upstream-id: dangerous-exec-command
+  severity: ERROR
+  languages:
+  - go
+- id: go.dangerous-execution
+  message: Detected non-static script inside otto VM. Audit the input to 'VM.Run'. If unverified user data can reach this call site, this is a code injection vulnerability. A malicious actor can inject a malicious script to execute arbitrary code.
+  metadata:
+    cwe:
+    - 'CWE-94: Improper Control of Generation of Code (''Code Injection'')'
+    owasp:
+    - A03:2021 - Injection
+    category: security
+    technology:
+    - otto
+    - vm
+    confidence: LOW
+    references:
+    - https://owasp.org/Top10/A03_2021-Injection
+    cwe2022-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: HIGH
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/otto/security/audit/dangerous-execution.yaml
+      upstream-id: dangerous-execution
+  severity: ERROR
+  patterns:
+  - pattern-inside: '$VM = otto.New(...)
+
+      ...
+
+      '
+  - pattern-not: $VM.Run("...", ...)
+  - pattern: $VM.Run(...)
+  languages:
+  - go
+- id: go.dangerous-syscall-exec
+  patterns:
+  - pattern-either:
+    - patterns:
+      - pattern: 'syscall.$METHOD($BIN,...)
+
+          '
+      - pattern-not: 'syscall.$METHOD("...",...)
+
+          '
+      - pattern-not-inside: '$BIN,$ERR := exec.LookPath("...");
+
+          ...
+
+          '
+      - pattern-not-inside: '$BIN = "...";
+
+          ...
+
+          '
+    - patterns:
+      - pattern: 'syscall.$METHOD($BIN,$ARGS,...)
+
+          '
+      - pattern-not: 'syscall.$METHOD($BIN,[]string{"...",...},...)
+
+          '
+      - pattern-not-inside: '$ARGS := []string{"...",...};
+
+          ...
+
+          '
+      - pattern-not-inside: '$CMD = "...";
+
+          ...
+
+          $ARGS = []string{$CMD,...};
+
+          ...
+
+          '
+      - pattern-not-inside: '$CMD,$ERR := exec.LookPath("...");
+
+          ...
+
+          $ARGS = []string{$CMD,...};
+
+          ...
+
+          '
+    - patterns:
+      - pattern: 'syscall.$METHOD($BIN,[]string{"=~/(sh|bash|ksh|csh|tcsh|zsh)/","-c",$EXE,...},...)
+
+          '
+      - pattern-not: 'syscall.$METHOD($BIN,[]string{"...","...","...",...},...)
+
+          '
+    - patterns:
+      - pattern: 'syscall.$METHOD($BIN,$ARGS,...)
+
+          '
+      - pattern-either:
+        - pattern-inside: '$ARGS := []string{"=~/(sh|bash|ksh|csh|tcsh|zsh)/","-c",$EXE,...};
+
+            ...
+
+            '
+        - pattern-inside: '$CMD = "=~/(sh|bash|ksh|csh|tcsh|zsh)/";
+
+            ...
+
+            $ARGS = []string{$CMD,"-c",$EXE,...};
+
+            ...
+
+            '
+        - pattern-inside: '$CMD,$ERR := exec.LookPath("=~/(sh|bash|ksh|csh|tcsh|zsh)/");
+
+            ...
+
+            $ARGS = []string{$CMD,"-c",$EXE,...};
+
+            ...
+
+            '
+      - pattern-not-inside: '$ARGS := []string{"...","...","...",...};
+
+          ...
+
+          '
+      - pattern-not-inside: '$CMD = "...";
+
+          ...
+
+          $ARGS = []string{$CMD,"...","...",...};
+
+          ...
+
+          '
+      - pattern-not-inside: '$CMD,$ERR := exec.LookPath("...");
+
+          ...
+
+          $ARGS = []string{$CMD,"...","...",...};
+
+          ...
+
+          '
+  - pattern-inside: 'import "syscall"
+
+      ...
+
+      '
+  - metavariable-regex:
+      metavariable: $METHOD
+      regex: (Exec|ForkExec)
+  message: Detected non-static command inside Exec. Audit the input to 'syscall.Exec'. If unverified user data can reach this call site, this is a code injection vulnerability. A malicious actor can inject a malicious script to execute arbitrary code.
+  metadata:
+    cwe:
+    - 'CWE-94: Improper Control of Generation of Code (''Code Injection'')'
+    owasp:
+    - A03:2021 - Injection
+    category: security
+    technology:
+    - go
+    confidence: LOW
+    references:
+    - https://owasp.org/Top10/A03_2021-Injection
+    cwe2022-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: HIGH
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/audit/dangerous-syscall-exec.yaml
+      upstream-id: dangerous-syscall-exec
+  severity: ERROR
+  languages:
+  - go
+- id: go.filepath-clean-misuse
+  message: '`Clean` is not intended to sanitize against path traversal attacks. This function is for finding the shortest path name equivalent to the given input. Using `Clean` to sanitize file reads may expose this application to path traversal attacks, where an attacker could access arbitrary files on the server. To fix this easily, write this: `filepath.FromSlash(path.Clean("/"+strings.Trim(req.URL.Path, "/")))` However, a better solution is using the `SecureJoin` function in the package `filepath-securejoin`. See https://pkg.go.dev/github.com/cyphar/filepath-securejoin#section-readme.'
+  severity: ERROR
+  languages:
+  - go
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - pattern: '($REQUEST : *http.Request).$ANYTHING
+
+          '
+      - pattern: '($REQUEST : http.Request).$ANYTHING
+
+          '
+    - metavariable-regex:
+        metavariable: $ANYTHING
+        regex: ^(BasicAuth|Body|Cookie|Cookies|Form|FormValue|GetBody|Host|MultipartReader|ParseForm|ParseMultipartForm|PostForm|PostFormValue|Referer|RequestURI|Trailer|TransferEncoding|UserAgent|URL)$
+  pattern-sinks:
+  - patterns:
+    - pattern-either:
+      - pattern: filepath.Clean($...INNER)
+      - pattern: path.Clean($...INNER)
+  pattern-sanitizers:
+  - pattern-either:
+    - pattern: '"/" + ...
+
+        '
+  fix: filepath.FromSlash(filepath.Clean("/"+strings.Trim($...INNER, "/")))
+  options:
+    interfile: true
+  metadata:
+    references:
+    - https://pkg.go.dev/path#Clean
+    - http://technosophos.com/2016/03/31/go-quickly-cleaning-filepaths.html
+    - https://labs.detectify.com/2021/12/15/zero-day-path-traversal-grafana/
+    - https://dzx.cz/2021/04/02/go_path_traversal/
+    - https://pkg.go.dev/github.com/cyphar/filepath-securejoin#section-readme
+    cwe:
+    - 'CWE-22: Improper Limitation of a Pathname to a Restricted Directory (''Path Traversal'')'
+    owasp:
+    - A05:2017 - Broken Access Control
+    - A01:2021 - Broken Access Control
+    category: security
+    technology:
+    - go
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: MEDIUM
+    impact: MEDIUM
+    confidence: MEDIUM
+    interfile: true
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/filepath-clean-misuse.yaml
+      upstream-id: filepath-clean-misuse
+- id: go.go-ssti
+  patterns:
+  - pattern-inside: 'import ("html/template")
+
+      ...
+
+      '
+  - pattern: $TEMPLATE = fmt.Sprintf("...", $ARG, ...)
+  - patterns:
+    - pattern-either:
+      - pattern-inside: 'func $FN(..., $REQ *http.Request, ...){
+
+          ...
+
+          }
+
+          '
+      - pattern-inside: 'func $FN(..., $REQ http.Request, ...){
+
+          ...
+
+          }
+
+          '
+      - pattern-inside: 'func(..., $REQ *http.Request, ...){
+
+          ...
+
+          }
+
+          '
+  - patterns:
+    - pattern-either:
+      - pattern-inside: '$ARG := $REQ.URL.Query().Get(...)
+
+          ...
+
+          $T, $ERR := $TMPL.Parse($TEMPLATE)
+
+          '
+      - pattern-inside: '$ARG := $REQ.Form.Get(...)
+
+          ...
+
+          $T, $ERR := $TMPL.Parse($TEMPLATE)
+
+          '
+      - pattern-inside: '$ARG := $REQ.PostForm.Get(...)
+
+          ...
+
+          $T, $ERR := $TMPL.Parse($TEMPLATE)
+
+          '
+  message: A server-side template injection occurs when an attacker is able to use native template syntax to inject a malicious payload into a template, which is then executed server-side. When using "html/template" always check that user inputs are validated and sanitized before included within the template.
+  languages:
+  - go
+  severity: ERROR
+  metadata:
+    category: security
+    cwe:
+    - 'CWE-1336: Improper Neutralization of Special Elements Used in a Template Engine'
+    references:
+    - https://www.onsecurity.io/blog/go-ssti-method-research/
+    - http://blog.takemyhand.xyz/2020/05/ssti-breaking-gos-template-engine-to.html
+    technology:
+    - go
+    confidence: MEDIUM
+    subcategory:
+    - vuln
+    likelihood: LOW
+    impact: HIGH
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/template/security/ssti.yaml
+      upstream-id: go-ssti
+- id: go.gosql-sqli
+  patterns:
+  - pattern-either:
+    - patterns:
+      - pattern: $DB.$METHOD(...,$QUERY,...)
+      - pattern-either:
+        - pattern-inside: '$QUERY = $X + $Y
+
+            ...
+
+            '
+        - pattern-inside: '$QUERY += $X
+
+            ...
+
+            '
+        - pattern-inside: '$QUERY = fmt.Sprintf("...", $PARAM1, ...)
+
+            ...
+
+            '
+      - pattern-not-inside: '$QUERY += "..."
+
+          ...
+
+          '
+      - pattern-not-inside: '$QUERY = "..." + "..."
+
+          ...
+
+          '
+    - pattern: $DB.$METHOD(..., $X + $Y, ...)
+    - pattern: $DB.$METHOD(..., fmt.Sprintf("...", $PARAM1, ...), ...)
+  - pattern-either:
+    - pattern-inside: '$DB, ... = sql.Open(...)
+
+        ...
+
+        '
+    - pattern-inside: "func $FUNCNAME(..., $DB *sql.DB, ...) {\n  ...\n}\n"
+  - pattern-not: $DB.$METHOD(..., "..." + "...", ...)
+  - metavariable-regex:
+      metavariable: $METHOD
+      regex: ^(Exec|ExecContent|Query|QueryContext|QueryRow|QueryRowContext)$
+  languages:
+  - go
+  message: Detected string concatenation with a non-literal variable in a "database/sql" Go SQL statement. This could lead to SQL injection if the variable is user-controlled and not properly sanitized. In order to prevent SQL injection, use parameterized queries or prepared statements instead. You can use prepared statements with the 'Prepare' and 'PrepareContext' calls.
+  metadata:
+    cwe:
+    - 'CWE-89: Improper Neutralization of Special Elements used in an SQL Command (''SQL Injection'')'
+    references:
+    - https://golang.org/pkg/database/sql/
+    category: security
+    technology:
+    - go
+    confidence: LOW
+    owasp:
+    - A01:2017 - Injection
+    - A03:2021 - Injection
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: LOW
+    impact: HIGH
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/audit/sqli/gosql-sqli.yaml
+      upstream-id: gosql-sqli
+  severity: ERROR
+- id: go.grpc-client-insecure-connection
+  metadata:
+    cwe:
+    - 'CWE-300: Channel Accessible by Non-Endpoint'
+    references:
+    - https://blog.gopheracademy.com/advent-2019/go-grps-and-tls/#connection-without-encryption
+    category: security
+    technology:
+    - grpc
+    confidence: HIGH
+    owasp:
+    - A07:2021 - Identification and Authentication Failures
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/grpc/security/grpc-client-insecure-connection.yaml
+      upstream-id: grpc-client-insecure-connection
+  message: 'Found an insecure gRPC connection using ''grpc.WithInsecure()''. This creates a connection without encryption to a gRPC server. A malicious attacker could tamper with the gRPC message, which could compromise the machine. Instead, establish a secure connection with an SSL certificate using the ''grpc.WithTransportCredentials()'' function. You can create a create credentials using a ''tls.Config{}'' struct with ''credentials.NewTLS()''. The final fix looks like this: ''grpc.WithTransportCredentials(credentials.NewTLS(<config>))''.'
+  languages:
+  - go
+  severity: ERROR
+  pattern: $GRPC.Dial($ADDR, ..., $GRPC.WithInsecure(...), ...)
+  fix-regex:
+    regex: (.*)WithInsecure\(.*?\)
+    replacement: \1WithTransportCredentials(credentials.NewTLS(<your_tls_config_here>))
+- id: go.grpc-server-insecure-connection
+  metadata:
+    cwe:
+    - 'CWE-300: Channel Accessible by Non-Endpoint'
+    references:
+    - https://blog.gopheracademy.com/advent-2019/go-grps-and-tls/#connection-without-encryption
+    category: security
+    technology:
+    - grpc
+    confidence: HIGH
+    owasp:
+    - A07:2021 - Identification and Authentication Failures
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/grpc/security/grpc-server-insecure-connection.yaml
+      upstream-id: grpc-server-insecure-connection
+  message: Found an insecure gRPC server without 'grpc.Creds()' or options with credentials. This allows for a connection without encryption to this server. A malicious attacker could tamper with the gRPC message, which could compromise the machine. Include credentials derived from an SSL certificate in order to create a secure gRPC connection. You can create credentials using 'credentials.NewServerTLSFromFile("cert.pem", "cert.key")'.
+  languages:
+  - go
+  severity: ERROR
+  mode: taint
+  pattern-sinks:
+  - requires: OPTIONS and not CREDS
+    pattern: grpc.NewServer($OPT, ...)
+  - requires: EMPTY_CONSTRUCTOR
+    pattern: grpc.NewServer()
+  pattern-sources:
+  - label: OPTIONS
+    pattern: grpc.ServerOption{ ... }
+  - label: CREDS
+    pattern: grpc.Creds(...)
+  - label: EMPTY_CONSTRUCTOR
+    pattern: grpc.NewServer()
+- id: go.jwt-go-none-algorithm
+  message: Detected use of the 'none' algorithm in a JWT token. The 'none' algorithm assumes the integrity of the token has already been verified. This would allow a malicious actor to forge a JWT token that will automatically be verified. Do not explicitly use the 'none' algorithm. Instead, use an algorithm such as 'HS256'.
+  metadata:
+    cwe:
+    - 'CWE-327: Use of a Broken or Risky Cryptographic Algorithm'
+    owasp:
+    - A03:2017 - Sensitive Data Exposure
+    - A02:2021 - Cryptographic Failures
+    source-rule-url: https://semgrep.dev/blog/2020/hardcoded-secrets-unverified-tokens-and-other-common-jwt-mistakes/
+    category: security
+    technology:
+    - jwt
+    confidence: HIGH
+    references:
+    - https://owasp.org/Top10/A02_2021-Cryptographic_Failures
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/jwt-go/security/jwt-none-alg.yaml
+      upstream-id: jwt-go-none-algorithm
+  languages:
+  - go
+  severity: ERROR
+  patterns:
+  - pattern-either:
+    - pattern-inside: 'import "github.com/golang-jwt/jwt"
+
+        ...
+
+        '
+    - pattern-inside: 'import "github.com/dgrijalva/jwt-go"
+
+        ...
+
+        '
+  - pattern-either:
+    - pattern: 'jwt.SigningMethodNone
+
+        '
+    - pattern: jwt.UnsafeAllowNoneSignatureType
+- id: go.pg-orm-sqli
+  patterns:
+  - pattern-inside: "import (\n  ...\n  \"$IMPORT\"\n)\n...\n"
+  - metavariable-regex:
+      metavariable: $IMPORT
+      regex: .*go-pg
+  - pattern-either:
+    - patterns:
+      - pattern: $DB.$METHOD(...,$QUERY,...)
+      - pattern-either:
+        - pattern-inside: '$QUERY = $X + $Y
+
+            ...
+
+            '
+        - pattern-inside: '$QUERY += $X
+
+            ...
+
+            '
+        - pattern-inside: '$QUERY = fmt.Sprintf("...", $PARAM1, ...)
+
+            ...
+
+            '
+      - pattern-not-inside: '$QUERY += "..."
+
+          ...
+
+          '
+      - pattern-not-inside: '$QUERY = "..." + "..."
+
+          ...
+
+          '
+    - pattern: '$DB.$INTFUNC1(...).$METHOD(..., $X + $Y, ...).$INTFUNC2(...)
+
+        '
+    - pattern: '$DB.$METHOD(..., fmt.Sprintf("...", $PARAM1, ...), ...)
+
+        '
+    - pattern-inside: '$DB = pg.Connect(...)
+
+        ...
+
+        '
+    - pattern-inside: "func $FUNCNAME(..., $DB *pg.DB, ...) {\n  ...\n}\n"
+  - pattern-not-inside: '$QUERY = fmt.Sprintf("...", ...,"...", ...)
+
+      ...
+
+      '
+  - pattern-not-inside: '$QUERY += "..."
+
+      ...
+
+      '
+  - pattern-not: $DB.$METHOD(...,"...",...)
+  - pattern-not: '$DB.$INTFUNC1(...).$METHOD(..., "...", ...).$INTFUNC2(...)
+
+      '
+  - pattern-not-inside: '$QUERY = "..." + "..."
+
+      '
+  - pattern-not: '"..."
+
+      '
+  - pattern-not: path.Join(...)
+  - pattern-not: filepath.Join(...)
+  - metavariable-regex:
+      metavariable: $METHOD
+      regex: ^(Where|WhereOr|Join|GroupExpr|OrderExpr|ColumnExpr)$
+  languages:
+  - go
+  message: Detected string concatenation with a non-literal variable in a go-pg ORM SQL statement. This could lead to SQL injection if the variable is user-controlled and not properly sanitized. In order to prevent SQL injection, do not use strings concatenated with user-controlled input. Instead, use parameterized statements.
+  metadata:
+    cwe:
+    - 'CWE-89: Improper Neutralization of Special Elements used in an SQL Command (''SQL Injection'')'
+    references:
+    - https://pg.uptrace.dev/queries/
+    category: security
+    technology:
+    - go-pg
+    confidence: LOW
+    owasp:
+    - A01:2017 - Injection
+    - A03:2021 - Injection
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: LOW
+    impact: HIGH
+    license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/audit/sqli/pg-orm-sqli.yaml
+      upstream-id: pg-orm-sqli
+  severity: ERROR
+- id: go.pg-sqli
+  languages:
+  - go
+  message: 'Detected string concatenation with a non-literal variable in a go-pg SQL statement. This could lead to SQL injection if the variable is user-controlled and not properly sanitized. In order to prevent SQL injection, use parameterized queries instead of string concatenation. You can use parameterized queries like so: ''(SELECT ? FROM table, data1)'''
+  metadata:
+    cwe:
+    - 'CWE-89: Improper Neutralization of Special Elements used in an SQL Command (''SQL Injection'')'
+    references:
+    - https://pg.uptrace.dev/
+    - https://pkg.go.dev/github.com/go-pg/pg/v10
+    category: security
+    technology:
+    - go-pg
+    confidence: LOW
+    owasp:
+    - A01:2017 - Injection
+    - A03:2021 - Injection
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: LOW
+    impact: HIGH
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/audit/sqli/pg-sqli.yaml
+      upstream-id: pg-sqli
+  severity: ERROR
+  patterns:
+  - pattern-either:
+    - patterns:
+      - pattern: '$DB.$METHOD(...,$QUERY,...)
+
+          '
+      - pattern-either:
+        - pattern-inside: '$QUERY = $X + $Y
+
+            ...
+
+            '
+        - pattern-inside: '$QUERY += $X
+
+            ...
+
+            '
+        - pattern-inside: '$QUERY = fmt.Sprintf("...", $PARAM1, ...)
+
+            ...
+
+            '
+      - pattern-not-inside: '$QUERY += "..."
+
+          ...
+
+          '
+      - pattern-not-inside: '$QUERY = "..." + "..."
+
+          ...
+
+          '
+    - pattern: $DB.$METHOD(..., $X + $Y, ...)
+    - pattern: $DB.$METHOD(..., fmt.Sprintf("...", $PARAM1, ...), ...)
+  - pattern-either:
+    - pattern-inside: '$DB = pg.Connect(...)
+
+        ...
+
+        '
+    - pattern-inside: "func $FUNCNAME(..., $DB *pg.DB, ...) {\n  ...\n}\n"
+  - pattern-not: $DB.$METHOD(..., "..." + "...", ...)
+  - metavariable-regex:
+      metavariable: $METHOD
+      regex: ^(Exec|ExecContext|ExecOne|ExecOneContext|Query|QueryOne|QueryContext|QueryOneContext)$
+- id: go.pgx-sqli
+  languages:
+  - go
+  message: 'Detected string concatenation with a non-literal variable in a pgx Go SQL statement. This could lead to SQL injection if the variable is user-controlled and not properly sanitized. In order to prevent SQL injection, use parameterized queries instead. You can use parameterized queries like so: (`SELECT $1 FROM table`, `data1)'
+  metadata:
+    cwe:
+    - 'CWE-89: Improper Neutralization of Special Elements used in an SQL Command (''SQL Injection'')'
+    references:
+    - https://github.com/jackc/pgx
+    - https://pkg.go.dev/github.com/jackc/pgx/v4#hdr-Connection_Pool
+    category: security
+    technology:
+    - pgx
+    confidence: LOW
+    owasp:
+    - A01:2017 - Injection
+    - A03:2021 - Injection
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: LOW
+    impact: HIGH
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/audit/sqli/pgx-sqli.yaml
+      upstream-id: pgx-sqli
+  patterns:
+  - pattern-either:
+    - patterns:
+      - pattern: $DB.$METHOD(...,$QUERY,...)
+      - pattern-either:
+        - pattern-inside: '$QUERY = $X + $Y
+
+            ...
+
+            '
+        - pattern-inside: '$QUERY += $X
+
+            ...
+
+            '
+        - pattern-inside: '$QUERY = fmt.Sprintf("...", $PARAM1, ...)
+
+            ...
+
+            '
+      - pattern-not-inside: '$QUERY += "..."
+
+          ...
+
+          '
+      - pattern-not-inside: '$QUERY = "..." + "..."
+
+          ...
+
+          '
+    - pattern: $DB.$METHOD(..., $X + $Y, ...)
+    - pattern: $DB.$METHOD(..., fmt.Sprintf("...", $PARAM1, ...), ...)
+  - pattern-either:
+    - pattern-inside: '$DB, ... = pgx.Connect(...)
+
+        ...
+
+        '
+    - pattern-inside: '$DB, ... = pgx.NewConnPool(...)
+
+        ...
+
+        '
+    - pattern-inside: '$DB, ... = pgx.ConnectConfig(...)
+
+        ...
+
+        '
+    - pattern-inside: "func $FUNCNAME(..., $DB *pgx.Conn, ...) {\n  ...\n}\n"
+  - pattern-not: $DB.$METHOD(..., "..." + "...", ...)
+  - metavariable-regex:
+      metavariable: $METHOD
+      regex: ^(Exec|ExecEx|Query|QueryEx|QueryRow|QueryRowEx)$
+  severity: ERROR
+- id: go.reflect-makefunc
+  message: '''reflect.MakeFunc'' detected. This will sidestep protections that are normally afforded by Go''s type system. Audit this call and be sure that user input cannot be used to affect the code generated by MakeFunc; otherwise, you will have a serious security vulnerability.'
+  metadata:
+    owasp:
+    - A01:2021 - Broken Access Control
+    cwe:
+    - 'CWE-913: Improper Control of Dynamically-Managed Code Resources'
+    category: security
+    technology:
+    - go
+    confidence: LOW
+    references:
+    - https://owasp.org/Top10/A01_2021-Broken_Access_Control
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/audit/reflect-makefunc.yaml
+      upstream-id: reflect-makefunc
+  severity: ERROR
+  pattern: reflect.MakeFunc(...)
+  languages:
+  - go
+- id: go.tainted-sql-string
+  languages:
+  - go
+  severity: ERROR
+  message: Detected user input used to manually construct a SQL string. This is usually bad practice because manual construction could accidentally result in a SQL injection. An attacker could use a SQL injection to steal or modify contents of the database. Instead, use a parameterized query which is available by default in most database engines. Alternatively, consider using an object-relational mapper (ORM) such as Sequelize which will protect your queries.
+  metadata:
+    references:
+    - https://owasp.org/www-community/attacks/SQL_Injection
+    category: security
+    owasp:
+    - A01:2017 - Injection
+    - A03:2021 - Injection
+    cwe:
+    - 'CWE-89: Improper Neutralization of Special Elements used in an SQL Command (''SQL Injection'')'
+    technology:
+    - aws-lambda
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: HIGH
+    impact: MEDIUM
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/aws-lambda/security/tainted-sql-string.yaml
+      upstream-id: tainted-sql-string
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - pattern-inside: 'func $HANDLER($CTX $CTXTYPE, $EVENT $TYPE, ...) {...}
+
+          ...
+
+          lambda.Start($HANDLER, ...)
+
+          '
+      - patterns:
+        - pattern-inside: 'func $HANDLER($EVENT $TYPE) {...}
+
+            ...
+
+            lambda.Start($HANDLER, ...)
+
+            '
+        - pattern-not-inside: 'func $HANDLER($EVENT context.Context) {...}
+
+            ...
+
+            lambda.Start($HANDLER, ...)
+
+            '
+    - focus-metavariable: $EVENT
+  pattern-sinks:
+  - patterns:
+    - pattern-either:
+      - patterns:
+        - pattern: '"$SQLSTR" + ...
+
+            '
+        - metavariable-regex:
+            metavariable: $SQLSTR
+            regex: (?i)(\s*select|\s*delete|\s*insert|\s*create|\s*update|\s*alter|\s*drop).*
+      - patterns:
+        - pattern-either:
+          - pattern: fmt.Fprintf($F, "$SQLSTR", ...)
+          - pattern: fmt.Sprintf("$SQLSTR", ...)
+          - pattern: fmt.Printf("$SQLSTR", ...)
+        - metavariable-regex:
+            metavariable: $SQLSTR
+            regex: \s*(?i)(select|delete|insert|create|update|alter|drop)\b.*%(v|s|q).*
+    - pattern-not-inside: 'log.$PRINT(...)
+
+        '
+  pattern-sanitizers:
+  - pattern: strconv.Atoi(...)
+- id: go.avoid-bind-to-all-interfaces
+  message: Detected a network listener listening on 0.0.0.0 or an empty string. This could unexpectedly expose the server publicly as it binds to all available interfaces. Instead, specify another IP address that is not 0.0.0.0 nor the empty string.
+  languages:
+  - go
+  severity: WARNING
+  metadata:
+    cwe:
+    - 'CWE-200: Exposure of Sensitive Information to an Unauthorized Actor'
+    owasp:
+    - A01:2021 - Broken Access Control
+    source-rule-url: https://github.com/securego/gosec
+    category: security
+    technology:
+    - go
+    confidence: HIGH
+    references:
+    - https://owasp.org/Top10/A01_2021-Broken_Access_Control
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/audit/net/bind_all.yaml
+      upstream-id: avoid-bind-to-all-interfaces
+  pattern-either:
+  - pattern: tls.Listen($NETWORK, "=~/^0.0.0.0:.*$/", ...)
+  - pattern: net.Listen($NETWORK, "=~/^0.0.0.0:.*$/", ...)
+  - pattern: tls.Listen($NETWORK, "=~/^:.*$/", ...)
+  - pattern: net.Listen($NETWORK, "=~/^:.*$/", ...)
+- id: go.avoid-ssh-insecure-ignore-host-key
+  message: Disabled host key verification detected. This allows man-in-the-middle attacks. Use the 'golang.org/x/crypto/ssh/knownhosts' package to do host key verification. See https://skarlso.github.io/2019/02/17/go-ssh-with-host-key-verification/ to learn more about the problem and how to fix it.
+  metadata:
+    cwe:
+    - 'CWE-322: Key Exchange without Entity Authentication'
+    owasp:
+    - A02:2021 - Cryptographic Failures
+    source-rule-url: https://github.com/securego/gosec
+    references:
+    - https://skarlso.github.io/2019/02/17/go-ssh-with-host-key-verification/
+    - https://gist.github.com/Skarlso/34321a230cf0245018288686c9e70b2d
+    category: security
+    technology:
+    - go
+    confidence: MEDIUM
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/audit/crypto/insecure_ssh.yaml
+      upstream-id: avoid-ssh-insecure-ignore-host-key
+  languages:
+  - go
+  severity: WARNING
+  pattern: ssh.InsecureIgnoreHostKey()
+- id: go.bad-tmp-file-creation
+  message: File creation in shared tmp directory without using ioutil.Tempfile
+  languages:
+  - go
+  severity: WARNING
+  metadata:
+    cwe:
+    - 'CWE-377: Insecure Temporary File'
+    source-rule-url: https://github.com/securego/gosec
+    category: security
+    technology:
+    - go
+    confidence: LOW
+    owasp:
+    - A01:2021 - Broken Access Control
+    references:
+    - https://owasp.org/Top10/A01_2021-Broken_Access_Control
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/bad_tmp.yaml
+      upstream-id: bad-tmp-file-creation
+  pattern-either:
+  - pattern: ioutil.WriteFile("=~//tmp/.*$/", ...)
+  - pattern: os.Create("=~//tmp/.*$/", ...)
+- id: go.cookie-missing-httponly
+  patterns:
+  - pattern-not-inside: "http.Cookie{\n  ...,\n  HttpOnly: true,\n  ...,\n}\n"
+  - pattern: "http.Cookie{\n  ...,\n}\n"
+  message: A session cookie was detected without setting the 'HttpOnly' flag. The 'HttpOnly' flag for cookies instructs the browser to forbid client-side scripts from reading the cookie which mitigates XSS attacks. Set the 'HttpOnly' flag by setting 'HttpOnly' to 'true' in the Cookie.
+  metadata:
+    cwe:
+    - 'CWE-1004: Sensitive Cookie Without ''HttpOnly'' Flag'
+    owasp:
+    - A05:2021 - Security Misconfiguration
+    references:
+    - https://github.com/0c34/govwa/blob/139693e56406b5684d2a6ae22c0af90717e149b8/util/cookie.go
+    - https://golang.org/src/net/http/cookie.go
+    category: security
+    technology:
+    - go
+    confidence: MEDIUM
+    subcategory:
+    - vuln
+    likelihood: LOW
+    impact: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/audit/net/cookie-missing-httponly.yaml
+      upstream-id: cookie-missing-httponly
+  fix-regex:
+    regex: (HttpOnly\s*:\s+)false
+    replacement: \1true
+  severity: WARNING
+  languages:
+  - go
+- id: go.cookie-missing-secure
+  patterns:
+  - pattern-not-inside: "http.Cookie{\n  ...,\n  Secure: true,\n  ...,\n}\n"
+  - pattern: "http.Cookie{\n  ...,\n}\n"
+  message: A session cookie was detected without setting the 'Secure' flag. The 'secure' flag for cookies prevents the client from transmitting the cookie over insecure channels such as HTTP. Set the 'Secure' flag by setting 'Secure' to 'true' in the Options struct.
+  metadata:
+    cwe:
+    - 'CWE-614: Sensitive Cookie in HTTPS Session Without ''Secure'' Attribute'
+    owasp:
+    - A05:2021 - Security Misconfiguration
+    references:
+    - https://github.com/0c34/govwa/blob/139693e56406b5684d2a6ae22c0af90717e149b8/util/cookie.go
+    - https://golang.org/src/net/http/cookie.go
+    category: security
+    technology:
+    - go
+    confidence: MEDIUM
+    subcategory:
+    - vuln
+    likelihood: LOW
+    impact: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/audit/net/cookie-missing-secure.yaml
+      upstream-id: cookie-missing-secure
+  fix-regex:
+    regex: (Secure\s*:\s+)false
+    replacement: \1true
+  severity: WARNING
+  languages:
+  - go
+- id: go.database-sqli
+  languages:
+  - go
+  message: Detected SQL statement that is tainted by `$EVENT` object. This could lead to SQL injection if the variable is user-controlled and not properly sanitized. In order to prevent SQL injection, use parameterized queries or prepared statements instead. You can use prepared statements with the 'Prepare' and 'PrepareContext' calls.
+  mode: taint
+  metadata:
+    references:
+    - https://pkg.go.dev/database/sql#DB.Query
+    category: security
+    owasp:
+    - A01:2017 - Injection
+    - A03:2021 - Injection
+    cwe:
+    - 'CWE-89: Improper Neutralization of Special Elements used in an SQL Command (''SQL Injection'')'
+    technology:
+    - aws-lambda
+    - database
+    - sql
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: HIGH
+    impact: MEDIUM
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/aws-lambda/security/database-sqli.yaml
+      upstream-id: database-sqli
+  pattern-sinks:
+  - patterns:
+    - focus-metavariable: $QUERY
+    - pattern-either:
+      - pattern: $DB.Exec($QUERY,...)
+      - pattern: $DB.ExecContent($QUERY,...)
+      - pattern: $DB.Query($QUERY,...)
+      - pattern: $DB.QueryContext($QUERY,...)
+      - pattern: $DB.QueryRow($QUERY,...)
+      - pattern: $DB.QueryRowContext($QUERY,...)
+    - pattern-inside: 'import "database/sql"
+
+        ...
+
+        '
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - pattern-inside: 'func $HANDLER($CTX $CTXTYPE, $EVENT $TYPE, ...) {...}
+
+          ...
+
+          lambda.Start($HANDLER, ...)
+
+          '
+      - patterns:
+        - pattern-inside: 'func $HANDLER($EVENT $TYPE) {...}
+
+            ...
+
+            lambda.Start($HANDLER, ...)
+
+            '
+        - pattern-not-inside: 'func $HANDLER($EVENT context.Context) {...}
+
+            ...
+
+            lambda.Start($HANDLER, ...)
+
+            '
+    - focus-metavariable: $EVENT
+  severity: WARNING
+- id: go.dynamic-httptrace-clienttrace
+  message: Detected a potentially dynamic ClientTrace. This occurred because semgrep could not find a static definition for '$TRACE'. Dynamic ClientTraces are dangerous because they deserialize function code to run when certain Request events occur, which could lead to code being run without your knowledge. Ensure that your ClientTrace is statically defined.
+  metadata:
+    cwe:
+    - 'CWE-913: Improper Control of Dynamically-Managed Code Resources'
+    owasp:
+    - A01:2021 - Broken Access Control
+    references:
+    - https://github.com/returntocorp/semgrep-rules/issues/518
+    category: security
+    technology:
+    - go
+    confidence: MEDIUM
+    subcategory:
+    - vuln
+    likelihood: LOW
+    impact: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/audit/net/dynamic-httptrace-clienttrace.yaml
+      upstream-id: dynamic-httptrace-clienttrace
+  patterns:
+  - pattern-not-inside: 'package $PACKAGE
+
+      ...
+
+      &httptrace.ClientTrace { ... }
+
+      ...
+
+      '
+  - pattern: httptrace.WithClientTrace($ANY, $TRACE)
+  severity: WARNING
+  languages:
+  - go
+- id: go.formatted-template-string
+  message: Found a formatted template string passed to 'template.HTML()'. 'template.HTML()' does not escape contents. Be absolutely sure there is no user-controlled data in this template. If user data can reach this template, you may have a XSS vulnerability.
+  metadata:
+    cwe:
+    - 'CWE-79: Improper Neutralization of Input During Web Page Generation (''Cross-site Scripting'')'
+    owasp:
+    - A07:2017 - Cross-Site Scripting (XSS)
+    - A03:2021 - Injection
+    references:
+    - https://golang.org/pkg/html/template/#HTML
+    category: security
+    technology:
+    - go
+    confidence: MEDIUM
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/audit/net/formatted-template-string.yaml
+      upstream-id: formatted-template-string
+  languages:
+  - go
+  severity: WARNING
+  patterns:
+  - pattern-not: template.HTML("..." + "...")
+  - pattern-either:
+    - pattern: template.HTML($T + $X, ...)
+    - pattern: template.HTML(fmt.$P("...", ...), ...)
+    - pattern: '$T = "..."
+
+        ...
+
+        $T = $FXN(..., $T, ...)
+
+        ...
+
+        template.HTML($T, ...)
+
+        '
+    - pattern: '$T = fmt.$P("...", ...)
+
+        ...
+
+        template.HTML($T, ...)
+
+        '
+    - pattern: '$T, $ERR = fmt.$P("...", ...)
+
+        ...
+
+        template.HTML($T, ...)
+
+        '
+    - pattern: '$T = $X + $Y
+
+        ...
+
+        template.HTML($T, ...)
+
+        '
+    - pattern: '$T = "..."
+
+        ...
+
+        $OTHER, $ERR = fmt.$P(..., $T, ...)
+
+        ...
+
+        template.HTML($OTHER, ...)'
+- id: go.fs-directory-listing
+  message: 'Detected usage of ''http.FileServer'' as handler: this allows directory listing and an attacker could navigate through directories looking for sensitive files. Be sure to disable directory listing or restrict access to specific directories/files.'
+  severity: WARNING
+  languages:
+  - go
+  patterns:
+  - pattern-either:
+    - patterns:
+      - pattern-inside: '$FS := http.FileServer(...)
+
+          ...
+
+          '
+      - pattern-either:
+        - pattern: 'http.ListenAndServe(..., $FS)
+
+            '
+        - pattern: 'http.ListenAndServeTLS(..., $FS)
+
+            '
+        - pattern: 'http.Handle(..., $FS)
+
+            '
+        - pattern: 'http.HandleFunc(..., $FS)
+
+            '
+    - patterns:
+      - pattern: 'http.$FN(..., http.FileServer(...))
+
+          '
+      - metavariable-regex:
+          metavariable: $FN
+          regex: (ListenAndServe|ListenAndServeTLS|Handle|HandleFunc)
+  metadata:
+    category: security
+    cwe:
+    - 'CWE-548: Exposure of Information Through Directory Listing'
+    owasp:
+    - A06:2017 - Security Misconfiguration
+    - A01:2021 - Broken Access Control
+    references:
+    - https://github.com/OWASP/Go-SCP
+    - https://cwe.mitre.org/data/definitions/548.html
+    confidence: MEDIUM
+    technology:
+    - go
+    subcategory:
+    - vuln
+    likelihood: MEDIUM
+    impact: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/audit/net/fs-directory-listing.yaml
+      upstream-id: fs-directory-listing
+- id: go.go-insecure-templates
+  patterns:
+  - pattern-inside: 'import "html/template"
+
+      ...
+
+      '
+  - pattern-either:
+    - pattern: var $VAR template.HTML = $EXP
+    - pattern: var $VAR template.CSS = $EXP
+    - pattern: var $VAR template.HTMLAttr = $EXP
+    - pattern: var $VAR template.JS = $EXP
+    - pattern: var $VAR template.JSStr = $EXP
+    - pattern: var $VAR template.Srcset = $EXP
+  message: usage of insecure template types. They are documented as a security risk. See https://golang.org/pkg/html/template/#HTML.
+  severity: WARNING
+  metadata:
+    cwe:
+    - 'CWE-79: Improper Neutralization of Input During Web Page Generation (''Cross-site Scripting'')'
+    references:
+    - https://golang.org/pkg/html/template/#HTML
+    - https://twitter.com/empijei/status/1275177219011350528
+    category: security
+    technology:
+    - template
+    confidence: LOW
+    owasp:
+    - A07:2017 - Cross-Site Scripting (XSS)
+    - A03:2021 - Injection
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/template/security/insecure-types.yaml
+      upstream-id: go-insecure-templates
+  languages:
+  - go
+- id: go.gorm-dangerous-method-usage
+  message: Detected usage of dangerous method $METHOD which does not escape inputs (see link in references). If the argument is user-controlled, this can lead to SQL injection. When using $METHOD function, do not trust user-submitted data and only allow approved list of input (possibly, use an allowlist approach).
+  severity: WARNING
+  languages:
+  - go
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - pattern: '($REQUEST : http.Request).$ANYTHING
+
+          '
+      - pattern: '($REQUEST : *http.Request).$ANYTHING
+
+          '
+    - metavariable-regex:
+        metavariable: $ANYTHING
+        regex: ^(BasicAuth|Body|Cookie|Cookies|Form|FormValue|GetBody|Host|MultipartReader|ParseForm|ParseMultipartForm|PostForm|PostFormValue|Referer|RequestURI|Trailer|TransferEncoding|UserAgent|URL)$
+  pattern-sinks:
+  - patterns:
+    - pattern-inside: 'import ("gorm.io/gorm")
+
+        ...
+
+        '
+    - patterns:
+      - pattern-inside: "func $VAL(..., $GORM *gorm.DB,... ) {\n  ...\n}\n"
+      - pattern-either:
+        - pattern: '$GORM. ... .$METHOD($VALUE)
+
+            '
+        - pattern: '$DB := $GORM. ... .$ANYTHING(...)
+
+            ...
+
+            $DB. ... .$METHOD($VALUE)
+
+            '
+    - focus-metavariable: $VALUE
+    - metavariable-regex:
+        metavariable: $METHOD
+        regex: ^(Order|Exec|Raw|Group|Having|Distinct|Select|Pluck)$
+  pattern-sanitizers:
+  - pattern-either:
+    - pattern: strconv.Atoi(...)
+    - pattern: '($X: bool)
+
+        '
+  options:
+    interfile: true
+  metadata:
+    category: security
+    technology:
+    - gorm
+    cwe:
+    - 'CWE-89: Improper Neutralization of Special Elements used in an SQL Command (''SQL Injection'')'
+    owasp:
+    - A01:2017 - Injection
+    - A03:2021 - Injection
+    references:
+    - https://gorm.io/docs/security.html#SQL-injection-Methods
+    - https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html
+    confidence: HIGH
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: HIGH
+    impact: MEDIUM
+    interfile: true
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/gorm/security/audit/gorm-dangerous-methods-usage.yaml
+      upstream-id: gorm-dangerous-method-usage
+- id: go.handler-assignment-from-multiple-sources
+  metadata:
+    cwe:
+    - 'CWE-289: Authentication Bypass by Alternate Name'
+    category: security
+    technology:
+    - gorilla
+    confidence: MEDIUM
+    license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    references:
+    - https://cwe.mitre.org/data/definitions/289.html
+    subcategory:
+    - audit
+    impact: MEDIUM
+    likelihood: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/gorilla/security/audit/handler-assignment-from-multiple-sources.yaml
+      upstream-id: handler-assignment-from-multiple-sources
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern-inside: "func $HANDLER(..., $R *http.Request, ...) {\n  ...\n}\n"
+    - focus-metavariable: $R
+    - pattern-either:
+      - pattern: $R.query
+  pattern-sinks:
+  - patterns:
+    - pattern: '$Y, err := store.Get(...)
+
+        ...
+
+        $VAR := $Y.Values[...]
+
+        ...
+
+        $VAR = $R
+
+        '
+    - focus-metavariable: $R
+  - patterns:
+    - pattern: '$Y, err := store.Get(...)
+
+        ...
+
+        var $VAR $INT = $Y.Values["..."].($INT)
+
+        ...
+
+        $VAR = $R
+
+        '
+    - focus-metavariable: $R
+  message: 'Variable $VAR is assigned from two different sources: ''$Y'' and ''$R''. Make sure this is intended, as this could cause logic bugs if they are treated as they are the same object.'
+  languages:
+  - go
+  severity: WARNING
+- id: go.hardcoded-jwt-key
+  message: A hard-coded credential was detected. It is not recommended to store credentials in source-code, as this risks secrets being leaked and used by either an internal or external malicious adversary. It is recommended to use environment variables to securely provide credentials or retrieve credentials from a secure vault or HSM (Hardware Security Module).
+  options:
+    interfile: true
+  metadata:
+    cwe:
+    - 'CWE-798: Use of Hard-coded Credentials'
+    references:
+    - https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html
+    owasp:
+    - A07:2021 - Identification and Authentication Failures
+    category: security
+    technology:
+    - jwt
+    - secrets
+    confidence: MEDIUM
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: HIGH
+    impact: MEDIUM
+    interfile: true
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/jwt-go/security/jwt.yaml
+      upstream-id: hardcoded-jwt-key
+  severity: WARNING
+  languages:
+  - go
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern-inside: '[]byte("$F")
+
+        '
+  pattern-sinks:
+  - patterns:
+    - pattern-either:
+      - pattern-inside: '$TOKEN.SignedString($F)
+
+          '
+    - focus-metavariable: $F
+- id: go.import-text-template
+  message: When working with web applications that involve rendering user-generated  content, it's important to properly escape any HTML content to prevent  Cross-Site Scripting (XSS) attacks. In Go, the `text/template` package does  not automatically escape HTML content, which can leave your application  vulnerable to these types of attacks. To mitigate this risk, it's  recommended to use the `html/template` package instead, which provides  built-in functionality for HTML escaping. By using `html/template` to render  your HTML content, you can help to ensure that your web application is more  secure and less susceptible to XSS vulnerabilities.
+  metadata:
+    owasp:
+    - A07:2017 - Cross-Site Scripting (XSS)
+    - A03:2021 - Injection
+    cwe:
+    - 'CWE-79: Improper Neutralization of Input During Web Page Generation (''Cross-site Scripting'')'
+    references:
+    - https://www.veracode.com/blog/secure-development/use-golang-these-mistakes-could-compromise-your-apps-security
+    category: security
+    technology:
+    - go
+    confidence: LOW
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/audit/xss/import-text-template.yaml
+      upstream-id: import-text-template
+  severity: WARNING
+  patterns:
+  - pattern: 'import "$IMPORT"
+
+      '
+  - metavariable-regex:
+      metavariable: $IMPORT
+      regex: ^(text/template)$
+  - focus-metavariable: $IMPORT
+  fix: 'html/template
+
+    '
+  languages:
+  - go
+- id: go.insecure-module-used
+  message: The package `net/http/cgi` is on the import blocklist.  The package is vulnerable to httpoxy attacks (CVE-2015-5386). It is recommended to use `net/http` or a web framework to build a web application instead.
+  metadata:
+    owasp:
+    - A03:2017 - Sensitive Data Exposure
+    - A02:2021 - Cryptographic Failures
+    cwe:
+    - 'CWE-327: Use of a Broken or Risky Cryptographic Algorithm'
+    source-rule-url: https://github.com/securego/gosec
+    references:
+    - https://godoc.org/golang.org/x/crypto/sha3
+    category: security
+    technology:
+    - go
+    confidence: MEDIUM
+    subcategory:
+    - audit
+    likelihood: MEDIUM
+    impact: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/audit/crypto/bad_imports.yaml
+      upstream-id: insecure-module-used
+  languages:
+  - go
+  severity: WARNING
+  pattern-either:
+  - patterns:
+    - pattern-inside: 'import "net/http/cgi"
+
+        ...
+
+        '
+    - pattern: 'cgi.$FUNC(...)
+
+        '
+- id: go.jwt-go-parse-unverified
+  message: Detected the decoding of a JWT token without a verify step. Don't use `ParseUnverified` unless you know what you're doing This method parses the token but doesn't validate the signature. It's only ever useful in cases where you know the signature is valid (because it has been checked previously in the stack) and you want to extract values from it.
+  metadata:
+    cwe:
+    - 'CWE-345: Insufficient Verification of Data Authenticity'
+    owasp:
+    - A08:2021 - Software and Data Integrity Failures
+    source-rule-url: https://semgrep.dev/blog/2020/hardcoded-secrets-unverified-tokens-and-other-common-jwt-mistakes/
+    category: security
+    technology:
+    - jwt
+    confidence: MEDIUM
+    references:
+    - https://owasp.org/Top10/A08_2021-Software_and_Data_Integrity_Failures
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/jwt-go/security/audit/jwt-parse-unverified.yaml
+      upstream-id: jwt-go-parse-unverified
+  languages:
+  - go
+  severity: WARNING
+  patterns:
+  - pattern-inside: 'import "github.com/dgrijalva/jwt-go"
+
+      ...
+
+      '
+  - pattern: '$JWT.ParseUnverified(...)
+
+      '
+- id: go.math-random-used
+  metadata:
+    cwe:
+    - 'CWE-338: Use of Cryptographically Weak Pseudo-Random Number Generator (PRNG)'
+    owasp:
+    - A02:2021 - Cryptographic Failures
+    references:
+    - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html#secure-random-number-generation
+    category: security
+    technology:
+    - go
+    confidence: MEDIUM
+    subcategory:
+    - vuln
+    likelihood: MEDIUM
+    impact: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/audit/crypto/math_random.yaml
+      upstream-id: math-random-used
+  message: Do not use `math/rand`. Use `crypto/rand` instead.
+  languages:
+  - go
+  severity: WARNING
+  patterns:
+  - pattern-either:
+    - pattern: 'import $RAND "$MATH"
+
+        '
+    - pattern: 'import "$MATH"
+
+        '
+  - metavariable-regex:
+      metavariable: $MATH
+      regex: ^(math/rand(\/v[0-9]+)*)$
+  - pattern-either:
+    - pattern-inside: '...
+
+        rand.$FUNC(...)
+
+        '
+    - pattern-inside: '...
+
+        $RAND.$FUNC(...)
+
+        '
+  - focus-metavariable:
+    - $MATH
+  fix: 'crypto/rand
+
+    '
+- id: go.md5-used-as-password
+  languages:
+  - go
+  severity: WARNING
+  message: It looks like MD5 is used as a password hash. MD5 is not considered a secure password hash because it can be cracked by an attacker in a short amount of time. Use a suitable password hashing function such as bcrypt. You can use the `golang.org/x/crypto/bcrypt` package.
+  options:
+    interfile: true
+  metadata:
+    category: security
+    technology:
+    - md5
+    references:
+    - https://tools.ietf.org/id/draft-lvelvindron-tls-md5-sha1-deprecate-01.html
+    - https://security.stackexchange.com/questions/211/how-to-securely-hash-passwords
+    - https://github.com/returntocorp/semgrep-rules/issues/1609
+    - https://pkg.go.dev/golang.org/x/crypto/bcrypt
+    owasp:
+    - A03:2017 - Sensitive Data Exposure
+    - A02:2021 - Cryptographic Failures
+    cwe:
+    - 'CWE-327: Use of a Broken or Risky Cryptographic Algorithm'
+    confidence: MEDIUM
+    subcategory:
+    - vuln
+    likelihood: MEDIUM
+    impact: MEDIUM
+    interfile: true
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/audit/md5-used-as-password.yaml
+      upstream-id: md5-used-as-password
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - pattern: md5.New
+      - pattern: md5.Sum
+  pattern-sinks:
+  - patterns:
+    - pattern: $FUNCTION(...)
+    - metavariable-regex:
+        metavariable: $FUNCTION
+        regex: (?i)(.*password.*)
+- id: go.missing-ssl-minversion
+  message: '`MinVersion` is missing from this TLS configuration.  By default, TLS 1.2 is currently used as the minimum when acting as a client, and TLS 1.0 when acting as a server. General purpose web applications should default to TLS 1.3 with all other protocols disabled.  Only where it is known that a web server must support legacy clients with unsupported an insecure browsers (such as Internet Explorer 10), it may be necessary to enable TLS 1.0 to provide support. Add `MinVersion: tls.VersionTLS13'' to the TLS configuration to bump the minimum version to TLS 1.3.'
+  metadata:
+    cwe:
+    - 'CWE-327: Use of a Broken or Risky Cryptographic Algorithm'
+    owasp:
+    - A03:2017 - Sensitive Data Exposure
+    - A02:2021 - Cryptographic Failures
+    source-rule-url: https://github.com/securego/gosec/blob/master/rules/tls_config.go
+    references:
+    - https://golang.org/doc/go1.14#crypto/tls
+    - https://golang.org/pkg/crypto/tls/#:~:text=MinVersion
+    - https://www.us-cert.gov/ncas/alerts/TA14-290A
+    category: security
+    technology:
+    - go
+    confidence: HIGH
+    subcategory:
+    - audit
+    likelihood: MEDIUM
+    impact: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/audit/crypto/missing-ssl-minversion.yaml
+      upstream-id: missing-ssl-minversion
+  languages:
+  - go
+  severity: WARNING
+  patterns:
+  - pattern: 'tls.Config{ $...CONF }
+
+      '
+  - pattern-not: 'tls.Config{..., MinVersion: ..., ...}
+
+      '
+  fix: 'tls.Config{ $...CONF, MinVersion: tls.VersionTLS13 }
+
+    '
+- id: go.no-direct-write-to-responsewriter
+  languages:
+  - go
+  message: Detected directly writing or similar in 'http.ResponseWriter.write()'. This bypasses HTML escaping that prevents cross-site scripting vulnerabilities. Instead, use the 'html/template' package and render data using 'template.Execute()'.
+  metadata:
+    category: security
+    cwe:
+    - 'CWE-79: Improper Neutralization of Input During Web Page Generation (''Cross-site Scripting'')'
+    license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    owasp:
+    - A07:2017 - Cross-Site Scripting (XSS)
+    - A03:2021 - Injection
+    references:
+    - https://blogtitle.github.io/robn-go-security-pearls-cross-site-scripting-xss/
+    technology:
+    - go
+    confidence: LOW
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/audit/xss/no-direct-write-to-responsewriter.yaml
+      upstream-id: no-direct-write-to-responsewriter
+  patterns:
+  - pattern-either:
+    - pattern-inside: "func $HANDLER(..., $WRITER http.ResponseWriter, ...) {\n  ...\n}\n"
+    - pattern-inside: "func $HANDLER(..., $WRITER *http.ResponseWriter, ...) {\n  ...\n}\n"
+    - pattern-inside: "func(..., $WRITER http.ResponseWriter, ...) {\n  ...\n}\n"
+  - pattern-either:
+    - pattern: $WRITER.Write(...)
+    - pattern: (*$WRITER).Write(...)
+  - pattern-not: $WRITER.Write([]byte("..."))
+  severity: WARNING
+- id: go.no-fprintf-to-responsewriter
+  message: Detected 'Fprintf' or similar writing to 'http.ResponseWriter'. This bypasses HTML escaping that prevents cross-site scripting vulnerabilities. Instead, use the 'html/template' package to render data to users.
+  metadata:
+    owasp:
+    - A07:2017 - Cross-Site Scripting (XSS)
+    - A03:2021 - Injection
+    cwe:
+    - 'CWE-79: Improper Neutralization of Input During Web Page Generation (''Cross-site Scripting'')'
+    references:
+    - https://blogtitle.github.io/robn-go-security-pearls-cross-site-scripting-xss/
+    category: security
+    technology:
+    - go
+    confidence: LOW
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/audit/xss/no-fprintf-to-responsewriter.yaml
+      upstream-id: no-fprintf-to-responsewriter
+  severity: WARNING
+  patterns:
+  - pattern-either:
+    - pattern-inside: "func $HANDLER(..., $WRITER http.ResponseWriter, ...) {\n  ...\n}\n"
+    - pattern-inside: "func(..., $WRITER http.ResponseWriter, ...) {\n  ...\n}\n"
+  - pattern-not: fmt.$PRINTF($WRITER, "...")
+  - pattern: fmt.$PRINTF($WRITER, ...)
+  languages:
+  - go
+- id: go.no-io-writestring-to-responsewriter
+  message: Detected 'io.WriteString()' writing directly to 'http.ResponseWriter'. This bypasses HTML escaping that prevents cross-site scripting vulnerabilities. Instead, use the 'html/template' package to render data to users.
+  metadata:
+    owasp:
+    - A07:2017 - Cross-Site Scripting (XSS)
+    - A03:2021 - Injection
+    cwe:
+    - 'CWE-79: Improper Neutralization of Input During Web Page Generation (''Cross-site Scripting'')'
+    references:
+    - https://blogtitle.github.io/robn-go-security-pearls-cross-site-scripting-xss/
+    - https://golang.org/pkg/io/#WriteString
+    category: security
+    technology:
+    - go
+    confidence: LOW
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/audit/xss/no-io-writestring-to-responsewriter.yaml
+      upstream-id: no-io-writestring-to-responsewriter
+  severity: WARNING
+  patterns:
+  - pattern-either:
+    - pattern-inside: "func $HANDLER(..., $WRITER http.ResponseWriter, ...) {\n  ...\n}\n"
+    - pattern-inside: "func(..., $WRITER http.ResponseWriter, ...) {\n  ...\n}\n"
+  - pattern-not: io.WriteString($WRITER, "...")
+  - pattern: io.WriteString($WRITER, $STRING)
+  languages:
+  - go
+- id: go.no-printf-in-responsewriter
+  message: Detected 'printf' or similar in 'http.ResponseWriter.write()'. This bypasses HTML escaping that prevents cross-site scripting vulnerabilities. Instead, use the 'html/template' package to render data to users.
+  metadata:
+    owasp:
+    - A07:2017 - Cross-Site Scripting (XSS)
+    - A03:2021 - Injection
+    cwe:
+    - 'CWE-79: Improper Neutralization of Input During Web Page Generation (''Cross-site Scripting'')'
+    references:
+    - https://blogtitle.github.io/robn-go-security-pearls-cross-site-scripting-xss/
+    category: security
+    technology:
+    - go
+    confidence: LOW
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/audit/xss/no-printf-in-responsewriter.yaml
+      upstream-id: no-printf-in-responsewriter
+  severity: WARNING
+  patterns:
+  - pattern-either:
+    - pattern-inside: "func $HANDLER(..., $WRITER http.ResponseWriter, ...) {\n  ...\n}\n"
+    - pattern-inside: "func(..., $WRITER http.ResponseWriter, ...) {\n  ...\n}\n"
+  - pattern: '$WRITER.Write(<... fmt.$PRINTF(...) ...>, ...)
+
+      '
+  languages:
+  - go
+- id: go.open-redirect
+  languages:
+  - go
+  severity: WARNING
+  message: An HTTP redirect was found to be crafted from user-input `$REQUEST`. This can lead to open redirect vulnerabilities, potentially allowing attackers to redirect users to malicious web sites. It is recommend where possible to not allow user-input to craft the redirect URL. When user-input is necessary to craft the request, it is recommended to follow OWASP best practices to restrict the URL to domains in an allowlist.
+  options:
+    interfile: true
+  metadata:
+    cwe:
+    - 'CWE-601: URL Redirection to Untrusted Site (''Open Redirect'')'
+    references:
+    - https://knowledge-base.secureflag.com/vulnerabilities/unvalidated_redirects___forwards/open_redirect_go_lang.html
+    category: security
+    technology:
+    - go
+    confidence: HIGH
+    description: An HTTP redirect was found to be crafted from user-input leading to an open redirect vulnerability
+    subcategory:
+    - vuln
+    impact: MEDIUM
+    likelihood: MEDIUM
+    interfile: true
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/injection/open-redirect.yaml
+      upstream-id: open-redirect
+  mode: taint
+  pattern-sources:
+  - label: INPUT
+    patterns:
+    - pattern-either:
+      - pattern: '($REQUEST : *http.Request).$ANYTHING
+
+          '
+      - pattern: '($REQUEST : http.Request).$ANYTHING
+
+          '
+    - metavariable-regex:
+        metavariable: $ANYTHING
+        regex: ^(BasicAuth|Body|Cookie|Cookies|Form|FormValue|GetBody|Host|MultipartReader|ParseForm|ParseMultipartForm|PostForm|PostFormValue|Referer|RequestURI|Trailer|TransferEncoding|UserAgent|URL)$
+  - label: CLEAN
+    requires: INPUT
+    patterns:
+    - pattern-either:
+      - pattern: '"$URLSTR" + $INPUT
+
+          '
+      - patterns:
+        - pattern-either:
+          - pattern: fmt.Fprintf($F, "$URLSTR", $INPUT, ...)
+          - pattern: fmt.Sprintf("$URLSTR", $INPUT, ...)
+          - pattern: fmt.Printf("$URLSTR", $INPUT, ...)
+    - metavariable-regex:
+        metavariable: $URLSTR
+        regex: .*//[a-zA-Z0-10]+\..*
+  pattern-sinks:
+  - requires: INPUT and not CLEAN
+    patterns:
+    - pattern: http.Redirect($W, $REQ, $URL, ...)
+    - focus-metavariable: $URL
+- id: go.parsing-external-entities-enabled
+  patterns:
+  - pattern-inside: 'import ("github.com/lestrrat-go/libxml2/parser")
+
+      ...
+
+      '
+  - pattern: $PARSER := parser.New(parser.XMLParseNoEnt)
+  message: Detected enabling of "XMLParseNoEnt", which allows parsing of external entities and can lead to XXE if user controlled data is parsed by the library. Instead, do not enable "XMLParseNoEnt" or be sure to adequately sanitize user-controlled data when it is being parsed by this library.
+  languages:
+  - go
+  severity: WARNING
+  metadata:
+    category: security
+    cwe:
+    - 'CWE-611: Improper Restriction of XML External Entity Reference'
+    owasp:
+    - A04:2017 - XML External Entities (XXE)
+    - A05:2021 - Security Misconfiguration
+    references:
+    - https://knowledge-base.secureflag.com/vulnerabilities/xml_injection/xml_entity_expansion_go_lang.html
+    - https://owasp.org/www-community/vulnerabilities/XML_External_Entity_(XXE)_Processing
+    technology:
+    - libxml2
+    confidence: LOW
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: HIGH
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/audit/xxe/parsing-external-entities-enabled.yaml
+      upstream-id: parsing-external-entities-enabled
+- id: go.path-traversal-inside-zip-extraction
+  message: File traversal when extracting zip archive
+  metadata:
+    cwe:
+    - 'CWE-22: Improper Limitation of a Pathname to a Restricted Directory (''Path Traversal'')'
+    source_rule_url: https://github.com/securego/gosec/issues/205
+    category: security
+    technology:
+    - go
+    confidence: LOW
+    owasp:
+    - A05:2017 - Broken Access Control
+    - A01:2021 - Broken Access Control
+    references:
+    - https://owasp.org/Top10/A01_2021-Broken_Access_Control
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/zip.yaml
+      upstream-id: path-traversal-inside-zip-extraction
+  languages:
+  - go
+  severity: WARNING
+  pattern: "reader, $ERR := zip.OpenReader($ARCHIVE)\n...\nfor _, $FILE := range reader.File {\n  ...\n  path := filepath.Join($TARGET, $FILE.Name)\n  ...\n}\n"
+- id: go.potential-dos-via-decompression-bomb
+  message: 'Detected a possible denial-of-service via a zip bomb attack. By limiting the max bytes read, you can mitigate this attack. `io.CopyN()` can specify a size. '
+  severity: WARNING
+  languages:
+  - go
+  patterns:
+  - pattern-either:
+    - pattern: io.Copy(...)
+    - pattern: io.CopyBuffer(...)
+  - pattern-either:
+    - pattern-inside: 'gzip.NewReader(...)
+
+        ...
+
+        '
+    - pattern-inside: 'zlib.NewReader(...)
+
+        ...
+
+        '
+    - pattern-inside: 'zlib.NewReaderDict(...)
+
+        ...
+
+        '
+    - pattern-inside: 'bzip2.NewReader(...)
+
+        ...
+
+        '
+    - pattern-inside: 'flate.NewReader(...)
+
+        ...
+
+        '
+    - pattern-inside: 'flate.NewReaderDict(...)
+
+        ...
+
+        '
+    - pattern-inside: 'lzw.NewReader(...)
+
+        ...
+
+        '
+    - pattern-inside: 'tar.NewReader(...)
+
+        ...
+
+        '
+    - pattern-inside: 'zip.NewReader(...)
+
+        ...
+
+        '
+    - pattern-inside: 'zip.OpenReader(...)
+
+        ...
+
+        '
+  fix-regex:
+    regex: (.*)(Copy|CopyBuffer)\((.*?),(.*?)(\)|,.*\))
+    replacement: \1CopyN(\3, \4, 1024*1024*256)
+  metadata:
+    cwe:
+    - 'CWE-400: Uncontrolled Resource Consumption'
+    source-rule-url: https://github.com/securego/gosec
+    references:
+    - https://golang.org/pkg/io/#CopyN
+    - https://github.com/securego/gosec/blob/master/rules/decompression-bomb.go
+    category: security
+    technology:
+    - go
+    confidence: LOW
+    cwe2022-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/decompression_bomb.yaml
+      upstream-id: potential-dos-via-decompression-bomb
+- id: go.pprof-debug-exposure
+  metadata:
+    cwe:
+    - 'CWE-489: Active Debug Code'
+    owasp: A06:2017 - Security Misconfiguration
+    source-rule-url: https://github.com/securego/gosec#available-rules
+    references:
+    - https://www.farsightsecurity.com/blog/txt-record/go-remote-profiling-20161028/
+    category: security
+    technology:
+    - go
+    confidence: LOW
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/audit/net/pprof.yaml
+      upstream-id: pprof-debug-exposure
+  message: The profiling 'pprof' endpoint is automatically exposed on /debug/pprof. This could leak information about the server. Instead, use `import "net/http/pprof"`. See https://www.farsightsecurity.com/blog/txt-record/go-remote-profiling-20161028/ for more information and mitigation.
+  languages:
+  - go
+  severity: WARNING
+  patterns:
+  - pattern-inside: 'import _ "net/http/pprof"
+
+      ...
+
+      '
+  - pattern-inside: "func $ANY(...) {\n  ...\n}\n"
+  - pattern-not-inside: '$MUX = http.NewServeMux(...)
+
+      ...
+
+      http.ListenAndServe($ADDR, $MUX)
+
+      '
+  - pattern-not: http.ListenAndServe("=~/^localhost.*/", ...)
+  - pattern-not: http.ListenAndServe("=~/^127[.]0[.]0[.]1.*/", ...)
+  - pattern: http.ListenAndServe(...)
+- id: go.raw-html-format
+  languages:
+  - go
+  severity: WARNING
+  message: Detected user input flowing into a manually constructed HTML string. You may be accidentally bypassing secure methods of rendering HTML by manually constructing HTML and this could create a cross-site scripting vulnerability, which could let attackers steal sensitive user data. Use the `html/template` package which will safely render HTML instead, or inspect that the HTML is rendered safely.
+  metadata:
+    cwe:
+    - 'CWE-79: Improper Neutralization of Input During Web Page Generation (''Cross-site Scripting'')'
+    owasp:
+    - A07:2017 - Cross-Site Scripting (XSS)
+    - A03:2021 - Injection
+    category: security
+    technology:
+    - go
+    references:
+    - https://blogtitle.github.io/robn-go-security-pearls-cross-site-scripting-xss/
+    license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    confidence: MEDIUM
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: HIGH
+    impact: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/injection/raw-html-format.yaml
+      upstream-id: raw-html-format
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - pattern: '($REQUEST : *http.Request).$ANYTHING
+
+          '
+      - pattern: '($REQUEST : http.Request).$ANYTHING
+
+          '
+    - metavariable-regex:
+        metavariable: $ANYTHING
+        regex: ^(BasicAuth|Body|Cookie|Cookies|Form|FormValue|GetBody|Host|MultipartReader|ParseForm|ParseMultipartForm|PostForm|PostFormValue|Referer|RequestURI|Trailer|TransferEncoding|UserAgent|URL)$
+  pattern-sanitizers:
+  - pattern: html.EscapeString(...)
+  pattern-sinks:
+  - patterns:
+    - pattern-either:
+      - pattern: fmt.Printf("$HTMLSTR", ...)
+      - pattern: fmt.Sprintf("$HTMLSTR", ...)
+      - pattern: fmt.Fprintf($W, "$HTMLSTR", ...)
+      - pattern: '"$HTMLSTR" + ...'
+    - metavariable-pattern:
+        metavariable: $HTMLSTR
+        language: generic
+        pattern: <$TAG ...
+- id: go.reverseproxy-director
+  message: ReverseProxy can remove headers added by Director. Consider using ReverseProxy.Rewrite instead of ReverseProxy.Director.
+  languages:
+  - go
+  severity: WARNING
+  patterns:
+  - pattern-inside: 'import "net/http/httputil"
+
+      ...
+
+      '
+  - pattern-either:
+    - pattern: $PROXY.Director = $FUNC
+    - patterns:
+      - pattern-inside: "httputil.ReverseProxy{\n    ...\n}\n"
+      - pattern: 'Director: $FUNC
+
+          '
+  metadata:
+    cwe:
+    - 'CWE-115: Misinterpretation of Input'
+    category: security
+    subcategory:
+    - audit
+    technology:
+    - go
+    confidence: MEDIUM
+    likelihood: LOW
+    impact: LOW
+    references:
+    - https://github.com/golang/go/issues/50580
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/reverseproxy-director.yaml
+      upstream-id: reverseproxy-director
+- id: go.session-cookie-missing-httponly
+  patterns:
+  - pattern-not-inside: "&sessions.Options{\n  ...,\n  HttpOnly: true,\n  ...,\n}\n"
+  - pattern: "&sessions.Options{\n  ...,\n}\n"
+  message: A session cookie was detected without setting the 'HttpOnly' flag. The 'HttpOnly' flag for cookies instructs the browser to forbid client-side scripts from reading the cookie which mitigates XSS attacks. Set the 'HttpOnly' flag by setting 'HttpOnly' to 'true' in the Options struct.
+  metadata:
+    cwe:
+    - 'CWE-1004: Sensitive Cookie Without ''HttpOnly'' Flag'
+    owasp:
+    - A05:2021 - Security Misconfiguration
+    references:
+    - https://github.com/0c34/govwa/blob/139693e56406b5684d2a6ae22c0af90717e149b8/user/session/session.go#L69
+    category: security
+    technology:
+    - gorilla
+    confidence: MEDIUM
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/gorilla/security/audit/session-cookie-missing-httponly.yaml
+      upstream-id: session-cookie-missing-httponly
+  fix-regex:
+    regex: (HttpOnly\s*:\s+)false
+    replacement: \1true
+  severity: WARNING
+  languages:
+  - go
+- id: go.session-cookie-missing-secure
+  patterns:
+  - pattern-not-inside: "&sessions.Options{\n  ...,\n  Secure: true,\n  ...,\n}\n"
+  - pattern: "&sessions.Options{\n  ...,\n}\n"
+  message: A session cookie was detected without setting the 'Secure' flag. The 'secure' flag for cookies prevents the client from transmitting the cookie over insecure channels such as HTTP. Set the 'Secure' flag by setting 'Secure' to 'true' in the Options struct.
+  metadata:
+    cwe:
+    - 'CWE-614: Sensitive Cookie in HTTPS Session Without ''Secure'' Attribute'
+    owasp:
+    - A05:2021 - Security Misconfiguration
+    references:
+    - https://github.com/0c34/govwa/blob/139693e56406b5684d2a6ae22c0af90717e149b8/user/session/session.go#L69
+    category: security
+    technology:
+    - gorilla
+    confidence: MEDIUM
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/gorilla/security/audit/session-cookie-missing-secure.yaml
+      upstream-id: session-cookie-missing-secure
+  fix-regex:
+    regex: (Secure\s*:\s+)false
+    replacement: \1true
+  severity: WARNING
+  languages:
+  - go
+- id: go.session-cookie-samesitenone
+  patterns:
+  - pattern-inside: "&sessions.Options{\n  ...,\n  SameSite: http.SameSiteNoneMode,\n  ...,\n}\n"
+  - pattern: "&sessions.Options{\n  ...,\n}\n"
+  message: Found SameSiteNoneMode setting in Gorilla session options. Consider setting SameSite to Lax, Strict or Default for enhanced security.
+  metadata:
+    cwe:
+    - 'CWE-1275: Sensitive Cookie with Improper SameSite Attribute'
+    owasp:
+    - A05:2021 - Security Misconfiguration
+    references:
+    - https://pkg.go.dev/github.com/gorilla/sessions#Options
+    category: security
+    technology:
+    - gorilla
+    confidence: MEDIUM
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/gorilla/security/audit/session-cookie-samesitenone.yaml
+      upstream-id: session-cookie-samesitenone
+  fix-regex:
+    regex: (SameSite\s*:\s+)http.SameSiteNoneMode
+    replacement: \1http.SameSiteDefaultMode
+  severity: WARNING
+  languages:
+  - go
+- id: go.shared-url-struct-mutation
+  message: Shared URL struct may have been accidentally mutated. Ensure that this behavior is intended.
+  languages:
+  - go
+  severity: WARNING
+  patterns:
+  - pattern-inside: 'import "net/url"
+
+      ...
+
+      '
+  - pattern-not-inside: '... = url.Parse(...)
+
+      ...
+
+      '
+  - pattern-not-inside: '... = url.ParseRequestURI(...)
+
+      ...
+
+      '
+  - pattern-not-inside: '... = url.URL{...}
+
+      ...
+
+      '
+  - pattern-not-inside: 'var $URL *$X.URL
+
+      ...
+
+      '
+  - pattern-either:
+    - pattern: $URL.RawQuery = ...
+    - pattern: $URL.Path = ...
+    - pattern: $URL.RawPath = ...
+    - pattern: $URL.Fragment = ...
+    - pattern: $URL.RawFragment = ...
+    - pattern: $URL.Scheme = ...
+    - pattern: $URL.Opaque = ...
+    - pattern: $URL.Host = ...
+    - pattern: $URL.User = ...
+  - metavariable-pattern:
+      metavariable: $URL
+      patterns:
+      - pattern-not: $X.$Y
+      - pattern-not: $X[...]
+  metadata:
+    cwe:
+    - 'CWE-436: Interpretation Conflict'
+    category: security
+    subcategory:
+    - audit
+    technology:
+    - go
+    confidence: LOW
+    likelihood: LOW
+    impact: LOW
+    references:
+    - https://github.com/golang/go/issues/63777
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/shared-url-struct-mutation.yaml
+      upstream-id: shared-url-struct-mutation

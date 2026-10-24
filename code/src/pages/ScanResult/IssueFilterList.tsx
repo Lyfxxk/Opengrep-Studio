@@ -1,0 +1,187 @@
+import { useMemo, useState } from 'react';
+import { Search } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { COMPARISON_LABELS, REVIEW_BADGE_CLASS, REVIEW_STATUS_LABELS, SEVERITY_LABELS, type IIssue } from '@/data/issues';
+import { lookupRuleMessage, useRuleMessageMap } from '@/lib/ruleMessages';
+import { COMPARISON_BADGE_CLASS, SEVERITY_BADGE_CLASS } from '@/lib/severity';
+import { cn } from '@/lib/utils';
+import { KnowledgeLink } from './KnowledgeSheet';
+
+interface IssueFilterListProps {
+  issues: IIssue[];
+  selectedIssueId: string | null;
+  onSelect: (issueId: string) => void;
+  onOpenKnowledge?: (ruleId: string) => void;
+}
+
+export default function IssueFilterList({
+  issues,
+  selectedIssueId,
+  onSelect,
+  onOpenKnowledge,
+}: IssueFilterListProps) {
+  const [severity, setSeverity] = useState('all');
+  const [status, setStatus] = useState('all');
+  const [keyword, setKeyword] = useState('');
+  const messageMap = useRuleMessageMap();
+
+  const filtered = useMemo(
+    () =>
+      issues.filter((issue) => {
+        if (severity !== 'all' && issue.severity !== severity) return false;
+        if (status !== 'all' && issue.comparisonStatus !== status) return false;
+        const keywordTrimmed = keyword.trim().toLowerCase();
+        if (keywordTrimmed === '') return true;
+        const translated = lookupRuleMessage(messageMap, issue.ruleId, '');
+        return (
+          issue.filePath.toLowerCase().includes(keywordTrimmed) ||
+          issue.message.toLowerCase().includes(keywordTrimmed) ||
+          translated.toLowerCase().includes(keywordTrimmed)
+        );
+      }),
+    [issues, severity, status, keyword, messageMap],
+  );
+
+  // 有问题但被筛选条件滤空 ≠ 扫描本身没发现问题，两种空态要分开表述
+  const hasActiveFilter =
+    severity !== 'all' || status !== 'all' || keyword.trim() !== '';
+  const resetFilters = () => {
+    setSeverity('all');
+    setStatus('all');
+    setKeyword('');
+  };
+
+  return (
+    <div className="flex h-full flex-col gap-3">
+      <Tabs value={status} onValueChange={setStatus}>
+        <TabsList className="w-full justify-start">
+          <TabsTrigger value="all">全部</TabsTrigger>
+          <TabsTrigger value="new">新增</TabsTrigger>
+          <TabsTrigger value="fixed">已修复</TabsTrigger>
+          <TabsTrigger value="remaining">遗留</TabsTrigger>
+        </TabsList>
+      </Tabs>
+      <div className="grid grid-cols-1 gap-2">
+        <Select value={severity} onValueChange={setSeverity}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="严重等级" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">全部等级</SelectItem>
+            <SelectItem value="critical">严重</SelectItem>
+            <SelectItem value="high">高危</SelectItem>
+            <SelectItem value="medium">中危</SelectItem>
+            <SelectItem value="low">低危</SelectItem>
+          </SelectContent>
+        </Select>
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={keyword}
+            onChange={(event) => setKeyword(event.target.value)}
+            placeholder="按文件路径或描述搜索"
+            className="pl-9"
+          />
+        </div>
+      </div>
+      <div className="text-xs text-muted-foreground">共 {filtered.length} 个问题</div>
+      <div className="flex-1 space-y-2 overflow-y-auto pr-1">
+        {filtered.length === 0 ? (
+          <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+            {issues.length === 0 ? (
+              '本次扫描未发现问题'
+            ) : (
+              <>
+                <p>当前筛选条件下没有匹配的问题</p>
+                {hasActiveFilter && (
+                  <button
+                    type="button"
+                    onClick={resetFilters}
+                    className="mt-2 text-xs font-medium text-primary hover:underline"
+                  >
+                    清除筛选条件
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        ) : (
+          filtered.map((issue) => (
+            <button
+              key={issue.id}
+              type="button"
+              onClick={() => onSelect(issue.id)}
+              className={cn(
+                'w-full rounded-lg border p-3 text-left transition-colors',
+                selectedIssueId === issue.id
+                  ? 'border-primary bg-primary/5'
+                  : 'border-border hover:bg-muted/50',
+              )}
+            >
+              <div className="flex min-w-0 items-center gap-2">
+                <Badge
+                  className={cn(
+                    'shrink-0 text-xs font-normal',
+                    SEVERITY_BADGE_CLASS[issue.severity],
+                  )}
+                >
+                  {SEVERITY_LABELS[issue.severity]}
+                </Badge>
+                <Badge
+                  className={cn(
+                    'shrink-0 text-xs font-normal',
+                    COMPARISON_BADGE_CLASS[issue.comparisonStatus],
+                  )}
+                >
+                  {COMPARISON_LABELS[issue.comparisonStatus]}
+                </Badge>
+                {issue.rulepackName && (
+                  <Badge
+                    variant="outline"
+                    className="max-w-[110px] shrink-0 truncate px-1.5 text-xs font-normal text-muted-foreground"
+                    title={`来源规则包：${issue.rulepackName}`}
+                  >
+                    {issue.rulepackName}
+                  </Badge>
+                )}
+                {issue.review && (
+                  <Badge
+                    className={cn(
+                      'shrink-0 text-xs font-normal',
+                      REVIEW_BADGE_CLASS[issue.review.status],
+                    )}
+                    title={issue.review.reason}
+                  >
+                    {REVIEW_STATUS_LABELS[issue.review.status]}
+                  </Badge>
+                )}
+                {onOpenKnowledge ? (
+                  <KnowledgeLink issue={issue} onOpen={onOpenKnowledge} />
+                ) : (
+                  <span className="ml-auto shrink-0 font-mono text-xs text-muted-foreground">
+                    {issue.ruleId}
+                  </span>
+                )}
+              </div>
+              <p className="mt-2 line-clamp-2 text-sm font-medium">
+                {lookupRuleMessage(messageMap, issue.ruleId, issue.message)}
+              </p>
+              <p className="mt-1 truncate font-mono text-xs text-muted-foreground">
+                {issue.filePath}:{issue.startLine}
+              </p>
+            </button>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}

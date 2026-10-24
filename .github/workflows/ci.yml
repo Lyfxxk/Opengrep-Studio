@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  server:
+    name: 后端（typecheck + 单测）
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: 安装依赖
+        run: npm --prefix server ci
+      - name: 类型检查
+        run: npm --prefix server run typecheck
+      - name: 单元测试
+        run: npm --prefix server test
+      - name: 规则包回归（结构校验 + 随包样本回归）
+        run: npm run test-packs
+
+  frontend:
+    name: 前端（lint + 构建）
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: 安装依赖
+        run: npm --prefix code ci
+      - name: 类型检查 + ESLint
+        run: npm --prefix code run lint
+      - name: 构建
+        run: npm --prefix code run build
+
+  e2e:
+    name: 后端 E2E（真实引擎扫描）
+    runs-on: ubuntu-latest
+    needs: [server]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: 安装依赖
+        run: npm --prefix server ci
+      - name: 下载扫描引擎（SHA256 校验）
+        run: npm run setup:engine
+      - name: 启动后端
+        run: |
+          npm --prefix server run start &
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:8787/api/health > /dev/null; then
+              echo "后端已就绪"; exit 0
+            fi
+            sleep 2
+          done
+          echo "后端启动超时"; exit 1
+      - name: E2E 回归
+        run: npm run e2e
+        env:
+          # 显式走 IPv4 回环，避免 CI 环境 localhost 先解析到 ::1 造成偶发拒连（服务端只绑 127.0.0.1）
+          BASE_URL: http://127.0.0.1:8787
