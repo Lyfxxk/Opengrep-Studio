@@ -105,8 +105,11 @@ function normalizePath(p: string): string {
 }
 
 function relativizeToSrc(p: string, srcDir: string): string {
-  const norm = normalizePath(p).replace(/^\/+/, '');
-  const prefix = `${normalizePath(srcDir).replace(/\/+$/, '')}/`;
+  // 两侧统一剥前导斜杠再比对：引擎在 Linux 上返回绝对路径（/home/...），
+  // 只剥一侧会让 norm（home/...）永远匹配不上带斜杠的 prefix（/home/...）
+  const stripRoot = (s: string) => normalizePath(s).replace(/^\/+/, '');
+  const norm = stripRoot(p);
+  const prefix = `${stripRoot(srcDir).replace(/\/+$/, '')}/`;
   if (norm.toLowerCase().startsWith(prefix.toLowerCase())) {
     return norm.slice(prefix.length);
   }
