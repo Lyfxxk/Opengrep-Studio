@@ -1,0 +1,340 @@
+# Opengrep Studio 内置安全规则包（security）
+# 来源: https://github.com/opengrep/opengrep-rules （精选子集）
+# 许可: LGPL 2.1 + Commons Clause（不得将规则单独出售；保留本出处声明）
+# 精选标准: 含安全元数据的优先、每语言 ≤ 50 条（官方不足 50 条时全量收录），剔除 correctness 目录
+# 校验: opengrep validate --config server/rules/security
+rules:
+- id: swift.insecure-random
+  message: A random number generator was detected which is **not** *guaranteed* to be Cryptographically secure. If the source of entropy is used for security purposes (e.g. with other Cryptographic operations), make sure to use the `SecCopyRandomBytes` API explicitly.
+  severity: WARNING
+  metadata:
+    likelihood: LOW
+    impact: LOW
+    confidence: LOW
+    category: security
+    cwe:
+    - 'CWE-338: Use of Cryptographically Weak Pseudo-Random Number Generator (PRNG)'
+    masvs:
+    - 'MSTG-CRYPTO-6: All random values are generated using a sufficiently secure random number generator.'
+    owasp:
+    - A02:2021 - Cryptographic Failures
+    references:
+    - https://mobile-security.gitbook.io/masvs/security-requirements/0x08-v3-cryptography_verification_requirements
+    - https://developer.apple.com/documentation/security/1399291-secrandomcopybytes
+    - https://developer.apple.com/documentation/security/randomization_services?language=swift
+    - https://github.com/apple/swift-evolution/blob/main/proposals/0202-random-unification.md
+    subcategory:
+    - audit
+    technology:
+    - ios
+    - macos
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: swift/lang/crypto/insecure-random.yaml
+      upstream-id: insecure-random
+  languages:
+  - swift
+  pattern-either:
+  - pattern: random()
+  - pattern: Int.random(...)
+  - pattern: Bool.random(...)
+  - pattern: Float.random(...)
+  - pattern: Double.random(...)
+  - pattern: arc4random()
+  - pattern: arc4random_buf(...)
+  - pattern: arc4random_uniform(...)
+  - pattern: SystemRandomNumberGenerator(...)
+  - pattern: rand()
+- id: swift.swift-potential-sqlite-injection
+  message: Potential Client-side SQL injection which has different impacts depending on the SQL use-case. The impact may include the circumvention of local authentication mechanisms, obtaining of sensitive data from the app, or manipulation of client-side behavior. It wasn't possible to make certain that the source is untrusted, but the application should avoid concatenating dynamic data into SQL queries and should instead leverage parameterized queries.
+  severity: WARNING
+  metadata:
+    likelihood: MEDIUM
+    impact: MEDIUM
+    confidence: LOW
+    category: security
+    cwe:
+    - 'CWE-89: Improper Neutralization of Special Elements used in an SQL Command (''SQL Injection'')'
+    masvs:
+    - 'MASVS-CODE-4: The app validates and sanitizes all untrusted inputs.'
+    references:
+    - https://developer.apple.com/library/archive/documentation/Security/Conceptual/SecureCodingGuide/Articles/ValidatingInput.html
+    subcategory:
+    - vuln
+    technology:
+    - ios
+    - macos
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: swift/sqllite/sqllite-injection-audit.yaml
+      upstream-id: swift-potential-sqlite-injection
+  languages:
+  - swift
+  mode: taint
+  pattern-sources:
+  - pattern-either:
+    - pattern: '"...\($X)..."
+
+        '
+    - pattern: '$SQL = "..." + $X
+
+        '
+    - pattern: '$SQL = $X + "..."
+
+        '
+  pattern-sinks:
+  - patterns:
+    - pattern-either:
+      - pattern: sqlite3_exec($DB, $SQL, ...)
+      - pattern: sqlite3_prepare_v2($DB, $SQL, ...)
+    - focus-metavariable:
+      - $SQL
+- id: swift.swift-user-defaults
+  message: Potentially sensitive data was observed to be stored in UserDefaults, which is not adequate protection of sensitive information. For data of a sensitive nature, applications should leverage the Keychain.
+  severity: WARNING
+  metadata:
+    likelihood: LOW
+    impact: HIGH
+    confidence: MEDIUM
+    category: security
+    cwe:
+    - 'CWE-311: Missing Encryption of Sensitive Data'
+    masvs:
+    - 'MASVS-STORAGE-1: The app securely stores sensitive data'
+    owasp:
+    - A03:2017 - Sensitive Data Exposure
+    - A04:2021 - Insecure Design
+    references:
+    - https://developer.apple.com/library/archive/documentation/Security/Conceptual/SecureCodingGuide/Articles/ValidatingInput.html
+    - https://mas.owasp.org/MASVS/controls/MASVS-STORAGE-1/
+    subcategory:
+    - vuln
+    technology:
+    - ios
+    - macos
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: swift/lang/storage/sensitive-storage-userdefaults.yaml
+      upstream-id: swift-user-defaults
+  languages:
+  - swift
+  options:
+    symbolic_propagation: true
+  patterns:
+  - pattern-either:
+    - patterns:
+      - pattern-either:
+        - pattern: 'UserDefaults.standard.set("$VALUE", forKey: "$KEY")
+
+            '
+        - pattern: 'UserDefaults.standard.set("$VALUE", forKey: $KEY)
+
+            '
+        - pattern: 'UserDefaults.standard.set($VALUE, forKey: "$KEY")
+
+            '
+        - pattern: 'UserDefaults.standard.set($VALUE, forKey: $KEY)
+
+            '
+      - metavariable-regex:
+          metavariable: $VALUE
+          regex: (?i).*(passcode|password|pass_word|passphrase|pass_code|pass_word|pass_phrase)$
+      - focus-metavariable: $VALUE
+    - patterns:
+      - pattern-either:
+        - pattern: 'UserDefaults.standard.set("$VALUE", forKey: "$KEY")
+
+            '
+        - pattern: 'UserDefaults.standard.set("$VALUE", forKey: $KEY)
+
+            '
+        - pattern: 'UserDefaults.standard.set($VALUE, forKey: "$KEY")
+
+            '
+        - pattern: 'UserDefaults.standard.set($VALUE, forKey: $KEY)
+
+            '
+      - metavariable-regex:
+          metavariable: $KEY
+          regex: (?i).*(passcode|password|pass_word|passphrase|pass_code|pass_word|pass_phrase)$
+      - focus-metavariable: $KEY
+    - patterns:
+      - pattern-either:
+        - pattern: 'UserDefaults.standard.set("$VALUE", forKey: "$KEY")
+
+            '
+        - pattern: 'UserDefaults.standard.set("$VALUE", forKey: $KEY)
+
+            '
+        - pattern: 'UserDefaults.standard.set($VALUE, forKey: "$KEY")
+
+            '
+        - pattern: 'UserDefaults.standard.set($VALUE, forKey: $KEY)
+
+            '
+      - metavariable-regex:
+          metavariable: $VALUE
+          regex: (?i).*(api_key|apikey)$
+      - focus-metavariable: $VALUE
+    - patterns:
+      - pattern-either:
+        - pattern: 'UserDefaults.standard.set("$VALUE", forKey: "$KEY")
+
+            '
+        - pattern: 'UserDefaults.standard.set("$VALUE", forKey: $KEY)
+
+            '
+        - pattern: 'UserDefaults.standard.set($VALUE, forKey: "$KEY")
+
+            '
+        - pattern: 'UserDefaults.standard.set($VALUE, forKey: $KEY)
+
+            '
+      - metavariable-regex:
+          metavariable: $KEY
+          regex: (?i).*(api_key|apikey)$
+      - focus-metavariable: $KEY
+    - patterns:
+      - pattern-either:
+        - pattern: 'UserDefaults.standard.set("$VALUE", forKey: "$KEY")
+
+            '
+        - pattern: 'UserDefaults.standard.set("$VALUE", forKey: $KEY)
+
+            '
+        - pattern: 'UserDefaults.standard.set($VALUE, forKey: "$KEY")
+
+            '
+        - pattern: 'UserDefaults.standard.set($VALUE, forKey: $KEY)
+
+            '
+      - metavariable-regex:
+          metavariable: $VALUE
+          regex: (?i).*(secretkey|secret_key|secrettoken|secret_token|clientsecret|client_secret)$
+      - focus-metavariable: $VALUE
+    - patterns:
+      - pattern-either:
+        - pattern: 'UserDefaults.standard.set("$VALUE", forKey: "$KEY")
+
+            '
+        - pattern: 'UserDefaults.standard.set("$VALUE", forKey: $KEY)
+
+            '
+        - pattern: 'UserDefaults.standard.set($VALUE, forKey: "$KEY")
+
+            '
+        - pattern: 'UserDefaults.standard.set($VALUE, forKey: $KEY)
+
+            '
+      - metavariable-regex:
+          metavariable: $KEY
+          regex: (?i).*(secretkey|secret_key|secrettoken|secret_token|clientsecret|client_secret)$
+      - focus-metavariable: $KEY
+    - patterns:
+      - pattern-either:
+        - pattern: 'UserDefaults.standard.set("$VALUE", forKey: "$KEY")
+
+            '
+        - pattern: 'UserDefaults.standard.set("$VALUE", forKey: $KEY)
+
+            '
+        - pattern: 'UserDefaults.standard.set($VALUE, forKey: "$KEY")
+
+            '
+        - pattern: 'UserDefaults.standard.set($VALUE, forKey: $KEY)
+
+            '
+      - metavariable-regex:
+          metavariable: $VALUE
+          regex: (?i).*(cryptkey|cryptokey|crypto_key|cryptionkey|symmetrickey|privatekey|symmetric_key|private_key)$
+      - focus-metavariable: $VALUE
+    - patterns:
+      - pattern-either:
+        - pattern: 'UserDefaults.standard.set("$VALUE", forKey: "$KEY")
+
+            '
+        - pattern: 'UserDefaults.standard.set("$VALUE", forKey: $KEY)
+
+            '
+        - pattern: 'UserDefaults.standard.set($VALUE, forKey: "$KEY")
+
+            '
+        - pattern: 'UserDefaults.standard.set($VALUE, forKey: $KEY)
+
+            '
+      - metavariable-regex:
+          metavariable: $KEY
+          regex: (?i).*(cryptkey|cryptokey|crypto_key|cryptionkey|symmetrickey|privatekey|symmetric_key|private_key)$
+      - focus-metavariable: $KEY
+- id: swift.swift-webview-config-allows-js-open-windows
+  message: Webviews were observed that explictly allow JavaScript in an WKWebview to open windows automatically. Consider disabling this functionality if not required, following the principle of least privelege.
+  severity: WARNING
+  metadata:
+    likelihood: LOW
+    impact: LOW
+    confidence: HIGH
+    category: security
+    cwe:
+    - 'CWE-272: Least Privilege Violation'
+    masvs:
+    - 'MASVS-PLATFORM-2: The app uses WebViews securely'
+    references:
+    - https://mas.owasp.org/MASVS/controls/MASVS-PLATFORM-2/
+    - https://developer.apple.com/documentation/webkit/wkpreferences/1536573-javascriptcanopenwindowsautomati
+    subcategory:
+    - audit
+    technology:
+    - ios
+    - macos
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: swift/webview/webview-js-window.yaml
+      upstream-id: swift-webview-config-allows-js-open-windows
+  languages:
+  - swift
+  patterns:
+  - pattern: '$P = WKPreferences()
+
+      ...
+
+      '
+  - pattern-either:
+    - patterns:
+      - pattern-inside: '$P.JavaScriptCanOpenWindowsAutomatically  = $FALSE
+
+          ...
+
+          $P.JavaScriptCanOpenWindowsAutomatically  = $TRUE
+
+          '
+      - pattern-not-inside: '...
+
+          $P.JavaScriptCanOpenWindowsAutomatically  = $TRUE
+
+          ...
+
+          $P.JavaScriptCanOpenWindowsAutomatically = $FALSE
+
+          '
+      - pattern: '$P.JavaScriptCanOpenWindowsAutomatically  = true
+
+          '
+      - metavariable-regex:
+          metavariable: $TRUE
+          regex: ^(true)$
+      - metavariable-regex:
+          metavariable: $TRUE
+          regex: (.*(?!true))
+    - patterns:
+      - pattern: '$P.JavaScriptCanOpenWindowsAutomatically  = true
+
+          '
+      - pattern-not-inside: '...
+
+          $P.JavaScriptCanOpenWindowsAutomatically  = ...
+
+          ...
+
+          $P.JavaScriptCanOpenWindowsAutomatically  = ...
+
+          '

@@ -1,0 +1,55 @@
+node_modules/
+
+dist/
+*.tsbuildinfo
+*.local
+
+logs/
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# opengrep 引擎二进制不入库：LGPL-2.1 上游产物（约 50MB），用 npm run setup:engine 下载校验
+opengrep-tool/
+
+# 运行时数据（SQLite、源码快照、自定义规则包）：本地开发在 server/data/；
+# Docker bind mount（-v ./data:/data，见 Dockerfile）会落在仓库根 /data/
+# 只锚定根目录，不要放开成 data/（会误伤 code/src/data/ 前端演示数据）
+server/data/
+server/rules/custom/
+/data/
+
+# seed 演示数据的运行时打包产物（seed-demo.mjs 现场生成，可再生）
+server/scripts/seed-src/*.tgz
+
+.env
+.env.*
+!.env.example
+
+# Docker 本地覆盖配置（docker compose 自动合并，属个人环境）
+docker-compose.override.yml
+
+# 本地工具会话状态（ZCode plans、WorkBuddy 等）
+.zcode/
+.workbuddy/
+
+# 本机私有的 Agent 项目规范（个人维护，不入库）
+AGENTS.md
+
+# 编辑器 / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 操作系统
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# 测试与工具缓存
+coverage/
+.eslintcache
+
+# Python 字节码缓存（server/scripts/curate-rules.py）
+__pycache__/

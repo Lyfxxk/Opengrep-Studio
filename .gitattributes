@@ -1,0 +1,11 @@
+# 统一换行符：文本文件入库时规范化，检出按平台
+* text=auto
+
+# 一键启动脚本必须 LF，否则 macOS/Linux 上无法执行
+*.sh text eol=lf
+# Windows 批处理保持 CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# 引擎目录即便误加也不会入库（双保险）
+opengrep-tool/** binary

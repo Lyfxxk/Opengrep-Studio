@@ -1,0 +1,153 @@
+# Opengrep Studio 内置安全规则包（security）
+# 来源: https://github.com/opengrep/opengrep-rules （精选子集）
+# 许可: LGPL 2.1 + Commons Clause（不得将规则单独出售；保留本出处声明）
+# 精选标准: 含安全元数据的优先、每语言 ≤ 50 条（官方不足 50 条时全量收录），剔除 correctness 目录
+# 校验: opengrep validate --config server/rules/security
+rules:
+- id: bash.curl-eval
+  severity: WARNING
+  languages:
+  - bash
+  message: Data is being eval'd from a `curl` command. An attacker with control of the server in the `curl` command could inject malicious code into the `eval`, resulting in a system comrpomise. Avoid eval'ing untrusted data if you can. If you must do this, consider checking the SHA sum of the content returned by the server to verify its integrity.
+  metadata:
+    owasp:
+    - A03:2021 - Injection
+    cwe:
+    - 'CWE-95: Improper Neutralization of Directives in Dynamically Evaluated Code (''Eval Injection'')'
+    category: security
+    technology:
+    - bash
+    - curl
+    confidence: MEDIUM
+    references:
+    - https://owasp.org/Top10/A03_2021-Injection
+    subcategory:
+    - vuln
+    likelihood: MEDIUM
+    impact: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: bash/curl/security/curl-eval.yaml
+      upstream-id: curl-eval
+  mode: taint
+  pattern-sources:
+  - pattern: '$(curl ...)
+
+      '
+  - pattern: '`curl ...`
+
+      '
+  pattern-sinks:
+  - pattern: eval ...
+- id: bash.curl-pipe-bash
+  languages:
+  - bash
+  severity: WARNING
+  message: Data is being piped into `bash` from a `curl` command. An attacker with control of the server in the `curl` command could inject malicious code into the pipe, resulting in a system compromise. Avoid piping untrusted data into `bash` or any other shell if you can. If you must do this, consider checking the SHA sum of the content returned by the server to verify its integrity.
+  metadata:
+    owasp:
+    - A03:2021 - Injection
+    cwe:
+    - 'CWE-95: Improper Neutralization of Directives in Dynamically Evaluated Code (''Eval Injection'')'
+    category: security
+    technology:
+    - bash
+    - curl
+    confidence: LOW
+    references:
+    - https://owasp.org/Top10/A03_2021-Injection
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: bash/curl/security/curl-pipe-bash.yaml
+      upstream-id: curl-pipe-bash
+  patterns:
+  - pattern-either:
+    - pattern: curl ... | ... bash ...
+    - pattern: curl ... | ... /bin/bash ...
+    - pattern: '... bash <(curl ...)'
+    - pattern: '... /bin/bash <(curl ...)'
+    - pattern: '... bash -c "$(curl ...)"'
+    - pattern: '... /bin/bash -c "$(curl ...)"'
+- id: bash.ifs-tampering
+  languages:
+  - bash
+  severity: WARNING
+  message: The special variable IFS affects how splitting takes place when expanding unquoted variables. Don't set it globally. Prefer a dedicated utility such as 'cut' or 'awk' if you need to split input data. If you must use 'read', set IFS locally using e.g. 'IFS="," read -a my_array'.
+  pattern: IFS=...
+  metadata:
+    cwe:
+    - 'CWE-20: Improper Input Validation'
+    category: security
+    technology:
+    - bash
+    confidence: LOW
+    owasp:
+    - A03:2021 - Injection
+    references:
+    - https://owasp.org/Top10/A03_2021-Injection
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: bash/lang/security/ifs-tampering.yaml
+      upstream-id: ifs-tampering
+- id: bash.iteration-over-ls-output
+  patterns:
+  - pattern: "for $VAR in $LIST; do\n  ...\ndone\n"
+  - pattern: '$(ls ...)
+
+      '
+  message: Iterating over ls output is fragile. Use globs, e.g. 'dir/*' instead of '$(ls dir)'.
+  metadata:
+    references:
+    - https://github.com/koalaman/shellcheck/wiki/SC2045
+    category: best-practice
+    technology:
+    - bash
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: bash/lang/best-practice/iteration-over-ls-output.yaml
+      upstream-id: iteration-over-ls-output
+  severity: WARNING
+  languages:
+  - bash
+- id: bash.useless-cat
+  pattern-either:
+  - pattern: 'cat | ...
+
+      '
+  - patterns:
+    - pattern: 'cat $ARG | ...
+
+        '
+    - pattern-not: 'cat ${$SEVERAL_FILES} | ...
+
+        '
+  - pattern: '... | cat
+
+      '
+  - pattern: '... | cat | ...
+
+      '
+  message: Useless call to 'cat' in a pipeline. Use '<' and '>' for any command to read from a file or write to a file.
+  metadata:
+    references:
+    - https://github.com/koalaman/shellcheck/wiki/SC2002
+    category: best-practice
+    technology:
+    - bash
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: bash/lang/best-practice/useless-cat.yaml
+      upstream-id: useless-cat
+  severity: WARNING
+  languages:
+  - bash

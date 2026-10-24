@@ -1,0 +1,3140 @@
+# Opengrep Studio 内置安全规则包（security）
+# 来源: https://github.com/opengrep/opengrep-rules （精选子集）
+# 许可: LGPL 2.1 + Commons Clause（不得将规则单独出售；保留本出处声明）
+# 精选标准: 含安全元数据的优先、每语言 ≤ 50 条（官方不足 50 条时全量收录），剔除 correctness 目录
+# 校验: opengrep validate --config server/rules/security
+rules:
+- id: js-ts.aead-no-final
+  message: The 'final' call of a Decipher object checks the authentication tag in a mode for authenticated encryption. Failing to call 'final' will invalidate all integrity guarantees of the released ciphertext.
+  metadata:
+    cwe:
+    - 'CWE-310: CWE CATEGORY: Cryptographic Issues'
+    owasp:
+    - A02:2021 - Cryptographic Failures
+    category: security
+    subcategory:
+    - vuln
+    technology:
+    - node-crypto
+    likelihood: HIGH
+    impact: MEDIUM
+    confidence: HIGH
+    references:
+    - https://nodejs.org/api/crypto.html#deciphersetauthtagbuffer-encoding
+    - https://owasp.org/Top10/A02_2021-Cryptographic_Failures/
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/node-crypto/security/aead-no-final.yaml
+      upstream-id: aead-no-final
+  languages:
+  - javascript
+  - typescript
+  severity: ERROR
+  patterns:
+  - pattern: '$DECIPHER = $CRYPTO.createDecipheriv(''$ALGO'', ...)
+
+      ...
+
+      $DECIPHER.update(...)
+
+      '
+  - pattern-not-inside: '$DECIPHER = $CRYPTO.createDecipheriv(''$ALGO'', ...)
+
+      ...
+
+      $DECIPHER.final(...)
+
+      '
+  - metavariable-regex:
+      metavariable: $ALGO
+      regex: .*(-gcm|-ccm|-ocb|chacha20-poly1305)$
+- id: js-ts.awscdk-bucket-encryption
+  message: 'Add "encryption: $Y.BucketEncryption.KMS_MANAGED" or "encryption: $Y.BucketEncryption.S3_MANAGED" to the bucket props for Bucket construct $X'
+  metadata:
+    cwe:
+    - 'CWE-311: Missing Encryption of Sensitive Data'
+    category: security
+    technology:
+    - AWS-CDK
+    references:
+    - https://docs.aws.amazon.com/AmazonS3/latest/userguide/security-best-practices.html
+    owasp:
+    - A03:2017 - Sensitive Data Exposure
+    - A04:2021 - Insecure Design
+    subcategory:
+    - vuln
+    likelihood: LOW
+    impact: HIGH
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: typescript/aws-cdk/security/audit/awscdk-bucket-encryption.yml
+      upstream-id: awscdk-bucket-encryption
+  languages:
+  - typescript
+  severity: ERROR
+  pattern-either:
+  - patterns:
+    - pattern-inside: 'import {Bucket} from ''@aws-cdk/aws-s3''
+
+        ...
+
+        '
+    - pattern: const $X = new Bucket(...)
+    - pattern-not: 'const $X = new Bucket(..., {..., encryption: BucketEncryption.KMS_MANAGED, ...})
+
+        '
+    - pattern-not: 'const $X = new Bucket(..., {..., encryption: BucketEncryption.KMS, ...})
+
+        '
+    - pattern-not: 'const $X = new Bucket(..., {..., encryption: BucketEncryption.S3_MANAGED, ...})
+
+        '
+  - patterns:
+    - pattern-inside: 'import * as $Y from ''@aws-cdk/aws-s3''
+
+        ...
+
+        '
+    - pattern: const $X = new $Y.Bucket(...)
+    - pattern-not: 'const $X = new $Y.Bucket(..., {..., encryption: $Y.BucketEncryption.KMS_MANAGED, ...})
+
+        '
+    - pattern-not: 'const $X = new $Y.Bucket(..., {..., encryption: $Y.BucketEncryption.KMS, ...})
+
+        '
+    - pattern-not: 'const $X = new $Y.Bucket(..., {..., encryption: $Y.BucketEncryption.S3_MANAGED, ...})
+
+        '
+- id: js-ts.code-string-concat
+  message: Found data from an Express or Next web request flowing to `eval`. If this data is user-controllable this can lead to execution of arbitrary system commands in the context of your application process. Avoid `eval` whenever possible.
+  options:
+    interfile: true
+  metadata:
+    interfile: true
+    confidence: HIGH
+    owasp:
+    - A03:2021 - Injection
+    cwe:
+    - 'CWE-95: Improper Neutralization of Directives in Dynamically Evaluated Code (''Eval Injection'')'
+    references:
+    - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/eval
+    - https://nodejs.org/api/child_process.html#child_processexeccommand-options-callback
+    - https://www.stackhawk.com/blog/nodejs-command-injection-examples-and-prevention/
+    - https://ckarande.gitbooks.io/owasp-nodegoat-tutorial/content/tutorial/a1_-_server_side_js_injection.html
+    category: security
+    technology:
+    - node.js
+    - Express
+    - Next.js
+    subcategory:
+    - vuln
+    likelihood: MEDIUM
+    impact: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/lang/security/audit/code-string-concat.yaml
+      upstream-id: code-string-concat
+  languages:
+  - javascript
+  - typescript
+  severity: ERROR
+  mode: taint
+  pattern-sources:
+  - pattern-either:
+    - patterns:
+      - pattern-either:
+        - pattern-inside: function ... ($REQ, $RES) {...}
+        - pattern-inside: function ... ($REQ, $RES, $NEXT) {...}
+        - patterns:
+          - pattern-either:
+            - pattern-inside: $APP.$METHOD(..., function $FUNC($REQ, $RES) {...})
+            - pattern-inside: $APP.$METHOD(..., function $FUNC($REQ, $RES, $NEXT) {...})
+          - metavariable-regex:
+              metavariable: $METHOD
+              regex: ^(get|post|put|head|delete|options)$
+      - pattern-either:
+        - pattern: $REQ.query
+        - pattern: $REQ.body
+        - pattern: $REQ.params
+        - pattern: $REQ.cookies
+        - pattern: $REQ.headers
+    - patterns:
+      - pattern-either:
+        - pattern-inside: 'import { ...,$IMPORT,... } from ''next/router''
+
+            ...
+
+            '
+        - pattern-inside: 'import $IMPORT from ''next/router'';
+
+            ...
+
+            '
+      - pattern-either:
+        - patterns:
+          - pattern-inside: '$ROUTER = $IMPORT()
+
+              ...
+
+              '
+          - pattern-either:
+            - pattern-inside: 'const { ...,$PROPS,... } = $ROUTER.query
+
+                ...
+
+                '
+            - pattern-inside: 'var { ...,$PROPS,... } = $ROUTER.query
+
+                ...
+
+                '
+            - pattern-inside: 'let { ...,$PROPS,... } = $ROUTER.query
+
+                ...
+
+                '
+          - focus-metavariable: $PROPS
+        - patterns:
+          - pattern-inside: '$ROUTER = $IMPORT()
+
+              ...
+
+              '
+          - pattern: "$ROUTER.query.$VALUE \n"
+        - patterns:
+          - pattern: $IMPORT().query.$VALUE
+  pattern-sinks:
+  - patterns:
+    - pattern: 'eval(...)
+
+        '
+- id: js-ts.create-de-cipher-no-iv
+  message: The deprecated functions 'createCipher' and 'createDecipher' generate the same initialization vector every time. For counter modes such as CTR, GCM, or CCM this leads to break of both confidentiality and integrity, if the key is used more than once. Other modes are still affected in their strength, though they're not completely broken. Use 'createCipheriv' or 'createDecipheriv' instead.
+  metadata:
+    cwe:
+    - 'CWE-1204: Generation of Weak Initialization Vector (IV)'
+    category: security
+    subcategory:
+    - vuln
+    technology:
+    - node-crypto
+    likelihood: HIGH
+    impact: MEDIUM
+    confidence: HIGH
+    references:
+    - https://nodejs.org/api/crypto.html#cryptocreatecipheralgorithm-password-options
+    - https://nodejs.org/api/crypto.html#cryptocreatedecipheralgorithm-password-options
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/node-crypto/security/create-de-cipher-no-iv.yaml
+      upstream-id: create-de-cipher-no-iv
+  languages:
+  - javascript
+  - typescript
+  severity: ERROR
+  patterns:
+  - pattern-either:
+    - pattern: '$CRYPTO.createCipher(...)
+
+        '
+    - pattern: '$CRYPTO.createDecipher(...)
+
+        '
+- id: js-ts.dangerous-spawn-shell
+  message: Detected non-literal calls to $EXEC(). This could lead to a command injection vulnerability.
+  metadata:
+    cwe:
+    - 'CWE-78: Improper Neutralization of Special Elements used in an OS Command (''OS Command Injection'')'
+    owasp:
+    - A01:2017 - Injection
+    - A03:2021 - Injection
+    source-rule-url: https://github.com/nodesecurity/eslint-plugin-security/blob/master/rules/detect-child-process.js
+    category: security
+    technology:
+    - javascript
+    references:
+    - https://cheatsheetseries.owasp.org/cheatsheets/Nodejs_Security_Cheat_Sheet.html#do-not-use-dangerous-functions
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: HIGH
+    impact: MEDIUM
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/lang/security/audit/dangerous-spawn-shell.yaml
+      upstream-id: dangerous-spawn-shell
+  languages:
+  - javascript
+  - typescript
+  severity: ERROR
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern-inside: "function ... (...,$FUNC,...) {\n  ...\n}\n"
+    - focus-metavariable: $FUNC
+  pattern-sinks:
+  - patterns:
+    - pattern-either:
+      - pattern-inside: 'require(''child_process'')
+
+          ...
+
+          '
+      - pattern-inside: 'import ''child_process''
+
+          ...
+
+          '
+    - pattern-either:
+      - pattern: spawn(...)
+      - pattern: spawnSync(...)
+      - pattern: $CP.spawn(...)
+      - pattern: $CP.spawnSync(...)
+    - pattern-either:
+      - pattern: '$EXEC("=~/(sh|bash|ksh|csh|tcsh|zsh)/",["-c", $ARG, ...],...)
+
+          '
+      - patterns:
+        - pattern: $EXEC($CMD,["-c", $ARG, ...],...)
+        - pattern-inside: '$CMD = "=~/(sh|bash|ksh|csh|tcsh|zsh)/"
+
+            ...
+
+            '
+      - pattern: '$EXEC("=~/(sh|bash|ksh|csh|tcsh|zsh)/",[$ARG, ...],...)
+
+          '
+      - patterns:
+        - pattern: $EXEC($CMD,[$ARG, ...],...)
+        - pattern-inside: '$CMD = "=~/(sh|bash|ksh|csh|tcsh|zsh)/"
+
+            ...
+
+            '
+    - focus-metavariable: $ARG
+- id: js-ts.deno-dangerous-run
+  message: Detected non-literal calls to Deno.run(). This could lead to a command injection vulnerability.
+  metadata:
+    cwe:
+    - 'CWE-78: Improper Neutralization of Special Elements used in an OS Command (''OS Command Injection'')'
+    owasp:
+    - A01:2017 - Injection
+    - A03:2021 - Injection
+    category: security
+    technology:
+    - deno
+    references:
+    - https://deno.land/manual/examples/subprocess#simple-example
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: LOW
+    impact: HIGH
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/deno/security/audit/deno-dangerous-run.yaml
+      upstream-id: deno-dangerous-run
+  languages:
+  - javascript
+  - typescript
+  severity: ERROR
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern-inside: function ... (..., $ARG,...) {...}
+    - focus-metavariable: $ARG
+  pattern-sinks:
+  - patterns:
+    - pattern-either:
+      - pattern: 'Deno.run({cmd: [$INPUT,...]},...)
+
+          '
+      - pattern: 'Deno.run({cmd: ["=~/(sh|bash|ksh|csh|tcsh|zsh)/","-c",$INPUT,...]},...)
+
+          '
+      - patterns:
+        - pattern: 'Deno.run({cmd: [$CMD,"-c",$INPUT,...]},...)
+
+            '
+        - pattern-inside: '$CMD = "=~/(sh|bash|ksh|csh|tcsh|zsh)/"
+
+            ...
+
+            '
+    - focus-metavariable: $INPUT
+- id: js-ts.detect-angular-open-redirect
+  message: Use of $window.location.href can lead to open-redirect if user input is used for redirection.
+  metadata:
+    asvs:
+      section: V5 Validation, Sanitization and Encoding
+      control_id: 5.5.1 Insecue Redirect
+      control_url: https://github.com/OWASP/ASVS/blob/master/4.0/en/0x13-V5-Validation-Sanitization-Encoding.md#v51-input-validation
+      version: '4'
+    references:
+    - https://docs.angularjs.org/api/ng/service/$sce#trustAsJs
+    - https://owasp.org/www-chapter-london/assets/slides/OWASPLondon20170727_AngularJS.pdf
+    category: security
+    cwe:
+    - 'CWE-79: Improper Neutralization of Input During Web Page Generation (''Cross-site Scripting'')'
+    technology:
+    - angular
+    owasp:
+    - A07:2017 - Cross-Site Scripting (XSS)
+    - A03:2021 - Injection
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: MEDIUM
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/angular/security/detect-angular-open-redirect.yaml
+      upstream-id: detect-angular-open-redirect
+  languages:
+  - javascript
+  - typescript
+  severity: ERROR
+  patterns:
+  - pattern: '$window.location.href = ...
+
+      '
+  - pattern-not: '$window.location.href = "..."
+
+      '
+- id: js-ts.detect-angular-sce-disabled
+  message: $sceProvider is set to false. Disabling Strict Contextual escaping (SCE) in an AngularJS application could provide additional attack surface for XSS vulnerabilities.
+  metadata:
+    cwe:
+    - 'CWE-79: Improper Neutralization of Input During Web Page Generation (''Cross-site Scripting'')'
+    references:
+    - https://docs.angularjs.org/api/ng/service/$sce
+    - https://owasp.org/www-chapter-london/assets/slides/OWASPLondon20170727_AngularJS.pdf
+    category: security
+    technology:
+    - angular
+    owasp:
+    - A07:2017 - Cross-Site Scripting (XSS)
+    - A03:2021 - Injection
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: HIGH
+    impact: MEDIUM
+    confidence: HIGH
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/angular/security/detect-angular-sce-disabled.yaml
+      upstream-id: detect-angular-sce-disabled
+  languages:
+  - javascript
+  - typescript
+  severity: ERROR
+  pattern: '$sceProvider.enabled(false);
+
+    '
+- id: js-ts.detect-child-process
+  message: Allowing spawning arbitrary programs or running shell processes with arbitrary arguments may end up in a command injection vulnerability. Try to avoid non-literal values for the command string. If it is not possible, then do not let running arbitrary commands, use a white list for inputs.
+  metadata:
+    cwe:
+    - 'CWE-78: Improper Neutralization of Special Elements used in an OS Command (''OS Command Injection'')'
+    owasp:
+    - A01:2017 - Injection
+    - A03:2021 - Injection
+    category: security
+    technology:
+    - javascript
+    - aws-lambda
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: MEDIUM
+    impact: HIGH
+    confidence: MEDIUM
+    references:
+    - https://owasp.org/Top10/A03_2021-Injection
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/aws-lambda/security/detect-child-process.yaml
+      upstream-id: detect-child-process
+  languages:
+  - javascript
+  - typescript
+  severity: ERROR
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern: $EVENT
+    - pattern-either:
+      - pattern-inside: "exports.handler = function ($EVENT, ...) {\n  ...\n}\n"
+      - pattern-inside: 'function $FUNC ($EVENT, ...) {...}
+
+          ...
+
+          exports.handler = $FUNC
+
+          '
+      - pattern-inside: '$FUNC = function ($EVENT, ...) {...}
+
+          ...
+
+          exports.handler = $FUNC
+
+          '
+  pattern-sinks:
+  - patterns:
+    - focus-metavariable: $CMD
+    - pattern-either:
+      - pattern: exec($CMD,...)
+      - pattern: execSync($CMD,...)
+      - pattern: spawn($CMD,...)
+      - pattern: spawnSync($CMD,...)
+      - pattern: $CP.exec($CMD,...)
+      - pattern: $CP.execSync($CMD,...)
+      - pattern: $CP.spawn($CMD,...)
+      - pattern: $CP.spawnSync($CMD,...)
+    - pattern-either:
+      - pattern-inside: 'require(''child_process'')
+
+          ...
+
+          '
+      - pattern-inside: 'import ''child_process''
+
+          ...
+
+          '
+- id: js-ts.dom-based-xss
+  message: 'Detected possible DOM-based XSS. This occurs because a portion of the URL is being used to construct an element added directly to the page. For example, a malicious actor could send someone a link like this: http://www.some.site/page.html?default=<script>alert(document.cookie)</script> which would add the script to the page. Consider allowlisting appropriate values or using an approach which does not involve the URL.'
+  metadata:
+    cwe:
+    - 'CWE-79: Improper Neutralization of Input During Web Page Generation (''Cross-site Scripting'')'
+    owasp:
+    - A07:2017 - Cross-Site Scripting (XSS)
+    - A03:2021 - Injection
+    references:
+    - https://owasp.org/www-community/attacks/DOM_Based_XSS
+    category: security
+    technology:
+    - browser
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/browser/security/dom-based-xss.yaml
+      upstream-id: dom-based-xss
+  languages:
+  - javascript
+  - typescript
+  severity: ERROR
+  pattern-either:
+  - pattern: document.write(<... document.location.$W ...>)
+  - pattern: document.write(<... location.$W ...>)
+- id: js-ts.dynamodb-request-object
+  message: Detected DynamoDB query params that are tainted by `$EVENT` object. This could lead to NoSQL injection if the variable is user-controlled and not properly sanitized. Explicitly assign query params instead of passing data from `$EVENT` directly to DynamoDB client.
+  metadata:
+    cwe:
+    - 'CWE-943: Improper Neutralization of Special Elements in Data Query Logic'
+    owasp:
+    - A01:2017 - Injection
+    category: security
+    technology:
+    - javascript
+    - aws-lambda
+    - dynamodb
+    subcategory:
+    - vuln
+    likelihood: MEDIUM
+    impact: HIGH
+    confidence: MEDIUM
+    references:
+    - https://owasp.org/Top10/A03_2021-Injection
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/aws-lambda/security/dynamodb-request-object.yaml
+      upstream-id: dynamodb-request-object
+  languages:
+  - javascript
+  - typescript
+  severity: ERROR
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern: $EVENT
+    - pattern-either:
+      - pattern-inside: "exports.handler = function ($EVENT, ...) {\n  ...\n}\n"
+      - pattern-inside: 'function $FUNC ($EVENT, ...) {...}
+
+          ...
+
+          exports.handler = $FUNC
+
+          '
+      - pattern-inside: '$FUNC = function ($EVENT, ...) {...}
+
+          ...
+
+          exports.handler = $FUNC
+
+          '
+  pattern-sinks:
+  - patterns:
+    - focus-metavariable: $SINK
+    - pattern: '$DC.$METHOD($SINK, ...)
+
+        '
+    - metavariable-regex:
+        metavariable: $METHOD
+        regex: (query|send|scan|delete|put|transactWrite|update|batchExecuteStatement|executeStatement|executeTransaction|transactWriteItems)
+    - pattern-either:
+      - pattern-inside: '$DC = new $AWS.DocumentClient(...);
+
+          ...
+
+          '
+      - pattern-inside: '$DC = new $AWS.DynamoDB(...);
+
+          ...
+
+          '
+      - pattern-inside: '$DC = new DynamoDBClient(...);
+
+          ...
+
+          '
+      - pattern-inside: '$DC = DynamoDBDocumentClient.from(...);
+
+          ...
+
+          '
+  pattern-sanitizers:
+  - patterns:
+    - pattern: '{...}
+
+        '
+- id: js-ts.express-expat-xxe
+  message: Make sure that unverified user data can not reach the XML Parser, as it can result in XML External or Internal Entity (XXE) Processing vulnerabilities.
+  options:
+    interfile: true
+  metadata:
+    interfile: true
+    owasp:
+    - A04:2017 - XML External Entities (XXE)
+    - A05:2021 - Security Misconfiguration
+    cwe:
+    - 'CWE-611: Improper Restriction of XML External Entity Reference'
+    asvs:
+      section: V5 Validation, Sanitization and Encoding
+      control_id: 5.5.2 Insecue XML Deserialization
+      control_url: https://github.com/OWASP/ASVS/blob/master/4.0/en/0x13-V5-Validation-Sanitization-Encoding.md#v55-deserialization-prevention
+      version: '4'
+    references:
+    - https://github.com/astro/node-expat
+    category: security
+    technology:
+    - express
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: MEDIUM
+    impact: MEDIUM
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/express/security/express-expat-xxe.yaml
+      upstream-id: express-expat-xxe
+  languages:
+  - javascript
+  - typescript
+  severity: ERROR
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - pattern-inside: function ... ($REQ, $RES) {...}
+      - pattern-inside: function ... ($REQ, $RES, $NEXT) {...}
+      - patterns:
+        - pattern-either:
+          - pattern-inside: $APP.$METHOD(..., function $FUNC($REQ, $RES) {...})
+          - pattern-inside: $APP.$METHOD(..., function $FUNC($REQ, $RES, $NEXT) {...})
+        - metavariable-regex:
+            metavariable: $METHOD
+            regex: ^(get|post|put|head|delete|options)$
+    - pattern-either:
+      - pattern: $REQ.query
+      - pattern: $REQ.body
+      - pattern: $REQ.params
+      - pattern: $REQ.cookies
+      - pattern: $REQ.headers
+  - patterns:
+    - pattern-either:
+      - pattern-inside: '({ $REQ }: Request,$RES: Response, $NEXT: NextFunction) =>
+
+          {...}
+
+          '
+      - pattern-inside: '({ $REQ }: Request,$RES: Response) => {...}
+
+          '
+    - focus-metavariable: $REQ
+    - pattern-either:
+      - pattern: params
+      - pattern: query
+      - pattern: cookies
+      - pattern: headers
+      - pattern: body
+  pattern-sinks:
+  - patterns:
+    - pattern-either:
+      - pattern-inside: '$XML = require(''node-expat'')
+
+          ...
+
+          '
+      - pattern-inside: 'import $XML from ''node-expat''
+
+          ...
+
+          '
+      - pattern-inside: 'import * as $XML from ''node-expat''
+
+          ...
+
+          '
+    - pattern-either:
+      - pattern-inside: '$PARSER = new $XML.Parser(...);
+
+          ...
+
+          '
+    - pattern-either:
+      - pattern: $PARSER.parse($QUERY)
+      - pattern: $PARSER.write($QUERY)
+    - focus-metavariable: $QUERY
+- id: js-ts.express-libxml-noent
+  message: The libxml library processes user-input with the `noent` attribute is set to `true` which can lead to being vulnerable to XML External Entities (XXE) type attacks. It is recommended to set `noent` to `false` when using this feature to ensure you are protected.
+  options:
+    interfile: true
+  metadata:
+    interfile: true
+    references:
+    - https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html
+    technology:
+    - express
+    category: security
+    cwe:
+    - 'CWE-611: Improper Restriction of XML External Entity Reference'
+    owasp:
+    - A04:2017 - XML External Entities (XXE)
+    - A05:2021 - Security Misconfiguration
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: HIGH
+    impact: HIGH
+    confidence: HIGH
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/express/security/audit/express-libxml-noent.yaml
+      upstream-id: express-libxml-noent
+  languages:
+  - javascript
+  - typescript
+  severity: ERROR
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - pattern-inside: function ... ($REQ, $RES) {...}
+      - pattern-inside: function ... ($REQ, $RES, $NEXT) {...}
+      - patterns:
+        - pattern-either:
+          - pattern-inside: $APP.$METHOD(..., function $FUNC($REQ, $RES) {...})
+          - pattern-inside: $APP.$METHOD(..., function $FUNC($REQ, $RES, $NEXT) {...})
+        - metavariable-regex:
+            metavariable: $METHOD
+            regex: ^(get|post|put|head|delete|options)$
+    - pattern-either:
+      - pattern: $REQ.query
+      - pattern: $REQ.body
+      - pattern: $REQ.params
+      - pattern: $REQ.cookies
+      - pattern: $REQ.headers
+      - pattern: $REQ.files.$ANYTHING.data.toString('utf8')
+      - pattern: $REQ.files.$ANYTHING['data'].toString('utf8')
+  - patterns:
+    - pattern-either:
+      - pattern-inside: '({ $REQ }: Request,$RES: Response, $NEXT: NextFunction) =>
+
+          {...}
+
+          '
+      - pattern-inside: '({ $REQ }: Request,$RES: Response) => {...}
+
+          '
+    - focus-metavariable: $REQ
+    - pattern-either:
+      - pattern: params
+      - pattern: query
+      - pattern: cookies
+      - pattern: headers
+      - pattern: body
+      - pattern: files.$ANYTHING.data.toString('utf8')
+      - pattern: files.$ANYTHING['data'].toString('utf8')
+  pattern-sinks:
+  - pattern-either:
+    - patterns:
+      - pattern-either:
+        - pattern-inside: '$XML = require(''$IMPORT'')
+
+            ...
+
+            '
+        - pattern-inside: "import $XML from '$IMPORT'\n  ...\n"
+        - pattern-inside: 'import * as $XML from ''$IMPORT''
+
+            ...
+
+            '
+      - metavariable-regex:
+          metavariable: $IMPORT
+          regex: ^(libxmljs|libxmljs2)$
+      - pattern-inside: $XML.$FUNC($QUERY, {...,noent:true,...})
+      - metavariable-regex:
+          metavariable: $FUNC
+          regex: ^(parseXmlString|parseXml)$
+      - focus-metavariable: $QUERY
+- id: js-ts.express-phantom-injection
+  message: If unverified user data can reach the `phantom` methods it can result in Server-Side Request Forgery vulnerabilities
+  metadata:
+    owasp:
+    - A10:2021 - Server-Side Request Forgery (SSRF)
+    cwe:
+    - 'CWE-918: Server-Side Request Forgery (SSRF)'
+    category: security
+    technology:
+    - express
+    references:
+    - https://phantomjs.org/page-automation.html
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: MEDIUM
+    impact: MEDIUM
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/express/security/express-phantom-injection.yaml
+      upstream-id: express-phantom-injection
+  languages:
+  - javascript
+  - typescript
+  severity: ERROR
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - pattern-inside: function ... ($REQ, $RES) {...}
+      - pattern-inside: function ... ($REQ, $RES, $NEXT) {...}
+      - patterns:
+        - pattern-either:
+          - pattern-inside: $APP.$METHOD(..., function $FUNC($REQ, $RES) {...})
+          - pattern-inside: $APP.$METHOD(..., function $FUNC($REQ, $RES, $NEXT) {...})
+        - metavariable-regex:
+            metavariable: $METHOD
+            regex: ^(get|post|put|head|delete|options)$
+    - pattern-either:
+      - pattern: $REQ.query
+      - pattern: $REQ.body
+      - pattern: $REQ.params
+      - pattern: $REQ.cookies
+      - pattern: $REQ.headers
+  - patterns:
+    - pattern-either:
+      - pattern-inside: '({ $REQ }: Request,$RES: Response, $NEXT: NextFunction) =>
+
+          {...}
+
+          '
+      - pattern-inside: '({ $REQ }: Request,$RES: Response) => {...}
+
+          '
+    - focus-metavariable: $REQ
+    - pattern-either:
+      - pattern: params
+      - pattern: query
+      - pattern: cookies
+      - pattern: headers
+      - pattern: body
+  pattern-sinks:
+  - patterns:
+    - pattern-either:
+      - pattern-inside: 'require(''phantom'');
+
+          ...
+
+          '
+      - pattern-inside: 'import ''phantom'';
+
+          ...
+
+          '
+    - pattern-either:
+      - pattern: $PAGE.open($SINK,...)
+      - pattern: $PAGE.setContent($SINK,...)
+      - pattern: $PAGE.openUrl($SINK,...)
+      - pattern: $PAGE.evaluateJavaScript($SINK,...)
+      - pattern: $PAGE.property("content",$SINK,...)
+    - focus-metavariable: $SINK
+- id: js-ts.express-puppeteer-injection
+  message: If unverified user data can reach the `puppeteer` methods it can result in Server-Side Request Forgery vulnerabilities
+  metadata:
+    owasp:
+    - A10:2021 - Server-Side Request Forgery (SSRF)
+    cwe:
+    - 'CWE-918: Server-Side Request Forgery (SSRF)'
+    category: security
+    technology:
+    - express
+    references:
+    - https://pptr.dev/api/puppeteer.page
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: MEDIUM
+    impact: MEDIUM
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/express/security/express-puppeteer-injection.yaml
+      upstream-id: express-puppeteer-injection
+  languages:
+  - javascript
+  - typescript
+  severity: ERROR
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - pattern-inside: function ... ($REQ, $RES) {...}
+      - pattern-inside: function ... ($REQ, $RES, $NEXT) {...}
+      - patterns:
+        - pattern-either:
+          - pattern-inside: $APP.$METHOD(..., function $FUNC($REQ, $RES) {...})
+          - pattern-inside: $APP.$METHOD(..., function $FUNC($REQ, $RES, $NEXT) {...})
+        - metavariable-regex:
+            metavariable: $METHOD
+            regex: ^(get|post|put|head|delete|options)$
+    - pattern-either:
+      - pattern: $REQ.query
+      - pattern: $REQ.body
+      - pattern: $REQ.params
+      - pattern: $REQ.cookies
+      - pattern: $REQ.headers
+  - patterns:
+    - pattern-either:
+      - pattern-inside: '({ $REQ }: Request,$RES: Response, $NEXT: NextFunction) =>
+
+          {...}
+
+          '
+      - pattern-inside: '({ $REQ }: Request,$RES: Response) => {...}
+
+          '
+    - focus-metavariable: $REQ
+    - pattern-either:
+      - pattern: params
+      - pattern: query
+      - pattern: cookies
+      - pattern: headers
+      - pattern: body
+  pattern-sinks:
+  - patterns:
+    - pattern-either:
+      - pattern-inside: 'require(''puppeteer'');
+
+          ...
+
+          '
+      - pattern-inside: 'import ''puppeteer'';
+
+          ...
+
+          '
+    - pattern-either:
+      - pattern: $PAGE.goto($SINK,...)
+      - pattern: $PAGE.setContent($SINK,...)
+      - pattern: $PAGE.evaluate($SINK,...)
+      - pattern: $PAGE.evaluate($CODE,$SINK,...)
+      - pattern: $PAGE.evaluateHandle($SINK,...)
+      - pattern: $PAGE.evaluateHandle($CODE,$SINK,...)
+      - pattern: $PAGE.evaluateOnNewDocument($SINK,...)
+      - pattern: $PAGE.evaluateOnNewDocument($CODE,$SINK,...)
+    - focus-metavariable: $SINK
+- id: js-ts.express-sandbox-code-injection
+  message: Make sure that unverified user data can not reach `sandbox`.
+  metadata:
+    owasp:
+    - A03:2021 - Injection
+    references:
+    - https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_Cheat_Sheet.html
+    cwe:
+    - 'CWE-94: Improper Control of Generation of Code (''Code Injection'')'
+    category: security
+    technology:
+    - express
+    cwe2022-top25: true
+    subcategory:
+    - vuln
+    likelihood: MEDIUM
+    impact: MEDIUM
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/express/security/express-sandbox-injection.yaml
+      upstream-id: express-sandbox-code-injection
+  languages:
+  - javascript
+  - typescript
+  severity: ERROR
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - pattern-inside: function ... ($REQ, $RES) {...}
+      - pattern-inside: function ... ($REQ, $RES, $NEXT) {...}
+      - patterns:
+        - pattern-either:
+          - pattern-inside: $APP.$METHOD(..., function $FUNC($REQ, $RES) {...})
+          - pattern-inside: $APP.$METHOD(..., function $FUNC($REQ, $RES, $NEXT) {...})
+        - metavariable-regex:
+            metavariable: $METHOD
+            regex: ^(get|post|put|head|delete|options)$
+    - pattern-either:
+      - pattern: $REQ.query
+      - pattern: $REQ.body
+      - pattern: $REQ.params
+      - pattern: $REQ.cookies
+      - pattern: $REQ.headers
+  - patterns:
+    - pattern-either:
+      - pattern-inside: '({ $REQ }: Request,$RES: Response, $NEXT: NextFunction) =>
+
+          {...}
+
+          '
+      - pattern-inside: '({ $REQ }: Request,$RES: Response) => {...}
+
+          '
+    - focus-metavariable: $REQ
+    - pattern-either:
+      - pattern: params
+      - pattern: query
+      - pattern: cookies
+      - pattern: headers
+      - pattern: body
+  pattern-sinks:
+  - patterns:
+    - pattern-inside: '$SANDBOX = require(''sandbox'');
+
+        ...
+
+        '
+    - pattern-either:
+      - patterns:
+        - pattern-inside: '$S = new $SANDBOX(...);
+
+            ...
+
+            '
+        - pattern: '$S.run(...)
+
+            '
+      - pattern: 'new $SANDBOX($OPTS).run(...)
+
+          '
+      - pattern: new $SANDBOX().run(...)
+- id: js-ts.express-sequelize-injection
+  message: Detected a sequelize statement that is tainted by user-input. This could lead to SQL injection if the variable is user-controlled and is not properly sanitized. In order to prevent SQL injection, it is recommended to use parameterized queries or prepared statements.
+  options:
+    interfile: true
+  metadata:
+    interfile: true
+    references:
+    - https://sequelize.org/docs/v6/core-concepts/raw-queries/#replacements
+    category: security
+    technology:
+    - express
+    cwe:
+    - 'CWE-89: Improper Neutralization of Special Elements used in an SQL Command (''SQL Injection'')'
+    owasp:
+    - A01:2017 - Injection
+    - A03:2021 - Injection
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: HIGH
+    impact: HIGH
+    confidence: HIGH
+    license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/sequelize/security/audit/sequelize-injection-express.yaml
+      upstream-id: express-sequelize-injection
+  languages:
+  - javascript
+  - typescript
+  severity: ERROR
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - pattern-inside: function ... ($REQ, $RES) {...}
+      - pattern-inside: function ... ($REQ, $RES, $NEXT) {...}
+      - patterns:
+        - pattern-either:
+          - pattern-inside: $APP.$METHOD(..., function $FUNC($REQ, $RES) {...})
+          - pattern-inside: $APP.$METHOD(..., function $FUNC($REQ, $RES, $NEXT) {...})
+        - metavariable-regex:
+            metavariable: $METHOD
+            regex: ^(get|post|put|head|delete|options)$
+    - pattern-either:
+      - pattern: $REQ.query
+      - pattern: $REQ.body
+      - pattern: $REQ.params
+      - pattern: $REQ.cookies
+      - pattern: $REQ.headers
+      - pattern: $REQ.files.$ANYTHING.data.toString('utf8')
+      - pattern: $REQ.files.$ANYTHING['data'].toString('utf8')
+  - patterns:
+    - pattern-either:
+      - pattern-inside: '({ $REQ }: Request,$RES: Response, $NEXT: NextFunction) =>
+
+          {...}
+
+          '
+      - pattern-inside: '({ $REQ }: Request,$RES: Response) => {...}
+
+          '
+    - focus-metavariable: $REQ
+    - pattern-either:
+      - pattern: params
+      - pattern: query
+      - pattern: cookies
+      - pattern: headers
+      - pattern: body
+      - pattern: files.$ANYTHING.data.toString('utf8')
+      - pattern: files.$ANYTHING['data'].toString('utf8')
+  pattern-sinks:
+  - pattern-either:
+    - patterns:
+      - pattern-either:
+        - pattern: sequelize.query($QUERY,...)
+        - pattern: $DB.sequelize.query($QUERY,...)
+      - focus-metavariable: $QUERY
+  pattern-sanitizers:
+  - pattern-either:
+    - pattern: parseInt(...)
+    - pattern: $FUNC. ... .hash(...)
+- id: js-ts.express-vm-injection
+  message: Make sure that unverified user data can not reach `$VM`.
+  metadata:
+    owasp:
+    - A03:2021 - Injection
+    references:
+    - https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_Cheat_Sheet.html
+    cwe:
+    - 'CWE-94: Improper Control of Generation of Code (''Code Injection'')'
+    category: security
+    technology:
+    - express
+    cwe2022-top25: true
+    subcategory:
+    - vuln
+    likelihood: MEDIUM
+    impact: MEDIUM
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/express/security/express-vm-injection.yaml
+      upstream-id: express-vm-injection
+  languages:
+  - javascript
+  - typescript
+  severity: ERROR
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - pattern-inside: function ... ($REQ, $RES) {...}
+      - pattern-inside: function ... ($REQ, $RES, $NEXT) {...}
+      - patterns:
+        - pattern-either:
+          - pattern-inside: $APP.$METHOD(..., function $FUNC($REQ, $RES) {...})
+          - pattern-inside: $APP.$METHOD(..., function $FUNC($REQ, $RES, $NEXT) {...})
+        - metavariable-regex:
+            metavariable: $METHOD
+            regex: ^(get|post|put|head|delete|options)$
+    - pattern-either:
+      - pattern: $REQ.query
+      - pattern: $REQ.body
+      - pattern: $REQ.params
+      - pattern: $REQ.cookies
+      - pattern: $REQ.headers
+  - patterns:
+    - pattern-either:
+      - pattern-inside: '({ $REQ }: Request,$RES: Response, $NEXT: NextFunction) =>
+
+          {...}
+
+          '
+      - pattern-inside: '({ $REQ }: Request,$RES: Response) => {...}
+
+          '
+    - focus-metavariable: $REQ
+    - pattern-either:
+      - pattern: params
+      - pattern: query
+      - pattern: cookies
+      - pattern: headers
+      - pattern: body
+  pattern-sinks:
+  - patterns:
+    - pattern-inside: '$VM = require(''vm'');
+
+        ...
+
+        '
+    - pattern-either:
+      - pattern: '$VM.runInContext(...)
+
+          '
+      - pattern: '$VM.runInNewContext(...)
+
+          '
+      - pattern: '$VM.compileFunction(...)
+
+          '
+      - pattern: '$VM.runInThisContext(...)
+
+          '
+      - pattern: new $VM.Script(...)
+- id: js-ts.express-wkhtmltoimage-injection
+  message: If unverified user data can reach the `phantom` methods it can result in Server-Side Request Forgery vulnerabilities
+  metadata:
+    owasp:
+    - A10:2021 - Server-Side Request Forgery (SSRF)
+    cwe:
+    - 'CWE-918: Server-Side Request Forgery (SSRF)'
+    category: security
+    technology:
+    - express
+    references:
+    - https://www.npmjs.com/package/wkhtmltopdf
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: MEDIUM
+    impact: MEDIUM
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/express/security/express-wkhtml-injection.yaml
+      upstream-id: express-wkhtmltoimage-injection
+  severity: ERROR
+  languages:
+  - javascript
+  - typescript
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - pattern-inside: function ... ($REQ, $RES) {...}
+      - pattern-inside: function ... ($REQ, $RES, $NEXT) {...}
+      - patterns:
+        - pattern-either:
+          - pattern-inside: $APP.$METHOD(..., function $FUNC($REQ, $RES) {...})
+          - pattern-inside: $APP.$METHOD(..., function $FUNC($REQ, $RES, $NEXT) {...})
+        - metavariable-regex:
+            metavariable: $METHOD
+            regex: ^(get|post|put|head|delete|options)$
+    - pattern-either:
+      - pattern: $REQ.query
+      - pattern: $REQ.body
+      - pattern: $REQ.params
+      - pattern: $REQ.cookies
+      - pattern: $REQ.headers
+  - patterns:
+    - pattern-either:
+      - pattern-inside: '({ $REQ }: Request,$RES: Response, $NEXT: NextFunction) =>
+
+          {...}
+
+          '
+      - pattern-inside: '({ $REQ }: Request,$RES: Response) => {...}
+
+          '
+    - focus-metavariable: $REQ
+    - pattern-either:
+      - pattern: params
+      - pattern: query
+      - pattern: cookies
+      - pattern: headers
+      - pattern: body
+  pattern-sinks:
+  - patterns:
+    - pattern: $WK.generate($SINK,...)
+    - focus-metavariable: $SINK
+- id: js-ts.express-wkhtmltopdf-injection
+  message: If unverified user data can reach the `wkhtmltopdf` methods it can result in Server-Side Request Forgery vulnerabilities
+  metadata:
+    owasp:
+    - A10:2021 - Server-Side Request Forgery (SSRF)
+    cwe:
+    - 'CWE-918: Server-Side Request Forgery (SSRF)'
+    category: security
+    technology:
+    - express
+    references:
+    - https://www.npmjs.com/package/wkhtmltopdf
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: MEDIUM
+    impact: MEDIUM
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/express/security/express-wkhtml-injection.yaml
+      upstream-id: express-wkhtmltopdf-injection
+  languages:
+  - javascript
+  - typescript
+  severity: ERROR
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - pattern-inside: function ... ($REQ, $RES) {...}
+      - pattern-inside: function ... ($REQ, $RES, $NEXT) {...}
+      - patterns:
+        - pattern-either:
+          - pattern-inside: $APP.$METHOD(..., function $FUNC($REQ, $RES) {...})
+          - pattern-inside: $APP.$METHOD(..., function $FUNC($REQ, $RES, $NEXT) {...})
+        - metavariable-regex:
+            metavariable: $METHOD
+            regex: ^(get|post|put|head|delete|options)$
+    - pattern-either:
+      - pattern: $REQ.query
+      - pattern: $REQ.body
+      - pattern: $REQ.params
+      - pattern: $REQ.cookies
+      - pattern: $REQ.headers
+  - patterns:
+    - pattern-either:
+      - pattern-inside: '({ $REQ }: Request,$RES: Response, $NEXT: NextFunction) =>
+
+          {...}
+
+          '
+      - pattern-inside: '({ $REQ }: Request,$RES: Response) => {...}
+
+          '
+    - focus-metavariable: $REQ
+    - pattern-either:
+      - pattern: params
+      - pattern: query
+      - pattern: cookies
+      - pattern: headers
+      - pattern: body
+  pattern-sinks:
+  - patterns:
+    - pattern-inside: '$WK = require(''wkhtmltopdf'');
+
+        ...
+
+        '
+    - pattern: $WK($SINK,...)
+    - focus-metavariable: $SINK
+- id: js-ts.express-xml2json-xxe
+  message: Make sure that unverified user data can not reach the XML Parser, as it can result in XML External or Internal Entity (XXE) Processing vulnerabilities
+  metadata:
+    owasp:
+    - A04:2017 - XML External Entities (XXE)
+    - A05:2021 - Security Misconfiguration
+    cwe:
+    - 'CWE-611: Improper Restriction of XML External Entity Reference'
+    asvs:
+      section: V5 Validation, Sanitization and Encoding
+      control_id: 5.5.2 Insecue XML Deserialization
+      control_url: https://github.com/OWASP/ASVS/blob/master/4.0/en/0x13-V5-Validation-Sanitization-Encoding.md#v55-deserialization-prevention
+      version: '4'
+    category: security
+    technology:
+    - express
+    references:
+    - https://www.npmjs.com/package/xml2json
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: MEDIUM
+    impact: MEDIUM
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/express/security/express-xml2json-xxe.yaml
+      upstream-id: express-xml2json-xxe
+  languages:
+  - javascript
+  - typescript
+  severity: ERROR
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - pattern-inside: function ... ($REQ, $RES) {...}
+      - pattern-inside: function ... ($REQ, $RES, $NEXT) {...}
+      - patterns:
+        - pattern-either:
+          - pattern-inside: $APP.$METHOD(..., function $FUNC($REQ, $RES) {...})
+          - pattern-inside: $APP.$METHOD(..., function $FUNC($REQ, $RES, $NEXT) {...})
+        - metavariable-regex:
+            metavariable: $METHOD
+            regex: ^(get|post|put|head|delete|options)$
+    - pattern-either:
+      - pattern: $REQ.query
+      - pattern: $REQ.body
+      - pattern: $REQ.params
+      - pattern: $REQ.cookies
+      - pattern: $REQ.headers
+      - pattern: $REQ.files.$ANYTHING.data.toString('utf8')
+      - pattern: $REQ.files.$ANYTHING['data'].toString('utf8')
+  - patterns:
+    - pattern-either:
+      - pattern-inside: '({ $REQ }: Request,$RES: Response, $NEXT: NextFunction) =>
+
+          {...}
+
+          '
+      - pattern-inside: '({ $REQ }: Request,$RES: Response) => {...}
+
+          '
+    - focus-metavariable: $REQ
+    - pattern-either:
+      - pattern: params
+      - pattern: query
+      - pattern: cookies
+      - pattern: headers
+      - pattern: body
+      - pattern: files.$ANYTHING.data.toString('utf8')
+      - pattern: files.$ANYTHING['data'].toString('utf8')
+  pattern-sinks:
+  - patterns:
+    - pattern-either:
+      - pattern-inside: 'require(''xml2json'');
+
+          ...
+
+          '
+      - pattern-inside: 'import ''xml2json'';
+
+          ...
+
+          '
+    - pattern: $EXPAT.toJson($SINK,...)
+    - focus-metavariable: $SINK
+- id: js-ts.gcm-no-tag-length
+  message: The call to 'createDecipheriv' with the Galois Counter Mode (GCM) mode of operation is missing an expected authentication tag length. If the expected authentication tag length is not specified or otherwise checked, the application might be tricked into verifying a shorter-than-expected authentication tag. This can be abused by an attacker to spoof ciphertexts or recover the implicit authentication key of GCM, allowing arbitrary forgeries.
+  metadata:
+    cwe:
+    - 'CWE-310: CWE CATEGORY: Cryptographic Issues'
+    owasp:
+    - A02:2021 - Cryptographic Failures
+    category: security
+    subcategory:
+    - vuln
+    technology:
+    - node-crypto
+    likelihood: MEDIUM
+    impact: MEDIUM
+    confidence: MEDIUM
+    references:
+    - https://www.securesystems.de/blog/forging_ciphertexts_under_Galois_Counter_Mode_for_the_Node_js_crypto_module/
+    - https://nodejs.org/api/crypto.html#cryptocreatedecipherivalgorithm-key-iv-options
+    - https://owasp.org/Top10/A02_2021-Cryptographic_Failures/
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/node-crypto/security/gcm-no-tag-length.yaml
+      upstream-id: gcm-no-tag-length
+  languages:
+  - javascript
+  - typescript
+  severity: ERROR
+  patterns:
+  - pattern: '$CRYPTO.createDecipheriv(''$ALGO'', $KEY, $IV)
+
+      '
+  - metavariable-regex:
+      metavariable: $ALGO
+      regex: .*(-gcm)$
+- id: js-ts.grpc-nodejs-insecure-connection
+  message: Found an insecure gRPC connection. This creates a connection without encryption to a gRPC client/server. A malicious attacker could tamper with the gRPC message, which could compromise the machine.
+  metadata:
+    owasp:
+    - A08:2017 - Insecure Deserialization
+    - A08:2021 - Software and Data Integrity Failures
+    cwe:
+    - 'CWE-502: Deserialization of Untrusted Data'
+    category: security
+    technology:
+    - grpc
+    references:
+    - https://blog.gopheracademy.com/advent-2017/go-grpc-beyond-basics/#:~:text=disables%20transport%20security
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: MEDIUM
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/grpc/security/grpc-nodejs-insecure-connection.yaml
+      upstream-id: grpc-nodejs-insecure-connection
+  languages:
+  - javascript
+  - typescript
+  severity: ERROR
+  pattern-either:
+  - pattern: 'require(''grpc'');
+
+      ...
+
+      $GRPC($ADDR,...,$CREDENTIALS.createInsecure(),...);
+
+      '
+  - pattern: 'require(''grpc'');
+
+      ...
+
+      new $GRPC($ADDR,...,$CREDENTIALS.createInsecure(),...);
+
+      '
+  - pattern: 'require(''grpc'');
+
+      ...
+
+      $CREDS = <... $CREDENTIALS.createInsecure() ...>;
+
+      ...
+
+      $GRPC($ADDR,...,$CREDS,...);'
+  - pattern: 'require(''grpc'');
+
+      ...
+
+      $CREDS = <... $CREDENTIALS.createInsecure() ...>;
+
+      ...
+
+      new $GRPC($ADDR,...,$CREDS,...);'
+- id: js-ts.insecure-document-method
+  message: User controlled data in methods like `innerHTML`, `outerHTML` or `document.write` is an anti-pattern that can lead to XSS vulnerabilities
+  metadata:
+    cwe:
+    - 'CWE-79: Improper Neutralization of Input During Web Page Generation (''Cross-site Scripting'')'
+    owasp:
+    - A07:2017 - Cross-Site Scripting (XSS)
+    - A03:2021 - Injection
+    category: security
+    technology:
+    - browser
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    confidence: LOW
+    references:
+    - https://owasp.org/Top10/A03_2021-Injection
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/browser/security/insecure-document-method.yaml
+      upstream-id: insecure-document-method
+  languages:
+  - javascript
+  - typescript
+  severity: ERROR
+  patterns:
+  - pattern-either:
+    - pattern: '$EL.innerHTML = $HTML;
+
+        '
+    - pattern: '$EL.outerHTML = $HTML;
+
+        '
+    - pattern: document.write(...)
+  - pattern-not: '$EL.innerHTML = "...";
+
+      '
+  - pattern-not: '$EL.outerHTML = "...";
+
+      '
+  - pattern-not: document.write("...")
+- id: js-ts.insecure-innerhtml
+  message: User controlled data in a `$EL.innerHTML` is an anti-pattern that can lead to XSS vulnerabilities
+  metadata:
+    cwe:
+    - 'CWE-79: Improper Neutralization of Input During Web Page Generation (''Cross-site Scripting'')'
+    owasp:
+    - A07:2017 - Cross-Site Scripting (XSS)
+    - A03:2021 - Injection
+    category: security
+    technology:
+    - browser
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    confidence: LOW
+    references:
+    - https://owasp.org/Top10/A03_2021-Injection
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/browser/security/insecure-innerhtml.yaml
+      upstream-id: insecure-innerhtml
+  languages:
+  - javascript
+  - typescript
+  severity: ERROR
+  patterns:
+  - pattern: '$EL.innerHTML = $HTML;
+
+      '
+  - pattern-not: '$EL.innerHTML = "...";
+
+      '
+- id: js-ts.jwt-none-alg
+  message: Detected use of the 'none' algorithm in a JWT token. The 'none' algorithm assumes the integrity of the token has already been verified. This would allow a malicious actor to forge a JWT token that will automatically be verified. Do not explicitly use the 'none' algorithm. Instead, use an algorithm such as 'HS256'.
+  metadata:
+    cwe:
+    - 'CWE-327: Use of a Broken or Risky Cryptographic Algorithm'
+    owasp:
+    - A03:2017 - Sensitive Data Exposure
+    - A02:2021 - Cryptographic Failures
+    source-rule-url: https://semgrep.dev/blog/2020/hardcoded-secrets-unverified-tokens-and-other-common-jwt-mistakes/
+    asvs:
+      section: 'V3: Session Management Verification Requirements'
+      control_id: 3.5.3 Insecue Stateless Session Tokens
+      control_url: https://github.com/OWASP/ASVS/blob/master/4.0/en/0x12-V3-Session-management.md#v35-token-based-session-management
+      version: '4'
+    category: security
+    technology:
+    - jose
+    - jwt
+    subcategory:
+    - vuln
+    likelihood: HIGH
+    impact: MEDIUM
+    confidence: HIGH
+    references:
+    - https://owasp.org/Top10/A02_2021-Cryptographic_Failures
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/jose/security/jwt-none-alg.yaml
+      upstream-id: jwt-none-alg
+  languages:
+  - javascript
+  - typescript
+  severity: ERROR
+  pattern-either:
+  - pattern: 'var $JOSE = require("jose");
+
+      ...
+
+      var { JWK, JWT } = $JOSE;
+
+      ...
+
+      var $T = JWT.verify($P, JWK.None,...);
+
+      '
+  - pattern: 'var $JOSE = require("jose");
+
+      ...
+
+      var { JWK, JWT } = $JOSE;
+
+      ...
+
+      $T = JWT.verify($P, JWK.None,...);
+
+      '
+  - pattern: 'var $JOSE = require("jose");
+
+      ...
+
+      var { JWK, JWT } = $JOSE;
+
+      ...
+
+      JWT.verify($P, JWK.None,...);
+
+      '
+- id: js-ts.jwt-simple-noverify
+  message: Detected the decoding of a JWT token without a verify step. JWT tokens must be verified before use, otherwise the token's integrity is unknown. This means a malicious actor could forge a JWT token with any claims. Set 'verify' to `true` before using the token.
+  severity: ERROR
+  metadata:
+    owasp:
+    - A05:2021 - Security Misconfiguration
+    - A07:2021 - Identification and Authentication Failures
+    cwe:
+    - 'CWE-287: Improper Authentication'
+    - 'CWE-345: Insufficient Verification of Data Authenticity'
+    - 'CWE-347: Improper Verification of Cryptographic Signature'
+    category: security
+    subcategory:
+    - vuln
+    technology:
+    - jwt-simple
+    - jwt
+    confidence: HIGH
+    likelihood: MEDIUM
+    impact: HIGH
+    references:
+    - https://www.npmjs.com/package/jwt-simple
+    - https://cwe.mitre.org/data/definitions/287
+    - https://cwe.mitre.org/data/definitions/345
+    - https://cwe.mitre.org/data/definitions/347
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/jwt-simple/security/jwt-simple-noverify.yaml
+      upstream-id: jwt-simple-noverify
+  languages:
+  - javascript
+  - typescript
+  patterns:
+  - pattern-inside: '$JWT = require(''jwt-simple'');
+
+      ...
+
+      '
+  - pattern: $JWT.decode($TOKEN, $SECRET, $NOVERIFY, ...)
+  - metavariable-pattern:
+      metavariable: $NOVERIFY
+      patterns:
+      - pattern-either:
+        - pattern: 'true
+
+            '
+        - pattern: '"..."
+
+            '
+- id: js-ts.react-insecure-request
+  message: Unencrypted request over HTTP detected.
+  metadata:
+    vulnerability: Insecure Transport
+    owasp:
+    - A03:2017 - Sensitive Data Exposure
+    - A02:2021 - Cryptographic Failures
+    cwe:
+    - 'CWE-319: Cleartext Transmission of Sensitive Information'
+    references:
+    - https://www.npmjs.com/package/axios
+    category: security
+    technology:
+    - react
+    subcategory:
+    - vuln
+    likelihood: LOW
+    impact: MEDIUM
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: typescript/react/security/react-insecure-request.yaml
+      upstream-id: react-insecure-request
+  languages:
+  - typescript
+  - javascript
+  severity: ERROR
+  patterns:
+  - pattern-either:
+    - patterns:
+      - pattern-either:
+        - pattern-inside: 'import $AXIOS from ''axios'';
+
+            ...
+
+            $AXIOS.$METHOD(...)
+
+            '
+        - pattern-inside: '$AXIOS = require(''axios'');
+
+            ...
+
+            $AXIOS.$METHOD(...)
+
+            '
+      - pattern: $AXIOS.$VERB("$URL",...)
+      - metavariable-regex:
+          metavariable: $VERB
+          regex: ^(get|post|delete|head|patch|put|options)
+    - patterns:
+      - pattern-either:
+        - pattern-inside: 'import $AXIOS from ''axios'';
+
+            ...
+
+            $AXIOS(...)
+
+            '
+        - pattern-inside: '$AXIOS = require(''axios'');
+
+            ...
+
+            $AXIOS(...)
+
+            '
+      - pattern-either:
+        - pattern: '$AXIOS({url: "$URL"}, ...)'
+        - pattern: '$OPTS = {url: "$URL"}
+
+            ...
+
+            $AXIOS($OPTS, ...)
+
+            '
+    - pattern: fetch("$URL", ...)
+  - metavariable-regex:
+      metavariable: $URL
+      regex: ^([Hh][Tt][Tt][Pp]:\/\/(?!localhost).*)
+- id: js-ts.remote-property-injection
+  message: Bracket object notation with user input is present, this might allow an attacker to access all properties of the object and even it's prototype. Use literal values for object properties.
+  metadata:
+    confidence: LOW
+    owasp:
+    - A02:2017 - Broken Authentication
+    - A04:2021 - Insecure Design
+    cwe:
+    - 'CWE-522: Insufficiently Protected Credentials'
+    category: security
+    technology:
+    - express
+    references:
+    - https://github.com/nodesecurity/eslint-plugin-security/blob/3c7522ca1be800353513282867a1034c795d9eb4/docs/the-dangers-of-square-bracket-notation.md
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: MEDIUM
+    impact: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/express/security/audit/remote-property-injection.yaml
+      upstream-id: remote-property-injection
+  languages:
+  - javascript
+  - typescript
+  severity: ERROR
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - pattern-inside: function ... ($REQ, $RES) {...}
+      - pattern-inside: function ... ($REQ, $RES, $NEXT) {...}
+      - patterns:
+        - pattern-either:
+          - pattern-inside: $APP.$METHOD(..., function $FUNC($REQ, $RES) {...})
+          - pattern-inside: $APP.$METHOD(..., function $FUNC($REQ, $RES, $NEXT) {...})
+        - metavariable-regex:
+            metavariable: $METHOD
+            regex: ^(get|post|put|head|delete|options)$
+    - pattern-either:
+      - pattern: $REQ.query
+      - pattern: $REQ.body
+      - pattern: $REQ.params
+      - pattern: $REQ.cookies
+      - pattern: $REQ.headers
+  - patterns:
+    - pattern-either:
+      - pattern-inside: '({ $REQ }: Request,$RES: Response, $NEXT: NextFunction) =>
+
+          {...}
+
+          '
+      - pattern-inside: '({ $REQ }: Request,$RES: Response) => {...}
+
+          '
+    - focus-metavariable: $REQ
+    - pattern-either:
+      - pattern: params
+      - pattern: query
+      - pattern: cookies
+      - pattern: headers
+      - pattern: body
+  pattern-sinks:
+  - patterns:
+    - pattern-inside: $OBJ[...] = ...
+    - pattern-not-inside: $OBJ["..."] = ...
+    - pattern-not-inside: $OBJ[...] = "..."
+    - pattern: $INDEX
+    - pattern-not: '"..." + $INDEX
+
+        '
+    - pattern-not: '$INDEX + "..."
+
+        '
+  pattern-sanitizers:
+  - patterns:
+    - pattern: var $X = ...
+    - pattern-not: var $X = $REQ.$ANY
+- id: js-ts.require-request
+  message: If an attacker controls the x in require(x) then they can cause code to load that was not intended to run on the server.
+  options:
+    interfile: true
+  metadata:
+    interfile: true
+    owasp:
+    - A01:2021 - Broken Access Control
+    cwe:
+    - 'CWE-706: Use of Incorrectly-Resolved Name or Reference'
+    source-rule-url: https://nodesecroadmap.fyi/chapter-1/threat-UIR.html
+    category: security
+    technology:
+    - express
+    references:
+    - https://github.com/google/node-sec-roadmap/blob/master/chapter-2/dynamism.md#dynamism-when-you-need-it
+    subcategory:
+    - vuln
+    likelihood: MEDIUM
+    impact: MEDIUM
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/express/security/require-request.yaml
+      upstream-id: require-request
+  languages:
+  - javascript
+  - typescript
+  severity: ERROR
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - pattern-inside: function ... ($REQ, $RES) {...}
+      - pattern-inside: function ... ($REQ, $RES, $NEXT) {...}
+      - patterns:
+        - pattern-either:
+          - pattern-inside: $APP.$METHOD(..., function $FUNC($REQ, $RES) {...})
+          - pattern-inside: $APP.$METHOD(..., function $FUNC($REQ, $RES, $NEXT) {...})
+        - metavariable-regex:
+            metavariable: $METHOD
+            regex: ^(get|post|put|head|delete|options)$
+    - pattern-either:
+      - pattern: $REQ.query
+      - pattern: $REQ.body
+      - pattern: $REQ.params
+      - pattern: $REQ.cookies
+      - pattern: $REQ.headers
+  - patterns:
+    - pattern-either:
+      - pattern-inside: '({ $REQ }: Request,$RES: Response, $NEXT: NextFunction) =>
+
+          {...}
+
+          '
+      - pattern-inside: '({ $REQ }: Request,$RES: Response) => {...}
+
+          '
+    - focus-metavariable: $REQ
+    - pattern-either:
+      - pattern: params
+      - pattern: query
+      - pattern: cookies
+      - pattern: headers
+      - pattern: body
+  pattern-sinks:
+  - patterns:
+    - pattern: require($SINK)
+    - focus-metavariable: $SINK
+- id: js-ts.sequelize-tls-disabled-cert-validation
+  message: Set "rejectUnauthorized" to false is a convenient way to resolve certificate error. But this method is unsafe because it disables the server certificate verification, making the Node app open to MITM attack. "rejectUnauthorized" option must be alway set to True (default value). With self -signed certificate or custom CA, use "ca" option to define Root Certificate. This rule checks TLS configuration only for Postgresql, MariaDB and MySQL. SQLite is not really concerned by TLS configuration. This rule could be extended for MSSQL, but the dialectOptions is specific for Tedious.
+  metadata:
+    cwe:
+    - 'CWE-94: Improper Control of Generation of Code (''Code Injection'')'
+    owasp:
+    - A03:2021 - Injection
+    references:
+    - https://node-postgres.com/features/ssl
+    - https://nodejs.org/api/tls.html#tls_class_tls_tlssocket
+    - https://nodejs.org/api/tls.html#tls_tls_createsecurecontext_options
+    category: security
+    technology:
+    - sequelize
+    cwe2022-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/sequelize/security/audit/sequelize-tls-disabled-cert-validation.yaml
+      upstream-id: sequelize-tls-disabled-cert-validation
+  languages:
+  - javascript
+  - typescript
+  severity: ERROR
+  patterns:
+  - pattern: "{\n  host: $HOST,\n  database: $DATABASE,\n  dialect: $DIALECT,\n  dialectOptions: {\n    ssl: {\n      rejectUnauthorized: false\n    }\n  }\n }\n"
+  - metavariable-regex:
+      metavariable: $DIALECT
+      regex: '[''"](mariadb|mysql|postgres)[''"]'
+- id: js-ts.shelljs-exec-injection
+  message: If unverified user data can reach the `exec` method it can result in Remote Code Execution
+  metadata:
+    owasp:
+    - A01:2017 - Injection
+    - A03:2021 - Injection
+    cwe:
+    - 'CWE-78: Improper Neutralization of Special Elements used in an OS Command (''OS Command Injection'')'
+    category: security
+    technology:
+    - shelljs
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: HIGH
+    confidence: LOW
+    references:
+    - https://owasp.org/Top10/A03_2021-Injection
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/shelljs/security/shelljs-exec-injection.yaml
+      upstream-id: shelljs-exec-injection
+  languages:
+  - javascript
+  - typescript
+  severity: ERROR
+  patterns:
+  - pattern-inside: 'require(''shelljs'');
+
+      ...
+
+      '
+  - pattern-not-inside: 'require(''shelljs'');
+
+      ...
+
+      var $INPUT = "...";
+
+      ...
+
+      '
+  - pattern: $SHELL.exec($INPUT,...)
+  - pattern-not: $SHELL.exec("...",...)
+- id: js-ts.spawn-git-clone
+  message: Git allows shell commands to be specified in ext URLs for remote repositories. For example, git clone 'ext::sh -c whoami% >&2' will execute the whoami command to try to connect to a remote repository. Make sure that the URL is not controlled by external input.
+  metadata:
+    cwe:
+    - 'CWE-78: Improper Neutralization of Special Elements used in an OS Command (''OS Command Injection'')'
+    owasp:
+    - A01:2017 - Injection
+    - A03:2021 - Injection
+    category: security
+    technology:
+    - git
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    confidence: LOW
+    references:
+    - https://owasp.org/Top10/A03_2021-Injection
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/lang/security/spawn-git-clone.yaml
+      upstream-id: spawn-git-clone
+  languages:
+  - javascript
+  - typescript
+  severity: ERROR
+  patterns:
+  - pattern-either:
+    - pattern: spawn('git', ['clone',...,$F])
+    - pattern: $X.spawn('git', ['clone',...,$F])
+    - pattern: spawn('git', ['clone',...,$P,$F])
+    - pattern: $X.spawn('git', ['clone',...,$P,$F])
+  - pattern-not: spawn('git', ['clone',...,"..."])
+  - pattern-not: $X.spawn('git', ['clone',...,"..."])
+  - pattern-not: spawn('git', ['clone',...,"...","..."])
+  - pattern-not: $X.spawn('git', ['clone',...,"...","..."])
+- id: js-ts.spawn-shell-true
+  message: 'Found ''$SPAWN'' with ''{shell: $SHELL}''. This is dangerous because this call will spawn the command using a shell process. Doing so propagates current shell settings and variables, which makes it much easier for a malicious actor to execute commands. Use ''{shell: false}'' instead.'
+  metadata:
+    owasp:
+    - A01:2017 - Injection
+    - A03:2021 - Injection
+    cwe:
+    - 'CWE-78: Improper Neutralization of Special Elements used in an OS Command (''OS Command Injection'')'
+    category: security
+    technology:
+    - javascript
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    confidence: LOW
+    references:
+    - https://owasp.org/Top10/A03_2021-Injection
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/lang/security/audit/spawn-shell-true.yaml
+      upstream-id: spawn-shell-true
+  languages:
+  - javascript
+  - typescript
+  severity: ERROR
+  patterns:
+  - pattern-either:
+    - pattern: 'spawn(...,{shell: $SHELL})
+
+        '
+    - pattern: 'spawnSync(...,{shell: $SHELL})
+
+        '
+    - pattern: '$CP.spawn(...,{shell: $SHELL})
+
+        '
+    - pattern: '$CP.spawnSync(...,{shell: $SHELL})
+
+        '
+  - pattern-not: 'spawn(...,{shell: false})
+
+      '
+  - pattern-not: 'spawnSync(...,{shell: false})
+
+      '
+  - pattern-not: '$CP.spawn(...,{shell: false})
+
+      '
+  - pattern-not: '$CP.spawnSync(...,{shell: false})
+
+      '
+- id: js-ts.tainted-sql-string
+  message: Detected user input used to manually construct a SQL string. This is usually bad practice because manual construction could accidentally result in a SQL injection. An attacker could use a SQL injection to steal or modify contents of the database. Instead, use a parameterized query which is available by default in most database engines. Alternatively, consider using an object-relational mapper (ORM) such as Sequelize which will protect your queries.
+  metadata:
+    references:
+    - https://owasp.org/www-community/attacks/SQL_Injection
+    category: security
+    owasp:
+    - A01:2017 - Injection
+    - A03:2021 - Injection
+    cwe:
+    - 'CWE-89: Improper Neutralization of Special Elements used in an SQL Command (''SQL Injection'')'
+    technology:
+    - aws-lambda
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: LOW
+    impact: MEDIUM
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/aws-lambda/security/tainted-sql-string.yaml
+      upstream-id: tainted-sql-string
+  languages:
+  - javascript
+  - typescript
+  severity: ERROR
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - pattern-inside: "exports.handler = function ($EVENT, ...) {\n  ...\n}\n"
+      - pattern-inside: 'function $FUNC ($EVENT, ...) {...}
+
+          ...
+
+          exports.handler = $FUNC
+
+          '
+      - pattern-inside: '$FUNC = function ($EVENT, ...) {...}
+
+          ...
+
+          exports.handler = $FUNC
+
+          '
+    - pattern: $EVENT
+  pattern-sinks:
+  - patterns:
+    - pattern-either:
+      - patterns:
+        - pattern-either:
+          - pattern: '"$SQLSTR" + $EXPR
+
+              '
+          - pattern: '"$SQLSTR".concat(...)
+
+              '
+          - pattern: util.format($SQLSTR, ...)
+        - metavariable-regex:
+            metavariable: $SQLSTR
+            regex: .*\b(?i)(select|delete|insert|create|update|alter|drop)\b.*
+      - patterns:
+        - pattern: '`...${...}...`
+
+            '
+        - pattern-regex: '.*\b(?i)(select|delete|insert|create|update|alter|drop)\b.*
+
+            '
+    - pattern-not-inside: 'console.$LOG(...)
+
+        '
+- id: js-ts.vm-runincontext-injection
+  message: The `vm` module enables compiling and running code within V8 Virtual Machine contexts. The `vm` module is not a security mechanism. Do not use it to run untrusted code. If code passed to `vm` functions is controlled by user input it could result in command injection. Do not let user input in `vm` functions.
+  metadata:
+    owasp:
+    - A03:2021 - Injection
+    cwe:
+    - 'CWE-94: Improper Control of Generation of Code (''Code Injection'')'
+    category: security
+    technology:
+    - javascript
+    - aws-lambda
+    cwe2022-top25: true
+    subcategory:
+    - vuln
+    likelihood: MEDIUM
+    impact: MEDIUM
+    confidence: MEDIUM
+    references:
+    - https://owasp.org/Top10/A03_2021-Injection
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/aws-lambda/security/vm-runincontext-injection.yaml
+      upstream-id: vm-runincontext-injection
+  languages:
+  - javascript
+  - typescript
+  severity: ERROR
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern: $EVENT
+    - pattern-either:
+      - pattern-inside: "exports.handler = function ($EVENT, ...) {\n  ...\n}\n"
+      - pattern-inside: 'function $FUNC ($EVENT, ...) {...}
+
+          ...
+
+          exports.handler = $FUNC
+
+          '
+      - pattern-inside: '$FUNC = function ($EVENT, ...) {...}
+
+          ...
+
+          exports.handler = $FUNC
+
+          '
+  pattern-sinks:
+  - patterns:
+    - pattern-either:
+      - pattern-inside: 'require(''vm'');
+
+          ...
+
+          '
+      - pattern-inside: 'import ''vm''
+
+          ...
+
+          '
+    - pattern-either:
+      - pattern: $VM.runInContext($X,...)
+      - pattern: $VM.runInNewContext($X,...)
+      - pattern: $VM.runInThisContext($X,...)
+      - pattern: $VM.compileFunction($X,...)
+      - pattern: new $VM.Script($X,...)
+      - pattern: new $VM.SourceTextModule($X,...)
+      - pattern: runInContext($X,...)
+      - pattern: runInNewContext($X,...)
+      - pattern: runInThisContext($X,...)
+      - pattern: compileFunction($X,...)
+      - pattern: new Script($X,...)
+      - pattern: new SourceTextModule($X,...)
+- id: js-ts.ajv-allerrors-true
+  message: 'By setting `allErrors: true` in `Ajv` library, all error objects will be allocated without limit. This allows the attacker to produce a huge number of errors which can lead to denial of service. Do not use `allErrors: true` in production.'
+  metadata:
+    cwe:
+    - 'CWE-400: Uncontrolled Resource Consumption'
+    category: security
+    technology:
+    - ajv
+    references:
+    - https://ajv.js.org/options.html#allerrors
+    cwe2022-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/ajv/security/audit/ajv-allerrors-true.yaml
+      upstream-id: ajv-allerrors-true
+  languages:
+  - javascript
+  - typescript
+  severity: WARNING
+  pattern-either:
+  - pattern: 'new Ajv({...,allErrors: true,...},...)
+
+      '
+  - patterns:
+    - pattern: 'new Ajv($SETTINGS,...)
+
+        '
+    - pattern-inside: '$SETTINGS = {...,allErrors: true,...}
+
+        ...
+
+        '
+- id: js-ts.angular-bypasssecuritytrust
+  message: Detected the use of `$TRUST`. This can introduce a Cross-Site-Scripting (XSS) vulnerability if this comes from user-provided input. If you have to use `$TRUST`, ensure it does not come from user-input or use the appropriate prevention mechanism e.g. input validation or sanitization depending on the context.
+  metadata:
+    cwe:
+    - 'CWE-79: Improper Neutralization of Input During Web Page Generation (''Cross-site Scripting'')'
+    references:
+    - https://angular.io/api/platform-browser/DomSanitizer
+    - https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html
+    owasp:
+    - A07:2017 - Cross-Site Scripting (XSS)
+    - A03:2021 - Injection
+    confidence: MEDIUM
+    category: security
+    technology:
+    - angular
+    - browser
+    license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: LOW
+    impact: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: typescript/angular/security/audit/angular-domsanitizer.yaml
+      upstream-id: angular-bypasssecuritytrust
+  languages:
+  - typescript
+  severity: WARNING
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - pattern-inside: 'function ...({..., $X: string, ...}) { ... }
+
+          '
+      - pattern-inside: 'function ...(..., $X: string, ...) { ... }
+
+          '
+    - focus-metavariable: $X
+  pattern-sinks:
+  - patterns:
+    - pattern-either:
+      - pattern: $X.$TRUST($Y)
+    - focus-metavariable: $Y
+    - pattern-not: '$X.$TRUST(`...`)
+
+        '
+    - pattern-not: '$X.$TRUST("...")
+
+        '
+    - metavariable-regex:
+        metavariable: $TRUST
+        regex: (bypassSecurityTrustHtml|bypassSecurityTrustStyle|bypassSecurityTrustScript|bypassSecurityTrustUrl|bypassSecurityTrustResourceUrl)
+  pattern-sanitizers:
+  - patterns:
+    - pattern-either:
+      - pattern-inside: 'import $S from "underscore.string"
+
+          ...
+
+          '
+      - pattern-inside: 'import * as $S from "underscore.string"
+
+          ...
+
+          '
+      - pattern-inside: 'import $S from "underscore.string"
+
+          ...
+
+          '
+      - pattern-inside: '$S = require("underscore.string")
+
+          ...
+
+          '
+    - pattern-either:
+      - pattern: $S.escapeHTML(...)
+  - patterns:
+    - pattern-either:
+      - pattern-inside: 'import $S from "dompurify"
+
+          ...
+
+          '
+      - pattern-inside: 'import { ..., $S,... } from "dompurify"
+
+          ...
+
+          '
+      - pattern-inside: 'import * as $S from "dompurify"
+
+          ...
+
+          '
+      - pattern-inside: '$S = require("dompurify")
+
+          ...
+
+          '
+      - pattern-inside: 'import $S from "isomorphic-dompurify"
+
+          ...
+
+          '
+      - pattern-inside: 'import * as $S from "isomorphic-dompurify"
+
+          ...
+
+          '
+      - pattern-inside: '$S = require("isomorphic-dompurify")
+
+          ...
+
+          '
+    - pattern-either:
+      - patterns:
+        - pattern-inside: '$VALUE = $S(...)
+
+            ...
+
+            '
+        - pattern: $VALUE.sanitize(...)
+      - patterns:
+        - pattern-inside: '$VALUE = $S.sanitize
+
+            ...
+
+            '
+        - pattern: $S(...)
+      - pattern: $S.sanitize(...)
+      - pattern: $S(...)
+  - patterns:
+    - pattern-either:
+      - pattern-inside: 'import $S from ''xss'';
+
+          ...
+
+          '
+      - pattern-inside: 'import * as $S from ''xss'';
+
+          ...
+
+          '
+      - pattern-inside: '$S = require("xss")
+
+          ...
+
+          '
+    - pattern: $S(...)
+  - patterns:
+    - pattern-either:
+      - pattern-inside: 'import $S from ''sanitize-html'';
+
+          ...
+
+          '
+      - pattern-inside: 'import * as $S from "sanitize-html";
+
+          ...
+
+          '
+      - pattern-inside: '$S = require("sanitize-html")
+
+          ...
+
+          '
+    - pattern: $S(...)
+  - patterns:
+    - pattern: sanitizer.sanitize(...)
+    - pattern-not: sanitizer.sanitize(SecurityContext.NONE, ...);
+- id: js-ts.apollo-axios-ssrf
+  message: User-controllable argument $DATAVAL to $METHOD passed to Axios via internal handler $INNERFUNC. This could be a server-side request forgery. A user could call a restricted API or leak internal headers to an unauthorized party. Validate your user arguments against an allowlist of known URLs, or consider refactoring so that user-controlled data is not necessary.
+  metadata:
+    owasp:
+    - A10:2021 - Server-Side Request Forgery (SSRF)
+    cwe:
+    - 'CWE-918: Server-Side Request Forgery (SSRF)'
+    category: security
+    technology:
+    - apollo
+    - axios
+    references:
+    - https://www.cvedetails.com/cve/CVE-2020-28168/
+    - https://owasp.org/www-community/attacks/Server_Side_Request_Forgery
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: MEDIUM
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/apollo/security/apollo-axios-ssrf.yaml
+      upstream-id: apollo-axios-ssrf
+  languages:
+  - javascript
+  severity: WARNING
+  patterns:
+  - pattern: const $RESPONSE = await axios.request($INNERARG,...)
+  - pattern-inside: "Query: {\n  $METHOD(parent, args, context, info) {\n    ...\n    $DATA = args.$DATAVAL\n    ...\n    async function $INNERFUNC(...,$INNERARG,...){\n      ...\n    }\n    ...\n    return $INNERFUNC(...,$DATA,...)\n    }\n  }\n"
+- id: js-ts.chrome-remote-interface-compilescript-injection
+  message: If unverified user data can reach the `compileScript` method it can result in Server-Side Request Forgery vulnerabilities
+  metadata:
+    owasp:
+    - A10:2021 - Server-Side Request Forgery (SSRF)
+    cwe:
+    - 'CWE-918: Server-Side Request Forgery (SSRF)'
+    category: security
+    technology:
+    - chrome-remote-interface
+    references:
+    - https://github.com/cyrus-and/chrome-remote-interface
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: MEDIUM
+    impact: MEDIUM
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/chrome-remote-interface/security/audit/chrome-remote-interface-compilescript-injection.yaml
+      upstream-id: chrome-remote-interface-compilescript-injection
+  languages:
+  - javascript
+  - typescript
+  severity: WARNING
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern-inside: function ... (..., $ARG,...) {...}
+    - focus-metavariable: $ARG
+  pattern-sinks:
+  - patterns:
+    - pattern-either:
+      - pattern-inside: 'require(''chrome-remote-interface'');
+
+          ...
+
+          '
+      - pattern-inside: 'import ''chrome-remote-interface'';
+
+          ...
+
+          '
+    - pattern-either:
+      - pattern: '$RUNTIME.compileScript({expression: $SINK},...)
+
+          '
+      - pattern: '$RUNTIME.evaluate({expression: $SINK},...)
+
+          '
+      - pattern: '$PAGE.navigate({url: $SINK},...)
+
+          '
+      - pattern: '$RUNTIME.printToPDF({headerTemplate: $SINK},...)
+
+          '
+      - pattern: '$RUNTIME.printToPDF({footerTemplate: $SINK},...)
+
+          '
+      - pattern: '$PAGE.setDocumentContent({html: $SINK},...)
+
+          '
+    - focus-metavariable: $SINK
+- id: js-ts.cors-misconfiguration
+  message: By letting user input control CORS parameters, there is a risk that software does not properly verify that the source of data or communication is valid. Use literal values for CORS settings.
+  metadata:
+    owasp:
+    - A07:2021 - Identification and Authentication Failures
+    cwe:
+    - 'CWE-346: Origin Validation Error'
+    category: security
+    references:
+    - https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
+    technology:
+    - express
+    subcategory:
+    - vuln
+    likelihood: MEDIUM
+    impact: MEDIUM
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/express/security/cors-misconfiguration.yaml
+      upstream-id: cors-misconfiguration
+  languages:
+  - javascript
+  - typescript
+  severity: WARNING
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - pattern-inside: function ... ($REQ, $RES) {...}
+      - pattern-inside: function ... ($REQ, $RES, $NEXT) {...}
+      - patterns:
+        - pattern-either:
+          - pattern-inside: $APP.$METHOD(..., function $FUNC($REQ, $RES) {...})
+          - pattern-inside: $APP.$METHOD(..., function $FUNC($REQ, $RES, $NEXT) {...})
+        - metavariable-regex:
+            metavariable: $METHOD
+            regex: ^(get|post|put|head|delete|options)$
+    - pattern-either:
+      - pattern: $REQ.query
+      - pattern: $REQ.body
+      - pattern: $REQ.params
+      - pattern: $REQ.cookies
+      - pattern: $REQ.headers
+  - patterns:
+    - pattern-either:
+      - pattern-inside: '({ $REQ }: Request,$RES: Response, $NEXT: NextFunction) =>
+
+          {...}
+
+          '
+      - pattern-inside: '({ $REQ }: Request,$RES: Response) => {...}
+
+          '
+    - focus-metavariable: $REQ
+    - pattern-either:
+      - pattern: params
+      - pattern: query
+      - pattern: cookies
+      - pattern: headers
+      - pattern: body
+  pattern-sinks:
+  - patterns:
+    - pattern-either:
+      - pattern: $RES.set($HEADER, $X)
+      - pattern: $RES.header($HEADER, $X)
+      - pattern: $RES.setHeader($HEADER, $X)
+      - pattern: '$RES.set({$HEADER: $X}, ...)
+
+          '
+      - pattern: '$RES.writeHead($STATUS, {$HEADER: $X}, ...)
+
+          '
+    - focus-metavariable: $X
+    - metavariable-regex:
+        metavariable: $HEADER
+        regex: .*(Access-Control-Allow-Origin|access-control-allow-origin).*
+- id: js-ts.detect-angular-element-methods
+  message: Use of angular.element can lead to XSS if user-input is treated as part of the HTML element within `$SINK`. It is recommended to contextually output encode user-input, before inserting into `$SINK`. If the HTML needs to be preserved it is recommended to sanitize the input using $sce.getTrustedHTML or $sanitize.
+  metadata:
+    confidence: LOW
+    references:
+    - https://docs.angularjs.org/api/ng/function/angular.element
+    - https://owasp.org/www-chapter-london/assets/slides/OWASPLondon20170727_AngularJS.pdf
+    category: security
+    cwe:
+    - 'CWE-79: Improper Neutralization of Input During Web Page Generation (''Cross-site Scripting'')'
+    technology:
+    - angularjs
+    owasp:
+    - A07:2017 - Cross-Site Scripting (XSS)
+    - A03:2021 - Injection
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: LOW
+    impact: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/angular/security/detect-angular-element-methods.yaml
+      upstream-id: detect-angular-element-methods
+  languages:
+  - javascript
+  - typescript
+  severity: INFO
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - patterns:
+        - pattern-inside: 'function(..., $SCOPE, ...) { ... }
+
+            '
+        - focus-metavariable: $SCOPE
+        - metavariable-regex:
+            metavariable: $SCOPE
+            regex: ^\$scope$
+      - pattern: $rootScope
+      - pattern: $injector.get('$rootScope')
+      - pattern: $injector.get('$scope')
+  pattern-sinks:
+  - patterns:
+    - pattern-either:
+      - pattern-inside: 'angular.element(...). ... .$SINK($QUERY)
+
+          '
+      - pattern-inside: '$ANGULAR = angular.element(...)
+
+          ...
+
+          $ANGULAR. ... .$SINK($QUERY)
+
+          '
+    - metavariable-regex:
+        metavariable: $SINK
+        regex: ^(after|append|html|prepend|replaceWith|wrap)$
+    - focus-metavariable: $QUERY
+  pattern-sanitizers:
+  - patterns:
+    - pattern-either:
+      - pattern: $sce.getTrustedHtml(...)
+      - pattern: $sanitize(...)
+      - pattern: DOMPurify.sanitize(...)
+- id: js-ts.detect-angular-element-taint
+  message: Use of angular.element can lead to XSS if user-input is treated as part of the HTML element within `$SINK`. It is recommended to contextually output encode user-input, before inserting into `$SINK`. If the HTML needs to be preserved it is recommended to sanitize the input using $sce.getTrustedHTML or $sanitize.
+  metadata:
+    confidence: MEDIUM
+    cwe:
+    - 'CWE-79: Improper Neutralization of Input During Web Page Generation (''Cross-site Scripting'')'
+    references:
+    - https://docs.angularjs.org/api/ng/function/angular.element
+    - https://owasp.org/www-chapter-london/assets/slides/OWASPLondon20170727_AngularJS.pdf
+    category: security
+    technology:
+    - angularjs
+    owasp:
+    - A07:2017 - Cross-Site Scripting (XSS)
+    - A03:2021 - Injection
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: HIGH
+    impact: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/angular/security/detect-angular-element-taint.yaml
+      upstream-id: detect-angular-element-taint
+  languages:
+  - javascript
+  - typescript
+  severity: WARNING
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - pattern: window.location.search
+      - pattern: window.document.location.search
+      - pattern: document.location.search
+      - pattern: location.search
+      - pattern: $location.search(...)
+  - patterns:
+    - pattern-either:
+      - pattern: $DECODE(<... location.hash ...>)
+      - pattern: $DECODE(<... window.location.hash ...>)
+      - pattern: $DECODE(<... document.location.hash ...>)
+      - pattern: $DECODE(<... location.href ...>)
+      - pattern: $DECODE(<... window.location.href ...>)
+      - pattern: $DECODE(<... document.location.href ...>)
+      - pattern: $DECODE(<... document.URL ...>)
+      - pattern: $DECODE(<... window.document.URL ...>)
+      - pattern: $DECODE(<... document.location.href ...>)
+      - pattern: $DECODE(<... document.location.href ...>)
+      - pattern: $DECODE(<... $location.absUrl() ...>)
+      - pattern: $DECODE(<... $location.url() ...>)
+      - pattern: $DECODE(<... $location.hash() ...>)
+    - metavariable-regex:
+        metavariable: $DECODE
+        regex: ^(unescape|decodeURI|decodeURIComponent)$
+  - patterns:
+    - pattern-inside: $http.$METHOD(...).$CONTINUE(function $FUNC($RES) {...})
+    - metavariable-regex:
+        metavariable: $METHOD
+        regex: ^(get|delete|head|jsonp|post|put|patch)
+    - pattern: $RES.data
+  pattern-sinks:
+  - patterns:
+    - pattern-either:
+      - pattern-inside: 'angular.element(...). ... .$SINK($QUERY)
+
+          '
+      - pattern-inside: '$ANGULAR = angular.element(...)
+
+          ...
+
+          $ANGULAR. ... .$SINK($QUERY)
+
+          '
+    - metavariable-regex:
+        metavariable: $SINK
+        regex: ^(after|append|html|prepend|replaceWith|wrap)$
+    - focus-metavariable: $QUERY
+  pattern-sanitizers:
+  - patterns:
+    - pattern-either:
+      - pattern: $sce.getTrustedHtml(...)
+      - pattern: $sanitize(...)
+      - pattern: DOMPurify.sanitize(...)
+- id: js-ts.detect-angular-resource-loading
+  message: $sceDelegateProvider allowlisting can introduce security issues if wildcards are used.
+  metadata:
+    references:
+    - https://docs.angularjs.org/api/ng/service/$sce#trustAsJs
+    - https://owasp.org/www-chapter-london/assets/slides/OWASPLondon20170727_AngularJS.pdf
+    category: security
+    cwe:
+    - 'CWE-79: Improper Neutralization of Input During Web Page Generation (''Cross-site Scripting'')'
+    technology:
+    - angular
+    owasp:
+    - A07:2017 - Cross-Site Scripting (XSS)
+    - A03:2021 - Injection
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: MEDIUM
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/angular/security/detect-angular-resource-loading.yaml
+      upstream-id: detect-angular-resource-loading
+  languages:
+  - javascript
+  - typescript
+  severity: WARNING
+  pattern-either:
+  - pattern: '$sceDelegateProvider.resourceUrlWhitelist([...,''**'',...]);
+
+      '
+  - patterns:
+    - pattern: '$sceDelegateProvider.resourceUrlWhitelist([...,$DOM,...]);
+
+        '
+    - metavariable-regex:
+        metavariable: $DOM
+        regex: ^'.*\*\*.+'$
+- id: js-ts.detect-angular-translateprovider-translations-method
+  message: The use of $translateProvider.translations method can be dangerous if user input is provided to this API.
+  metadata:
+    cwe:
+    - 'CWE-79: Improper Neutralization of Input During Web Page Generation (''Cross-site Scripting'')'
+    references:
+    - https://docs.angularjs.org/api/ng/service/$sce#trustAsUrl
+    - https://owasp.org/www-chapter-london/assets/slides/OWASPLondon20170727_AngularJS.pdf
+    category: security
+    technology:
+    - angular
+    - typescript
+    owasp:
+    - A07:2017 - Cross-Site Scripting (XSS)
+    - A03:2021 - Injection
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: MEDIUM
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/angular/security/detect-third-party-angular-translate.yaml
+      upstream-id: detect-angular-translateprovider-translations-method
+  languages:
+  - javascript
+  severity: WARNING
+  patterns:
+  - pattern: '$translateProvider.translations(...,$SOURCE);
+
+      '
+  - pattern-inside: 'app.controller(..., function($scope,$sce){
+
+      ...
+
+      });
+
+      '
+- id: js-ts.detect-angular-trust-as-css-method
+  message: The use of $sce.trustAsCss can be dangerous if unsanitized user input flows through this API.
+  metadata:
+    cwe:
+    - 'CWE-79: Improper Neutralization of Input During Web Page Generation (''Cross-site Scripting'')'
+    owasp:
+    - A07:2017 - Cross-Site Scripting (XSS)
+    - A03:2021 - Injection
+    references:
+    - https://docs.angularjs.org/api/ng/service/$sce#trustAsCss
+    - https://owasp.org/www-chapter-london/assets/slides/OWASPLondon20170727_AngularJS.pdf
+    category: security
+    technology:
+    - angular
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: MEDIUM
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/angular/security/detect-angular-trust-as-css.yaml
+      upstream-id: detect-angular-trust-as-css-method
+  languages:
+  - javascript
+  - typescript
+  severity: WARNING
+  patterns:
+  - pattern-either:
+    - pattern: '$SOURCE = $scope.$INPUT;
+
+        $sce.trustAsCss($SOURCE);
+
+        '
+    - pattern: '$sce.trustAsCss($scope.$INPUT);
+
+        '
+  - pattern-inside: 'app.controller(..., function($scope,$sce){
+
+      ...
+
+      });
+
+      '
+- id: js-ts.detect-angular-trust-as-html-method
+  message: The use of $sce.trustAsHtml can be dangerous if unsanitized user input flows through this API.
+  metadata:
+    cwe:
+    - 'CWE-79: Improper Neutralization of Input During Web Page Generation (''Cross-site Scripting'')'
+    owasp:
+    - A07:2017 - Cross-Site Scripting (XSS)
+    - A03:2021 - Injection
+    references:
+    - https://docs.angularjs.org/api/ng/service/$sce#trustAsHtml
+    - https://owasp.org/www-chapter-london/assets/slides/OWASPLondon20170727_AngularJS.pdf
+    category: security
+    technology:
+    - angular
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: MEDIUM
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/angular/security/detect-angular-trust-as-html-method.yaml
+      upstream-id: detect-angular-trust-as-html-method
+  languages:
+  - javascript
+  - typescript
+  severity: WARNING
+  patterns:
+  - pattern-either:
+    - pattern: '$SOURCE = $scope.$INPUT;
+
+        $sce.trustAsHtml($SOURCE);
+
+        '
+    - pattern: '$sce.trustAsHtml($scope.$INPUT);
+
+        '
+  - pattern-inside: 'app.controller(..., function($scope,$sce){
+
+      ...
+
+      });
+
+      '
+- id: js-ts.detect-angular-trust-as-js-method
+  message: The use of $sce.trustAsJs can be dangerous if unsanitized user input flows through this API.
+  metadata:
+    owasp:
+    - A07:2017 - Cross-Site Scripting (XSS)
+    - A03:2021 - Injection
+    references:
+    - https://docs.angularjs.org/api/ng/service/$sce#trustAsJs
+    - https://owasp.org/www-chapter-london/assets/slides/OWASPLondon20170727_AngularJS.pdf
+    cwe:
+    - 'CWE-79: Improper Neutralization of Input During Web Page Generation (''Cross-site Scripting'')'
+    category: security
+    technology:
+    - angular
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: MEDIUM
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/angular/security/detect-angular-trust-as-js-method.yaml
+      upstream-id: detect-angular-trust-as-js-method
+  languages:
+  - javascript
+  - typescript
+  severity: WARNING
+  patterns:
+  - pattern-either:
+    - pattern: '$SOURCE = $scope.$INPUT;
+
+        $sce.trustAsJs($SOURCE);
+
+        '
+    - pattern: '$sce.trustAsJs($scope.$INPUT);
+
+        '
+  - pattern-inside: 'app.controller(..., function($scope,$sce){
+
+      ...
+
+      });
+
+      '
+- id: js-ts.detect-angular-trust-as-method
+  message: The use of $sce.trustAs can be dangerous if unsanitized user input flows through this API.
+  metadata:
+    references:
+    - https://docs.angularjs.org/api/ng/service/$sce
+    - https://owasp.org/www-chapter-london/assets/slides/OWASPLondon20170727_AngularJS.pdf
+    category: security
+    cwe:
+    - 'CWE-79: Improper Neutralization of Input During Web Page Generation (''Cross-site Scripting'')'
+    technology:
+    - angular
+    owasp:
+    - A07:2017 - Cross-Site Scripting (XSS)
+    - A03:2021 - Injection
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: LOW
+    impact: MEDIUM
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/angular/security/detect-angular-trust-as-method.yaml
+      upstream-id: detect-angular-trust-as-method
+  languages:
+  - javascript
+  - typescript
+  severity: WARNING
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern-inside: 'app.controller(..., function($scope,$sce) {
+
+        ...
+
+        });
+
+        '
+    - pattern: $scope.$X
+  pattern-sinks:
+  - pattern: $sce.trustAs(...)
+  - pattern: $sce.trustAsHtml(...)
+- id: js-ts.detect-angular-trust-as-resourceurl-method
+  message: The use of $sce.trustAsResourceUrl can be dangerous if unsanitized user input flows through this API.
+  metadata:
+    cwe:
+    - 'CWE-79: Improper Neutralization of Input During Web Page Generation (''Cross-site Scripting'')'
+    owasp:
+    - A07:2017 - Cross-Site Scripting (XSS)
+    - A03:2021 - Injection
+    references:
+    - https://docs.angularjs.org/api/ng/service/$sce#trustAsResourceUrl
+    - https://owasp.org/www-chapter-london/assets/slides/OWASPLondon20170727_AngularJS.pdf
+    category: security
+    technology:
+    - angular
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: MEDIUM
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: javascript/angular/security/detect-angular-trust-as-resourceurl-method.yaml
+      upstream-id: detect-angular-trust-as-resourceurl-method
+  languages:
+  - javascript
+  - typescript
+  severity: WARNING
+  patterns:
+  - pattern-either:
+    - pattern: '$SOURCE = $scope.$INPUT;
+
+        $sce.trustAsResourceUrl($SOURCE);
+
+        '
+    - pattern: '$sce.trustAsResourceUrl($scope.$INPUT);
+
+        '
+  - pattern-inside: 'app.controller(..., function($scope,$sce){
+
+      ...
+
+      });
+
+      '

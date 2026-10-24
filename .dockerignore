@@ -1,0 +1,29 @@
+# 构建产物在镜像内生成，不带入构建上下文
+**/node_modules
+code/dist
+opengrep-tool/
+server/data
+# 运行时自定义规则包（与 .gitignore 同理：属个人数据，容器内走 /data/rules-custom）
+server/rules/custom
+
+# 版本控制与本地环境
+.git
+.gitignore
+.zcode
+.env
+.env.*
+*.local
+
+# 日志与临时文件
+logs/
+*.log
+npm-debug.log*
+coverage/
+__pycache__/
+
+# 文档与本地脚本（不影响运行）
+*.md
+!server/rules/security/README.md
+一键启动（Windows）.bat
+一键启动（macOS／Linux）.sh
+docker-compose.yml

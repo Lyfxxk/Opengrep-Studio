@@ -1,0 +1,50 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "./tailwind-theme.css";
+
+/* shadcn v4 基座：默认边框/描边色与 body 底色跟随主题变量 */
+@layer base {
+  * {
+    border-color: var(--border);
+    outline-color: color-mix(in oklab, var(--ring) 50%, transparent);
+  }
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+  }
+}
+
+/* 打印（测试报告等）：隐藏侧栏/顶栏/动作条，正文铺满纸张并保留配色 */
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+  body {
+    background: #fff !important;
+  }
+  [data-slot='sidebar'],
+  [data-slot='sidebar-inset'] > header,
+  .no-print {
+    display: none !important;
+  }
+  [data-slot='sidebar-inset'] {
+    overflow: visible !important;
+  }
+  main {
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  thead {
+    display: table-header-group;
+  }
+  tr,
+  .report-paper section {
+    break-inside: avoid;
+  }
+}

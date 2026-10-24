@@ -1,0 +1,2776 @@
+# Opengrep Studio 内置安全规则包（security）
+# 来源: https://github.com/opengrep/opengrep-rules （精选子集）
+# 许可: LGPL 2.1 + Commons Clause（不得将规则单独出售；保留本出处声明）
+# 精选标准: 含安全元数据的优先、每语言 ≤ 50 条（官方不足 50 条时全量收录），剔除 correctness 目录
+# 校验: opengrep validate --config server/rules/security
+rules:
+- id: java.command-injection-formatted-runtime-call
+  patterns:
+  - metavariable-pattern:
+      metavariable: $RUNTIME
+      patterns:
+      - pattern-either:
+        - pattern: (java.lang.Runtime $R)
+        - pattern: java.lang.Runtime.getRuntime(...)
+  - pattern-either:
+    - pattern: $RUNTIME.exec($X + $Y);
+    - pattern: $RUNTIME.exec(String.format(...));
+    - pattern: $RUNTIME.loadLibrary($X + $Y);
+    - pattern: $RUNTIME.loadLibrary(String.format(...));
+    - patterns:
+      - pattern-either:
+        - pattern: '$RUNTIME.exec("=~/(sh|bash|ksh|csh|tcsh|zsh)/", "-c", $ARG,...)
+
+            '
+        - pattern: '$RUNTIME.exec(Arrays.asList("=~/(sh|bash|ksh|csh|tcsh|zsh)/","-c",$ARG,...),...)
+
+            '
+        - pattern: '$RUNTIME.exec(new String[]{"=~/(sh|bash|ksh|csh|tcsh|zsh)/","-c",$ARG,...},...)
+
+            '
+        - patterns:
+          - pattern-either:
+            - pattern: '$RUNTIME.exec($CMD,"-c",$ARG,...)
+
+                '
+            - pattern: '$RUNTIME.exec(Arrays.asList($CMD,"-c",$ARG,...),...)
+
+                '
+            - pattern: '$RUNTIME.exec(new String[]{$CMD,"-c",$ARG,...},...)
+
+                '
+          - pattern-inside: '$CMD = "=~/(sh|bash|ksh|csh|tcsh|zsh)/";
+
+              ...
+
+              '
+        - patterns:
+          - pattern-either:
+            - pattern: '$RUNTIME.exec($CMD, $EXECUTE, $ARG, ...)
+
+                '
+          - pattern-inside: '$CMD = new String[]{"=~/(sh|bash|ksh|csh|tcsh|zsh)/", ...};
+
+              ...
+
+              '
+        - patterns:
+          - pattern-either:
+            - pattern: '$RUNTIME.exec("=~/(sh|bash|ksh|csh|tcsh|zsh)/", $BASH, $ARG,...)
+
+                '
+            - pattern: '$RUNTIME.exec(Arrays.asList("=~/(sh|bash|ksh|csh|tcsh|zsh)/",$BASH,$ARG,...),...)
+
+                '
+            - pattern: '$RUNTIME.exec(new String[]{"=~/(sh|bash|ksh|csh|tcsh|zsh)/",$BASH,$ARG,...},...)
+
+                '
+          - pattern-inside: '$BASH = new String[]{"=~/(-c)/", ...};
+
+              ...
+
+              '
+      - pattern-not-inside: '$ARG = "...";
+
+          ...
+
+          '
+      - pattern-not: '$RUNTIME.exec("...","...","...",...)
+
+          '
+      - pattern-not: '$RUNTIME.exec(new String[]{"...","...","...",...},...)
+
+          '
+      - pattern-not: '$RUNTIME.exec(Arrays.asList("...","...","...",...),...)
+
+          '
+  message: A formatted or concatenated string was detected as input to a java.lang.Runtime call. This is dangerous if a variable is controlled by user input and could result in a command injection. Ensure your variables are not controlled by users or sufficiently sanitized.
+  metadata:
+    cwe:
+    - 'CWE-78: Improper Neutralization of Special Elements used in an OS Command (''OS Command Injection'')'
+    owasp:
+    - A01:2017 - Injection
+    - A03:2021 - Injection
+    source-rule-url: https://find-sec-bugs.github.io/bugs.htm#COMMAND_INJECTION.
+    category: security
+    technology:
+    - java
+    references:
+    - https://owasp.org/Top10/A03_2021-Injection
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: HIGH
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/lang/security/audit/command-injection-formatted-runtime-call.yaml
+      upstream-id: command-injection-formatted-runtime-call
+  severity: ERROR
+  languages:
+  - java
+- id: java.command-injection-process-builder
+  pattern-either:
+  - patterns:
+    - pattern: 'new ProcessBuilder($CMD,...)
+
+        '
+    - pattern-not-inside: '$CMD = "...";
+
+        ...
+
+        '
+    - pattern-not-inside: '$CMD = Arrays.asList("...",...);
+
+        ...
+
+        '
+    - pattern-not-inside: '$CMD = new String[]{"...",...};
+
+        ...
+
+        '
+    - pattern-not: 'new ProcessBuilder("...",...)
+
+        '
+    - pattern-not: 'new ProcessBuilder(new String[]{"...",...},...)
+
+        '
+    - pattern-not: 'new ProcessBuilder(Arrays.asList("...",...),...)
+
+        '
+  - patterns:
+    - pattern: '$PB.command($CMD,...)
+
+        '
+    - pattern-inside: '$TYPE $PB = new ProcessBuilder(...);
+
+        ...
+
+        '
+    - pattern-not-inside: '$CMD = "...";
+
+        ...
+
+        '
+    - pattern-not-inside: '$CMD = Arrays.asList("...",...);
+
+        ...
+
+        '
+    - pattern-not-inside: '$CMD = new String[]{"...",...};
+
+        ...
+
+        '
+    - pattern-not: '$PB.command("...",...)
+
+        '
+    - pattern-not: '$PB.command(new String[]{"...",...},...)
+
+        '
+    - pattern-not: '$PB.command(Arrays.asList("...",...),...)
+
+        '
+  - patterns:
+    - pattern-either:
+      - pattern: 'new ProcessBuilder("=~/(sh|bash|ksh|csh|tcsh|zsh)/","-c",$ARG,...)
+
+          '
+      - pattern: 'new ProcessBuilder("cmd","/c",$ARG,...)
+
+          '
+      - pattern: 'new ProcessBuilder(Arrays.asList("cmd","/c",$ARG,...),...)
+
+          '
+      - pattern: 'new ProcessBuilder(new String[]{"cmd","/c",$ARG,...},...)
+
+          '
+      - patterns:
+        - pattern-either:
+          - pattern: 'new ProcessBuilder($CMD,"/c",$ARG,...)
+
+              '
+          - pattern: 'new ProcessBuilder(Arrays.asList($CMD,"/c",$ARG,...),...)
+
+              '
+          - pattern: 'new ProcessBuilder(new String[]{$CMD,"/c",$ARG,...},...)
+
+              '
+        - pattern-inside: '$CMD = "cmd";
+
+            ...
+
+            '
+    - pattern-not-inside: '$ARG = "...";
+
+        ...
+
+        '
+    - pattern-not: 'new ProcessBuilder("...","...","...",...)
+
+        '
+    - pattern-not: 'new ProcessBuilder(new String[]{"...","...","...",...},...)
+
+        '
+    - pattern-not: 'new ProcessBuilder(Arrays.asList("...","...","...",...),...)
+
+        '
+  - patterns:
+    - pattern-either:
+      - pattern: '$PB.command("=~/(sh|bash|ksh|csh|tcsh|zsh)/","-c",$ARG,...)
+
+          '
+      - pattern: '$PB.command("cmd","/c",$ARG,...)
+
+          '
+      - pattern: '$PB.command(Arrays.asList("=~/(sh|bash|ksh|csh|tcsh|zsh)/","-c",$ARG,...),...)
+
+          '
+      - pattern: '$PB.command(Arrays.asList("cmd","/c",$ARG,...),...)
+
+          '
+      - pattern: '$PB.command(new String[]{"=~/(sh|bash|ksh|csh|tcsh|zsh)/","-c",$ARG,...},...)
+
+          '
+      - pattern: '$PB.command(new String[]{"cmd","/c",$ARG,...},...)
+
+          '
+      - patterns:
+        - pattern-either:
+          - pattern: '$PB.command($CMD,"-c",$ARG,...)
+
+              '
+          - pattern: '$PB.command(Arrays.asList($CMD,"-c",$ARG,...),...)
+
+              '
+          - pattern: '$PB.command(new String[]{$CMD,"-c",$ARG,...},...)
+
+              '
+        - pattern-inside: '$CMD = "=~/(sh|bash|ksh|csh|tcsh|zsh)/";
+
+            ...
+
+            '
+      - patterns:
+        - pattern-either:
+          - pattern: '$PB.command($CMD,"/c",$ARG,...)
+
+              '
+          - pattern: '$PB.command(Arrays.asList($CMD,"/c",$ARG,...),...)
+
+              '
+          - pattern: '$PB.command(new String[]{$CMD,"/c",$ARG,...},...)
+
+              '
+        - pattern-inside: '$CMD = "cmd";
+
+            ...
+
+            '
+    - pattern-inside: '$TYPE $PB = new ProcessBuilder(...);
+
+        ...
+
+        '
+    - pattern-not-inside: '$ARG = "...";
+
+        ...
+
+        '
+    - pattern-not: '$PB.command("...","...","...",...)
+
+        '
+    - pattern-not: '$PB.command(new String[]{"...","...","...",...},...)
+
+        '
+    - pattern-not: '$PB.command(Arrays.asList("...","...","...",...),...)
+
+        '
+  message: A formatted or concatenated string was detected as input to a ProcessBuilder call. This is dangerous if a variable is controlled by user input and could result in a command injection. Ensure your variables are not controlled by users or sufficiently sanitized.
+  metadata:
+    cwe:
+    - 'CWE-78: Improper Neutralization of Special Elements used in an OS Command (''OS Command Injection'')'
+    owasp:
+    - A01:2017 - Injection
+    - A03:2021 - Injection
+    category: security
+    technology:
+    - java
+    references:
+    - https://owasp.org/Top10/A03_2021-Injection
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: HIGH
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/lang/security/audit/command-injection-process-builder.yaml
+      upstream-id: command-injection-process-builder
+  severity: ERROR
+  languages:
+  - java
+- id: java.documentbuilderfactory-disallow-doctype-decl-false
+  severity: ERROR
+  metadata:
+    cwe:
+    - 'CWE-611: Improper Restriction of XML External Entity Reference'
+    owasp:
+    - A04:2017 - XML External Entities (XXE)
+    - A05:2021 - Security Misconfiguration
+    asvs:
+      section: V5 Validation, Sanitization and Encoding
+      control_id: 5.5.2 Insecue XML Deserialization
+      control_url: https://github.com/OWASP/ASVS/blob/master/4.0/en/0x13-V5-Validation-Sanitization-Encoding.md#v55-deserialization-prevention
+      version: '4'
+    references:
+    - https://semgrep.dev/blog/2022/xml-security-in-java
+    - https://semgrep.dev/docs/cheat-sheets/java-xxe/
+    - https://blog.sonarsource.com/secure-xml-processor
+    - https://xerces.apache.org/xerces2-j/features.html
+    category: security
+    technology:
+    - java
+    - xml
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: LOW
+    impact: HIGH
+    confidence: HIGH
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/lang/security/audit/xxe/documentbuilderfactory-disallow-doctype-decl-false.yaml
+      upstream-id: documentbuilderfactory-disallow-doctype-decl-false
+  message: DOCTYPE declarations are enabled for $DBFACTORY. Without prohibiting external entity declarations, this is vulnerable to XML external entity attacks. Disable this by setting the feature "http://apache.org/xml/features/disallow-doctype-decl" to true. Alternatively, allow DOCTYPE declarations and only prohibit external entities declarations. This can be done by setting the features "http://xml.org/sax/features/external-general-entities" and "http://xml.org/sax/features/external-parameter-entities" to false.
+  patterns:
+  - pattern: $DBFACTORY.setFeature("http://apache.org/xml/features/disallow-doctype-decl", false);
+  - pattern-not-inside: "$RETURNTYPE $METHOD(...){\n  ...\n  $DBF.setFeature(\"http://xml.org/sax/features/external-general-entities\", false);\n  ...\n  $DBF.setFeature(\"http://xml.org/sax/features/external-parameter-entities\", false);\n  ...\n}\n"
+  - pattern-not-inside: "$RETURNTYPE $METHOD(...){\n  ...\n  $DBF.setFeature(\"http://xml.org/sax/features/external-parameter-entities\", false);\n  ...\n  $DBF.setFeature(\"http://xml.org/sax/features/external-general-entities\", false);\n  ...\n}\n"
+  - pattern-not-inside: "$RETURNTYPE $METHOD(...){\n  ...\n  $DBF.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, \"\");\n  ...\n  $DBF.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, \"\");\n  ...\n}\n"
+  - pattern-not-inside: "$RETURNTYPE $METHOD(...){\n  ...\n  $DBF.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, \"\");\n  ...\n  $DBF.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, \"\");\n  ...\n}\n"
+  languages:
+  - java
+- id: java.documentbuilderfactory-disallow-doctype-decl-missing
+  severity: ERROR
+  metadata:
+    cwe:
+    - 'CWE-611: Improper Restriction of XML External Entity Reference'
+    owasp:
+    - A04:2017 - XML External Entities (XXE)
+    - A05:2021 - Security Misconfiguration
+    asvs:
+      section: V5 Validation, Sanitization and Encoding
+      control_id: 5.5.2 Insecue XML Deserialization
+      control_url: https://github.com/OWASP/ASVS/blob/master/4.0/en/0x13-V5-Validation-Sanitization-Encoding.md#v55-deserialization-prevention
+      version: '4'
+    references:
+    - https://semgrep.dev/blog/2022/xml-security-in-java
+    - https://semgrep.dev/docs/cheat-sheets/java-xxe/
+    - https://blog.sonarsource.com/secure-xml-processor
+    - https://xerces.apache.org/xerces2-j/features.html
+    category: security
+    technology:
+    - java
+    - xml
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: LOW
+    impact: HIGH
+    confidence: HIGH
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/lang/security/audit/xxe/documentbuilderfactory-disallow-doctype-decl-missing.yaml
+      upstream-id: documentbuilderfactory-disallow-doctype-decl-missing
+  message: DOCTYPE declarations are enabled for this DocumentBuilderFactory. This is vulnerable to XML external entity attacks. Disable this by setting the feature "http://apache.org/xml/features/disallow-doctype-decl" to true. Alternatively, allow DOCTYPE declarations and only prohibit external entities declarations. This can be done by setting the features "http://xml.org/sax/features/external-general-entities" and "http://xml.org/sax/features/external-parameter-entities" to false.
+  mode: taint
+  pattern-sources:
+  - by-side-effect: true
+    patterns:
+    - pattern-either:
+      - pattern: '$FACTORY = DocumentBuilderFactory.newInstance();
+
+          '
+      - patterns:
+        - pattern: $FACTORY
+        - pattern-inside: "class $C {\n  ...\n  $V $FACTORY = DocumentBuilderFactory.newInstance();\n  ...\n}\n"
+        - pattern-not-inside: "class $C {\n  ...\n  $V $FACTORY = DocumentBuilderFactory.newInstance();\n  static {\n    ...\n    $FACTORY.setFeature(\"http://apache.org/xml/features/disallow-doctype-decl\", true);\n    ...\n  }\n  ...\n}\n"
+        - pattern-not-inside: "class $C {\n  ...\n  $V $FACTORY = DocumentBuilderFactory.newInstance();\n  static {\n    ...\n    $FACTORY.setFeature(\"http://xml.org/sax/features/external-parameter-entities\", false);\n    ...\n    $FACTORY.setFeature(\"http://xml.org/sax/features/external-general-entities\", false);\n    ...\n  }\n  ...\n}\n"
+        - pattern-not-inside: "class $C {\n  ...\n  $V $FACTORY = DocumentBuilderFactory.newInstance();\n  static {\n    ...\n    $FACTORY.setFeature(\"http://xml.org/sax/features/external-general-entities\", false);\n    ...\n    $FACTORY.setFeature(\"http://xml.org/sax/features/external-parameter-entities\", false);\n    ...\n  }\n  ...\n}\n"
+  pattern-sinks:
+  - patterns:
+    - pattern: $FACTORY.newDocumentBuilder();
+  pattern-sanitizers:
+  - by-side-effect: true
+    pattern-either:
+    - patterns:
+      - pattern-either:
+        - pattern: '$FACTORY.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+
+            '
+        - pattern: '$FACTORY.setFeature("http://xml.org/sax/features/external-general-entities", false);
+
+            ...
+
+            $FACTORY.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+
+            '
+        - pattern: '$FACTORY.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+
+            ...
+
+            $FACTORY.setFeature("http://xml.org/sax/features/external-general-entities", false);
+
+            '
+      - focus-metavariable: $FACTORY
+    - patterns:
+      - pattern-either:
+        - pattern-inside: "class $C {\n  ...\n  $T $M(...) {\n    ...\n    $FACTORY.setFeature(\"http://apache.org/xml/features/disallow-doctype-decl\",\n    true);\n    ...\n  }\n  ...\n}\n"
+        - pattern-inside: "class $C {\n  ...\n  $T $M(...) {\n    ...\n    $FACTORY.setFeature(\"http://xml.org/sax/features/external-general-entities\", false);\n    ...\n    $FACTORY.setFeature(\"http://xml.org/sax/features/external-parameter-entities\", false);\n    ...\n  }\n  ...\n}\n"
+        - pattern-inside: "class $C {\n  ...\n  $T $M(...) {\n    ...\n    $FACTORY.setFeature(\"http://xml.org/sax/features/external-parameter-entities\", false);\n    ...\n    $FACTORY.setFeature(\"http://xml.org/sax/features/external-general-entities\",false);\n    ...\n  }\n  ...\n}\n"
+      - pattern: $M($X)
+      - focus-metavariable: $X
+  fix: '$FACTORY.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+
+    $FACTORY.newDocumentBuilder();
+
+    '
+  languages:
+  - java
+- id: java.documentbuilderfactory-external-general-entities-true
+  severity: ERROR
+  metadata:
+    cwe:
+    - 'CWE-611: Improper Restriction of XML External Entity Reference'
+    owasp:
+    - A04:2017 - XML External Entities (XXE)
+    - A05:2021 - Security Misconfiguration
+    asvs:
+      section: V5 Validation, Sanitization and Encoding
+      control_id: 5.5.2 Insecue XML Deserialization
+      control_url: https://github.com/OWASP/ASVS/blob/master/4.0/en/0x13-V5-Validation-Sanitization-Encoding.md#v55-deserialization-prevention
+      version: '4'
+    references:
+    - https://semgrep.dev/blog/2022/xml-security-in-java
+    - https://semgrep.dev/docs/cheat-sheets/java-xxe/
+    - https://blog.sonarsource.com/secure-xml-processor
+    category: security
+    technology:
+    - java
+    - xml
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: LOW
+    impact: HIGH
+    confidence: HIGH
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/lang/security/audit/xxe/documentbuilderfactory-external-general-entities-true.yaml
+      upstream-id: documentbuilderfactory-external-general-entities-true
+  message: External entities are allowed for $DBFACTORY. This is vulnerable to XML external entity attacks. Disable this by setting the feature "http://xml.org/sax/features/external-general-entities" to false.
+  pattern: $DBFACTORY.setFeature("http://xml.org/sax/features/external-general-entities", true);
+  fix: $DBFACTORY.setFeature("http://xml.org/sax/features/external-general-entities", false);
+  languages:
+  - java
+- id: java.documentbuilderfactory-external-parameter-entities-true
+  severity: ERROR
+  metadata:
+    cwe:
+    - 'CWE-611: Improper Restriction of XML External Entity Reference'
+    owasp:
+    - A04:2017 - XML External Entities (XXE)
+    - A05:2021 - Security Misconfiguration
+    asvs:
+      section: V5 Validation, Sanitization and Encoding
+      control_id: 5.5.2 Insecue XML Deserialization
+      control_url: https://github.com/OWASP/ASVS/blob/master/4.0/en/0x13-V5-Validation-Sanitization-Encoding.md#v55-deserialization-prevention
+      version: '4'
+    references:
+    - https://semgrep.dev/blog/2022/xml-security-in-java
+    - https://semgrep.dev/docs/cheat-sheets/java-xxe/
+    - https://blog.sonarsource.com/secure-xml-processor
+    category: security
+    technology:
+    - java
+    - xml
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: LOW
+    impact: HIGH
+    confidence: HIGH
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/lang/security/audit/xxe/documentbuilderfactory-external-parameter-entities-true.yaml
+      upstream-id: documentbuilderfactory-external-parameter-entities-true
+  message: External entities are allowed for $DBFACTORY. This is vulnerable to XML external entity attacks. Disable this by setting the feature "http://xml.org/sax/features/external-parameter-entities" to false.
+  pattern: $DBFACTORY.setFeature("http://xml.org/sax/features/external-parameter-entities", true);
+  fix: $DBFACTORY.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+  languages:
+  - java
+- id: java.find-sql-string-concatenation
+  message: In $METHOD, $X is used to construct a SQL query via string concatenation.
+  languages:
+  - java
+  severity: ERROR
+  pattern-either:
+  - pattern: "$RETURN $METHOD(...,String $X,...){\n  ...\n  Session $SESSION = ...;\n  ...\n  String $QUERY = ... + $X + ...;\n  ...\n  PreparedStatement $PS = $SESSION.connection().prepareStatement($QUERY);\n  ...\n  ResultSet $RESULT = $PS.executeQuery();\n  ...\n}\n"
+  - pattern: "$RETURN $METHOD(...,String $X,...){\n  ...\n  String $QUERY = ... + $X + ...;\n  ...\n  Session $SESSION = ...;\n  ...\n  PreparedStatement $PS = $SESSION.connection().prepareStatement($QUERY);\n  ...\n  ResultSet $RESULT = $PS.executeQuery();\n  ...\n}\n"
+  metadata:
+    category: security
+    technology:
+    - jboss
+    confidence: MEDIUM
+    cwe:
+    - 'CWE-89: Improper Neutralization of Special Elements used in an SQL Command (''SQL Injection'')'
+    owasp:
+    - A01:2017 - Injection
+    - A03:2021 - Injection
+    references:
+    - https://owasp.org/Top10/A03_2021-Injection
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: LOW
+    impact: HIGH
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/jboss/security/session_sqli.yaml
+      upstream-id: find-sql-string-concatenation
+- id: java.formatted-sql-string
+  metadata:
+    cwe:
+    - 'CWE-89: Improper Neutralization of Special Elements used in an SQL Command (''SQL Injection'')'
+    owasp:
+    - A01:2017 - Injection
+    - A03:2021 - Injection
+    source-rule-url: https://find-sec-bugs.github.io/bugs.htm#SQL_INJECTION
+    asvs:
+      section: 'V5: Validation, Sanitization and Encoding Verification Requirements'
+      control_id: 5.3.5 Injection
+      control_url: https://github.com/OWASP/ASVS/blob/master/4.0/en/0x13-V5-Validation-Sanitization-Encoding.md#v53-output-encoding-and-injection-prevention-requirements
+      version: '4'
+    references:
+    - https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html
+    - https://docs.oracle.com/javase/tutorial/jdbc/basics/prepared.html#create_ps
+    - https://software-security.sans.org/developer-how-to/fix-sql-injection-in-java-using-prepared-callable-statement
+    category: security
+    technology:
+    - java
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: HIGH
+    impact: MEDIUM
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/lang/security/audit/formatted-sql-string.yaml
+      upstream-id: formatted-sql-string
+  options:
+    taint_assume_safe_numbers: true
+    taint_assume_safe_booleans: true
+  message: Detected a formatted string in a SQL statement. This could lead to SQL injection if variables in the SQL statement are not properly sanitized. Use a prepared statements (java.sql.PreparedStatement) instead. You can obtain a PreparedStatement using 'connection.prepareStatement'.
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - pattern: '(HttpServletRequest $REQ)
+
+          '
+      - patterns:
+        - pattern-inside: "$ANNOT $FUNC (..., $INPUT, ...) {\n  ...\n}\n"
+        - pattern: (String $INPUT)
+    - focus-metavariable: $INPUT
+    label: INPUT
+  - patterns:
+    - pattern-either:
+      - pattern: $X + $INPUT
+      - pattern: $X += $INPUT
+      - pattern: $STRB.append($INPUT)
+      - pattern: String.format(..., $INPUT, ...)
+      - pattern: String.join(..., $INPUT, ...)
+      - pattern: (String $STR).concat($INPUT)
+      - pattern: $INPUT.concat(...)
+      - pattern: new $STRB(..., $INPUT, ...)
+    label: CONCAT
+    requires: INPUT
+  pattern-propagators:
+  - pattern: (StringBuffer $S).append($X)
+    from: $X
+    to: $S
+  - pattern: (StringBuilder $S).append($X)
+    from: $X
+    to: $S
+  pattern-sinks:
+  - patterns:
+    - pattern-not: $S.$SQLFUNC(<... "=~/.*TABLE *$/" ...>)
+    - pattern-not: $S.$SQLFUNC(<... "=~/.*TABLE %s$/" ...>)
+    - pattern-either:
+      - pattern: (Statement $S).$SQLFUNC(...)
+      - pattern: (PreparedStatement $P).$SQLFUNC(...)
+      - pattern: (Connection $C).createStatement(...).$SQLFUNC(...)
+      - pattern: (Connection $C).prepareStatement(...).$SQLFUNC(...)
+      - pattern: (EntityManager $EM).$SQLFUNC(...)
+    - metavariable-regex:
+        metavariable: $SQLFUNC
+        regex: execute|executeQuery|createQuery|query|addBatch|nativeSQL|create|prepare
+    requires: CONCAT
+  pattern-sanitizers:
+  - patterns:
+    - pattern: (CriteriaBuilder $CB).$ANY(...)
+  severity: ERROR
+  languages:
+  - java
+- id: java.gcm-nonce-reuse
+  metadata:
+    functional-categories:
+    - crypto::search::randomness::javax.crypto
+    cwe:
+    - 'CWE-323: Reusing a Nonce, Key Pair in Encryption'
+    category: security
+    source-rule-url: https://www.youtube.com/watch?v=r1awgAl90wM
+    technology:
+    - java
+    owasp:
+    - A02:2021 - Cryptographic Failures
+    references:
+    - https://owasp.org/Top10/A02_2021-Cryptographic_Failures
+    subcategory:
+    - vuln
+    likelihood: MEDIUM
+    impact: MEDIUM
+    confidence: HIGH
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/lang/security/audit/crypto/gcm-nonce-reuse.yaml
+      upstream-id: gcm-nonce-reuse
+  languages:
+  - java
+  message: 'GCM IV/nonce is reused: encryption can be totally useless'
+  patterns:
+  - pattern-either:
+    - pattern: new GCMParameterSpec(..., "...".getBytes(...), ...);
+    - pattern: byte[] $NONCE = "...".getBytes(...); ... new GCMParameterSpec(..., $NONCE, ...);
+  severity: ERROR
+- id: java.httpservlet-path-traversal
+  metadata:
+    cwe:
+    - 'CWE-22: Improper Limitation of a Pathname to a Restricted Directory (''Path Traversal'')'
+    owasp:
+    - A05:2017 - Broken Access Control
+    - A01:2021 - Broken Access Control
+    source-rule-url: https://find-sec-bugs.github.io/bugs.htm#PATH_TRAVERSAL_IN
+    references:
+    - https://www.owasp.org/index.php/Path_Traversal
+    category: security
+    technology:
+    - java
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: HIGH
+    impact: MEDIUM
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/lang/security/httpservlet-path-traversal.yaml
+      upstream-id: httpservlet-path-traversal
+  message: Detected a potential path traversal. A malicious actor could control the location of this file, to include going backwards in the directory with '../'. To address this, ensure that user-controlled variables in file paths are sanitized. You may also consider using a utility method such as org.apache.commons.io.FilenameUtils.getName(...) to only retrieve the file name from the path.
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - pattern: '(HttpServletRequest $REQ)
+
+          '
+      - patterns:
+        - pattern-inside: "(javax.servlet.http.Cookie[] $COOKIES) = (HttpServletRequest $REQ).getCookies(...);\n...\nfor (javax.servlet.http.Cookie $COOKIE: $COOKIES) {\n  ...\n}\n"
+        - pattern: '$COOKIE.getValue(...)
+
+            '
+      - patterns:
+        - pattern-inside: '$TYPE[] $VALS = (HttpServletRequest $REQ).$GETFUNC(...);
+
+            ...
+
+            '
+        - pattern: '$PARAM = $VALS[$INDEX];
+
+            '
+  pattern-sanitizers:
+  - pattern: org.apache.commons.io.FilenameUtils.getName(...)
+  pattern-sinks:
+  - patterns:
+    - pattern-either:
+      - pattern: '(java.io.File $FILE) = ...
+
+          '
+      - pattern: '(java.io.FileOutputStream $FOS) = ...
+
+          '
+      - pattern: 'new java.io.FileInputStream(...)
+
+          '
+  severity: ERROR
+  languages:
+  - java
+- id: java.java-jwt-none-alg
+  message: Detected use of the 'none' algorithm in a JWT token. The 'none' algorithm assumes the integrity of the token has already been verified. This would allow a malicious actor to forge a JWT token that will automatically be verified. Do not explicitly use the 'none' algorithm. Instead, use an algorithm such as 'HS256'.
+  metadata:
+    cwe:
+    - 'CWE-327: Use of a Broken or Risky Cryptographic Algorithm'
+    owasp:
+    - A03:2017 - Sensitive Data Exposure
+    - A02:2021 - Cryptographic Failures
+    source-rule-url: https://semgrep.dev/blog/2020/hardcoded-secrets-unverified-tokens-and-other-common-jwt-mistakes/
+    category: security
+    technology:
+    - jwt
+    confidence: HIGH
+    references:
+    - https://owasp.org/Top10/A02_2021-Cryptographic_Failures
+    subcategory:
+    - vuln
+    likelihood: HIGH
+    impact: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/java-jwt/security/jwt-none-alg.yaml
+      upstream-id: java-jwt-none-alg
+  languages:
+  - java
+  severity: ERROR
+  pattern-either:
+  - pattern: '$JWT.sign(com.auth0.jwt.algorithms.Algorithm.none());
+
+      '
+  - pattern: '$NONE = com.auth0.jwt.algorithms.Algorithm.none();
+
+      ...
+
+      $JWT.sign($NONE);
+
+      '
+  - pattern: "class $CLASS {\n  ...\n  $TYPE $NONE = com.auth0.jwt.algorithms.Algorithm.none();\n  ...\n  $RETURNTYPE $FUNC (...) {\n    ...\n    $JWT.sign($NONE);\n    ...\n  }\n  ...\n}"
+- id: java.jjwt-none-alg
+  message: Detected use of the 'none' algorithm in a JWT token. The 'none' algorithm assumes the integrity of the token has already been verified. This would allow a malicious actor to forge a JWT token that will automatically be verified. Do not explicitly use the 'none' algorithm. Instead, use an algorithm such as 'HS256'.
+  metadata:
+    cwe:
+    - 'CWE-327: Use of a Broken or Risky Cryptographic Algorithm'
+    owasp:
+    - A03:2017 - Sensitive Data Exposure
+    - A02:2021 - Cryptographic Failures
+    source-rule-url: https://semgrep.dev/blog/2020/hardcoded-secrets-unverified-tokens-and-other-common-jwt-mistakes/
+    asvs:
+      section: 'V3: Session Management Verification Requirements'
+      control_id: 3.5.3 Insecue Stateless Session Tokens
+      control_url: https://github.com/OWASP/ASVS/blob/master/4.0/en/0x12-V3-Session-management.md#v35-token-based-session-management
+      version: '4'
+    category: security
+    technology:
+    - jwt
+    confidence: LOW
+    references:
+    - https://owasp.org/Top10/A02_2021-Cryptographic_Failures
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/jjwt/security/jwt-none-alg.yaml
+      upstream-id: jjwt-none-alg
+  languages:
+  - java
+  severity: ERROR
+  patterns:
+  - pattern: 'io.jsonwebtoken.Jwts.builder();
+
+      '
+  - pattern-not-inside: "$RETURNTYPE $FUNC(...) {\n  ...\n  $JWTS.signWith(...);\n  ...\n}"
+- id: java.saxparserfactory-disallow-doctype-decl-missing
+  severity: ERROR
+  metadata:
+    cwe:
+    - 'CWE-611: Improper Restriction of XML External Entity Reference'
+    owasp:
+    - A04:2017 - XML External Entities (XXE)
+    - A05:2021 - Security Misconfiguration
+    asvs:
+      section: V5 Validation, Sanitization and Encoding
+      control_id: 5.5.2 Insecue XML Deserialization
+      control_url: https://github.com/OWASP/ASVS/blob/master/4.0/en/0x13-V5-Validation-Sanitization-Encoding.md#v55-deserialization-prevention
+      version: '4'
+    references:
+    - https://semgrep.dev/blog/2022/xml-security-in-java
+    - https://semgrep.dev/docs/cheat-sheets/java-xxe/
+    - https://blog.sonarsource.com/secure-xml-processor
+    - https://xerces.apache.org/xerces2-j/features.html
+    category: security
+    technology:
+    - java
+    - xml
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: LOW
+    impact: HIGH
+    confidence: HIGH
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/lang/security/audit/xxe/saxparserfactory-disallow-doctype-decl-missing.yaml
+      upstream-id: saxparserfactory-disallow-doctype-decl-missing
+  message: DOCTYPE declarations are enabled for this SAXParserFactory. This is vulnerable to XML external entity attacks. Disable this by setting the feature `http://apache.org/xml/features/disallow-doctype-decl` to true. Alternatively, allow DOCTYPE declarations and only prohibit external entities declarations. This can be done by setting the features `http://xml.org/sax/features/external-general-entities` and `http://xml.org/sax/features/external-parameter-entities` to false. NOTE - The previous links are not meant to be clicked. They are the literal config key values that are supposed to be used to disable these features. For more information, see https://semgrep.dev/docs/cheat-sheets/java-xxe/#3a-documentbuilderfactory.
+  mode: taint
+  pattern-sources:
+  - by-side-effect: true
+    patterns:
+    - pattern-either:
+      - pattern: '$FACTORY = SAXParserFactory.newInstance();
+
+          '
+      - patterns:
+        - pattern: $FACTORY
+        - pattern-inside: "class $C {\n  ...\n  $V $FACTORY = SAXParserFactory.newInstance();\n  ...\n}\n"
+        - pattern-not-inside: "class $C {\n  ...\n  $V $FACTORY = SAXParserFactory.newInstance();\n  static {\n    ...\n    $FACTORY.setFeature(\"http://apache.org/xml/features/disallow-doctype-decl\", true);\n    ...\n  }\n  ...\n}\n"
+        - pattern-not-inside: "class $C {\n  ...\n  $V $FACTORY = SAXParserFactory.newInstance();\n  static {\n    ...\n    $FACTORY.setFeature(\"http://xml.org/sax/features/external-parameter-entities\", false);\n    ...\n    $FACTORY.setFeature(\"http://xml.org/sax/features/external-general-entities\", false);\n    ...\n  }\n  ...\n}\n"
+        - pattern-not-inside: "class $C {\n  ...\n  $V $FACTORY = SAXParserFactory.newInstance();\n  static {\n    ...\n    $FACTORY.setFeature(\"http://xml.org/sax/features/external-general-entities\", false);\n    ...\n    $FACTORY.setFeature(\"http://xml.org/sax/features/external-parameter-entities\", false);\n    ...\n  }\n  ...\n}\n"
+  pattern-sinks:
+  - patterns:
+    - pattern: $FACTORY.newSAXParser();
+  pattern-sanitizers:
+  - by-side-effect: true
+    pattern-either:
+    - patterns:
+      - pattern-either:
+        - pattern: '$FACTORY.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+
+            '
+        - pattern: '$FACTORY.setFeature("http://xml.org/sax/features/external-general-entities", false);
+
+            ...
+
+            $FACTORY.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+
+            '
+        - pattern: '$FACTORY.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+
+            ...
+
+            $FACTORY.setFeature("http://xml.org/sax/features/external-general-entities", false);
+
+            '
+      - focus-metavariable: $FACTORY
+    - patterns:
+      - pattern-either:
+        - pattern-inside: "class $C {\n  ...\n  $T $M(...) {\n    ...\n    $FACTORY.setFeature(\"http://apache.org/xml/features/disallow-doctype-decl\",\n    true);\n    ...\n  }\n  ...\n}\n"
+        - pattern-inside: "class $C {\n  ...\n  $T $M(...) {\n    ...\n    $FACTORY.setFeature(\"http://xml.org/sax/features/external-general-entities\", false);\n    ...\n    $FACTORY.setFeature(\"http://xml.org/sax/features/external-parameter-entities\", false);\n    ...\n  }\n  ...\n}\n"
+        - pattern-inside: "class $C {\n  ...\n  $T $M(...) {\n    ...\n    $FACTORY.setFeature(\"http://xml.org/sax/features/external-parameter-entities\", false);\n    ...\n    $FACTORY.setFeature(\"http://xml.org/sax/features/external-general-entities\",false);\n    ...\n  }\n  ...\n}\n"
+      - pattern: $M($X)
+      - focus-metavariable: $X
+  fix: '$FACTORY.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+
+    $FACTORY.newSAXParser();
+
+    '
+  languages:
+  - java
+- id: java.seam-log-injection
+  patterns:
+  - pattern: '$LOG.$INFO($X + $Y,...)
+
+      '
+  - pattern-either:
+    - pattern-inside: 'import org.jboss.seam.log.Log;
+
+        ...
+
+        '
+    - pattern-inside: 'org.jboss.seam.log.Log $LOG = ...;
+
+        ...
+
+        '
+  - metavariable-regex:
+      metavariable: $INFO
+      regex: (debug|error|fatal|info|trace|warn)
+  languages:
+  - java
+  message: Seam Logging API support an expression language to introduce bean property to log messages. The expression language can also be the source to unwanted code execution. In this context, an expression is built with a dynamic value. The source of the value(s) should be verified to avoid that unfiltered values fall into this risky code evaluation.
+  metadata:
+    cwe:
+    - 'CWE-95: Improper Neutralization of Directives in Dynamically Evaluated Code (''Eval Injection'')'
+    owasp:
+    - A03:2021 - Injection
+    source-rule-url: https://find-sec-bugs.github.io/bugs.htm#SEAM_LOG_INJECTION
+    category: security
+    technology:
+    - jboss
+    confidence: LOW
+    references:
+    - https://owasp.org/Top10/A03_2021-Injection
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/jboss/security/seam-log-injection.yaml
+      upstream-id: seam-log-injection
+  severity: ERROR
+- id: java.server-dangerous-object-deserialization
+  severity: ERROR
+  metadata:
+    cwe:
+    - 'CWE-502: Deserialization of Untrusted Data'
+    owasp:
+    - A08:2017 - Insecure Deserialization
+    - A08:2021 - Software and Data Integrity Failures
+    references:
+    - https://frohoff.github.io/appseccali-marshalling-pickles/
+    - https://book.hacktricks.xyz/network-services-pentesting/1099-pentesting-java-rmi
+    - https://youtu.be/t_aw1mDNhzI
+    - https://github.com/qtc-de/remote-method-guesser
+    - https://github.com/openjdk/jdk/blob/master/src/java.rmi/share/classes/sun/rmi/server/UnicastRef.java#L303C4-L331
+    category: security
+    technology:
+    - rmi
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: HIGH
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/rmi/security/server-dangerous-object-deserialization.yaml
+      upstream-id: server-dangerous-object-deserialization
+  message: Using an arbitrary object ('$PARAMTYPE $PARAM') with Java RMI is an insecure deserialization vulnerability. This object can be manipulated by a malicious actor allowing them to execute code on your system. Instead, use an integer ID to look up your object, or consider alternative serialization schemes such as JSON.
+  languages:
+  - java
+  patterns:
+  - pattern: "interface $INTERFACE extends Remote {\n  $RETURNTYPE $METHOD($PARAMTYPE $PARAM) throws RemoteException;\n}\n"
+  - metavariable-pattern:
+      metavariable: $PARAMTYPE
+      language: generic
+      patterns:
+      - pattern-not: String
+      - pattern-not: java.lang.String
+      - pattern-not: boolean
+      - pattern-not: Boolean
+      - pattern-not: java.lang.Boolean
+      - pattern-not: byte
+      - pattern-not: Byte
+      - pattern-not: java.lang.Byte
+      - pattern-not: char
+      - pattern-not: Character
+      - pattern-not: java.lang.Character
+      - pattern-not: double
+      - pattern-not: Double
+      - pattern-not: java.lang.Double
+      - pattern-not: float
+      - pattern-not: Float
+      - pattern-not: java.lang.Float
+      - pattern-not: int
+      - pattern-not: Integer
+      - pattern-not: java.lang.Integer
+      - pattern-not: long
+      - pattern-not: Long
+      - pattern-not: java.lang.Long
+      - pattern-not: short
+      - pattern-not: Short
+      - pattern-not: java.lang.Short
+- id: java.servletresponse-writer-xss
+  message: 'Cross-site scripting detected in HttpServletResponse writer with variable ''$VAR''. User input was detected going directly from the HttpServletRequest into output. Ensure your data is properly encoded using org.owasp.encoder.Encode.forHtml: ''Encode.forHtml($VAR)''.'
+  metadata:
+    cwe:
+    - 'CWE-79: Improper Neutralization of Input During Web Page Generation (''Cross-site Scripting'')'
+    owasp:
+    - A07:2017 - Cross-Site Scripting (XSS)
+    - A03:2021 - Injection
+    source-rule-url: https://find-sec-bugs.github.io/bugs.htm#XSS_SERVLET
+    category: security
+    technology:
+    - java
+    references:
+    - https://owasp.org/Top10/A03_2021-Injection
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: MEDIUM
+    impact: MEDIUM
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/lang/security/servletresponse-writer-xss.yaml
+      upstream-id: servletresponse-writer-xss
+  severity: ERROR
+  patterns:
+  - pattern-inside: $TYPE $FUNC(..., HttpServletResponse $RESP, ...) { ... }
+  - pattern-inside: $VAR = $REQ.getParameter(...); ...
+  - pattern-either:
+    - pattern: $RESP.getWriter(...).write(..., $VAR, ...);
+    - pattern: '$WRITER = $RESP.getWriter(...);
+
+        ...
+
+        $WRITER.write(..., $VAR, ...);
+
+        '
+  languages:
+  - java
+- id: java.tainted-cmd-from-http-request
+  message: Detected input from a HTTPServletRequest going into a 'ProcessBuilder' or 'exec' command. This could lead to command injection if variables passed into the exec commands are not properly sanitized. Instead, avoid using these OS commands with user-supplied input, or, if you must use these commands, use a whitelist of specific values.
+  languages:
+  - java
+  severity: ERROR
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - pattern: '(HttpServletRequest $REQ)
+
+          '
+      - patterns:
+        - pattern-inside: "(javax.servlet.http.Cookie[] $COOKIES) = (HttpServletRequest $REQ).getCookies(...);\n...\nfor (javax.servlet.http.Cookie $COOKIE: $COOKIES) {\n  ...\n}\n"
+        - pattern: '$COOKIE.getValue(...)
+
+            '
+  pattern-sinks:
+  - patterns:
+    - pattern-either:
+      - pattern: '(ProcessBuilder $PB) = ...;
+
+          '
+      - patterns:
+        - pattern: '(Process $P) = ...;
+
+            '
+        - pattern-not: '(Process $P) = (java.lang.Runtime $R).exec(...);
+
+            '
+      - patterns:
+        - pattern: (java.lang.Runtime $R).exec($CMD, ...);
+        - focus-metavariable: $CMD
+      - patterns:
+        - pattern-either:
+          - pattern-inside: "(java.util.List<$TYPE> $ARGLIST) = ...;  \n...\n(ProcessBuilder $PB) = ...;\n...\n$PB.command($ARGLIST);\n"
+          - pattern-inside: "(java.util.List<$TYPE> $ARGLIST) = ...;  \n...\n(ProcessBuilder $PB) = ...;\n"
+          - pattern-inside: "(java.util.List<$TYPE> $ARGLIST) = ...;  \n...\n(Process $P) = ...;\n"
+        - pattern: '$ARGLIST.add(...);
+
+            '
+  metadata:
+    category: security
+    technology:
+    - java
+    cwe:
+    - 'CWE-78: Improper Neutralization of Special Elements used in an OS Command (''OS Command Injection'')'
+    owasp:
+    - A01:2017 - Injection
+    - A03:2021 - Injection
+    references:
+    - https://owasp.org/Top10/A03_2021-Injection
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: MEDIUM
+    impact: MEDIUM
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/lang/security/audit/tainted-cmd-from-http-request.yaml
+      upstream-id: tainted-cmd-from-http-request
+- id: java.tainted-env-from-http-request
+  message: Detected input from a HTTPServletRequest going into the environment variables of an 'exec' command.  Instead, call the command with user-supplied arguments by using the overloaded method with one String array as the argument. `exec({"command", "arg1", "arg2"})`.
+  languages:
+  - java
+  severity: ERROR
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - pattern: '(HttpServletRequest $REQ)
+
+          '
+      - patterns:
+        - pattern-inside: "(javax.servlet.http.Cookie[] $COOKIES) = (HttpServletRequest $REQ).getCookies(...);\n...\nfor (javax.servlet.http.Cookie $COOKIE: $COOKIES) {\n  ...\n}\n"
+        - pattern: '$COOKIE.getValue(...)
+
+            '
+  pattern-sinks:
+  - patterns:
+    - pattern: (java.lang.Runtime $R).exec($CMD, $ENV_ARGS, ...);
+    - focus-metavariable: $ENV_ARGS
+  metadata:
+    category: security
+    technology:
+    - java
+    cwe:
+    - 'CWE-454: External Initialization of Trusted Variables or Data Stores'
+    owasp:
+    - A01:2017 - Injection
+    - A03:2021 - Injection
+    references:
+    - https://owasp.org/Top10/A03_2021-Injection
+    cwe2022-top25: false
+    cwe2021-top25: false
+    subcategory:
+    - vuln
+    likelihood: MEDIUM
+    impact: MEDIUM
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/lang/security/audit/tainted-env-from-http-request.yaml
+      upstream-id: tainted-env-from-http-request
+- id: java.tainted-file-path
+  languages:
+  - java
+  severity: ERROR
+  message: Detected user input controlling a file path. An attacker could control the location of this file, to include going backwards in the directory with '../'. To address this, ensure that user-controlled variables in file paths are sanitized. You may also consider using a utility method such as org.apache.commons.io.FilenameUtils.getName(...) to only retrieve the file name from the path.
+  options:
+    interfile: true
+  metadata:
+    cwe:
+    - 'CWE-23: Relative Path Traversal'
+    owasp:
+    - A01:2021 - Broken Access Control
+    references:
+    - https://owasp.org/www-community/attacks/Path_Traversal
+    category: security
+    technology:
+    - java
+    - spring
+    subcategory:
+    - vuln
+    impact: HIGH
+    likelihood: MEDIUM
+    confidence: HIGH
+    interfile: true
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/spring/security/injection/tainted-file-path.yaml
+      upstream-id: tainted-file-path
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - pattern-inside: "$METHODNAME(..., @$REQ(...) $TYPE $SOURCE,...) {\n  ...\n}\n"
+      - pattern-inside: "$METHODNAME(..., @$REQ $TYPE $SOURCE,...) {\n  ...\n}\n"
+    - metavariable-regex:
+        metavariable: $TYPE
+        regex: ^(?!(Integer|Long|Float|Double|Char|Boolean|int|long|float|double|char|boolean))
+    - metavariable-regex:
+        metavariable: $REQ
+        regex: (RequestBody|PathVariable|RequestParam|RequestHeader|CookieValue|ModelAttribute)
+    - focus-metavariable: $SOURCE
+  pattern-sinks:
+  - patterns:
+    - pattern-either:
+      - pattern: new File(...)
+      - pattern: new java.io.File(...)
+      - pattern: new FileReader(...)
+      - pattern: new java.io.FileReader(...)
+      - pattern: new FileInputStream(...)
+      - pattern: new java.io.FileInputStream(...)
+      - pattern: (Paths $PATHS).get(...)
+      - patterns:
+        - pattern: '$CLASS.$FUNC(...)
+
+            '
+        - metavariable-regex:
+            metavariable: $FUNC
+            regex: ^(getResourceAsStream|getResource)$
+      - patterns:
+        - pattern-either:
+          - pattern: new ClassPathResource($FILE, ...)
+          - pattern: ResourceUtils.getFile($FILE, ...)
+          - pattern: new FileOutputStream($FILE, ...)
+          - pattern: new java.io.FileOutputStream($FILE, ...)
+          - pattern: new StreamSource($FILE, ...)
+          - pattern: new javax.xml.transform.StreamSource($FILE, ...)
+          - pattern: FileUtils.openOutputStream($FILE, ...)
+        - focus-metavariable: $FILE
+  pattern-sanitizers:
+  - pattern: org.apache.commons.io.FilenameUtils.getName(...)
+- id: java.tainted-html-string
+  languages:
+  - java
+  severity: ERROR
+  message: Detected user input flowing into a manually constructed HTML string. You may be accidentally bypassing secure methods of rendering HTML by manually constructing HTML and this could create a cross-site scripting vulnerability, which could let attackers steal sensitive user data. To be sure this is safe, check that the HTML is rendered safely. You can use the OWASP ESAPI encoder if you must render user data.
+  metadata:
+    cwe:
+    - 'CWE-79: Improper Neutralization of Input During Web Page Generation (''Cross-site Scripting'')'
+    owasp:
+    - A07:2017 - Cross-Site Scripting (XSS)
+    - A03:2021 - Injection
+    references:
+    - https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html
+    category: security
+    technology:
+    - java
+    - spring
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: HIGH
+    impact: MEDIUM
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/spring/security/injection/tainted-html-string.yaml
+      upstream-id: tainted-html-string
+  mode: taint
+  pattern-sources:
+  - label: INPUT
+    patterns:
+    - pattern-either:
+      - pattern-inside: "$METHODNAME(..., @$REQ(...) $TYPE $SOURCE,...) {\n  ...\n}\n"
+      - pattern-inside: "$METHODNAME(..., @$REQ $TYPE $SOURCE,...) {\n  ...\n}\n"
+    - metavariable-regex:
+        metavariable: $TYPE
+        regex: ^(?!(Integer|Long|Float|Double|Char|Boolean|int|long|float|double|char|boolean))
+    - metavariable-regex:
+        metavariable: $REQ
+        regex: (RequestBody|PathVariable|RequestParam|RequestHeader|CookieValue|ModelAttribute)
+    - focus-metavariable: $SOURCE
+  - label: CONCAT
+    by-side-effect: true
+    requires: INPUT
+    patterns:
+    - pattern-either:
+      - pattern: '"$HTMLSTR" + ...
+
+          '
+      - pattern: '"$HTMLSTR".concat(...)
+
+          '
+      - patterns:
+        - pattern-inside: 'StringBuilder $SB = new StringBuilder("$HTMLSTR");
+
+            ...
+
+            '
+        - pattern: $SB.append(...)
+      - patterns:
+        - pattern-inside: '$VAR = "$HTMLSTR";
+
+            ...
+
+            '
+        - pattern: $VAR += ...
+      - pattern: String.format("$HTMLSTR", ...)
+      - patterns:
+        - pattern-inside: 'String $VAR = "$HTMLSTR";
+
+            ...
+
+            '
+        - pattern: String.format($VAR, ...)
+    - metavariable-regex:
+        metavariable: $HTMLSTR
+        regex: ^<\w+
+  pattern-propagators:
+  - pattern: (StringBuilder $SB).append($...TAINTED)
+    from: $...TAINTED
+    to: $SB
+  - pattern: $VAR += $...TAINTED
+    from: $...TAINTED
+    to: $VAR
+  pattern-sinks:
+  - requires: CONCAT
+    patterns:
+    - pattern-either:
+      - pattern: new ResponseEntity<>($PAYLOAD, ...)
+      - pattern: new ResponseEntity<$ERROR>($PAYLOAD, ...)
+      - pattern: ResponseEntity. ... .body($PAYLOAD)
+      - patterns:
+        - pattern: 'ResponseEntity.$RESPFUNC($PAYLOAD). ...
+
+            '
+        - metavariable-regex:
+            metavariable: $RESPFUNC
+            regex: ^(ok|of)$
+    - focus-metavariable: $PAYLOAD
+  pattern-sanitizers:
+  - pattern-either:
+    - pattern: Encode.forHtml(...)
+    - pattern: (PolicyFactory $POLICY).sanitize(...)
+    - pattern: (AntiSamy $AS).scan(...)
+    - pattern: JSoup.clean(...)
+- id: java.tainted-sql-string
+  languages:
+  - java
+  severity: ERROR
+  message: Detected user input used to manually construct a SQL string. This is usually bad practice because manual construction could accidentally result in a SQL injection. An attacker could use a SQL injection to steal or modify contents of the database. Instead, use a parameterized query which is available by default in most database engines. Alternatively, consider using an object-relational mapper (ORM) such as Sequelize which will protect your queries.
+  options:
+    interfile: true
+  metadata:
+    references:
+    - https://owasp.org/www-community/attacks/SQL_Injection
+    category: security
+    owasp:
+    - A01:2017 - Injection
+    - A03:2021 - Injection
+    cwe:
+    - 'CWE-89: Improper Neutralization of Special Elements used in an SQL Command (''SQL Injection'')'
+    technology:
+    - aws-lambda
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: MEDIUM
+    impact: HIGH
+    confidence: MEDIUM
+    interfile: true
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/aws-lambda/security/tainted-sql-string.yaml
+      upstream-id: tainted-sql-string
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - focus-metavariable: $EVENT
+    - pattern-either:
+      - pattern: "$HANDLERTYPE $HANDLER($TYPE $EVENT, com.amazonaws.services.lambda.runtime.Context $CONTEXT) {\n  ...\n}\n"
+      - pattern: "$HANDLERTYPE $HANDLER(InputStream $EVENT, OutputStream $OUT, com.amazonaws.services.lambda.runtime.Context $CONTEXT) {\n  ...\n}\n"
+  pattern-sinks:
+  - patterns:
+    - pattern-either:
+      - pattern: '"$SQLSTR" + ...
+
+          '
+      - pattern: '"$SQLSTR".concat(...)
+
+          '
+      - patterns:
+        - pattern-inside: 'StringBuilder $SB = new StringBuilder("$SQLSTR");
+
+            ...
+
+            '
+        - pattern: $SB.append(...)
+      - patterns:
+        - pattern-inside: '$VAR = "$SQLSTR";
+
+            ...
+
+            '
+        - pattern: $VAR += ...
+      - pattern: String.format("$SQLSTR", ...)
+    - metavariable-regex:
+        metavariable: $SQLSTR
+        regex: (?i)(select|delete|insert|create|update|alter|drop)\b
+    - pattern-not-inside: 'System.out.$PRINTLN(...)
+
+        '
+- id: java.tainted-system-command
+  languages:
+  - java
+  severity: ERROR
+  mode: taint
+  pattern-propagators:
+  - pattern: (StringBuilder $STRB).append($INPUT)
+    from: $INPUT
+    to: $STRB
+    label: CONCAT
+    requires: INPUT
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - pattern-inside: "$METHODNAME(..., @$REQ(...) $TYPE $SOURCE,...) {\n  ...\n}\n"
+      - pattern-inside: "$METHODNAME(..., @$REQ $TYPE $SOURCE,...) {\n  ...\n}\n"
+    - metavariable-regex:
+        metavariable: $TYPE
+        regex: ^(?!(Integer|Long|Float|Double|Char|Boolean|int|long|float|double|char|boolean))
+    - metavariable-regex:
+        metavariable: $REQ
+        regex: (RequestBody|PathVariable|RequestParam|RequestHeader|CookieValue|ModelAttribute)
+    - focus-metavariable: $SOURCE
+    label: INPUT
+  - patterns:
+    - pattern-either:
+      - pattern: $X + $SOURCE
+      - pattern: $SOURCE + $Y
+      - pattern: String.format("...", ..., $SOURCE, ...)
+      - pattern: String.join("...", ..., $SOURCE, ...)
+      - pattern: (String $STR).concat($SOURCE)
+      - pattern: $SOURCE.concat(...)
+      - pattern: $X += $SOURCE
+      - pattern: $SOURCE += $X
+    label: CONCAT
+    requires: INPUT
+  pattern-sinks:
+  - patterns:
+    - pattern-either:
+      - pattern: '(Process $P) = new Process(...);
+
+          '
+      - pattern: '(ProcessBuilder $PB).command(...);
+
+          '
+      - patterns:
+        - pattern-either:
+          - pattern: '(Runtime $R).$EXEC(...);
+
+              '
+          - pattern: 'Runtime.getRuntime(...).$EXEC(...);
+
+              '
+        - metavariable-regex:
+            metavariable: $EXEC
+            regex: (exec|loadLibrary|load)
+      - patterns:
+        - pattern: '(ProcessBuilder $PB).command(...).$ADD(...);
+
+            '
+        - metavariable-regex:
+            metavariable: $ADD
+            regex: (add|addAll)
+      - patterns:
+        - pattern-either:
+          - patterns:
+            - pattern-inside: '$BUILDER = new ProcessBuilder(...);
+
+                ...
+
+                '
+            - pattern: $BUILDER.start(...)
+          - pattern: 'new ProcessBuilder(...). ... .start(...);
+
+              '
+    requires: CONCAT
+  message: 'Detected user input entering a method which executes a system command. This could result in a command injection vulnerability, which allows an attacker to inject an arbitrary system command onto the server. The attacker could download malware onto or steal data from the server. Instead, use ProcessBuilder, separating the command into individual arguments, like this: `new ProcessBuilder("ls", "-al", targetDirectory)`. Further, make sure you hardcode or allowlist the actual command so that attackers can''t run arbitrary commands.'
+  metadata:
+    cwe:
+    - 'CWE-78: Improper Neutralization of Special Elements used in an OS Command (''OS Command Injection'')'
+    owasp:
+    - A01:2017 - Injection
+    - A03:2021 - Injection
+    category: security
+    technology:
+    - java
+    - spring
+    confidence: HIGH
+    references:
+    - https://www.stackhawk.com/blog/command-injection-java/
+    - https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html
+    - https://github.com/github/codeql/blob/main/java/ql/src/Security/CWE/CWE-078/ExecUnescaped.java
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: HIGH
+    impact: HIGH
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/spring/security/injection/tainted-system-command.yaml
+      upstream-id: tainted-system-command
+- id: java.tainted-url-host
+  languages:
+  - java
+  severity: ERROR
+  message: User data flows into the host portion of this manually-constructed URL. This could allow an attacker to send data to their own server, potentially exposing sensitive data such as cookies or authorization information sent with this request. They could also probe internal servers or other resources that the server running this code can access. (This is called server-side request forgery, or SSRF.) Do not allow arbitrary hosts. Instead, create an allowlist for approved hosts, hardcode the correct host, or ensure that the user data can only affect the path or parameters.
+  options:
+    interfile: true
+  metadata:
+    cwe:
+    - 'CWE-918: Server-Side Request Forgery (SSRF)'
+    owasp:
+    - A10:2021 - Server-Side Request Forgery (SSRF)
+    references:
+    - https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
+    category: security
+    technology:
+    - java
+    - spring
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    impact: MEDIUM
+    likelihood: MEDIUM
+    confidence: MEDIUM
+    interfile: true
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/spring/security/injection/tainted-url-host.yaml
+      upstream-id: tainted-url-host
+  mode: taint
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - pattern-inside: "$METHODNAME(..., @$REQ(...) $TYPE $SOURCE,...) {\n  ...\n}\n"
+      - pattern-inside: "$METHODNAME(..., @$REQ $TYPE $SOURCE,...) {\n  ...\n}\n"
+    - metavariable-regex:
+        metavariable: $TYPE
+        regex: ^(?!(Integer|Long|Float|Double|Char|Boolean|int|long|float|double|char|boolean))
+    - metavariable-regex:
+        metavariable: $REQ
+        regex: (RequestBody|PathVariable|RequestParam|RequestHeader|CookieValue|ModelAttribute)
+    - focus-metavariable: $SOURCE
+  pattern-sinks:
+  - pattern-either:
+    - pattern: new URL($ONEARG)
+    - patterns:
+      - pattern-either:
+        - pattern: '"$URLSTR" + ...
+
+            '
+        - pattern: '"$URLSTR".concat(...)
+
+            '
+        - patterns:
+          - pattern-inside: 'StringBuilder $SB = new StringBuilder("$URLSTR");
+
+              ...
+
+              '
+          - pattern: $SB.append(...)
+        - patterns:
+          - pattern-inside: '$VAR = "$URLSTR";
+
+              ...
+
+              '
+          - pattern: $VAR += ...
+        - patterns:
+          - pattern: String.format("$URLSTR", ...)
+          - pattern-not: String.format("$URLSTR", "...", ...)
+        - patterns:
+          - pattern-inside: 'String $VAR = "$URLSTR";
+
+              ...
+
+              '
+          - pattern: String.format($VAR, ...)
+      - metavariable-regex:
+          metavariable: $URLSTR
+          regex: http(s?)://%(v|s|q).*
+- id: java.transformerfactory-dtds-not-disabled
+  severity: ERROR
+  metadata:
+    cwe:
+    - 'CWE-611: Improper Restriction of XML External Entity Reference'
+    owasp:
+    - A04:2017 - XML External Entities (XXE)
+    - A05:2021 - Security Misconfiguration
+    asvs:
+      section: V5 Validation, Sanitization and Encoding
+      control_id: 5.5.2 Insecue XML Deserialization
+      control_url: https://github.com/OWASP/ASVS/blob/master/4.0/en/0x13-V5-Validation-Sanitization-Encoding.md#v55-deserialization-prevention
+      version: '4'
+    references:
+    - https://semgrep.dev/blog/2022/xml-security-in-java
+    - https://semgrep.dev/docs/cheat-sheets/java-xxe/
+    - https://blog.sonarsource.com/secure-xml-processor
+    - https://xerces.apache.org/xerces2-j/features.html
+    category: security
+    technology:
+    - java
+    - xml
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: LOW
+    impact: HIGH
+    confidence: HIGH
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/lang/security/audit/xxe/transformerfactory-dtds-not-disabled.yaml
+      upstream-id: transformerfactory-dtds-not-disabled
+  message: DOCTYPE declarations are enabled for this TransformerFactory. This is vulnerable to XML external entity attacks. Disable this by setting the attributes "accessExternalDTD" and "accessExternalStylesheet" to "".
+  mode: taint
+  pattern-sources:
+  - by-side-effect: true
+    patterns:
+    - pattern-either:
+      - pattern: '$FACTORY = TransformerFactory.newInstance();
+
+          '
+      - patterns:
+        - pattern: $FACTORY
+        - pattern-inside: "class $C {\n  ...\n  $V $FACTORY = TransformerFactory.newInstance();\n  ...\n}\n"
+        - pattern-not-inside: "class $C {\n  ...\n  $V $FACTORY = TransformerFactory.newInstance();\n  static {\n    ...\n    $FACTORY.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, \"\");\n    ...\n    $FACTORY.setAttribute(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, \"\");\n    ...\n  }\n  ...\n}\n"
+        - pattern-not-inside: "class $C {\n  ...\n  $V $FACTORY = TransformerFactory.newInstance();\n  static {\n    ...\n    $FACTORY.setAttribute(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, \"\");\n    ...\n    $FACTORY.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, \"\");\n    ...\n  }\n  ...\n}\n"
+        - pattern-not-inside: "class $C {\n  ...\n  $V $FACTORY = TransformerFactory.newInstance();\n  static {\n    ...\n    $FACTORY.setAttribute(\"=~/.*accessExternalDTD.*/\", \"\");\n    ...\n    $FACTORY.setAttribute(\"=~/.*accessExternalStylesheet.*/\", \"\");\n    ...\n  }\n  ...\n}\n"
+        - pattern-not-inside: "class $C {\n  ...\n  $V $FACTORY = TransformerFactory.newInstance();\n  static {\n    ...\n    $FACTORY.setAttribute(\"=~/.*accessExternalStylesheet.*/\", \"\");\n    ...\n    $FACTORY.setAttribute(\"=~/.*accessExternalDTD.*/\", \"\");\n    ...\n  }\n  ...\n}\n"
+  pattern-sinks:
+  - patterns:
+    - pattern: $FACTORY.newTransformer(...);
+  pattern-sanitizers:
+  - by-side-effect: true
+    pattern-either:
+    - patterns:
+      - pattern-either:
+        - pattern: '$FACTORY.setAttribute(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, ""); ...
+
+            $FACTORY.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+
+            '
+        - pattern: '$FACTORY.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+
+            ...
+
+            $FACTORY.setAttribute(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, "");
+
+            '
+        - pattern: '$FACTORY.setAttribute("=~/.*accessExternalStylesheet.*/", ""); ...
+
+            $FACTORY.setAttribute("=~/.*accessExternalDTD.*/", "");
+
+            '
+        - pattern: '$FACTORY.setAttribute("=~/.*accessExternalDTD.*/", "");
+
+            ...
+
+            $FACTORY.setAttribute("=~/.*accessExternalStylesheet.*/", "");
+
+            '
+      - focus-metavariable: $FACTORY
+    - patterns:
+      - pattern-either:
+        - pattern-inside: "class $C {\n  ...\n  $T $M(...) {\n    ...\n    $FACTORY.setAttribute(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, \"\");\n    ...\n    $FACTORY.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, \"\");\n    ...\n  }\n  ...\n}\n"
+        - pattern-inside: "class $C {\n  ...\n  $T $M(...) {\n    ...\n    $FACTORY.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, \"\");\n    ...\n    $FACTORY.setAttribute(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, \"\");\n    ...\n  }\n  ...\n}\n"
+        - pattern-inside: "class $C {\n  ...\n  $T $M(...) {\n    ...\n    $FACTORY.setAttribute(\"=~/.*accessExternalStylesheet.*/\", \"\");\n    ...\n    $FACTORY.setAttribute(\"=~/.*accessExternalDTD.*/\", \"\");\n    ...\n  }\n  ...\n}\n"
+        - pattern-inside: "class $C {\n  ...\n  $T $M(...) {\n    ...\n    $FACTORY.setAttribute(\"=~/.*accessExternalDTD.*/\", \"\");\n    ...\n    $FACTORY.setAttribute(\"=~/.*accessExternalStylesheet.*/\", \"\");\n    ...\n  }\n  ...\n}\n"
+      - pattern: $M($X)
+      - focus-metavariable: $X
+  fix: '$FACTORY.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, ""); $FACTORY.setAttribute(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, "");
+
+    $FACTORY.newTransformer(...);
+
+    '
+  languages:
+  - java
+- id: java.xmlinputfactory-external-entities-enabled
+  severity: ERROR
+  metadata:
+    cwe:
+    - 'CWE-611: Improper Restriction of XML External Entity Reference'
+    owasp:
+    - A04:2017 - XML External Entities (XXE)
+    - A05:2021 - Security Misconfiguration
+    asvs:
+      section: V5 Validation, Sanitization and Encoding
+      control_id: 5.5.2 Insecue XML Deserialization
+      control_url: https://github.com/OWASP/ASVS/blob/master/4.0/en/0x13-V5-Validation-Sanitization-Encoding.md#v55-deserialization-prevention
+      version: '4'
+    references:
+    - https://semgrep.dev/blog/2022/xml-security-in-java
+    - https://semgrep.dev/docs/cheat-sheets/java-xxe/
+    - https://www.blackhat.com/docs/us-15/materials/us-15-Wang-FileCry-The-New-Age-Of-XXE-java-wp.pdf
+    category: security
+    technology:
+    - java
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: HIGH
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/lang/security/xmlinputfactory-external-entities-enabled.yaml
+      upstream-id: xmlinputfactory-external-entities-enabled
+  message: XML external entities are enabled for this XMLInputFactory. This is vulnerable to XML external entity attacks. Disable external entities by setting "javax.xml.stream.isSupportingExternalEntities" to false.
+  patterns:
+  - pattern-either:
+    - pattern: (javax.xml.stream.XMLInputFactory $XMLFACTORY).setProperty("javax.xml.stream.isSupportingExternalEntities", true);
+    - pattern: (javax.xml.stream.XMLInputFactory $XMLFACTORY).setProperty(javax.xml.stream.XMLInputFactory.SUPPORT_DTD, true);
+    - pattern: (javax.xml.stream.XMLInputFactory $XMLFACTORY).setProperty("javax.xml.stream.isSupportingExternalEntities", Boolean.TRUE);
+    - pattern: (javax.xml.stream.XMLInputFactory $XMLFACTORY).setProperty(javax.xml.stream.XMLInputFactory.SUPPORT_DTD, Boolean.TRUE);
+  languages:
+  - java
+- id: java.anonymous-ldap-bind
+  metadata:
+    cwe:
+    - 'CWE-287: Improper Authentication'
+    owasp:
+    - A02:2017 - Broken Authentication
+    - A07:2021 - Identification and Authentication Failures
+    source-rule-url: https://find-sec-bugs.github.io/bugs.htm#LDAP_ANONYMOUS
+    category: security
+    technology:
+    - java
+    references:
+    - https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: HIGH
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/lang/security/audit/anonymous-ldap-bind.yaml
+      upstream-id: anonymous-ldap-bind
+  message: Detected anonymous LDAP bind. This permits anonymous users to execute LDAP statements. Consider enforcing authentication for LDAP. See https://docs.oracle.com/javase/tutorial/jndi/ldap/auth_mechs.html for more information.
+  severity: WARNING
+  pattern: '$ENV.put($CTX.SECURITY_AUTHENTICATION, "none");
+
+    ...
+
+    $DCTX = new InitialDirContext($ENV, ...);
+
+    '
+  languages:
+  - java
+- id: java.avoid-implementing-custom-digests
+  metadata:
+    cwe:
+    - 'CWE-327: Use of a Broken or Risky Cryptographic Algorithm'
+    owasp:
+    - A03:2017 - Sensitive Data Exposure
+    - A02:2021 - Cryptographic Failures
+    source-rule-url: https://find-sec-bugs.github.io/bugs.htm#CUSTOM_MESSAGE_DIGEST
+    asvs:
+      section: V6 Stored Cryptography Verification Requirements
+      control_id: 6.2.2 Insecure Custom Algorithm
+      control_url: https://github.com/OWASP/ASVS/blob/master/4.0/en/0x14-V6-Cryptography.md#v62-algorithms
+      version: '4'
+    references:
+    - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html#custom-algorithms
+    category: security
+    technology:
+    - java
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/lang/security/audit/crypto/ssl/avoid-implementing-custom-digests.yaml
+      upstream-id: avoid-implementing-custom-digests
+  message: 'Cryptographic algorithms are notoriously difficult to get right. By implementing a custom message digest, you risk introducing security issues into your program. Use one of the many sound message digests already available to you: MessageDigest sha256Digest = MessageDigest.getInstance("SHA256");'
+  severity: WARNING
+  languages:
+  - java
+  pattern: "class $CLASS extends MessageDigest {\n  ...\n}"
+- id: java.bad-hexa-conversion
+  metadata:
+    cwe:
+    - 'CWE-704: Incorrect Type Conversion or Cast'
+    owasp: A03:2017 - Sensitive Data Exposure
+    source-rule-url: https://find-sec-bugs.github.io/bugs.htm#BAD_HEXA_CONVERSION
+    category: security
+    technology:
+    - java
+    references:
+    - https://cwe.mitre.org/data/definitions/704.html
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/lang/security/audit/bad-hexa-conversion.yaml
+      upstream-id: bad-hexa-conversion
+  message: '''Integer.toHexString()'' strips leading zeroes from each byte if read byte-by-byte. This mistake weakens the hash value computed since it introduces more collisions. Use ''String.format("%02X", ...)'' instead.'
+  severity: WARNING
+  languages:
+  - java
+  pattern: "$X $METHOD(...) {\n  ...\n  MessageDigest $MD = ...;\n  ...\n  $MD.digest(...);\n  ...\n  Integer.toHexString(...);\n}"
+- id: java.blowfish-insufficient-key-size
+  metadata:
+    cwe:
+    - 'CWE-326: Inadequate Encryption Strength'
+    owasp:
+    - A03:2017 - Sensitive Data Exposure
+    - A02:2021 - Cryptographic Failures
+    source-rule-url: https://find-sec-bugs.github.io/bugs.htm#BLOWFISH_KEY_SIZE
+    asvs:
+      section: V6 Stored Cryptography Verification Requirements
+      control_id: 6.2.5 Insecure Algorithm
+      control_url: https://github.com/OWASP/ASVS/blob/master/4.0/en/0x14-V6-Cryptography.md#v62-algorithms
+      version: '4'
+    category: security
+    technology:
+    - java
+    references:
+    - https://owasp.org/Top10/A02_2021-Cryptographic_Failures
+    subcategory:
+    - audit
+    likelihood: HIGH
+    impact: MEDIUM
+    confidence: HIGH
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/lang/security/audit/blowfish-insufficient-key-size.yaml
+      upstream-id: blowfish-insufficient-key-size
+  message: Using less than 128 bits for Blowfish is considered insecure. Use 128 bits or more, or switch to use AES instead.
+  severity: WARNING
+  languages:
+  - java
+  patterns:
+  - pattern: '$KEYGEN = KeyGenerator.getInstance("Blowfish");
+
+      ...
+
+      $KEYGEN.init($SIZE);
+
+      '
+  - metavariable-comparison:
+      metavariable: $SIZE
+      comparison: $SIZE < 128
+- id: java.cbc-padding-oracle
+  message: Using CBC with PKCS5Padding is susceptible to padding oracle attacks. A malicious actor could discern the difference between plaintext with valid or invalid padding. Further, CBC mode does not include any integrity checks. Use 'AES/GCM/NoPadding' instead.
+  metadata:
+    cwe:
+    - 'CWE-327: Use of a Broken or Risky Cryptographic Algorithm'
+    owasp:
+    - A03:2017 - Sensitive Data Exposure
+    - A02:2021 - Cryptographic Failures
+    source-rule-url: https://find-sec-bugs.github.io/bugs.htm#PADDING_ORACLE
+    references:
+    - https://capec.mitre.org/data/definitions/463.html
+    - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html#cipher-modes
+    - https://find-sec-bugs.github.io/bugs.htm#CIPHER_INTEGRITY
+    category: security
+    technology:
+    - java
+    subcategory:
+    - audit
+    likelihood: HIGH
+    impact: MEDIUM
+    confidence: HIGH
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/lang/security/audit/cbc-padding-oracle.yaml
+      upstream-id: cbc-padding-oracle
+  severity: WARNING
+  fix: '"AES/GCM/NoPadding"
+
+    '
+  languages:
+  - java
+  patterns:
+  - pattern-inside: Cipher.getInstance("=~/.*\/CBC\/PKCS5Padding/")
+  - pattern: '"=~/.*\/CBC\/PKCS5Padding/"
+
+      '
+- id: java.cookie-issecure-false
+  patterns:
+  - pattern: $COOKIE = new Cookie($...ARGS);
+  - pattern-not-inside: '$COOKIE = new Cookie(...);
+
+      ...
+
+      $COOKIE.setSecure(...);
+
+      '
+  message: 'Default session middleware settings: `setSecure` not set to true. This ensures that the cookie is sent only over HTTPS to prevent cross-site scripting attacks.'
+  fix: '$COOKIE = new Cookie($...ARGS);
+
+    $COOKIE.setSecure(true);
+
+    '
+  metadata:
+    vulnerability: Insecure Transport
+    owasp:
+    - A03:2017 - Sensitive Data Exposure
+    - A02:2021 - Cryptographic Failures
+    cwe:
+    - 'CWE-319: Cleartext Transmission of Sensitive Information'
+    references:
+    - https://docs.oracle.com/javaee/6/api/javax/servlet/http/Cookie.html#setSecure(boolean)
+    - https://owasp.org/www-community/controls/SecureCookieAttribute
+    category: security
+    technology:
+    - java
+    - cookie
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/servlets/security/cookie-issecure-false.yaml
+      upstream-id: cookie-issecure-false
+  languages:
+  - java
+  severity: WARNING
+- id: java.cookie-missing-httponly
+  metadata:
+    cwe:
+    - 'CWE-1004: Sensitive Cookie Without ''HttpOnly'' Flag'
+    owasp:
+    - A05:2021 - Security Misconfiguration
+    source-rule-url: https://find-sec-bugs.github.io/bugs.htm#HTTPONLY_COOKIE
+    asvs:
+      section: 'V3: Session Management Verification Requirements'
+      control_id: 3.4.2 Missing Cookie Attribute
+      control_url: https://github.com/OWASP/ASVS/blob/master/4.0/en/0x12-V3-Session-management.md#v34-cookie-based-session-management
+      version: '4'
+    category: security
+    technology:
+    - java
+    references:
+    - https://owasp.org/Top10/A05_2021-Security_Misconfiguration
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/lang/security/audit/cookie-missing-httponly.yaml
+      upstream-id: cookie-missing-httponly
+  message: A cookie was detected without setting the 'HttpOnly' flag. The 'HttpOnly' flag for cookies instructs the browser to forbid client-side scripts from reading the cookie. Set the 'HttpOnly' flag by calling 'cookie.setHttpOnly(true);'
+  severity: WARNING
+  languages:
+  - java
+  patterns:
+  - pattern-not-inside: $COOKIE.setValue(""); ...
+  - pattern-either:
+    - pattern: $COOKIE.setHttpOnly(false);
+    - patterns:
+      - pattern-not-inside: $COOKIE.setHttpOnly(...); ...
+      - pattern-not-inside: $COOKIE = ResponseCookie.from(...). ...; ...
+      - pattern: $RESPONSE.addCookie($COOKIE);
+- id: java.cookie-missing-secure-flag
+  metadata:
+    cwe:
+    - 'CWE-614: Sensitive Cookie in HTTPS Session Without ''Secure'' Attribute'
+    owasp:
+    - A05:2021 - Security Misconfiguration
+    source-rule-url: https://find-sec-bugs.github.io/bugs.htm#INSECURE_COOKIE
+    asvs:
+      section: 'V3: Session Management Verification Requirements'
+      control_id: 3.4.1 Missing Cookie Attribute
+      control_url: https://github.com/OWASP/ASVS/blob/master/4.0/en/0x12-V3-Session-management.md#v34-cookie-based-session-management
+      version: '4'
+    category: security
+    technology:
+    - java
+    references:
+    - https://owasp.org/Top10/A05_2021-Security_Misconfiguration
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/lang/security/audit/cookie-missing-secure-flag.yaml
+      upstream-id: cookie-missing-secure-flag
+  message: A cookie was detected without setting the 'secure' flag. The 'secure' flag for cookies prevents the client from transmitting the cookie over insecure channels such as HTTP. Set the 'secure' flag by calling '$COOKIE.setSecure(true);'
+  severity: WARNING
+  languages:
+  - java
+  patterns:
+  - pattern-not-inside: $COOKIE.setValue(""); ...
+  - pattern-either:
+    - pattern: $COOKIE.setSecure(false);
+    - patterns:
+      - pattern-not-inside: $COOKIE.setSecure(...); ...
+      - pattern-not-inside: $COOKIE = ResponseCookie.from(...). ...; ...
+      - pattern: $RESPONSE.addCookie($COOKIE);
+- id: java.cookie-setSecure
+  patterns:
+  - patterns:
+    - pattern-inside: '$COOKIE = new Cookie(...);
+
+        ...
+
+        '
+    - pattern: '$COOKIE.setSecure(false);
+
+        '
+  - pattern-not-inside: '$COOKIE = new Cookie(...);
+
+      ...
+
+      $COOKIE.setSecure(true);
+
+      '
+  message: 'Default session middleware settings: `setSecure` not set to true. This ensures that the cookie is sent only over HTTPS to prevent cross-site scripting attacks.'
+  fix-regex:
+    regex: setSecure\(false\)
+    replacement: setSecure(true)
+  metadata:
+    vulnerability: Insecure Transport
+    owasp:
+    - A03:2017 - Sensitive Data Exposure
+    - A02:2021 - Cryptographic Failures
+    cwe:
+    - 'CWE-319: Cleartext Transmission of Sensitive Information'
+    references:
+    - https://docs.oracle.com/javaee/6/api/javax/servlet/http/Cookie.html#setSecure(boolean)
+    - https://owasp.org/www-community/controls/SecureCookieAttribute
+    category: security
+    technology:
+    - java
+    - cookie
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/servlets/security/cookie-setSecure.yaml
+      upstream-id: cookie-setSecure
+  languages:
+  - java
+  severity: WARNING
+- id: java.crlf-injection-logs
+  message: When data from an untrusted source is put into a logger and not neutralized correctly, an attacker could forge log entries or include malicious content.
+  metadata:
+    cwe:
+    - 'CWE-93: Improper Neutralization of CRLF Sequences (''CRLF Injection'')'
+    owasp:
+    - A03:2021 - Injection
+    source-rule-url: https://find-sec-bugs.github.io/bugs.htm#CRLF_INJECTION_LOGS
+    category: security
+    technology:
+    - java
+    references:
+    - https://owasp.org/Top10/A03_2021-Injection
+    subcategory:
+    - vuln
+    likelihood: LOW
+    impact: MEDIUM
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/lang/security/audit/crlf-injection-logs.yaml
+      upstream-id: crlf-injection-logs
+  severity: WARNING
+  languages:
+  - java
+  patterns:
+  - pattern-either:
+    - patterns:
+      - pattern-inside: "class $CLASS {\n  ...\n  Logger $LOG = ...;\n  ...\n}\n"
+      - pattern-either:
+        - pattern-inside: "$X $METHOD(...,HttpServletRequest $REQ,...) {\n  ...\n}\n"
+        - pattern-inside: "$X $METHOD(...,ServletRequest $REQ,...) {\n  ...\n}\n"
+        - pattern-inside: "$X $METHOD(...) {\n  ...\n  HttpServletRequest $REQ = ...;\n  ...\n}\n"
+        - pattern-inside: "$X $METHOD(...) {\n  ...\n  ServletRequest $REQ = ...;\n  ...\n}\n"
+    - pattern-inside: "$X $METHOD(...) {\n  ...\n  Logger $LOG = ...;\n  ...\n  HttpServletRequest $REQ = ...;\n  ...\n}\n"
+    - pattern-inside: "$X $METHOD(...) {\n  ...\n  Logger $LOG = ...;\n  ...\n  ServletRequest $REQ = ...;\n  ...\n}\n"
+  - pattern-either:
+    - pattern: 'String $VAL = $REQ.getParameter(...);
+
+        ...
+
+        $LOG.$LEVEL(<... $VAL ...>);
+
+        '
+    - pattern: 'String $VAL = $REQ.getParameter(...);
+
+        ...
+
+        $LOG.log($LEVEL,<... $VAL ...>);
+
+        '
+    - pattern: '$LOG.$LEVEL(<... $REQ.getParameter(...) ...>);
+
+        '
+    - pattern: '$LOG.log($LEVEL,<... $REQ.getParameter(...) ...>);
+
+        '
+- id: java.dangerous-groovy-shell
+  patterns:
+  - pattern-either:
+    - pattern: '$SHELL.parse(...)
+
+        '
+    - pattern: '$SHELL.evaluate(...)
+
+        '
+    - pattern: '$SHELL.parseClass(...)
+
+        '
+  - pattern-either:
+    - pattern-inside: 'groovy.lang.GroovyShell $SHELL = ...;
+
+        ...
+
+        '
+    - pattern-inside: 'groovy.lang.GroovyClassLoader $SHELL = ...;
+
+        ...
+
+        '
+  - pattern-not: '$SHELL.parse("...",...)
+
+      '
+  - pattern-not: '$SHELL.evaluate("...",...)
+
+      '
+  - pattern-not: '$SHELL.parseClass("...",...)
+
+      '
+  message: A expression is built with a dynamic value. The source of the value(s) should be verified to avoid that unfiltered values fall into this risky code evaluation.
+  metadata:
+    cwe:
+    - 'CWE-94: Improper Control of Generation of Code (''Code Injection'')'
+    owasp:
+    - A03:2021 - Injection
+    source-rule-url: https://find-sec-bugs.github.io/bugs.htm#GROOVY_SHELL
+    category: security
+    technology:
+    - groovy
+    references:
+    - https://owasp.org/Top10/A03_2021-Injection
+    cwe2022-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/lang/security/audit/dangerous-groovy-shell.yaml
+      upstream-id: dangerous-groovy-shell
+  languages:
+  - java
+  severity: WARNING
+- id: java.default-resteasy-provider-abuse
+  message: When a Restful webservice endpoint isn't configured with a @Consumes annotation, an attacker could abuse the SerializableProvider by sending a HTTP Request with a Content-Type of application/x-java-serialized-object. The body of that request would be processed by the SerializationProvider and could contain a malicious payload, which may lead to arbitrary code execution. Instead, add a @Consumes annotation to the function or class.
+  severity: WARNING
+  metadata:
+    likelihood: LOW
+    impact: MEDIUM
+    confidence: LOW
+    category: security
+    cwe:
+    - 'CWE-502: Deserialization of Untrusted Data'
+    cwe2021-top25: true
+    cwe2022-top25: true
+    owasp:
+    - A08:2017 - Insecure Deserialization
+    - A08:2021 - Software and Data Integrity Failures
+    references:
+    - https://access.redhat.com/blogs/766093/posts/3162112
+    subcategory:
+    - audit
+    technology:
+    - jax-rs
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/jax-rs/security/insecure-resteasy.yaml
+      upstream-id: default-resteasy-provider-abuse
+  languages:
+  - java
+  patterns:
+  - pattern: '@Path("...")
+
+      public $RETURNTYPE $METHOD(...) { ...}
+
+      '
+  - pattern-not-inside: '@GET
+
+      public $RETURNTYPE $METHOD(...) { ...}
+
+      '
+  - pattern-not-inside: '@Path("...")
+
+      @Consumes(...)
+
+      public $RETURNTYPE $METHOD(...) { ...}
+
+      '
+  - pattern-not-inside: '@Consumes(...)
+
+      public class $CLASSNAME { ... }
+
+      '
+- id: java.defaulthttpclient-is-deprecated
+  metadata:
+    cwe:
+    - 'CWE-326: Inadequate Encryption Strength'
+    owasp:
+    - A03:2017 - Sensitive Data Exposure
+    - A02:2021 - Cryptographic Failures
+    source-rule-url: https://find-sec-bugs.github.io/bugs.htm#DEFAULT_HTTP_CLIENT
+    asvs:
+      section: V9 Communications Verification Requirements
+      control_id: 9.1.3 Weak TLS
+      control_url: https://github.com/OWASP/ASVS/blob/master/4.0/en/0x17-V9-Communications.md#v91-client-communications-security-requirements
+      version: '4'
+    category: security
+    technology:
+    - java
+    references:
+    - https://owasp.org/Top10/A02_2021-Cryptographic_Failures
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/lang/security/audit/crypto/ssl/defaulthttpclient-is-deprecated.yaml
+      upstream-id: defaulthttpclient-is-deprecated
+  message: DefaultHttpClient is deprecated. Further, it does not support connections using TLS1.2, which makes using DefaultHttpClient a security hazard. Use HttpClientBuilder instead.
+  severity: WARNING
+  languages:
+  - java
+  pattern: new DefaultHttpClient(...);
+  fix-regex:
+    regex: DefaultHttpClient
+    replacement: HttpClientBuilder
+- id: java.do-privileged-use
+  severity: WARNING
+  languages:
+  - java
+  metadata:
+    cwe:
+    - 'CWE-269: Improper Privilege Management'
+    references:
+    - https://docs.oracle.com/javase/8/docs/technotes/guides/security/doprivileged.html
+    - https://wiki.sei.cmu.edu/confluence/display/java/Privilege+Escalation
+    - http://phrack.org/papers/escaping_the_java_sandbox.html
+    category: security
+    technology:
+    - java
+    owasp:
+    - A04:2021 - Insecure Design
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: MEDIUM
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/lang/security/do-privileged-use.yaml
+      upstream-id: do-privileged-use
+  message: Marking code as privileged enables a piece of trusted code to temporarily enable access to more resources than are available directly to the code that called it. Be very careful in your use of the privileged construct, and always remember to make the privileged code section as small as possible.
+  patterns:
+  - pattern-inside: 'import java.security.*;
+
+      ...
+
+      '
+  - pattern-either:
+    - pattern: AccessController.doPrivileged(...);
+    - pattern: class $ACTION implements PrivilegedAction<Void> { ... }
+- id: java.ecb-cipher
+  metadata:
+    functional-categories:
+    - crypto::search::mode::javax.crypto
+    cwe:
+    - 'CWE-327: Use of a Broken or Risky Cryptographic Algorithm'
+    owasp:
+    - A03:2017 - Sensitive Data Exposure
+    - A02:2021 - Cryptographic Failures
+    source-rule-url: https://find-sec-bugs.github.io/bugs.htm#ECB_MODE
+    category: security
+    technology:
+    - java
+    references:
+    - https://owasp.org/Top10/A02_2021-Cryptographic_Failures
+    subcategory:
+    - vuln
+    likelihood: MEDIUM
+    impact: MEDIUM
+    confidence: HIGH
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/lang/security/audit/crypto/ecb-cipher.yaml
+      upstream-id: ecb-cipher
+  message: Cipher in ECB mode is detected. ECB mode produces the same output for the same input each time which allows an attacker to intercept and replay the data. Further, ECB mode does not provide any integrity checking. See https://find-sec-bugs.github.io/bugs.htm#CIPHER_INTEGRITY.
+  severity: WARNING
+  languages:
+  - java
+  patterns:
+  - pattern: 'Cipher $VAR = $CIPHER.getInstance($MODE);
+
+      '
+  - metavariable-regex:
+      metavariable: $MODE
+      regex: .*ECB.*
+- id: java.el-injection
+  metadata:
+    cwe:
+    - 'CWE-94: Improper Control of Generation of Code (''Code Injection'')'
+    owasp:
+    - A03:2021 - Injection
+    source-rule-url: https://find-sec-bugs.github.io/bugs.htm#EL_INJECTION
+    category: security
+    technology:
+    - java
+    references:
+    - https://owasp.org/Top10/A03_2021-Injection
+    cwe2022-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: HIGH
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/lang/security/audit/el-injection.yaml
+      upstream-id: el-injection
+  message: An expression is built with a dynamic value. The source of the value(s) should be verified to avoid that unfiltered values fall into this risky code evaluation.
+  severity: WARNING
+  languages:
+  - java
+  patterns:
+  - pattern-either:
+    - pattern: "class $CLASS {\n  ...\n  ExpressionFactory $EF;\n  ...\n  $X $METHOD(...) {\n    ...\n    $EF.createValueExpression($CTX,$INPUT,...);\n    ...\n  }\n  ...\n}\n"
+    - pattern: "class $CLASS {\n  ...\n  ExpressionFactory $EF = ...;\n  ...\n  $X $METHOD(...) {\n    ...\n    $EF.createValueExpression($CTX,$INPUT,...);\n    ...\n  }\n  ...\n}\n"
+    - pattern: "$X $METHOD(...) {\n  ...\n  ExpressionFactory $EF = ...;\n  ...\n  $EF.createValueExpression($CTX,$INPUT,...);\n  ...\n}\n"
+    - pattern: "$X $METHOD(...,ExpressionFactory $EF,...) {\n  ...\n  $EF.createValueExpression($CTX,$INPUT,...);\n  ...\n}\n"
+    - pattern: "class $CLASS {\n  ...\n  ExpressionFactory $EF;\n  ...\n  $X $METHOD(...) {\n    ...\n    $EF.createMethodExpression($CTX,$INPUT,...);\n    ...\n  }\n  ...\n}\n"
+    - pattern: "class $CLASS {\n  ...\n  ExpressionFactory $EF = ...;\n  ...\n  $X $METHOD(...) {\n    ...\n    $EF.createMethodExpression($CTX,$INPUT,...);\n    ...\n  }\n  ...\n}\n"
+    - pattern: "$X $METHOD(...) {\n  ...\n  ExpressionFactory $EF = ...;\n  ...\n  $EF.createMethodExpression($CTX,$INPUT,...);\n  ...\n}\n"
+    - pattern: "$X $METHOD(...,ExpressionFactory $EF,...) {\n  ...\n  $EF.createMethodExpression($CTX,$INPUT,...);\n  ...\n}\n"
+    - pattern: "$X $METHOD(String $INPUT, ...) {\n  ...\n  $OBJECT.buildConstraintViolationWithTemplate($INPUT, ...);\n  ...\n}\n"
+  - pattern-not: "$X $METHOD(...) {\n  ...\n  $EF.createValueExpression($CTX,\"...\",...);\n  ...\n}\n"
+  - pattern-not: "$X $METHOD(...) {\n  ...\n  String $S = \"...\";\n  ...\n  $EF.createValueExpression($CTX,$S,...);\n  ...\n}\n"
+  - pattern-not: "$X $METHOD(...) {\n  ...\n  $EF.createMethodExpression($CTX,\"...\",...);\n  ...\n}\n"
+  - pattern-not: "$X $METHOD(...) {\n  ...\n  String $S = \"...\";\n  ...\n  $EF.createMethodExpression($CTX,$S,...);\n  ...\n}\n"
+- id: java.gcm-detection
+  metadata:
+    category: security
+    functional-categories:
+    - crypto::search::randomness::javax.crypto
+    cwe:
+    - 'CWE-323: Reusing a Nonce, Key Pair in Encryption'
+    references:
+    - https://cwe.mitre.org/data/definitions/323.html
+    technology:
+    - java
+    owasp:
+    - A02:2021 - Cryptographic Failures
+    subcategory:
+    - audit
+    likelihood: MEDIUM
+    impact: MEDIUM
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/lang/security/audit/crypto/gcm-detection.yaml
+      upstream-id: gcm-detection
+  languages:
+  - java
+  message: GCM detected, please check that IV/nonce is not reused, an Initialization Vector (IV) is a nonce used to randomize the encryption, so that even if multiple messages with identical plaintext are encrypted, the generated corresponding ciphertexts are different. Unlike the Key, the IV usually does not need to be secret, rather it is important that it is random and unique. Certain encryption schemes the IV is exchanged in public as part of the ciphertext. Reusing same Initialization Vector with the same Key to encrypt multiple plaintext blocks allows an attacker to compare the ciphertexts and then, with some assumptions on the content of the messages, to gain important information about the data being encrypted.
+  patterns:
+  - pattern-either:
+    - pattern: $METHOD.getInstance("AES/GCM/NoPadding",...);
+    - pattern: new GCMParameterSpec(...);
+  severity: INFO
+- id: java.hibernate-sqli
+  pattern-either:
+  - patterns:
+    - pattern-either:
+      - pattern-inside: 'String $SQL = $X + $Y;
+
+          ...
+
+          '
+      - pattern-inside: 'String $SQL = String.format(...);
+
+          ...
+
+          '
+      - pattern-inside: '$VAL $FUNC(...,String $SQL,...) {
+
+          ...
+
+          }
+
+          '
+    - pattern-not-inside: 'String $SQL = "..." + "...";
+
+        ...
+
+        '
+    - pattern: org.hibernate.criterion.Restrictions.sqlRestriction($SQL,...)
+  - pattern: org.hibernate.criterion.Restrictions.sqlRestriction(String.format(...),...)
+  - patterns:
+    - pattern: org.hibernate.criterion.Restrictions.sqlRestriction($X + $Y,...)
+    - pattern-not: org.hibernate.criterion.Restrictions.sqlRestriction("..." + "...",...)
+  - patterns:
+    - pattern-either:
+      - patterns:
+        - pattern-either:
+          - pattern-inside: 'String $SQL = $X + $Y;
+
+              ...
+
+              '
+          - pattern-inside: 'String $SQL = String.format(...);
+
+              ...
+
+              '
+          - pattern-inside: "$TYPE $FUNC(...,String $SQL,...) {\n  ...\n}\n"
+        - pattern-not-inside: 'String $SQL = "..." + "...";
+
+            ...
+
+            '
+        - pattern: $SESSION.$METHOD($SQL,...)
+      - pattern: '$SESSION.$METHOD(String.format(...),...);
+
+          '
+      - pattern: '$SESSION.$METHOD($X + $Y,...);
+
+          '
+    - pattern-either:
+      - pattern-inside: 'org.hibernate.Session $SESSION = ...;
+
+          ...
+
+          '
+      - pattern-inside: "$TYPE $FUNC(...,org.hibernate.Session $SESSION,...) {\n  ...\n}\n"
+    - pattern-not: '$SESSION.$METHOD("..." + "...",...);
+
+        '
+    - metavariable-regex:
+        metavariable: $METHOD
+        regex: ^(createQuery|createSQLQuery)$
+  message: Detected a formatted string in a SQL statement. This could lead to SQL injection if variables in the SQL statement are not properly sanitized. Use a prepared statements (java.sql.PreparedStatement) instead. You can obtain a PreparedStatement using 'connection.prepareStatement'.
+  metadata:
+    cwe:
+    - 'CWE-89: Improper Neutralization of Special Elements used in an SQL Command (''SQL Injection'')'
+    source-rule-url: https://find-sec-bugs.github.io/bugs.htm#SQL_INJECTION_HIBERNATE
+    asvs:
+      section: V5 Stored Cryptography Verification Requirements
+      control_id: 5.3.5 Insecure Custom Algorithm
+      control_url: https://github.com/OWASP/ASVS/blob/master/4.0/en/0x13-V5-Validation-Sanitization-Encoding.md#v53-output-encoding-and-injection-prevention-requirements
+      version: '4'
+    category: security
+    technology:
+    - hibernate
+    owasp:
+    - A01:2017 - Injection
+    - A03:2021 - Injection
+    references:
+    - https://owasp.org/Top10/A03_2021-Injection
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: HIGH
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/lang/security/audit/sqli/hibernate-sqli.yaml
+      upstream-id: hibernate-sqli
+  languages:
+  - java
+  severity: WARNING
+- id: java.http-response-splitting
+  metadata:
+    cwe:
+    - 'CWE-113: Improper Neutralization of CRLF Sequences in HTTP Headers (''HTTP Request/Response Splitting'')'
+    owasp:
+    - A03:2021 - Injection
+    source-rule-url: https://find-sec-bugs.github.io/bugs.htm#HTTP_RESPONSE_SPLITTING
+    references:
+    - https://www.owasp.org/index.php/HTTP_Response_Splitting
+    category: security
+    technology:
+    - java
+    subcategory:
+    - vuln
+    likelihood: MEDIUM
+    impact: MEDIUM
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/lang/security/audit/http-response-splitting.yaml
+      upstream-id: http-response-splitting
+  message: Older Java application servers are vulnerable to HTTP response splitting, which may occur if an HTTP request can be injected with CRLF characters. This finding is reported for completeness; it is recommended to ensure your environment is not affected by testing this yourself.
+  severity: INFO
+  languages:
+  - java
+  pattern-either:
+  - pattern: '$VAR = $REQ.getParameter(...);
+
+      ...
+
+      $COOKIE = new Cookie(..., $VAR, ...);
+
+      ...
+
+      $RESP.addCookie($COOKIE, ...);
+
+      '
+  - patterns:
+    - pattern-inside: "$RETTYPE $FUNC(...,@PathVariable $TYPE $VAR, ...) {\n  ...\n}\n"
+    - pattern: '$COOKIE = new Cookie(..., $VAR, ...);
+
+        ...
+
+        $RESP.addCookie($COOKIE, ...);
+
+        '
+- id: java.insecure-hostname-verifier
+  message: Insecure HostnameVerifier implementation detected. This will accept any SSL certificate with any hostname, which creates the possibility for man-in-the-middle attacks.
+  metadata:
+    cwe:
+    - 'CWE-295: Improper Certificate Validation'
+    owasp:
+    - A03:2017 - Sensitive Data Exposure
+    - A07:2021 - Identification and Authentication Failures
+    source-rule-url: https://find-sec-bugs.github.io/bugs.htm#WEAK_HOSTNAME_VERIFIER
+    asvs:
+      section: V9 Communications Verification Requirements
+      control_id: 9.2.1 Weak TLS
+      control_url: https://github.com/OWASP/ASVS/blob/master/4.0/en/0x17-V9-Communications.md#v92-server-communications-security-requirements
+      version: '4'
+    category: security
+    technology:
+    - java
+    references:
+    - https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/lang/security/audit/crypto/ssl/insecure-hostname-verifier.yaml
+      upstream-id: insecure-hostname-verifier
+  severity: WARNING
+  languages:
+  - java
+  pattern-either:
+  - pattern: "class $CLASS implements HostnameVerifier {\n  ...\n  public boolean verify(...) { return true; }\n}\n"
+  - pattern: "new HostnameVerifier(...){\n  public boolean verify(...) {\n    return true;\n  }\n}"
+  - pattern: import org.apache.http.conn.ssl.NoopHostnameVerifier;
+- id: java.insecure-jms-deserialization
+  severity: WARNING
+  languages:
+  - java
+  metadata:
+    cwe:
+    - 'CWE-502: Deserialization of Untrusted Data'
+    owasp:
+    - A08:2017 - Insecure Deserialization
+    - A08:2021 - Software and Data Integrity Failures
+    asvs:
+      section: V5 Validation, Sanitization and Encoding
+      control_id: 5.5.3 Insecue Deserialization
+      control_url: https://github.com/OWASP/ASVS/blob/master/4.0/en/0x13-V5-Validation-Sanitization-Encoding.md#v55-deserialization-prevention
+      version: '4'
+    references:
+    - https://www.blackhat.com/docs/us-16/materials/us-16-Kaiser-Pwning-Your-Java-Messaging-With-Deserialization-Vulnerabilities-wp.pdf
+    category: security
+    technology:
+    - java
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: LOW
+    impact: MEDIUM
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/lang/security/insecure-jms-deserialization.yaml
+      upstream-id: insecure-jms-deserialization
+  message: JMS Object messages depend on Java Serialization for marshalling/unmarshalling of the message payload when ObjectMessage.getObject() is called. Deserialization of untrusted data can lead to security flaws; a remote attacker could via a crafted JMS ObjectMessage to execute arbitrary code with the permissions of the application listening/consuming JMS Messages. In this case, the JMS MessageListener consume an ObjectMessage type received inside the onMessage method, which may lead to arbitrary code execution when calling the $Y.getObject method.
+  patterns:
+  - pattern-inside: "public class $JMS_LISTENER implements MessageListener {\n  ...\n  public void onMessage(Message $JMS_MSG) {\n      ...\n  }\n}\n"
+  - pattern-either:
+    - pattern-inside: $X = $Y.getObject(...);
+    - pattern-inside: $X = ($Z) $Y.getObject(...);
+- id: java.insecure-resteasy-deserialization
+  message: When a Restful webservice endpoint is configured to use wildcard mediaType {*/*} as a value for the @Consumes annotation, an attacker could abuse the SerializableProvider by sending a HTTP Request with a Content-Type of application/x-java-serialized-object. The body of that request would be processed by the SerializationProvider and could contain a malicious payload, which may lead to arbitrary code execution when calling the $Y.getObject method.
+  severity: WARNING
+  metadata:
+    likelihood: LOW
+    impact: MEDIUM
+    confidence: LOW
+    category: security
+    cwe:
+    - 'CWE-502: Deserialization of Untrusted Data'
+    cwe2021-top25: true
+    cwe2022-top25: true
+    owasp:
+    - A08:2017 - Insecure Deserialization
+    - A08:2021 - Software and Data Integrity Failures
+    references:
+    - https://access.redhat.com/blogs/766093/posts/3162112
+    subcategory:
+    - audit
+    technology:
+    - jax-rs
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/jax-rs/security/insecure-resteasy.yaml
+      upstream-id: insecure-resteasy-deserialization
+  languages:
+  - java
+  pattern-either:
+  - pattern: '@Consumes({"application/x-java-serialized-object"})
+
+      '
+  - pattern: '@Consumes({"*/*"})
+
+      '
+  - pattern: '@Consumes("*/*")
+
+      '
+  - pattern: '@Consumes({MediaType.WILDCARD_TYPE})
+
+      '
+- id: java.insecure-smtp-connection
+  metadata:
+    cwe:
+    - 'CWE-297: Improper Validation of Certificate with Host Mismatch'
+    owasp:
+    - A07:2021 - Identification and Authentication Failures
+    source-rule-url: https://find-sec-bugs.github.io/bugs.htm#INSECURE_SMTP_SSL
+    category: security
+    technology:
+    - java
+    references:
+    - https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures
+    subcategory:
+    - vuln
+    likelihood: LOW
+    impact: MEDIUM
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/lang/security/audit/insecure-smtp-connection.yaml
+      upstream-id: insecure-smtp-connection
+  message: Insecure SMTP connection detected. This connection will trust any SSL certificate. Enable certificate verification by setting 'email.setSSLCheckServerIdentity(true)'.
+  severity: WARNING
+  patterns:
+  - pattern-not-inside: '$EMAIL.setSSLCheckServerIdentity(true);
+
+      ...
+
+      '
+  - pattern-inside: '$EMAIL = new SimpleEmail(...);
+
+      ...
+
+      '
+  - pattern: $EMAIL.send(...);
+  languages:
+  - java
+- id: java.insecure-trust-manager
+  metadata:
+    cwe:
+    - 'CWE-295: Improper Certificate Validation'
+    owasp:
+    - A03:2017 - Sensitive Data Exposure
+    - A07:2021 - Identification and Authentication Failures
+    source-rule-url: https://find-sec-bugs.github.io/bugs.htm#WEAK_TRUST_MANAGER
+    asvs:
+      section: V9 Communications Verification Requirements
+      control_id: 9.2.1 Weak TLS
+      control_url: https://github.com/OWASP/ASVS/blob/master/4.0/en/0x17-V9-Communications.md#v92-server-communications-security-requirements
+      version: '4'
+    references:
+    - https://stackoverflow.com/questions/2642777/trusting-all-certificates-using-httpclient-over-https
+    category: security
+    technology:
+    - java
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    confidence: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/lang/security/audit/crypto/ssl/insecure-trust-manager.yaml
+      upstream-id: insecure-trust-manager
+  message: Detected empty trust manager implementations. This is dangerous because it accepts any certificate, enabling man-in-the-middle attacks. Consider using a KeyStore and TrustManagerFactory instead. See https://stackoverflow.com/questions/2642777/trusting-all-certificates-using-httpclient-over-https for more information.
+  severity: WARNING
+  languages:
+  - java
+  patterns:
+  - pattern-either:
+    - pattern-inside: "class $CLASS implements X509TrustManager {\n  ...\n}\n"
+    - pattern-inside: "new X509TrustManager() {\n  ...\n}\n"
+    - pattern-inside: "class $CLASS implements X509ExtendedTrustManager {\n  ...\n}\n"
+    - pattern-inside: "new X509ExtendedTrustManager() {\n  ...\n}\n"
+  - pattern-not: public void checkClientTrusted(...) { $SOMETHING; }
+  - pattern-not: public void checkServerTrusted(...) { $SOMETHING; }
+  - pattern-either:
+    - pattern: public void checkClientTrusted(...) {}
+    - pattern: public void checkServerTrusted(...) {}
+    - pattern: public X509Certificate[] getAcceptedIssuers(...) { return null; }
+- id: java.jackson-unsafe-deserialization
+  patterns:
+  - pattern-either:
+    - patterns:
+      - pattern-inside: 'ObjectMapper $OM = new ObjectMapper(...);
+
+          ...
+
+          '
+      - pattern-inside: '$OM.enableDefaultTyping();
+
+          ...
+
+          '
+      - pattern: $OM.readValue($JSON, ...);
+    - patterns:
+      - pattern-inside: "class $CLASS {\n  ...\n  @JsonTypeInfo(use = Id.CLASS,...)\n  $TYPE $VAR;\n  ...\n}\n"
+      - metavariable-regex:
+          metavariable: $TYPE
+          regex: (Object|Serializable|Comparable)
+      - pattern: $OM.readValue($JSON, $CLASS.class);
+    - patterns:
+      - pattern-inside: "class $CLASS {\n  ...\n  ObjectMapper $OM;\n  ...\n  $INITMETHODTYPE $INITMETHOD(...) {\n    ...\n    $OM = new ObjectMapper();\n    ...\n    $OM.enableDefaultTyping();\n    ...\n  }\n  ...\n}\n"
+      - pattern-inside: "$METHODTYPE $METHOD(...) {\n  ...  \n}\n"
+      - pattern: $OM.readValue($JSON, ...);
+  message: When using Jackson to marshall/unmarshall JSON to Java objects, enabling default typing is dangerous and can lead to RCE. If an attacker can control `$JSON` it might be possible to provide a malicious JSON which can be used to exploit unsecure deserialization. In order to prevent this issue, avoid to enable default typing (globally or by using "Per-class" annotations) and avoid using `Object` and other dangerous types for member variable declaration which creating classes for Jackson based deserialization.
+  languages:
+  - java
+  severity: WARNING
+  metadata:
+    category: security
+    subcategory:
+    - audit
+    cwe:
+    - 'CWE-502: Deserialization of Untrusted Data'
+    confidence: MEDIUM
+    likelihood: LOW
+    impact: HIGH
+    owasp:
+    - A8:2017 Insecure Deserialization
+    - A8:2021 Software and Data Integrity Failures
+    references:
+    - https://swapneildash.medium.com/understanding-insecure-implementation-of-jackson-deserialization-7b3d409d2038
+    - https://cowtowncoder.medium.com/on-jackson-cves-dont-panic-here-is-what-you-need-to-know-54cd0d6e8062
+    - https://adamcaudill.com/2017/10/04/exploiting-jackson-rce-cve-2017-7525/
+    technology:
+    - jackson
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: java/lang/security/jackson-unsafe-deserialization.yaml
+      upstream-id: jackson-unsafe-deserialization

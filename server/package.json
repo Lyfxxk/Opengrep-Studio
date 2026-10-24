@@ -1,0 +1,36 @@
+{
+  "name": "opengrep-studio-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "description": "Opengrep Studio 后端：REST API + opengrep.exe 进程编排",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test \"scripts/*.test.mjs\"",
+    "test-packs": "node --import tsx scripts/pack-regression.mjs"
+  },
+  "dependencies": {
+    "7z-wasm": "^1.2.0",
+    "adm-zip": "^0.5.16",
+    "express": "^4.21.2",
+    "ignore": "^7.0.14",
+    "js-yaml": "^5.5.0",
+    "multer": "^2.0.2",
+    "opengrep-studio": "file:..",
+    "tar": "^7.5.22"
+  },
+  "devDependencies": {
+    "@types/adm-zip": "^0.5.7",
+    "@types/express": "^4.17.23",
+    "@types/js-yaml": "^4.0.9",
+    "@types/multer": "^2.0.0",
+    "@types/node": "^22.10.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0"
+  }
+}
