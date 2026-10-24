@@ -6,6 +6,7 @@ import {
   scanSourceDir,
 } from './config.js';
 import { engineInstallHint, runEngine } from './engine.js';
+import { normalizePath, stripRuleIdPrefix } from './engine-output.js';
 import { extractTaintFlow, relativizeTaintFlow } from './taint.js';
 import {
   db,
@@ -90,18 +91,6 @@ function collectRuleIdsByFile(configFiles: string[]): Map<string, Set<string>> {
     byFile.set(file, ids);
   }
   return byFile;
-}
-
-function stripConfigPrefix(checkId: string, knownRuleIds: Set<string>): string {
-  for (const ruleId of knownRuleIds) {
-    if (checkId === ruleId || checkId.endsWith(`.${ruleId}`)) return ruleId;
-  }
-  const parts = checkId.split('.');
-  return parts[parts.length - 1];
-}
-
-function normalizePath(p: string): string {
-  return p.replace(/\\/g, '/');
 }
 
 function relativizeToSrc(p: string, srcDir: string): string {
@@ -313,7 +302,7 @@ async function runScan(scanId: string, plan: ScanPlan): Promise<void> {
 
     const findings = output.results ?? [];
     const currentIssues: IssueRow[] = findings.map((finding) => {
-      const ruleId = stripConfigPrefix(finding.check_id, knownRuleIds);
+      const ruleId = stripRuleIdPrefix(finding.check_id, knownRuleIds);
       const pack = ruleIdToPack.get(ruleId);
       const taintFlow = relativizeTaintFlow(
         extractTaintFlow(finding.extra.dataflow_trace),
