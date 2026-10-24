@@ -1,6 +1,6 @@
 {
   "name": "opengrep-studio",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Opengrep Studio —— opengrep 静态代码分析工作台（前端 + 后端联调仓）",
   "scripts": {
