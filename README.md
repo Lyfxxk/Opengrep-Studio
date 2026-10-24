@@ -1,8 +1,8 @@
 <div align="center">
-<img src="docs/images/banner.png" alt="OpenGrep Studio Banner" width="880"/>
-<h1>OpenGrep Studio · 码审工作台</h1>
+<img src="docs/images/banner.png" alt="Opengrep Studio Banner" width="880"/>
+<h1>Opengrep Studio · 码审工作台</h1>
 <p><strong>让隐患，先于攻击者现形。</strong></p>
-<p>本地优先的 <a href="https://github.com/opengrep/opengrep">OpenGrep</a> 静态代码审计工作台——上传源码、规则扫描、逐条审阅、基线对比、交付报告，<strong>代码不出本机</strong>。</p>
+<p>本地优先的 <a href="https://github.com/opengrep/opengrep">Opengrep</a> 静态代码审计工作台——上传源码、规则扫描、逐条审阅、基线对比、交付报告，<strong>代码不出本机</strong>。</p>
 <p><a href="./README.en.md">English</a> · <a href="#快速开始">快速开始</a> · <a href="#功能亮点">功能亮点</a> · <a href="#安全模型">安全模型</a> · <a href="#常见问题">常见问题</a></p>
 <p>
 <a href="https://github.com/Lyfxxk/OpenGrep-Studio/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/Lyfxxk/OpenGrep-Studio/ci.yml?branch=main&label=CI&style=flat-square" alt="CI"/></a>
@@ -19,7 +19,7 @@
 
 ## 为什么需要 Opengrep Studio
 
-OpenGrep（社区从 Semgrep OSS 延续的静态分析引擎）规则生态强大，但直接用命令行做一次完整审计，你会遇到四道坎：
+Opengrep（社区从 Semgrep OSS 延续的静态分析引擎）规则生态强大，但直接用命令行做一次完整审计，你会遇到四道坎：
 
 - **输出是给人看的 JSON，不是给审计流程用的**——命中了哪些规则、严重程度如何，全靠肉眼翻终端输出；
 - **规则消息是英文的**，团队里不是每个人都能一眼看懂 "tainted data flowing into eval" 意味着什么；
@@ -185,7 +185,7 @@ flowchart LR
 
 <details>
 <summary><b>和 Semgrep 是什么关系？</b></summary>
-<p>OpenGrep 是社区从 Semgrep OSS 延续出的开源引擎（LGPL-2.1），Studio 编排其官方二进制，规则精选自 opengrep-rules。Studio 与 Semgrep Inc. 无关联。</p>
+<p>Opengrep 是社区从 Semgrep OSS 延续出的开源引擎（LGPL-2.1），Studio 编排其官方二进制，规则精选自 opengrep-rules。Studio 与 Semgrep Inc. 无关联。</p>
 </details>
 
 <details>
