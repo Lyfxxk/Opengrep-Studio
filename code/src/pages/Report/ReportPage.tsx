@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { format } from 'date-fns';
 import { toast } from 'sonner';
 import {
   ArrowLeft,
@@ -28,7 +27,7 @@ import {
   type IIssue,
 } from '@/data/issues';
 import { COMPARISON_VISUALS } from '@/data/constants';
-import { formatDuration } from '@/lib/format';
+import { formatDateTime, formatDuration } from '@/lib/format';
 import { api } from '@/lib/api';
 import {
   REPORT_SEVERITY_ORDER,
@@ -39,25 +38,13 @@ import { lookupRuleMessage, useRuleMessageMap } from '@/lib/ruleMessages';
 import {
   COMPARISON_BADGE_CLASS,
   SEVERITY_BADGE_CLASS,
+  SEVERITY_BAR_CLASS,
+  SEVERITY_TEXT_CLASS,
 } from '@/lib/severity';
 import { cn } from '@/lib/utils';
 
 /** 在线明细表每组最多渲染的行数（超出的部分引导下载完整 HTML 报告） */
 const GROUP_DISPLAY_LIMIT = 200;
-
-const SEVERITY_TEXT_COLOR: Record<IIssue['severity'], string> = {
-  critical: 'text-destructive',
-  high: 'text-warning',
-  medium: 'text-primary',
-  low: 'text-muted-foreground',
-};
-
-const SEVERITY_BAR_COLOR: Record<IIssue['severity'], string> = {
-  critical: 'bg-destructive',
-  high: 'bg-warning',
-  medium: 'bg-primary',
-  low: 'bg-muted-foreground/50',
-};
 
 const COMPARISON_STATS: Array<{
   status: IIssue['comparisonStatus'];
@@ -69,12 +56,6 @@ const COMPARISON_STATS: Array<{
   { status: 'remaining', ...COMPARISON_VISUALS.remaining },
   { status: 'fixed', ...COMPARISON_VISUALS.fixed },
 ];
-
-function formatTime(iso?: string): string {
-  if (!iso) return '—';
-  const date = new Date(iso);
-  return Number.isNaN(date.getTime()) ? iso : format(date, 'yyyy-MM-dd HH:mm:ss');
-}
 
 
 function MetaRow({ label, children }: { label: string; children: React.ReactNode }) {
@@ -230,7 +211,7 @@ function MetaSummary({ meta }: { meta: IReportMeta }) {
         <MetaRow label="扫描编号">
           <span className="font-mono text-xs">{meta.scanId}</span>
         </MetaRow>
-        <MetaRow label="扫描时间">{formatTime(meta.scannedAt)}</MetaRow>
+        <MetaRow label="扫描时间">{formatDateTime(meta.scannedAt, { withSeconds: true })}</MetaRow>
         <MetaRow label="引擎耗时">{formatDuration(meta.durationSeconds)}</MetaRow>
       </div>
       <div>
@@ -278,7 +259,7 @@ function MetaSummary({ meta }: { meta: IReportMeta }) {
             <span className="text-xs text-muted-foreground">—（旧扫描未记录）</span>
           )}
         </MetaRow>
-        <MetaRow label="报告生成时间">{formatTime(meta.generatedAt)}</MetaRow>
+        <MetaRow label="报告生成时间">{formatDateTime(meta.generatedAt, { withSeconds: true })}</MetaRow>
       </div>
     </div>
   );
@@ -289,6 +270,8 @@ export default function ReportPage() {
   const [report, setReport] = useState<IReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  /** 报告不可用的具体原因（记录缺失 / 未完成 / 加载失败），直接展示而不是猜一个空态文案 */
+  const [failReason, setFailReason] = useState('');
   const messageMap = useRuleMessageMap();
 
   useEffect(() => {
@@ -296,6 +279,7 @@ export default function ReportPage() {
     if (!scanId) return;
     setLoading(true);
     setNotFound(false);
+    setFailReason('');
     api
       .getScanReport(scanId)
       .then((data) => {
@@ -304,7 +288,9 @@ export default function ReportPage() {
       .catch((error) => {
         if (!mounted) return;
         setNotFound(true);
-        toast.error(`加载测试报告失败：${error instanceof Error ? error.message : String(error)}`);
+        const message = error instanceof Error ? error.message : String(error);
+        setFailReason(message);
+        toast.error(`加载测试报告失败：${message}`);
       })
       .finally(() => {
         if (mounted) setLoading(false);
@@ -329,7 +315,7 @@ export default function ReportPage() {
     return (
       <div className="rounded-lg border border-dashed p-16 text-center">
         <p className="text-sm text-muted-foreground">
-          报告不可用：扫描记录不存在或尚未完成
+          报告不可用{failReason ? `：${failReason}` : '：扫描记录不存在或尚未完成'}
         </p>
         <Link
           to="/projects"
@@ -404,7 +390,7 @@ export default function ReportPage() {
             {REPORT_SEVERITY_ORDER.map((sev) => (
               <Card key={sev} className="py-4 print:break-inside-avoid">
                 <CardContent className="px-4">
-                  <div className={cn('text-2xl font-bold tabular-nums', SEVERITY_TEXT_COLOR[sev])}>
+                  <div className={cn('text-2xl font-bold tabular-nums', SEVERITY_TEXT_CLASS[sev])}>
                     {totals.bySeverity[sev]}
                   </div>
                   <div className="mt-1 text-xs text-muted-foreground">
@@ -497,7 +483,7 @@ export default function ReportPage() {
                 label={SEVERITY_LABELS[sev]}
                 count={totals.bySeverity[sev]}
                 max={severityMax}
-                barClass={SEVERITY_BAR_COLOR[sev]}
+                barClass={SEVERITY_BAR_CLASS[sev]}
               />
             ))}
           </div>
@@ -611,7 +597,7 @@ export default function ReportPage() {
                 <IssueGroupTable
                   key={sev}
                   title={`${SEVERITY_LABELS[sev]}问题`}
-                  dotClass={SEVERITY_BAR_COLOR[sev]}
+                  dotClass={SEVERITY_BAR_CLASS[sev]}
                   issues={list}
                   messageMap={messageMap}
                 />
@@ -633,7 +619,7 @@ export default function ReportPage() {
         </section>
 
         <footer className="mt-8 border-t pt-3 text-xs text-muted-foreground">
-          本报告由 Opengrep Studio 码审工作台自动生成 · 生成时间 {formatTime(meta.generatedAt)}
+          本报告由 Opengrep Studio 码审工作台自动生成 · 生成时间 {formatDateTime(meta.generatedAt, { withSeconds: true })}
         </footer>
       </article>
     </div>

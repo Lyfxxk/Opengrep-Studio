@@ -84,10 +84,7 @@ export default function ScanConfigTab() {
   }, []);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      void loadAll();
-    }, 300);
-    return () => clearTimeout(timer);
+    void loadAll();
   }, [loadAll]);
 
   const handleCreate = () => {

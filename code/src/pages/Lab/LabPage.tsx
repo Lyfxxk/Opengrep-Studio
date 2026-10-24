@@ -410,19 +410,13 @@ export default function LabPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold">规则实验室</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            左侧写规则，右侧贴正例与反例，运行后即时验证「能不能命中、有没有误报」——全部本地运行
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {language && (
-            <Badge variant="outline" className="font-normal">
-              语言：{language}
-            </Badge>
-          )}
+      {/* 页头由规则中心（RulesCenterPage）统一提供，这里只保留工具条 */}
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        {language && (
+          <Badge variant="outline" className="font-normal">
+            语言：{language}
+          </Badge>
+        )}
           <DropdownMenu
             onOpenChange={(open) => {
               if (open) loadPacks();
@@ -465,7 +459,6 @@ export default function LabPage() {
             {running ? <Loader2 className="size-4 animate-spin" /> : <Play className="size-4" />}
             {running ? '运行中…' : '运行实验'}
           </Button>
-        </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">

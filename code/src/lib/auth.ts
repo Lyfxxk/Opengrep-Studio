@@ -32,8 +32,8 @@ export function login(username: string): void {
 
 export function logout(): void {
   try {
-    store.setItem(AUTH_KEY, '');
-    store.setItem(USERNAME_KEY, '');
+    store.removeItem(AUTH_KEY);
+    store.removeItem(USERNAME_KEY);
   } catch (error) {
     console.error('清除登录态失败:', String(error));
   }

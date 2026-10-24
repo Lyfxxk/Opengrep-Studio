@@ -83,6 +83,7 @@ export const MOCK_ISSUES: IIssue[] = [
     filePath: 'src/utils/crypto.ts',
     startLine: 44,
     endLine: 44,
+    fingerprint: 'G401:src/utils/crypto.ts:44',
   },
   {
     id: '2',
@@ -94,6 +95,7 @@ export const MOCK_ISSUES: IIssue[] = [
     filePath: 'src/api/user.ts',
     startLine: 16,
     endLine: 17,
+    fingerprint: 'G201:src/api/user.ts:16',
   },
   {
     id: '3',
@@ -105,6 +107,7 @@ export const MOCK_ISSUES: IIssue[] = [
     filePath: 'src/config/env.ts',
     startLine: 9,
     endLine: 9,
+    fingerprint: 'G101:src/config/env.ts:9',
   },
   {
     id: '4',
@@ -116,6 +119,7 @@ export const MOCK_ISSUES: IIssue[] = [
     filePath: 'src/utils/file.ts',
     startLine: 27,
     endLine: 30,
+    fingerprint: 'G112:src/utils/file.ts:27',
   },
   {
     id: '5',
@@ -127,6 +131,7 @@ export const MOCK_ISSUES: IIssue[] = [
     filePath: 'src/utils/random.ts',
     startLine: 12,
     endLine: 14,
+    fingerprint: 'G501:src/utils/random.ts:12',
   },
   {
     id: '6',
@@ -138,5 +143,20 @@ export const MOCK_ISSUES: IIssue[] = [
     filePath: 'src/api/order.ts',
     startLine: 51,
     endLine: 53,
+    fingerprint: 'G104:src/api/order.ts:51',
   },
 ];
+
+/** 演示模式按扫描取问题集：非种子扫描（用户新发起的）回退到 scan-2 样本并改写归属 */
+export function mockIssuesForScan(scanId: string): IIssue[] {
+  const matched = MOCK_ISSUES.filter((issue) => issue.scanId === scanId);
+  if (matched.length > 0) return matched;
+  return MOCK_ISSUES
+    .filter((issue) => issue.scanId === '2')
+    .map((issue) => ({ ...issue, scanId }));
+}
+
+/** 问题在演示模式下的指纹口径（与服务端兜底口径同形） */
+export function mockIssueFingerprint(issue: IIssue): string {
+  return issue.fingerprint ?? `${issue.ruleId}:${issue.filePath}:${issue.startLine}`;
+}

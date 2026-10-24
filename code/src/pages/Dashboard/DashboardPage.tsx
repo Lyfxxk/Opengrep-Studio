@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   CheckCircle2,
@@ -20,17 +20,9 @@ import { SEVERITY_LABELS } from '@/data/issues';
 import type { IProject } from '@/data/projects';
 import type { IRulePack } from '@/data/rulepacks';
 import type { IScanResult } from '@/data/scanresults';
+import { SEVERITY_BAR_CLASS, SEVERITY_ORDER } from '@/lib/severity';
 import { cn } from '@/lib/utils';
 import { api, type HealthInfo } from '@/lib/api';
-
-const SEVERITY_ORDER: Array<IIssue['severity']> = ['critical', 'high', 'medium', 'low'];
-
-const SEVERITY_BAR_CLASS: Record<IIssue['severity'], string> = {
-  critical: 'bg-destructive',
-  high: 'bg-warning',
-  medium: 'bg-primary',
-  low: 'bg-muted-foreground/40',
-};
 
 /** 项目维度的最新风险快照：最近一次已完成扫描及其问题明细 */
 interface ProjectRisk {
@@ -76,13 +68,18 @@ export default function DashboardPage() {
   const [health, setHealth] = useState<HealthInfo | null>(null);
   const [risks, setRisks] = useState<ProjectRisk[] | null>(null);
 
+  // 序号守卫：interval 与 visibilitychange 可能并发触发 load，慢的旧响应后到不能覆盖新数据
+  const loadSeqRef = useRef(0);
+
   const load = useCallback(async () => {
+    const seq = ++loadSeqRef.current;
     const [projectRes, scanRes, packRes, healthRes] = await Promise.allSettled([
       api.listProjects(),
       api.listAllScans(),
       api.listRulePacks(),
       api.getHealth(),
     ]);
+    if (seq !== loadSeqRef.current) return;
     setProjects(projectRes.status === 'fulfilled' ? projectRes.value : []);
     setScans(scanRes.status === 'fulfilled' ? scanRes.value : []);
     setPacks(packRes.status === 'fulfilled' ? packRes.value : null);
@@ -133,7 +130,9 @@ export default function DashboardPage() {
         projects.map(async (project) => {
           const latest = latestByProject.get(project.id);
           const issues = latest
-            ? await api.listIssues(latest.id).catch(() => [] as IIssue[])
+            ? (await api.listIssues(latest.id).catch(() => [] as IIssue[]))
+                // 与报告口径一致：基线对比产生的"已修复"项不算当前风险
+                .filter((issue) => issue.comparisonStatus !== 'fixed')
             : [];
           return { project, latestScan: latest, issues };
         }),
@@ -150,7 +149,7 @@ export default function DashboardPage() {
     [scans],
   );
 
-  /** 全部项目"最近一次扫描"口径下的聚合（与项目风险速览一致） */
+  /** 全部项目"最近一次扫描"口径下的聚合（与项目风险速览一致，不含已修复项） */
   const aggregated = useMemo(() => {
     const allIssues = (risks ?? []).flatMap((risk) => risk.issues);
     const severityCounts = Object.fromEntries(
@@ -192,7 +191,7 @@ export default function DashboardPage() {
           value={scans?.length ?? '—'}
           sub={
             scans
-              ? `已完成 ${completedScans.length} · 失败 ${(scans ?? []).filter((s) => s.status === 'failed').length}`
+              ? `已完成 ${completedScans.length} · 失败 ${scans.filter((s) => s.status === 'failed').length}`
               : undefined
           }
         />

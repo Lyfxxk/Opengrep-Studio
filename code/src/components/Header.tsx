@@ -1,4 +1,4 @@
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ChevronRight, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -16,20 +16,21 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Link } from 'react-router-dom';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { getCurrentUsername, logout } from '@/lib/auth';
 import avatarUrl from '@/assets/images/avatar.jpg';
+
+/** 每级面包屑带可选跳转地址；末级固定为当前页（不可点） */
+interface Crumb {
+  label: string;
+  to?: string;
+}
 
 export default function Header() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
   // 每级面包屑带可选跳转地址；末级固定为当前页（不可点）
-  interface Crumb {
-    label: string;
-    to?: string;
-  }
   const segments = pathname.split('/').filter(Boolean);
   let crumbs: Crumb[];
   if (segments[0] === 'configs') {

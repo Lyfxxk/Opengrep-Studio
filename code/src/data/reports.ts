@@ -1,4 +1,4 @@
-import { MOCK_ISSUES, type IIssue } from '@/data/issues';
+import { mockIssuesForScan, type IIssue } from '@/data/issues';
 import type { IReportReviewStats } from '@/data/diffs';
 import type { IScanResult } from '@/data/scanresults';
 
@@ -75,7 +75,7 @@ const SEVERITY_RANK: Record<IIssue['severity'], number> = {
 
 /** 演示模式下从本地扫描/问题数据聚合报告（与服务端 buildReportData 同口径） */
 export function buildMockReport(scan: IScanResult, projectName: string): IReportData {
-  const issues = MOCK_ISSUES.filter((issue) => issue.scanId === scan.id);
+  const issues = mockIssuesForScan(scan.id);
   const current = issues.filter((issue) => issue.comparisonStatus !== 'fixed');
 
   const bySeverity: IReportTotals['bySeverity'] = { critical: 0, high: 0, medium: 0, low: 0 };

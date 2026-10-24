@@ -1,5 +1,5 @@
 import type { IIssue } from '@/data/issues';
-import { MOCK_ISSUES } from '@/data/issues';
+import { MOCK_ISSUES, mockIssuesForScan, mockIssueFingerprint } from '@/data/issues';
 import type { IConfig } from '@/data/configs';
 import type { IProject } from '@/data/projects';
 import type { ICodeSnippet } from '@/data/codesnippets';
@@ -15,6 +15,14 @@ import {
   loadScans,
   saveProjects,
   saveScans,
+  loadConfigs,
+  saveConfigs,
+  loadRulePacks,
+  saveRulePacks,
+  loadReviews,
+  saveReviews,
+  loadPackContents,
+  savePackContents,
 } from '@/lib/storage';
 
 // 演示模式开关：只认显式的 'true' / '1'，避免 VITE_USE_MOCK=false 被 Boolean('false') 误判为开
@@ -30,8 +38,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   // FormData 由浏览器自动生成 multipart 边界，手动设置 Content-Type 会破坏上传
   const isFormData = typeof FormData !== 'undefined' && init?.body instanceof FormData;
   const res = await fetch(path, {
-    headers: init?.body && !isFormData ? { 'Content-Type': 'application/json' } : undefined,
     ...init,
+    headers:
+      init?.body && !isFormData
+        ? { 'Content-Type': 'application/json', ...init?.headers }
+        : init?.headers,
   });
   if (!res.ok) {
     let message = `请求失败（HTTP ${res.status}）`;
@@ -144,6 +155,11 @@ export interface HealthInfo {
 /** mock 扫描从发起到完成的时长；读取时按 scannedAt 惰性收敛，刷新页面/丢失定时器也不会永久卡在 scanning */
 const MOCK_SCAN_DURATION_MS = 3000;
 
+/** mock 扫描完成时的问题数：与 listIssues 的回退样本口径一致（不含已修复项） */
+const MOCK_SCAN_ISSUE_COUNT = MOCK_ISSUES.filter(
+  (issue) => issue.scanId === '2' && issue.comparisonStatus !== 'fixed',
+).length;
+
 function materializeMockScans(): IScanResult[] {
   const scans = loadScans();
   const now = Date.now();
@@ -155,12 +171,37 @@ function materializeMockScans(): IScanResult[] {
     return {
       ...scan,
       status: 'completed' as const,
-      issueCount: 6 + Math.floor(Math.random() * 9),
+      issueCount: MOCK_SCAN_ISSUE_COUNT,
       finishedAt: new Date().toISOString(),
     };
   });
   if (changed) saveScans(settled);
   return settled;
+}
+
+/** 演示模式的复核结论合并进问题列表（与服务端 issues 接口口径一致：待复核不返回 review 字段） */
+function withMockReviews(issues: IIssue[], projectId?: string): IIssue[] {
+  const reviews = loadReviews().filter((review) => !projectId || review.projectId === projectId);
+  if (reviews.length === 0) return issues;
+  const byFingerprint = new Map(reviews.map((review) => [review.fingerprint, review]));
+  return issues.map((issue) => {
+    const review = byFingerprint.get(mockIssueFingerprint(issue));
+    if (!review || review.status === 'pending') return issue;
+    return {
+      ...issue,
+      review: {
+        status: review.status,
+        ...(review.reason ? { reason: review.reason } : {}),
+        ...(review.reviewer ? { reviewer: review.reviewer } : {}),
+        updatedAt: review.updatedAt,
+      },
+    };
+  });
+}
+
+/** 演示模式粗算 YAML 规则条数（统计顶格 `- id:` 条目；仅用于展示，不做校验） */
+function countMockRules(yamlText: string): number {
+  return [...yamlText.matchAll(/^\s*-\s+id:\s*(\S+)/gm)].length || 1;
 }
 
 export const api = {
@@ -340,8 +381,8 @@ export const api = {
 
   listIssues(scanId: string): Promise<IIssue[]> {
     if (USE_MOCK) {
-      const matched = MOCK_ISSUES.filter((issue) => issue.scanId === scanId);
-      return Promise.resolve(matched.length > 0 ? matched : MOCK_ISSUES.filter((i) => i.scanId === '2'));
+      const scan = materializeMockScans().find((item) => item.id === scanId);
+      return Promise.resolve(withMockReviews(mockIssuesForScan(scanId), scan?.projectId));
     }
     return request<IIssue[]>(`/api/scans/${scanId}/issues`);
   },
@@ -437,10 +478,20 @@ export const api = {
   },
 
   listConfigs(): Promise<IConfig[]> {
+    if (USE_MOCK) return Promise.resolve(loadConfigs());
     return request<IConfig[]>('/api/configs');
   },
 
   createConfig(values: ConfigFormValues): Promise<IConfig> {
+    if (USE_MOCK) {
+      const config: IConfig = {
+        id: `cfg-${Date.now()}`,
+        ...values,
+        createdAt: new Date().toISOString(),
+      };
+      saveConfigs([...loadConfigs(), config]);
+      return Promise.resolve(config);
+    }
     return request<IConfig>('/api/configs', {
       method: 'POST',
       body: JSON.stringify(values),
@@ -448,6 +499,14 @@ export const api = {
   },
 
   async updateConfig(id: string, values: ConfigFormValues): Promise<void> {
+    if (USE_MOCK) {
+      const configs = loadConfigs();
+      const index = configs.findIndex((config) => config.id === id);
+      if (index === -1) throw new Error('扫描配置不存在或已被删除');
+      configs[index] = { ...configs[index], ...values };
+      saveConfigs(configs);
+      return;
+    }
     await request<void>(`/api/configs/${id}`, {
       method: 'PUT',
       body: JSON.stringify(values),
@@ -455,21 +514,51 @@ export const api = {
   },
 
   async deleteConfig(id: string): Promise<void> {
+    if (USE_MOCK) {
+      saveConfigs(loadConfigs().filter((config) => config.id !== id));
+      return;
+    }
     await request<void>(`/api/configs/${id}`, { method: 'DELETE' });
   },
 
   listRulePacks(): Promise<IRulePack[]> {
+    if (USE_MOCK) return Promise.resolve(loadRulePacks());
     return request<IRulePack[]>('/api/rulepacks');
   },
 
   async toggleRulePack(id: string, enabled: boolean): Promise<void> {
+    if (USE_MOCK) {
+      const packs = loadRulePacks();
+      const target = packs.find((pack) => pack.id === id);
+      if (!target) throw new Error('规则包不存在或已被删除');
+      target.enabled = enabled;
+      saveRulePacks(packs);
+      return;
+    }
     await request<void>(`/api/rulepacks/${id}`, {
       method: 'PATCH',
       body: JSON.stringify({ enabled }),
     });
   },
 
-  uploadRulePack(file: File, name: string, language: string): Promise<IRulePack> {
+  async uploadRulePack(file: File, name: string, language: string): Promise<IRulePack> {
+    if (USE_MOCK) {
+      const content = await file.text();
+      const pack: IRulePack = {
+        id: `rp-${Date.now()}`,
+        name,
+        language,
+        builtin: false,
+        enabled: true,
+        ruleCount: countMockRules(content),
+        createdAt: new Date().toISOString(),
+      };
+      saveRulePacks([pack, ...loadRulePacks()]);
+      const contents = loadPackContents();
+      contents[pack.id] = content;
+      savePackContents(contents);
+      return pack;
+    }
     const formData = new FormData();
     formData.append('file', file);
     formData.append('name', name);
@@ -487,6 +576,31 @@ export const api = {
     content: string,
     samples?: { positive: string; negative: string },
   ): Promise<IRulePack> {
+    if (USE_MOCK) {
+      const hasSamples = Boolean(samples?.positive.trim() || samples?.negative.trim());
+      const pack: IRulePack = {
+        id: `rp-${Date.now()}`,
+        name,
+        language,
+        builtin: false,
+        enabled: true,
+        ruleCount: countMockRules(content),
+        createdAt: new Date().toISOString(),
+        ...(hasSamples
+          ? {
+              version: '1.0.0',
+              isDir: true,
+              sampleCount: [samples?.positive, samples?.negative].filter((text) => text?.trim()).length,
+              manifest: { name, version: '1.0.0', license: 'UNLICENSED' },
+            }
+          : {}),
+      };
+      saveRulePacks([pack, ...loadRulePacks()]);
+      const contents = loadPackContents();
+      contents[pack.id] = content;
+      savePackContents(contents);
+      return Promise.resolve(pack);
+    }
     return request<IRulePack>('/api/rulepacks', {
       method: 'POST',
       body: JSON.stringify({
@@ -503,10 +617,30 @@ export const api = {
   getRulePackContent(
     id: string,
   ): Promise<{ id: string; name: string; language: string; content: string }> {
+    if (USE_MOCK) {
+      const pack = loadRulePacks().find((item) => item.id === id);
+      if (!pack) return Promise.reject(new Error('规则包不存在或已被删除'));
+      const content =
+        loadPackContents()[id] ??
+        `# 演示模式：内置种子规则包无原文，以下是示意内容\nrules:\n  - id: ${pack.id}-rule-1\n    languages: [${pack.language.toLowerCase()}]\n    message: 示意规则\n    severity: WARNING\n    pattern: eval(...)\n`;
+      return Promise.resolve({ id, name: pack.name, language: pack.language, content });
+    }
     return request(`/api/rulepacks/${id}/content`);
   },
 
   updateRulePackContent(id: string, content: string): Promise<IRulePack> {
+    if (USE_MOCK) {
+      const packs = loadRulePacks();
+      const target = packs.find((pack) => pack.id === id);
+      if (!target) return Promise.reject(new Error('规则包不存在或已被删除'));
+      if (target.builtin) return Promise.reject(new Error('内置规则包不可在线编辑'));
+      target.ruleCount = countMockRules(content);
+      saveRulePacks(packs);
+      const contents = loadPackContents();
+      contents[id] = content;
+      savePackContents(contents);
+      return Promise.resolve(target);
+    }
     return request(`/api/rulepacks/${id}/content`, {
       method: 'PUT',
       body: JSON.stringify({ content }),
@@ -519,14 +653,44 @@ export const api = {
   },
 
   async deleteRulePack(id: string): Promise<void> {
+    if (USE_MOCK) {
+      const packs = loadRulePacks();
+      const target = packs.find((pack) => pack.id === id);
+      if (!target) throw new Error('规则包不存在或已被删除');
+      if (target.builtin) throw new Error('内置规则包不可删除');
+      saveRulePacks(packs.filter((pack) => pack.id !== id));
+      const contents = loadPackContents();
+      delete contents[id];
+      savePackContents(contents);
+      return;
+    }
     await request<void>(`/api/rulepacks/${id}`, { method: 'DELETE' });
   },
 
   /** 导入可移植规则包 zip（含 pack.yaml 清单与可选样本），也接受单个 YAML 的压缩包 */
   importRulePack(file: File): Promise<IRulePack & { message?: string }> {
+    if (USE_MOCK) {
+      // 演示模式不解析 zip，按文件名登记一个 basic 档包
+      const name = file.name.replace(/\.zip$/i, '');
+      const pack: IRulePack & { message?: string } = {
+        id: `rp-${Date.now()}`,
+        name,
+        language: 'Other',
+        builtin: false,
+        enabled: true,
+        ruleCount: 1,
+        createdAt: new Date().toISOString(),
+        isDir: true,
+        sampleCount: 0,
+        manifest: { name, version: '0.1.0' },
+        message: '演示模式：已登记导入的规则包（未解析内容）',
+      };
+      saveRulePacks([pack, ...loadRulePacks()]);
+      return new Promise((resolve) => setTimeout(() => resolve(pack), 800));
+    }
     const formData = new FormData();
     formData.append('file', file);
-    return request(`/api/rulepacks/import`, {
+    return request('/api/rulepacks/import', {
       method: 'POST',
       body: formData,
     });
@@ -539,6 +703,36 @@ export const api = {
 
   /** 质量检查：逐规则跑正反例样本（复用规则实验室引擎链路） */
   checkRulePack(id: string): Promise<IRulePackCheckResult> {
+    if (USE_MOCK) {
+      const pack = loadRulePacks().find((item) => item.id === id);
+      if (!pack) return Promise.reject(new Error('规则包不存在或已被删除'));
+      const startedAt = Date.now();
+      return new Promise((resolve) =>
+        setTimeout(() => {
+          const unverified = pack.ruleCount;
+          resolve({
+            tier: 'basic',
+            items: Array.from({ length: Math.min(unverified, 3) }, (_, index) => ({
+              ruleId: `${pack.id}-rule-${index + 1}`,
+              ruleFile: `rules/rule.yaml`,
+              positiveCount: 0,
+              negativeCount: 0,
+              verdict: 'unverified' as const,
+              detail: '演示模式不运行真实引擎，样本未验证',
+            })),
+            durationMs: Date.now() - startedAt,
+            summary: {
+              tier: 'basic' as const,
+              passed: 0,
+              failed: 0,
+              errors: 0,
+              unverified,
+              checkedAt: new Date().toISOString(),
+            },
+          });
+        }, 1200),
+      );
+    }
     return request(`/api/rulepacks/${id}/check`, { method: 'POST' });
   },
 
@@ -548,6 +742,21 @@ export const api = {
     fingerprint: string,
     input: { status: 'confirmed' | 'false_positive' | 'accepted'; reason?: string; reviewer?: string },
   ): Promise<IReviewRecord> {
+    if (USE_MOCK) {
+      const record: IReviewRecord = {
+        projectId,
+        fingerprint,
+        status: input.status,
+        ...(input.reason ? { reason: input.reason } : {}),
+        reviewer: input.reviewer || 'admin',
+        updatedAt: new Date().toISOString(),
+      };
+      const rest = loadReviews().filter(
+        (review) => !(review.projectId === projectId && review.fingerprint === fingerprint),
+      );
+      saveReviews([...rest, record]);
+      return Promise.resolve(record);
+    }
     return request(`/api/projects/${projectId}/reviews`, {
       method: 'PUT',
       body: JSON.stringify({ fingerprint, ...input }),
@@ -556,6 +765,14 @@ export const api = {
 
   /** 清除复核结论（回到待复核） */
   async clearReview(projectId: string, fingerprint: string): Promise<void> {
+    if (USE_MOCK) {
+      saveReviews(
+        loadReviews().filter(
+          (review) => !(review.projectId === projectId && review.fingerprint === fingerprint),
+        ),
+      );
+      return;
+    }
     await request<void>(`/api/projects/${projectId}/reviews/${encodeURIComponent(fingerprint)}`, {
       method: 'DELETE',
     });
@@ -575,12 +792,74 @@ export const api = {
 
   /** 双快照对比：问题级 + 文件级 */
   getScanDiff(scanId: string, againstId: string): Promise<IScanDiff> {
+    if (USE_MOCK) {
+      const current = mockIssuesForScan(scanId);
+      const against = mockIssuesForScan(againstId);
+      const fp = (issue: IIssue) => mockIssueFingerprint(issue);
+      const againstFps = new Set(against.map(fp));
+      const currentFps = new Set(current.map(fp));
+      const toSummary = (issue: IIssue) => ({
+        ruleId: issue.ruleId,
+        severity: issue.severity,
+        filePath: issue.filePath,
+        startLine: issue.startLine,
+        message: issue.message,
+      });
+      const diff: IScanDiff = {
+        scanId,
+        against: {
+          id: againstId,
+          projectId: '',
+          projectName: '演示项目',
+          scannedAt: '',
+        },
+        issueDiff: {
+          new: {
+            count: current.filter((issue) => !againstFps.has(fp(issue))).length,
+            items: current.filter((issue) => !againstFps.has(fp(issue))).slice(0, 200).map(toSummary),
+          },
+          fixed: {
+            count: against.filter((issue) => !currentFps.has(fp(issue))).length,
+            items: against.filter((issue) => !currentFps.has(fp(issue))).slice(0, 200).map(toSummary),
+          },
+          remaining: {
+            count: current.filter((issue) => againstFps.has(fp(issue))).length,
+            items: current.filter((issue) => againstFps.has(fp(issue))).slice(0, 200).map(toSummary),
+          },
+        },
+        fileDiff: {
+          filesA: 128,
+          filesB: 128,
+          added: [],
+          removed: [],
+          modified: [
+            {
+              path: 'src/api/user.ts',
+              addedLines: 6,
+              removedLines: 2,
+              diffable: true,
+            },
+          ],
+        },
+      };
+      return Promise.resolve(diff);
+    }
     const params = new URLSearchParams({ against: againstId });
     return request(`/api/scans/${scanId}/diff?${params.toString()}`);
   },
 
   /** 中文规则知识库条目 */
   getRuleKnowledge(ruleId: string): Promise<IRuleKnowledge> {
+    if (USE_MOCK) {
+      const hits = MOCK_ISSUES.filter((issue) => issue.ruleId === ruleId);
+      return Promise.resolve({
+        ruleId,
+        found: false,
+        cwe: [],
+        owasp: [],
+        stats: { total: hits.length, projects: hits.length > 0 ? 1 : 0 },
+      });
+    }
     return request(`/api/rules/knowledge/${encodeURIComponent(ruleId)}`);
   },
 

@@ -27,6 +27,8 @@ export default function ProjectDetailPage() {
   const navigate = useNavigate();
   const [project, setProject] = useState<IProject | null>(null);
   const [projectsLoaded, setProjectsLoaded] = useState(false);
+  /** 首次加载即失败（区别于"项目不存在"：网络/后端异常时提示重试而不是误报已删除） */
+  const [loadFailed, setLoadFailed] = useState(false);
   const [scans, setScans] = useState<IScanResult[]>([]);
   const [configs, setConfigs] = useState<IConfig[]>([]);
   const [upload, setUpload] = useState<UploadZoneState>({ status: 'idle' });
@@ -36,6 +38,7 @@ export default function ProjectDetailPage() {
   const pollErrorShownRef = useRef(false);
   // 竞态守卫：id 切换/组件卸载后丢弃 in-flight 响应
   const requestSeqRef = useRef(0);
+  const loadedOnceRef = useRef(false);
 
   const refresh = useCallback(async () => {
     if (!id) return;
@@ -48,6 +51,7 @@ export default function ProjectDetailPage() {
       ]);
       if (requestSeqRef.current !== seq) return;
       setProject(projects.find((item) => item.id === id) ?? null);
+      loadedOnceRef.current = true;
       for (const scan of scanList) {
         const before = prevScansRef.current.find((item) => item.id === scan.id);
         if (before?.status === 'scanning' && scan.status === 'completed') {
@@ -59,8 +63,10 @@ export default function ProjectDetailPage() {
       prevScansRef.current = scanList;
       setScans(scanList);
       pollErrorShownRef.current = false;
+      setLoadFailed(false);
     } catch (error) {
       if (requestSeqRef.current !== seq) return;
+      if (!loadedOnceRef.current) setLoadFailed(true);
       if (!pollErrorShownRef.current) {
         pollErrorShownRef.current = true;
         toast.error(`加载项目失败：${error instanceof Error ? error.message : String(error)}`);
@@ -256,7 +262,11 @@ export default function ProjectDetailPage() {
     return (
       <div className="space-y-4">
         <div className="rounded-lg border border-dashed p-16 text-center">
-          <p className="text-sm text-muted-foreground">项目不存在或已被删除</p>
+          <p className="text-sm text-muted-foreground">
+            {loadFailed
+              ? '加载失败，请检查后端服务后刷新重试'
+              : '项目不存在或已被删除'}
+          </p>
           <Button className="mt-4" onClick={() => navigate('/projects')}>
             返回项目列表
           </Button>
