@@ -27,7 +27,7 @@ FROM node:22-bookworm-slim
 LABEL org.opencontainers.image.title="Opengrep Studio" \
       org.opencontainers.image.description="本地优先的 opengrep 静态代码审计工作台" \
       org.opencontainers.image.licenses="MIT" \
-      org.opencontainers.image.source="https://github.com/Lyfxxk/OpenGrep-Studio"
+      org.opencontainers.image.source="https://github.com/Lyfxxk/Opengrep-Studio"
 
 # git：容器内"Git 仓库直扫"需要；gosu：entrypoint 降权；ca-certificates：上游 HTTPS
 RUN apt-get update \

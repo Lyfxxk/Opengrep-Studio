@@ -5,7 +5,7 @@
 <p>A local-first code-audit workbench on top of <a href="https://github.com/opengrep/opengrep">Opengrep</a>: import source, scan with rules, triage findings, diff against a baseline, and ship a report — <strong>your code never leaves your machine</strong>.</p>
 <p><a href="./README.md">简体中文</a> · <a href="#quick-start">Quick Start</a> · <a href="#highlights">Highlights</a> · <a href="#security-model">Security Model</a></p>
 <p>
-<a href="https://github.com/Lyfxxk/OpenGrep-Studio/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/Lyfxxk/OpenGrep-Studio/ci.yml?branch=main&label=CI&style=flat-square" alt="CI"/></a>
+<a href="https://github.com/Lyfxxk/Opengrep-Studio/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/Lyfxxk/Opengrep-Studio/ci.yml?branch=main&label=CI&style=flat-square" alt="CI"/></a>
 <a href="#license"><img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="License: MIT"/></a>
 <a href="https://github.com/opengrep/opengrep"><img src="https://img.shields.io/badge/engine-opengrep%20v1.31.0-22c55e?style=flat-square" alt="Engine"/></a>
 <a href="#requirements"><img src="https://img.shields.io/badge/node-%E2%89%A522.5-3c873a?style=flat-square&logo=nodedotjs&logoColor=white" alt="Node"/></a>
@@ -64,8 +64,8 @@ Frontend at <http://localhost:1022>, API at <http://localhost:8787>.
 ### Manual
 
 ```sh
-git clone https://github.com/Lyfxxk/OpenGrep-Studio.git
-cd OpenGrep-Studio
+git clone https://github.com/Lyfxxk/Opengrep-Studio.git
+cd Opengrep-Studio
 npm run install:all   # root + server + code dependencies
 npm run setup:engine  # download opengrep v1.31.0, verify SHA-256
 npm run dev           # backend :8787 + frontend :1022
