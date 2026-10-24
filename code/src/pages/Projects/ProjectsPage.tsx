@@ -68,6 +68,8 @@ export default function ProjectsPage() {
         toast.success('项目创建成功');
       }
       setCreateOpen(false);
+      // 程序化关闭不触发 onOpenChange，这里必须同步清空，否则下次“新建项目”会带出旧编辑态
+      setEditingProject(null);
       await refresh();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : String(error));

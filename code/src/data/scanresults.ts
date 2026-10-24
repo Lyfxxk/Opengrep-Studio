@@ -14,12 +14,13 @@ export interface IScanResult {
   message?: string
 }
 
+// issueCount 口径与服务端一致：不含基线对比产生的"已修复"项（见 data/issues.ts 的种子明细）
 export const MOCK_SCAN_RESULTS: IScanResult[] = [
   {
     id: '1',
     projectId: '1',
     status: 'completed',
-    issueCount: 12,
+    issueCount: 1,
     scannedAt: '2024-03-10T09:30:00Z',
     baselineScanId: undefined
   },
@@ -27,7 +28,7 @@ export const MOCK_SCAN_RESULTS: IScanResult[] = [
     id: '2',
     projectId: '1',
     status: 'completed',
-    issueCount: 8,
+    issueCount: 4,
     scannedAt: '2024-03-11T14:20:00Z',
     baselineScanId: '1'
   },

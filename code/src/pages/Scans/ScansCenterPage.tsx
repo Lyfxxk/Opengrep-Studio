@@ -12,9 +12,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import ScanStatusBadge from '@/components/ScanStatusBadge';
+import RulePackCell from '@/components/RulePackCell';
 import CompareDialog from '@/pages/ScanResult/CompareDialog';
-import type { IProject } from '@/data/projects';
 import type { IScanResult } from '@/data/scanresults';
+import { attachProjectNames } from '@/lib/scans';
 import { formatDateTime } from '@/lib/format';
 import { api } from '@/lib/api';
 
@@ -30,12 +31,7 @@ export default function ScansCenterPage() {
   const load = useCallback(async () => {
     try {
       const [allScans, projects] = await Promise.all([api.listAllScans(), api.listProjects()]);
-      const nameOf = new Map(projects.map((project: IProject) => [project.id, project.name]));
-      setScans(
-        [...allScans]
-          .sort((a, b) => new Date(b.scannedAt).getTime() - new Date(a.scannedAt).getTime())
-          .map((scan) => ({ ...scan, projectName: nameOf.get(scan.projectId) ?? scan.projectId })),
-      );
+      setScans(attachProjectNames(allScans, projects));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : String(error));
       setScans([]);
@@ -129,25 +125,7 @@ export default function ScansCenterPage() {
                     </TableCell>
                     <TableCell className="tabular-nums">{done ? scan.issueCount : '—'}</TableCell>
                     <TableCell className="max-w-[200px]">
-                      {scan.rulepacks?.length ? (
-                        <span
-                          className="block truncate text-xs text-muted-foreground"
-                          title={scan.rulepacks.map((pack) => pack.name).join('、')}
-                        >
-                          {scan.rulepacks.length === 1
-                            ? scan.rulepacks[0].name
-                            : `${scan.rulepacks[0].name} 等 ${scan.rulepacks.length} 个`}
-                        </span>
-                      ) : scan.rules ? (
-                        <span
-                          className="font-mono text-xs text-muted-foreground"
-                          title="旧式规则集目录扫描"
-                        >
-                          {scan.rules}
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
+                      <RulePackCell scan={scan} />
                     </TableCell>
                     <TableCell className="whitespace-nowrap tabular-nums text-muted-foreground">
                       {formatDateTime(scan.scannedAt)}

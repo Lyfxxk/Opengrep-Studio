@@ -36,6 +36,8 @@ export default function ScanResultPage() {
   const [scan, setScan] = useState<IScanResult | null>(null);
   const [issues, setIssues] = useState<IIssue[]>([]);
   const [loading, setLoading] = useState(true);
+  /** 首次加载即失败（区别于"记录不存在"：网络/后端异常时给出可重试的提示） */
+  const [loadFailed, setLoadFailed] = useState(false);
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
   const [reviewTarget, setReviewTarget] = useState<IIssue | null>(null);
   const [compareOpen, setCompareOpen] = useState(false);
@@ -43,6 +45,7 @@ export default function ScanResultPage() {
   // 轮询期间后端瞬断只弹一次错误；序号守卫丢弃切换扫描后晚到的旧响应
   const pollErrorShownRef = useRef(false);
   const requestSeqRef = useRef(0);
+  const loadedOnceRef = useRef(false);
 
   const load = useCallback(async () => {
     if (!scanId) return;
@@ -60,8 +63,11 @@ export default function ScanResultPage() {
       setProject(projects.find((item) => item.id === id) ?? null);
       setIssues(issueList);
       pollErrorShownRef.current = false;
+      loadedOnceRef.current = true;
+      setLoadFailed(false);
     } catch (error) {
       if (requestSeqRef.current !== seq) return;
+      if (!loadedOnceRef.current) setLoadFailed(true);
       if (!pollErrorShownRef.current) {
         pollErrorShownRef.current = true;
         toast.error(`加载扫描结果失败：${error instanceof Error ? error.message : String(error)}`);
@@ -109,7 +115,9 @@ export default function ScanResultPage() {
   if (!project || !scan) {
     return (
       <div className="rounded-lg border border-dashed p-16 text-center">
-        <p className="text-sm text-muted-foreground">扫描记录不存在或已被删除</p>
+        <p className="text-sm text-muted-foreground">
+          {loadFailed ? '加载失败，请检查后端服务后刷新重试' : '扫描记录不存在或已被删除'}
+        </p>
         <Link
           to="/projects"
           className="mt-4 inline-block text-sm font-medium text-primary hover:underline"
@@ -154,16 +162,18 @@ export default function ScanResultPage() {
               <GitCompare className="size-4" />
               对比扫描
             </Button>
-            <Button asChild variant="outline" className="h-8">
-              <a
-                href={api.scanSarifUrl(scan.id)}
-                download
-                title="SARIF 2.1.0，可导入 GitHub Code Scanning / DefectDojo 等工具链"
-              >
-                <FileDown className="size-4" />
-                导出 SARIF
-              </a>
-            </Button>
+            {!api.isMockMode && (
+              <Button asChild variant="outline" className="h-8">
+                <a
+                  href={api.scanSarifUrl(scan.id)}
+                  download
+                  title="SARIF 2.1.0，可导入 GitHub Code Scanning / DefectDojo 等工具链"
+                >
+                  <FileDown className="size-4" />
+                  导出 SARIF
+                </a>
+              </Button>
+            )}
             <Button asChild className="h-8">
               <Link to={`/projects/${scan.projectId}/scans/${scan.id}/report`}>
                 <FileText className="size-4" />
@@ -262,9 +272,7 @@ export default function ScanResultPage() {
                   <dd className="min-w-0 text-right text-xs leading-5">
                     {scan.rulepacks?.length ? (
                       <span title={scan.rulepacks.map((pack) => pack.name).join('、')}>
-                        {scan.rulepacks.length === 1
-                          ? scan.rulepacks[0].name
-                          : `${scan.rulepacks.map((pack) => pack.name).join('、')}`}
+                        {scan.rulepacks.map((pack) => pack.name).join('、')}
                       </span>
                     ) : (
                       <span className="text-muted-foreground">—</span>

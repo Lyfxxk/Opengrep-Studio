@@ -10,6 +10,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import ScanStatusBadge from '@/components/ScanStatusBadge';
+import RulePackCell from '@/components/RulePackCell';
 import type { IScanResult } from '@/data/scanresults';
 import { formatDateTime } from '@/lib/format';
 
@@ -71,22 +72,7 @@ export default function ScanHistoryTable({
                   {scan.status === 'completed' ? scan.issueCount : '—'}
                 </TableCell>
                 <TableCell className="max-w-[220px]">
-                  {scan.rulepacks?.length ? (
-                    <span
-                      className="block truncate text-xs text-muted-foreground"
-                      title={scan.rulepacks.map((pack) => pack.name).join('、')}
-                    >
-                      {scan.rulepacks.length === 1
-                        ? scan.rulepacks[0].name
-                        : `${scan.rulepacks[0].name} 等 ${scan.rulepacks.length} 个`}
-                    </span>
-                  ) : scan.rules ? (
-                    <span className="font-mono text-xs text-muted-foreground" title="旧式规则集目录扫描">
-                      {scan.rules}
-                    </span>
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
+                  <RulePackCell scan={scan} className="max-w-[220px]" />
                 </TableCell>
                 <TableCell>
                   {isBaseline ? (

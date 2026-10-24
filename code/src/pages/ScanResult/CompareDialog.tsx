@@ -22,8 +22,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SEVERITY_LABELS } from '@/data/issues';
 import type { IScanDiff, IScanDiffIssueList } from '@/data/diffs';
-import type { IProject } from '@/data/projects';
 import type { IScanResult } from '@/data/scanresults';
+import { attachProjectNames } from '@/lib/scans';
 import { SEVERITY_BADGE_CLASS } from '@/lib/severity';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
@@ -92,11 +92,11 @@ export default function CompareDialog({ scanId, onClose }: CompareDialogProps) {
     Promise.all([api.listAllScans(), api.listProjects()])
       .then(([scans, projects]) => {
         if (!mounted) return;
-        const nameOf = new Map(projects.map((project: IProject) => [project.id, project.name]));
         setCandidates(
-          scans
-            .filter((scan) => scan.status === 'completed' && scan.id !== scanId)
-            .map((scan) => ({ ...scan, projectName: nameOf.get(scan.projectId) ?? scan.projectId })),
+          attachProjectNames(
+            scans.filter((scan) => scan.status === 'completed' && scan.id !== scanId),
+            projects,
+          ),
         );
       })
       .catch((error) => {
@@ -220,9 +220,9 @@ export default function CompareDialog({ scanId, onClose }: CompareDialogProps) {
                           <td className="whitespace-nowrap px-3 py-1.5 tabular-nums">
                             {file.diffable ? (
                               <>
-                                <span className="text-destructive">+{file.addedLines}</span>{' '}
+                                <span className="text-success">+{file.addedLines}</span>{' '}
                                 <span className="text-muted-foreground">/</span>{' '}
-                                <span className="text-success">-{file.removedLines}</span>
+                                <span className="text-destructive">-{file.removedLines}</span>
                               </>
                             ) : (
                               <span className="text-muted-foreground">内容已变化</span>

@@ -50,7 +50,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import type { IConfig } from '@/data/configs';
 import type { IRulePack, IRulePackCheckResult } from '@/data/rulepacks';
 import { cn } from '@/lib/utils';
 import { PACK_LANGUAGES } from '@/data/constants';
@@ -70,7 +69,6 @@ const VERDICT_LABELS: Record<string, { label: string; className: string }> = {
 
 export default function RulePackTab() {
   const [rulePacks, setRulePacks] = useState<IRulePack[]>([]);
-  const [, setConfigs] = useState<IConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState<IRulePack | null>(null);
   const [deleteRefCount, setDeleteRefCount] = useState(0);
@@ -89,12 +87,7 @@ export default function RulePackTab() {
 
   const loadAll = useCallback(async () => {
     try {
-      const [packList, configList] = await Promise.all([
-        api.listRulePacks(),
-        api.listConfigs(),
-      ]);
-      setRulePacks(packList);
-      setConfigs(configList);
+      setRulePacks(await api.listRulePacks());
     } catch (error) {
       toast.error(error instanceof Error ? error.message : '加载规则包列表失败，请刷新重试');
     } finally {
@@ -103,11 +96,13 @@ export default function RulePackTab() {
   }, []);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      void loadAll();
-    }, 300);
-    return () => clearTimeout(timer);
+    void loadAll();
   }, [loadAll]);
+
+  /** 内容对话框的关闭回调：稳定引用，避免 RulePackContentDialog 的加载 effect 因新函数引用重跑 */
+  const handleContentDialogOpenChange = useCallback((open: boolean) => {
+    if (!open) setContentTarget(null);
+  }, []);
 
   const handleToggle = async (pack: IRulePack, enabled: boolean) => {
     try {
@@ -494,9 +489,7 @@ export default function RulePackTab() {
       {/* 查看 / 编辑 */}
       <RulePackContentDialog
         open={contentTarget !== null}
-        onOpenChange={(open) => {
-          if (!open) setContentTarget(null);
-        }}
+        onOpenChange={handleContentDialogOpenChange}
         pack={contentTarget}
         onSaved={() => void loadAll()}
       />
