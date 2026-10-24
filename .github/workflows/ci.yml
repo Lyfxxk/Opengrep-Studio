@@ -62,7 +62,16 @@ jobs:
           done
           echo "后端启动超时"; exit 1
       - name: E2E 回归
-        run: npm run e2e
+        run: |
+          set -o pipefail
+          npm run e2e 2>&1 | tee e2e.log
         env:
           # 显式走 IPv4 回环，避免 CI 环境 localhost 先解析到 ::1 造成偶发拒连（服务端只绑 127.0.0.1）
           BASE_URL: http://127.0.0.1:8787
+      - name: 上传 E2E 日志（排查用）
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-log
+          path: e2e.log
+          retention-days: 7

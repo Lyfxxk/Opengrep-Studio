@@ -5,10 +5,11 @@ import path from 'node:path';
 // 默认钉死 IPv4 回环：服务端只绑 127.0.0.1，localhost 在部分机器上解析为 ::1 会被拦（EACCES）
 const BASE = process.env.BASE_URL ?? 'http://127.0.0.1:8787';
 let failures = 0;
+const failedLabels = [];
 
 function assert(cond, label, extra = '') {
   if (cond) { console.log(`  PASS ${label}`); }
-  else { failures += 1; console.log(`  FAIL ${label} ${extra}`); }
+  else { failures += 1; failedLabels.push(label); console.log(`  FAIL ${label} ${extra}`); }
 }
 
 async function api(method, path, body) {
@@ -910,5 +911,10 @@ await api('DELETE', `/api/projects/${p20proj}`);
 await api('DELETE', `/api/configs/${p20cfg.id}`);
 await api('DELETE', `/api/rulepacks/${p20pack.id}`);
 
-console.log(failures === 0 ? '\n全部通过 ✔' : `\n${failures} 项失败 ✘`);
+if (failures === 0) {
+  console.log('\n全部通过 ✔');
+} else {
+  console.log(`\n${failures} 项失败 ✘ 失败清单：`);
+  for (const label of failedLabels) console.log(`  ✗ ${label}`);
+}
 process.exit(failures === 0 ? 0 : 1);
