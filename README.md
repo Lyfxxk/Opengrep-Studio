@@ -5,7 +5,7 @@
 <p>本地优先的 <a href="https://github.com/opengrep/opengrep">Opengrep</a> 静态代码审计工作台——上传源码、规则扫描、逐条审阅、基线对比、交付报告，<strong>代码不出本机</strong>。</p>
 <p><a href="./README.en.md">English</a> · <a href="#快速开始">快速开始</a> · <a href="#功能亮点">功能亮点</a> · <a href="#安全模型">安全模型</a> · <a href="#常见问题">常见问题</a></p>
 <p>
-<a href="https://github.com/Lyfxxk/OpenGrep-Studio/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/Lyfxxk/OpenGrep-Studio/ci.yml?branch=main&label=CI&style=flat-square" alt="CI"/></a>
+<a href="https://github.com/Lyfxxk/Opengrep-Studio/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/Lyfxxk/Opengrep-Studio/ci.yml?branch=main&label=CI&style=flat-square" alt="CI"/></a>
 <a href="#license"><img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="License: MIT"/></a>
 <a href="https://github.com/opengrep/opengrep"><img src="https://img.shields.io/badge/engine-opengrep%20v1.31.0-22c55e?style=flat-square" alt="Engine"/></a>
 <a href="#环境要求"><img src="https://img.shields.io/badge/node-%E2%89%A522.5-3c873a?style=flat-square&logo=nodedotjs&logoColor=white" alt="Node"/></a>
@@ -102,8 +102,8 @@ Windows 用户双击 `一键启动（Windows）.bat`，macOS / Linux 用户执�
 ### 方式二：手动三步
 
 ```sh
-git clone https://github.com/Lyfxxk/OpenGrep-Studio.git
-cd OpenGrep-Studio
+git clone https://github.com/Lyfxxk/Opengrep-Studio.git
+cd Opengrep-Studio
 npm run install:all   # 安装根目录 / server / code 三处依赖
 npm run setup:engine  # 下载 opengrep v1.31.0 并校验 SHA-256
 npm run dev           # 同时启动后端(8787)与前端(1022)
