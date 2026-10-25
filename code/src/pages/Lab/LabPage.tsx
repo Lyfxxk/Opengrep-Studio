@@ -7,12 +7,23 @@ import {
   Loader2,
   Play,
   Save,
+  ShieldAlert,
   XCircle,
 } from 'lucide-react';
 import CodeMirror from '@uiw/react-codemirror';
 import { yaml as yamlLanguage } from '@codemirror/lang-yaml';
 import { javascript as jsLanguage } from '@codemirror/lang-javascript';
 import { python as pythonLanguage } from '@codemirror/lang-python';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -49,7 +60,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PACK_LANGUAGES } from '@/data/constants';
 import type { IRulePack } from '@/data/rulepacks';
-import { api, type RuleLabMatch, type RuleLabRunResult } from '@/lib/api';
+import { api, type HealthInfo, type RuleLabMatch, type RuleLabRunResult } from '@/lib/api';
 import TaintFlow from '@/pages/ScanResult/TaintFlow';
 
 const DRAFT_KEY = 'rulelab-draft-v1';
@@ -225,10 +236,36 @@ function MatchList({ matches, accent }: { matches: RuleLabMatch[]; accent: 'succ
   );
 }
 
+
 type SaveDialogState =
   | { mode: 'create' }
   | { mode: 'overwrite'; pack: IRulePack }
   | null;
+
+/** 引擎语言（snake_case）→ 规则包语言标签（PACK_LANGUAGES），无法映射时返回 undefined */
+function engineLangToPackLabel(engineLang: string): string | undefined {
+  const map: Record<string, string> = {
+    javascript: 'JavaScript',
+    typescript: 'TypeScript',
+    jsx: 'JavaScript',
+    tsx: 'TypeScript',
+    python: 'Python',
+    python2: 'Python',
+    python3: 'Python',
+    java: 'Java',
+    go: 'Go',
+    c: 'C',
+    cpp: 'C++',
+    csharp: 'C#',
+    php: 'PHP',
+    ruby: 'Ruby',
+    rust: 'Rust',
+    kotlin: 'Kotlin',
+    swift: 'Swift',
+    dockerfile: 'Dockerfile',
+  };
+  return map[engineLang.toLowerCase()];
+}
 
 export default function LabPage() {
   const [draft, setDraft] = useState<LabDraft>(loadDraft);
@@ -241,6 +278,10 @@ export default function LabPage() {
   const [attachSamples, setAttachSamples] = useState(true);
   const [customPacks, setCustomPacks] = useState<IRulePack[] | null>(null);
   const saveErrorRef = useRef<string>('');
+  // P5：引擎预检（null=检测中，true=缺失）
+  const [engineMissing, setEngineMissing] = useState<boolean | null>(null);
+  // P4：载入示例前若会覆盖已编辑内容，先确认
+  const [confirmExample, setConfirmExample] = useState<LabDraft | null>(null);
 
   // 保存时是否把当前正/反例样本写进规则包（可移植目录包，之后可在规则包页一键质量检查）
   const hasSamples = Boolean(draft.positive.trim() || draft.negative.trim());
@@ -256,7 +297,26 @@ export default function LabPage() {
     return () => window.clearTimeout(timer);
   }, [draft]);
 
+  // P5：进入实验室时预检引擎可用性，缺失则提前提示而不是等运行失败
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .getHealth()
+      .then((health: HealthInfo) => {
+        if (!cancelled) setEngineMissing(health.engine === 'MISSING');
+      })
+      .catch(() => {
+        if (!cancelled) setEngineMissing(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const language = useMemo(() => guessLanguage(draft.yaml), [draft.yaml]);
+
+  // P3：正反例全空时不允许运行（后端同样校验，这里是即时反馈）
+  const canRun = Boolean(draft.yaml.trim()) && hasSamples && engineMissing !== true;
 
   const run = useCallback(async () => {
     if (running) return;
@@ -287,12 +347,12 @@ export default function LabPage() {
     const onKeyDown = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
         event.preventDefault();
-        void run();
+        if (canRun) void run();
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [run]);
+  }, [run, canRun]);
 
   const loadPacks = useCallback(() => {
     api
@@ -300,6 +360,31 @@ export default function LabPage() {
       .then((packs) => setCustomPacks(packs.filter((pack) => !pack.builtin)))
       .catch(() => setCustomPacks([]));
   }, []);
+
+  // P4：示例会不会覆盖用户已编辑的内容？当前 YAML 与所有内置示例都不同且非空 → 视为有编辑，需要确认
+  const pickExample = (example: LabDraft) => {
+    const edited =
+      draft.yaml.trim() !== '' &&
+      !LAB_EXAMPLES.some((item) => item.draft.yaml === draft.yaml);
+    if (edited) {
+      setConfirmExample(example);
+    } else {
+      applyExample(example);
+    }
+  };
+
+  const applyExample = (example: LabDraft) => {
+    setDraft(example);
+    setResult(null);
+    setConfirmExample(null);
+  };
+
+  // P6：打开"另存为新规则包"时，语言标签默认从引擎语言推导
+  const openSaveDialog = (mode: 'create') => {
+    const label = engineLangToPackLabel(language);
+    if (label) setSaveLanguage(label);
+    setSaveDialog({ mode });
+  };
 
   const handleSave = async () => {
     if (!saveDialog || !draft.yaml.trim()) return;
@@ -408,8 +493,54 @@ export default function LabPage() {
     );
   };
 
+  const resultBody = () => (
+    <div className="space-y-4">
+      {verdictView()}
+      {result && result.verdict !== 'error' && (
+        <div className="space-y-4">
+          {result.positive.provided && (
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-muted-foreground">
+                正例命中（{result.positive.matches.length} 处）
+              </div>
+              {result.positive.matches.length > 0 ? (
+                <MatchList matches={result.positive.matches} accent="success" />
+              ) : (
+                <p className="text-xs text-muted-foreground/70">没有命中，检查 pattern 是否写对</p>
+              )}
+            </div>
+          )}
+          {result.negative.provided && (
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-muted-foreground">
+                反例命中（{result.negative.matches.length} 处）
+              </div>
+              {result.negative.matches.length > 0 ? (
+                <MatchList matches={result.negative.matches} accent="warning" />
+              ) : (
+                <p className="text-xs text-muted-foreground/70">无误报</p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className="space-y-4">
+      {/* P5：引擎缺失时提前拦截，避免白等一次失败 */}
+      {engineMissing === true && (
+        <div className="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning/10 p-4">
+          <ShieldAlert className="mt-0.5 size-5 shrink-0 text-warning" />
+          <div className="min-w-0 text-sm">
+            <div className="font-medium text-warning">扫描引擎未就绪</div>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              未找到 opengrep 引擎，无法运行实验。请在仓库根目录执行 npm run setup:engine 安装后刷新页面。
+            </p>
+          </div>
+        </div>
+      )}
       {/* 页头由规则中心（RulesCenterPage）统一提供，这里只保留工具条 */}
       <div className="flex flex-wrap items-center justify-end gap-2">
         {language && (
@@ -429,7 +560,7 @@ export default function LabPage() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem onSelect={() => setSaveDialog({ mode: 'create' })}>
+              <DropdownMenuItem onSelect={() => openSaveDialog('create')}>
                 另存为新规则包…
               </DropdownMenuItem>
               <DropdownMenuSeparator />
@@ -455,13 +586,19 @@ export default function LabPage() {
               )}
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button className="gap-1" disabled={running} onClick={() => void run()}>
+          <Button
+            className="gap-1"
+            disabled={running || !canRun}
+            title={canRun ? undefined : '请填写规则 YAML 和至少一个测试样本'}
+            onClick={() => void run()}
+          >
             {running ? <Loader2 className="size-4 animate-spin" /> : <Play className="size-4" />}
             {running ? '运行中…' : '运行实验'}
           </Button>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      {/* P2：宽屏三栏并排（YAML | 样本 | 结果），编辑与查看不滚动切换；窄屏降级为现有上下布局 */}
+      <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base">规则 YAML</CardTitle>
@@ -490,10 +627,7 @@ export default function LabPage() {
                 {LAB_EXAMPLES.map((example) => (
                   <DropdownMenuItem
                     key={example.name}
-                    onSelect={() => {
-                      setDraft(example.draft);
-                      setResult(null);
-                    }}
+                    onSelect={() => pickExample(example.draft)}
                   >
                     {example.name}
                   </DropdownMenuItem>
@@ -524,44 +658,16 @@ export default function LabPage() {
             </Tabs>
           </CardContent>
         </Card>
-      </div>
 
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">实验结果</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {verdictView()}
-          {result && result.verdict !== 'error' && (
-            <div className="grid gap-4 lg:grid-cols-2">
-              {result.positive.provided && (
-                <div className="space-y-2">
-                  <div className="text-xs font-medium text-muted-foreground">
-                    正例命中（{result.positive.matches.length} 处）
-                  </div>
-                  {result.positive.matches.length > 0 ? (
-                    <MatchList matches={result.positive.matches} accent="success" />
-                  ) : (
-                    <p className="text-xs text-muted-foreground/70">没有命中，检查 pattern 是否写对</p>
-                  )}
-                </div>
-              )}
-              {result.negative.provided && (
-                <div className="space-y-2">
-                  <div className="text-xs font-medium text-muted-foreground">
-                    反例命中（{result.negative.matches.length} 处）
-                  </div>
-                  {result.negative.matches.length > 0 ? (
-                    <MatchList matches={result.negative.matches} accent="warning" />
-                  ) : (
-                    <p className="text-xs text-muted-foreground/70">无误报</p>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        <Card className="lg:col-span-2 xl:col-span-1">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">实验结果</CardTitle>
+          </CardHeader>
+          <CardContent className="max-h-[52vh] overflow-y-auto">
+            {resultBody()}
+          </CardContent>
+        </Card>
+      </div>
 
       <Dialog
         open={saveDialog !== null}
@@ -645,6 +751,33 @@ export default function LabPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* P4：示例会覆盖已编辑内容时二次确认 */}
+      <AlertDialog
+        open={confirmExample !== null}
+        onOpenChange={(open) => {
+          if (!open) setConfirmExample(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>载入示例将覆盖当前内容</AlertDialogTitle>
+            <AlertDialogDescription>
+              当前规则 YAML 与所有内置示例都不同，载入示例会替换规则和测试样本，且不可撤销。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (confirmExample) applyExample(confirmExample);
+              }}
+            >
+              继续载入
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
