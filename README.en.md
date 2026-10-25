@@ -19,7 +19,23 @@
 
 ## Why
 
-The Opengrep engine (the community continuation of Semgrep OSS) is powerful, but driving a real audit from a CLI means: reading raw JSON in a terminal, English-only rule messages, no baseline concept (which findings are new? which were fixed?), and hand-assembled reports. Opengrep Studio orchestrates the local engine binary and turns scan output into a reviewable, comparable, deliverable audit workflow. The analysis power belongs to the upstream engine — Studio is the workflow around it.
+Every codebase hides a few landmines: database passwords hardcoded in source, user input concatenated straight into SQL, debug endpoints left in after release, passwords still hashed with MD5. **Static code analysis** flags these problems early — without running your program and without uploading your code anywhere.
+
+The opengrep engine (the open-source community continuation of Semgrep OSS) scans professionally, but driving a real audit from its CLI means hitting four walls:
+
+- **The output is just JSON** — what was matched and how severe it is, all read by eyeball from terminal output, with no workspace for triage;
+- **Rule messages are English-only** — a hint like "tainted data flowing into eval" isn't immediately actionable for everyone: where exactly is the problem, and what should be changed?
+- **No way to tell whether a fix worked** — rescan after fixing, and figuring out which findings are new and which are truly gone means manually diffing two JSON files;
+- **Nothing to hand to managers or clients** — a risk report has to be assembled from JSON line by line, and it never looks professional.
+
+Opengrep Studio completes this pipeline: **drop in code → click scan → triage findings → export a report**. The engine runs locally, and your code never leaves your machine. The analysis power belongs to the upstream engine — Studio turns scan output into a **reviewable, comparable, verifiable, deliverable** audit workflow.
+
+#### Who is this for
+
+- **Security consultants / appsec engineers doing code audits** — client code can't go to third-party clouds, and delivery means a proper audit report;
+- **Small teams without a commercial SAST budget** — commercial platforms cost tens of thousands per year; this is free, open source (MIT), and runs entirely locally;
+- **Anyone learning application security** — 341 rules fully localized in Chinese + a Chinese CWE knowledge base with fix advice + taint-flow visualization, and a rule lab that validates rules on the spot;
+- **Open-source authors** — scan for hardcoded secrets and dangerous calls before publishing; it takes minutes.
 
 ## Highlights
 
