@@ -884,6 +884,9 @@ function applyIgnoreFilter(
   return { fileCount: keptFiles, ignoredCount: ignoredFiles };
 }
 
+/** 同一项目同一时刻只允许一个源码导入任务（上传/克隆），防止并发写同一个 pending 目录 */
+const importingProjects = new Set<string>();
+
 app.post(
   '/api/projects/:id/source',
   upload.fields([
@@ -892,6 +895,11 @@ app.post(
   ]),
   asyncHandler(async (req, res) => {
     const project = requireProject(req.params.id);
+    if (importingProjects.has(project.id)) {
+      throw new HttpError(409, '该项目正在导入源码（上传/克隆）中，请等待完成后再试');
+    }
+    importingProjects.add(project.id);
+    try {
     const destDir = pendingSourceDir(project.id);
     fs.mkdirSync(path.dirname(destDir), { recursive: true });
     const filesMap = (req.files ?? {}) as Record<string, Express.Multer.File[]>;
@@ -980,21 +988,21 @@ app.post(
     }
 
     throw new HttpError(400, '请通过 multipart 表单上传 file 或 files 字段');
+    } finally {
+      importingProjects.delete(project.id);
+    }
   }),
 );
-
-/** 同一项目同一时刻只允许一个克隆任务，防止两个 git 进程写同一个 pending 目录 */
-const cloningProjects = new Set<string>();
 
 app.post('/api/projects/:id/clone', asyncHandler(async (req, res) => {
   const project = requireProject(req.params.id);
   const url = String(req.body?.url ?? '').trim();
   if (!url) throw new HttpError(400, '请提供 Git 仓库地址');
   const ref = String(req.body?.ref ?? '').trim();
-  if (cloningProjects.has(project.id)) {
-    throw new HttpError(409, '该项目正在克隆中，请等待完成后再试');
+  if (importingProjects.has(project.id)) {
+    throw new HttpError(409, '该项目正在导入源码（上传/克隆）中，请等待完成后再试');
   }
-  cloningProjects.add(project.id);
+  importingProjects.add(project.id);
   try {
     const destDir = pendingSourceDir(project.id);
     const { fileCount } = await cloneRepo(url, ref, destDir);
@@ -1008,7 +1016,7 @@ app.post('/api/projects/:id/clone', asyncHandler(async (req, res) => {
       message: `克隆成功，共 ${fileCount} 个文件`,
     });
   } finally {
-    cloningProjects.delete(project.id);
+    importingProjects.delete(project.id);
   }
 }));
 
