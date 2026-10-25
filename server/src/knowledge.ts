@@ -236,12 +236,17 @@ export function getRuleKnowledge(ruleId: string): RuleKnowledge {
   }
 
   // 可移植目录包可能带正反例样本（samples/<规则ID>/），有则展示
+  // 规则 ID 来自 YAML（不受信输入），必须确保是安全的单级目录名才可拼入路径，
+  // 否则 id 含 ../ 或绝对路径时 path.join 会逃出 samples/ 读到外部文件
   const sampleRoot = path.join(customPackDir(found.pack.id), 'samples');
-  const sampleId = found.matchedRuleId ?? ruleId;
-  const positives = readSample(path.join(sampleRoot, sampleId), 'positive');
-  const negatives = readSample(path.join(sampleRoot, sampleId), 'negative');
-  if (positives.length > 0 || negatives.length > 0) {
-    result.samples = { positives, negatives };
+  const sampleDirName = (found.matchedRuleId ?? ruleId).replace(/\\/g, '/');
+  if (sampleDirName && !sampleDirName.includes('/') && sampleDirName !== '.' && sampleDirName !== '..') {
+    const sampleDir = path.join(sampleRoot, sampleDirName);
+    const positives = readSample(sampleDir, 'positive');
+    const negatives = readSample(sampleDir, 'negative');
+    if (positives.length > 0 || negatives.length > 0) {
+      result.samples = { positives, negatives };
+    }
   }
   return result;
 }
