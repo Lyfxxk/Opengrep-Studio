@@ -1,6 +1,6 @@
 import { load as yamlLoad } from 'js-yaml';
 
-export interface RuleYamlIssue {
+interface RuleYamlIssue {
   index: number;
   reason: string;
 }

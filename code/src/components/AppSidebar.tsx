@@ -12,7 +12,8 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
 
-const NAV_ITEMS = [
+/** 一级导航（侧栏与 Header 面包屑共用；标签改动只改这里） */
+export const NAV_ITEMS = [
   { path: '/dashboard', label: '仪表看盘', icon: LayoutDashboard },
   { path: '/projects', label: '项目管理', icon: FolderOpen },
   { path: '/scans', label: '扫描中心', icon: Radar },

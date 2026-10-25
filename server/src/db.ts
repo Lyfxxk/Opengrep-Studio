@@ -6,7 +6,7 @@ import type { PackManifest } from './pack-format.js';
 
 export type Severity = 'critical' | 'high' | 'medium' | 'low';
 export type ComparisonStatus = 'new' | 'fixed' | 'remaining';
-export type ScanStatus = 'scanning' | 'completed' | 'failed';
+type ScanStatus = 'scanning' | 'completed' | 'failed';
 
 /** 规则包引用快照（扫描发起时落库，之后配置变更不影响历史展示） */
 export interface RulePackRef {
@@ -121,6 +121,11 @@ export interface Issue {
 export interface IssueRow extends Issue {
   fingerprint: string;
   matchedLines?: string;
+}
+
+/** 「当前存在」问题的统一口径：已修复（fixed）不计入现存统计（issueCount / 报告 / 列表共用） */
+export function isActiveIssue(issue: IssueRow): boolean {
+  return issue.comparisonStatus !== 'fixed';
 }
 
 export type ReviewStatus = 'pending' | 'confirmed' | 'false_positive' | 'accepted';
@@ -267,7 +272,7 @@ function parseLanguageStats(value: unknown): Record<string, number> | undefined 
   }
 }
 
-export function rowToProject(row: SqlRow): Project {
+function rowToProject(row: SqlRow): Project {
   return {
     id: String(row.id),
     name: String(row.name),
@@ -295,7 +300,7 @@ function parseRulePackRefs(value: unknown): RulePackRef[] | undefined {
   }
 }
 
-export function rowToScan(row: SqlRow): ScanRecord {
+function rowToScan(row: SqlRow): ScanRecord {
   const snapshotRaw = parseJsonObject(row.config_snapshot);
   return {
     id: String(row.id),
@@ -315,7 +320,7 @@ export function rowToScan(row: SqlRow): ScanRecord {
   };
 }
 
-export function rowToIssueRow(row: SqlRow): IssueRow {
+function rowToIssueRow(row: SqlRow): IssueRow {
   return {
     id: String(row.id),
     scanId: String(row.scan_id),
@@ -763,6 +768,6 @@ export function deleteReview(projectId: string, fingerprint: string): void {
   );
 }
 
-export function deleteProjectReviews(projectId: string): void {
+function deleteProjectReviews(projectId: string): void {
   db.prepare('DELETE FROM reviews WHERE project_id = ?').run(projectId);
 }

@@ -15,13 +15,13 @@ const rulesDir = path.join(srcDir, '..', 'rules');
  *   + 可移植规则包自带的正反例样本（如有）
  */
 
-export interface KnowledgeCwe {
+interface KnowledgeCwe {
   id: string;
   name?: string;
   fix?: string;
 }
 
-export interface KnowledgeSample {
+interface KnowledgeSample {
   name: string;
   content: string;
 }
@@ -95,7 +95,7 @@ function asStringArray(value: unknown): string[] {
 }
 
 /** CWE 编号规范化：去前导零（CWE-078 → CWE-78） */
-export function normalizeCweId(raw: string): string {
+function normalizeCweId(raw: string): string {
   const match = raw.match(/CWE-0*(\d+)/i);
   return match ? `CWE-${match[1]}` : raw.trim();
 }

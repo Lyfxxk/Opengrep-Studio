@@ -1,4 +1,4 @@
-export interface IRulePackManifest {
+interface IRulePackManifest {
   name: string;
   version: string;
   description?: string;
@@ -11,7 +11,7 @@ export interface IRulePackManifest {
   changelog?: string;
 }
 
-export interface IRulePackCheckSummary {
+interface IRulePackCheckSummary {
   tier: 'verified' | 'basic';
   passed: number;
   failed: number;
@@ -39,7 +39,7 @@ export interface IRulePack {
   lastCheck?: IRulePackCheckSummary | null
 }
 
-export interface IRulePackCheckItem {
+interface IRulePackCheckItem {
   ruleId: string;
   ruleFile: string;
   positiveCount: number;

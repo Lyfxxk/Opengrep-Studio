@@ -1,5 +1,4 @@
-import { spawn } from 'node:child_process';
-import { config } from './config.js';
+import { isActiveIssue } from './db.js';
 import type {
   ComparisonStatus,
   Issue,
@@ -12,7 +11,7 @@ import type {
   Severity,
 } from './db.js';
 
-export interface ReportMeta {
+interface ReportMeta {
   projectName: string;
   projectDescription?: string;
   language: string;
@@ -32,14 +31,14 @@ export interface ReportMeta {
   generatedAt: string;
 }
 
-export interface ReportTotals {
+interface ReportTotals {
   /** 当前问题总数（不含基线对比产生的"已修复"项，与 scan.issueCount 口径一致） */
   total: number;
   bySeverity: Record<Severity, number>;
   byComparison: Record<ComparisonStatus, number>;
 }
 
-export interface ReportRuleAgg {
+interface ReportRuleAgg {
   ruleId: string;
   count: number;
   /** 该规则命中的最高严重度 */
@@ -47,18 +46,18 @@ export interface ReportRuleAgg {
   rulepackName?: string;
 }
 
-export interface ReportFileAgg {
+interface ReportFileAgg {
   filePath: string;
   count: number;
   maxSeverity: Severity;
 }
 
-export interface ReportDirAgg {
+interface ReportDirAgg {
   dir: string;
   count: number;
 }
 
-export interface ReportReviewSummary {
+interface ReportReviewSummary {
   /** 已人工复核的问题数（确认 + 误报 + 有条件接受） */
   reviewed: number;
   confirmed: number;
@@ -66,7 +65,7 @@ export interface ReportReviewSummary {
   accepted: number;
 }
 
-export interface ReportIssueReview {
+interface ReportIssueReview {
   status: ReviewStatus;
   reason?: string;
   reviewer?: string;
@@ -106,34 +105,11 @@ const REVIEW_COLOR: Record<ReviewStatus, string> = {
   accepted: '#e8930c',
 };
 
-export const TOP_RULES_LIMIT = 10;
-export const TOP_FILES_LIMIT = 10;
-export const TOP_DIRS_LIMIT = 8;
+const TOP_RULES_LIMIT = 10;
+const TOP_FILES_LIMIT = 10;
+const TOP_DIRS_LIMIT = 8;
 /** HTML 报告内嵌代码片段的条数上限（严重+高危合计），避免大扫描把报告撑到几十 MB */
-export const SNIPPET_LIMIT = 100;
-
-let engineVersionPromise: Promise<string | undefined> | null = null;
-
-/** 惰性探测引擎版本（只 spawn 一次，失败不缓存重试） */
-export function getEngineVersion(): Promise<string | undefined> {
-  engineVersionPromise ??= new Promise((resolve) => {
-    const child = spawn(config.opengrepBin, ['--version'], { windowsHide: true });
-    let out = '';
-    const timer = setTimeout(() => child.kill(), 5000);
-    child.stdout.on('data', (chunk) => { out += String(chunk); });
-    child.on('error', () => {
-      clearTimeout(timer);
-      resolve(undefined);
-    });
-    child.on('close', () => {
-      clearTimeout(timer);
-      const match = out.match(/\d+\.\d+\.\d+/);
-      resolve(match ? match[0] : out.trim().split(/\r?\n/)[0] || undefined);
-    });
-  });
-  return engineVersionPromise;
-}
-
+const SNIPPET_LIMIT = 100;
 
 export function buildReportData(
   scan: ScanRecord,
@@ -143,7 +119,7 @@ export function buildReportData(
   reviews: Review[] = [],
 ): ReportData {
   // 严重度分布只统计"当前存在"的问题；已修复项单独出现在对比统计里
-  const current = issues.filter((issue) => issue.comparisonStatus !== 'fixed');
+  const current = issues.filter(isActiveIssue);
   const bySeverity: Record<Severity, number> = { critical: 0, high: 0, medium: 0, low: 0 };
   for (const issue of current) bySeverity[issue.severity] += 1;
   const byComparison: Record<ComparisonStatus, number> = { new: 0, fixed: 0, remaining: 0 };
@@ -397,7 +373,7 @@ export function renderReportHtml(
   options: HtmlRenderOptions,
 ): string {
   const { meta, totals, topRules, topFiles, topDirs, reviewStats } = data;
-  const current = issues.filter((issue) => issue.comparisonStatus !== 'fixed');
+  const current = issues.filter(isActiveIssue);
   const fixed = issues.filter((issue) => issue.comparisonStatus === 'fixed');
 
   const snippets = new Map<string, string>();

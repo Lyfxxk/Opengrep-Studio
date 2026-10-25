@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import ignore from 'ignore';
 import type { Ignore } from 'ignore';
+import { ALWAYS_SKIP_DIR_NAMES } from './fs-walk.js';
 
 /**
  * 上传快照的忽略规则剪枝：让手动上传（压缩包 / 文件夹）与 Git 仓库直扫
@@ -14,8 +15,8 @@ import type { Ignore } from 'ignore';
  * - 模式按各规则文件所在目录解析（.gitignore 只影响其所在目录及以下）。
  */
 
-/** 无论规则如何都强制排除的目录（与扫描引擎的 --exclude 保持一致，不计入忽略统计） */
-const ALWAYS_IGNORED_DIRS = new Set(['.git', 'node_modules']);
+/** 无论规则如何都强制排除的目录（口径与扫描引擎 --exclude 一致，见 fs-walk.ts 的共享常量） */
+const ALWAYS_IGNORED_DIRS = ALWAYS_SKIP_DIR_NAMES;
 
 /** 每层目录会读取的忽略规则文件，靠后的优先级更高（同目录内覆盖靠前的） */
 const IGNORE_FILE_NAMES = ['.gitignore', '.opengrepignore'];

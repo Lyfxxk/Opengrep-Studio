@@ -17,6 +17,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import ScanStatusBadge from '@/components/ScanStatusBadge';
 import type { IIssue } from '@/data/issues';
 import type { IProject } from '@/data/projects';
 import type { IScanResult } from '@/data/scanresults';
@@ -132,22 +133,7 @@ export default function ScanResultPage() {
     <div className="flex flex-col gap-6 lg:h-full">
       <div className="flex flex-wrap items-center gap-2">
         <h1 className="text-xl font-semibold">扫描结果 · {scan.id}</h1>
-        {scan.status === 'completed' && (
-          <Badge variant="secondary" className="font-normal">
-            已完成
-          </Badge>
-        )}
-        {scan.status === 'scanning' && (
-          <Badge variant="outline" className="gap-1 font-normal">
-            <Loader2 className="size-3 animate-spin" />
-            扫描中
-          </Badge>
-        )}
-        {scan.status === 'failed' && (
-          <Badge variant="destructive" className="font-normal">
-            失败
-          </Badge>
-        )}
+        <ScanStatusBadge status={scan.status} />
         <span className="text-sm text-muted-foreground">
           扫描于 {formatDateTime(scan.scannedAt)}
         </span>

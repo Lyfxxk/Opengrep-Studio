@@ -27,6 +27,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
+import { engineExecutableName } from './engine-name.mjs';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.join(scriptDir, '..', '..');
@@ -40,8 +41,8 @@ const versionArg = versionIdx !== -1 ? args[versionIdx + 1] : undefined;
 const version = versionArg ?? catalog.version;
 const baseUrl = (process.env.OPENGREP_DOWNLOAD_BASE ?? catalog.baseUrl).replace(/\/+$/, '');
 
-/** 安装名与 server/src/config.ts 的 engineExecutableName 保持一致 */
-const installedName = process.platform === 'win32' ? 'opengrep.exe' : 'opengrep';
+/** 安装名取自脚本侧唯一源头（engine-name.mjs，与 server/src/config.ts 的 engineNameFor 同步维护） */
+const installedName = engineExecutableName;
 const installedPath = path.join(toolDir, installedName);
 
 const manualHint = [

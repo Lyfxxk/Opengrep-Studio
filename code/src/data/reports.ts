@@ -1,6 +1,7 @@
 import { mockIssuesForScan, type IIssue } from '@/data/issues';
 import type { IReportReviewStats } from '@/data/diffs';
 import type { IScanResult } from '@/data/scanresults';
+import { SEVERITY_ORDER } from '@/lib/severity';
 
 export interface IReportMeta {
   projectName: string;
@@ -22,27 +23,27 @@ export interface IReportMeta {
   generatedAt: string;
 }
 
-export interface IReportTotals {
+interface IReportTotals {
   /** 当前问题总数（不含"已修复"项，与 issueCount 口径一致） */
   total: number;
   bySeverity: Record<IIssue['severity'], number>;
   byComparison: Record<IIssue['comparisonStatus'], number>;
 }
 
-export interface IReportRuleAgg {
+interface IReportRuleAgg {
   ruleId: string;
   count: number;
   severity: IIssue['severity'];
   rulepackName?: string;
 }
 
-export interface IReportFileAgg {
+interface IReportFileAgg {
   filePath: string;
   count: number;
   maxSeverity: IIssue['severity'];
 }
 
-export interface IReportDirAgg {
+interface IReportDirAgg {
   dir: string;
   count: number;
 }
@@ -59,19 +60,10 @@ export interface IReportData {
   reviewStats?: IReportReviewStats;
 }
 
-export const REPORT_SEVERITY_ORDER: Array<IIssue['severity']> = [
-  'critical',
-  'high',
-  'medium',
-  'low',
-];
-
-const SEVERITY_RANK: Record<IIssue['severity'], number> = {
-  critical: 0,
-  high: 1,
-  medium: 2,
-  low: 3,
-};
+/** severity → 排序权重：由展示顺序（lib/severity.ts 的 SEVERITY_ORDER）派生，新增/调级只改那一处 */
+const SEVERITY_RANK = Object.fromEntries(
+  SEVERITY_ORDER.map((severity, index) => [severity, index]),
+) as Record<IIssue['severity'], number>;
 
 /** 演示模式下从本地扫描/问题数据聚合报告（与服务端 buildReportData 同口径） */
 export function buildMockReport(scan: IScanResult, projectName: string): IReportData {

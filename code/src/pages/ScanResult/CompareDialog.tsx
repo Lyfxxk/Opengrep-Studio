@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from 'react';
-import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { CircleAlert, CircleDot, FilePlus2, FileMinus2, FilePen, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +23,7 @@ import { SEVERITY_LABELS } from '@/data/issues';
 import type { IScanDiff, IScanDiffIssueList } from '@/data/diffs';
 import type { IScanResult } from '@/data/scanresults';
 import { attachProjectNames } from '@/lib/scans';
+import { formatDateTime } from '@/lib/format';
 import { SEVERITY_BADGE_CLASS } from '@/lib/severity';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
@@ -138,7 +138,7 @@ export default function CompareDialog({ scanId, onClose }: CompareDialogProps) {
             <SelectContent>
               {(candidates ?? []).map((scan) => (
                 <SelectItem key={scan.id} value={scan.id}>
-                  {scan.projectName} / {scan.id}（{format(new Date(scan.scannedAt), 'MM-dd HH:mm')}）
+                  {scan.projectName} / {scan.id}（{formatDateTime(scan.scannedAt)}）
                 </SelectItem>
               ))}
             </SelectContent>

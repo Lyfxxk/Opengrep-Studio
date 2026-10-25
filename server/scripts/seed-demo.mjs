@@ -8,7 +8,8 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
-const BASE = 'http://127.0.0.1:8787';
+// 与 e2e.mjs / dirty-test.mjs 一致：默认钉死 IPv4 回环，可用 BASE_URL 覆盖
+const BASE = process.env.BASE_URL ?? 'http://127.0.0.1:8787';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const SEED_DIR = path.join(HERE, 'seed-src');
 const SKIP_CLONE = process.argv.includes('--skip-clone');

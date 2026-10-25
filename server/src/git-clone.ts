@@ -3,11 +3,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { config } from './config.js';
 import { HttpError } from './errors.js';
+import { walkAndStripSymlinks } from './fs-walk.js';
 
 const ALLOWED_PROTOCOLS = new Set(['https:', 'http:']);
 
 /** 校验仓库 URL：仅允许 http(s)，拒绝 ssh://、file:// 等会交互或读本地的协议 */
-export function parseRepoUrl(raw: string): URL {
+function parseRepoUrl(raw: string): URL {
   let parsed: URL;
   try {
     parsed = new URL(raw);
@@ -21,7 +22,7 @@ export function parseRepoUrl(raw: string): URL {
 }
 
 /** 校验分支/Tag：拒绝 - 开头等会被 git 当作命令行参数的写法（如 --upload-pack） */
-export function validateGitRef(ref: string): string {
+function validateGitRef(ref: string): string {
   if (!ref) return '';
   if (!/^[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(ref) || ref.includes('..')) {
     throw new HttpError(400, '分支/Tag 名称只允许字母、数字与 . _ / - 字符，且不能以点开头');
@@ -64,35 +65,6 @@ function runGit(args: string[], timeoutMs: number): Promise<GitRunResult> {
       resolve({ code: code ?? -1, stderr, timedOut });
     });
   });
-}
-
-interface WalkResult {
-  files: number;
-  bytes: number;
-}
-
-/** 统计克隆产物并剔除符号链接（与压缩包解压同源防护，防止软链指向工作区外） */
-function walkCloned(dir: string): WalkResult {
-  let files = 0;
-  let bytes = 0;
-  const symlinks: string[] = [];
-  const walk = (current: string) => {
-    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
-      const full = path.join(current, entry.name);
-      if (entry.isSymbolicLink()) {
-        symlinks.push(full);
-        continue;
-      }
-      if (entry.isDirectory()) walk(full);
-      else if (entry.isFile()) {
-        files += 1;
-        bytes += fs.statSync(full).size;
-      }
-    }
-  };
-  walk(dir);
-  for (const link of symlinks) fs.rmSync(link, { force: true });
-  return { files, bytes };
 }
 
 function gitFail(detail: string): HttpError {
@@ -142,15 +114,15 @@ export async function cloneRepo(
   }
 
   fs.rmSync(path.join(destDir, '.git'), { recursive: true, force: true });
-  const { files, bytes } = walkCloned(destDir);
+  const { files, bytes } = walkAndStripSymlinks(destDir);
   if (files === 0) {
     fail('仓库没有任何文件（可能是空仓库，或默认分支不含源码），请确认后重试');
   }
-  if (files > config.maxZipEntries) {
-    fail(`仓库文件数超过 ${config.maxZipEntries} 上限，请改用 ZIP 上传部分源码`);
+  if (files > config.maxImportEntries) {
+    fail(`仓库文件数超过 ${config.maxImportEntries} 上限，请改用 ZIP 上传部分源码`);
   }
   if (bytes > config.maxExtractedBytes) {
-    fail('仓库源码总体积超过 1GB 上限，请改用 ZIP 上传部分源码');
+    fail(`仓库源码总体积超过 ${config.maxExtractedBytes / 1024 ** 3}GB 上限，请改用 ZIP 上传部分源码`);
   }
   return { fileCount: files };
 }

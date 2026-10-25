@@ -287,7 +287,7 @@ export default function DashboardPage() {
             <CardContent className="flex min-h-0 flex-1 flex-col justify-center space-y-2 text-sm">
               {health === null ? (
                 <p className="text-muted-foreground">加载中…</p>
-              ) : health.ok ? (
+              ) : health.engine && health.engine !== 'MISSING' ? (
                 <>
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="size-4 text-success" />
@@ -303,9 +303,16 @@ export default function DashboardPage() {
                   </p>
                 </>
               ) : (
-                <div className="flex items-center gap-2">
-                  <XCircle className="size-4 text-destructive" />
-                  <span>引擎不可用（演示模式或未安装）</span>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <XCircle className="size-4 text-destructive" />
+                    <span>引擎不可用</span>
+                  </div>
+                  {health.engineHint && (
+                    <p className="whitespace-pre-line text-xs text-muted-foreground">
+                      {health.engineHint}
+                    </p>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -337,12 +344,12 @@ export default function DashboardPage() {
                         <span className="flex shrink-0 items-center gap-1.5 text-xs tabular-nums">
                           {critical > 0 && (
                             <Badge className="bg-destructive/15 px-1.5 font-normal text-destructive">
-                              严重 {critical}
+                              {SEVERITY_LABELS.critical} {critical}
                             </Badge>
                           )}
                           {high > 0 && (
                             <Badge className="bg-warning/15 px-1.5 font-normal text-warning">
-                              高危 {high}
+                              {SEVERITY_LABELS.high} {high}
                             </Badge>
                           )}
                           <span className="text-muted-foreground">共 {issues.length}</span>

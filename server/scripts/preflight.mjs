@@ -4,16 +4,16 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { engineExecutableName } from './engine-name.mjs';
 
 const repoRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const executableName = process.platform === 'win32' ? 'opengrep.exe' : 'opengrep';
 const envBin = process.env.OPENGREP_BIN?.trim();
-const bundled = path.join(repoRoot, 'opengrep-tool', executableName);
+const bundled = path.join(repoRoot, 'opengrep-tool', engineExecutableName);
 
 function findOnPath() {
   for (const dir of (process.env.PATH ?? '').split(path.delimiter)) {
     if (!dir) continue;
-    const candidate = path.join(dir, executableName);
+    const candidate = path.join(dir, engineExecutableName);
     try {
       if (fs.statSync(candidate).isFile()) return candidate;
     } catch {
@@ -31,7 +31,7 @@ if (envBin) {
 } else if (fs.existsSync(bundled)) {
   console.log(`[preflight] 引擎已就绪：${bundled}`);
 } else if (findOnPath()) {
-  console.log(`[preflight] 引擎已就绪（系统 PATH 中找到 ${executableName}）`);
+  console.log(`[preflight] 引擎已就绪（系统 PATH 中找到 ${engineExecutableName}）`);
 } else {
   console.warn(
     '[preflight] 提示：未发现扫描引擎，服务可启动但无法扫描。\n' +

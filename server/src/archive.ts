@@ -6,11 +6,11 @@ import * as tar from 'tar';
 import * as sevenzz from '7z-wasm';
 import { config } from './config.js';
 import { HttpError } from './errors.js';
+import { walkAndStripSymlinks, ALWAYS_SKIP_DIR_NAMES } from './fs-walk.js';
 
 /** 服务端支持的压缩包格式（解压通道见 extractArchive） */
 const ARCHIVE_EXTS = ['.zip', '.7z', '.rar', '.tar', '.tar.gz', '.tgz'];
 const TAR_RE = /\.(tar|tar\.gz|tgz)$/i;
-const BZ2_XZ_RE = /\.(tar\.bz2|tbz2|tar\.xz|txz)$/i;
 
 export function isArchiveFileName(name: string): boolean {
   const lower = name.toLowerCase();
@@ -35,6 +35,14 @@ export function safeRelativePath(raw: string): string {
 }
 
 /**
+ * 路径遏制不变量：target 解析后必须位于 root 之下（不含 root 本身）。
+ * 上传落盘与 snippet 读取共用，加固时只需改这一处。
+ */
+export function isPathWithin(root: string, target: string): boolean {
+  return path.resolve(target).startsWith(path.resolve(root) + path.sep);
+}
+
+/**
  * 递归复制目录。
  * 不要改成 fs.cpSync：Node 22.x 在 Windows 上源路径字符串含非 ASCII 字符时
  * 会无任何输出直接终止进程（子项含非 ASCII 不受影响，故扫描快照不受此坑影响）。
@@ -49,35 +57,6 @@ export function copyDirectorySync(src: string, dest: string): void {
   }
 }
 
-interface WalkResult {
-  files: number;
-  bytes: number;
-}
-
-/** 统计解压产物并剔除符号链接（防止 tar/7z 内的软链指向工作区外） */
-function walkExtracted(dir: string): WalkResult {
-  let files = 0;
-  let bytes = 0;
-  const symlinks: string[] = [];
-  const walk = (current: string) => {
-    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
-      const full = path.join(current, entry.name);
-      if (entry.isSymbolicLink()) {
-        symlinks.push(full);
-        continue;
-      }
-      if (entry.isDirectory()) walk(full);
-      else if (entry.isFile()) {
-        files += 1;
-        bytes += fs.statSync(full).size;
-      }
-    }
-  };
-  walk(dir);
-  for (const link of symlinks) fs.rmSync(link, { force: true });
-  return { files, bytes };
-}
-
 function removeAndThrow(dir: string, message: string): never {
   fs.rmSync(dir, { recursive: true, force: true });
   throw new HttpError(400, message);
@@ -85,12 +64,12 @@ function removeAndThrow(dir: string, message: string): never {
 
 /** 解压后统一限额校验（文件数 / 总体积），返回实际文件数 */
 function enforceExtractLimits(dir: string, label: string): number {
-  const { files, bytes } = walkExtracted(dir);
-  if (files > config.maxZipEntries) {
-    removeAndThrow(dir, `${label}解压后文件数超过 ${config.maxZipEntries} 上限`);
+  const { files, bytes } = walkAndStripSymlinks(dir);
+  if (files > config.maxImportEntries) {
+    removeAndThrow(dir, `${label}解压后文件数超过 ${config.maxImportEntries} 上限`);
   }
   if (bytes > config.maxExtractedBytes) {
-    removeAndThrow(dir, `${label}解压后总体积超过 1GB 上限`);
+    removeAndThrow(dir, `${label}解压后总体积超过 ${config.maxExtractedBytes / 1024 ** 3}GB 上限`);
   }
   if (files === 0) {
     removeAndThrow(dir, `${label}中没有文件（压缩包可能已损坏或格式不受支持）`);
@@ -103,8 +82,8 @@ export function extractZipSafely(buffer: Buffer, destDir: string): number {
   const zip = new AdmZip(buffer);
   const fileEntries = zip.getEntries().filter((entry) => !entry.isDirectory);
   if (fileEntries.length === 0) throw new HttpError(400, 'ZIP 包内没有文件');
-  if (fileEntries.length > config.maxZipEntries) {
-    throw new HttpError(400, `ZIP 包内文件数超过 ${config.maxZipEntries} 上限`);
+  if (fileEntries.length > config.maxImportEntries) {
+    throw new HttpError(400, `ZIP 包内文件数超过 ${config.maxImportEntries} 上限`);
   }
 
   let totalBytes = 0;
@@ -112,7 +91,7 @@ export function extractZipSafely(buffer: Buffer, destDir: string): number {
     const name = safeRelativePath(entry.entryName);
     totalBytes += entry.header.size;
     if (totalBytes > config.maxExtractedBytes) {
-      throw new HttpError(400, 'ZIP 解压后总体积超过 1GB 上限');
+      throw new HttpError(400, `ZIP 解压后总体积超过 ${config.maxExtractedBytes / 1024 ** 3}GB 上限`);
     }
     if (!name) throw new HttpError(400, `ZIP 包内含不安全的路径条目：${entry.entryName}`);
   }
@@ -120,7 +99,7 @@ export function extractZipSafely(buffer: Buffer, destDir: string): number {
   fs.rmSync(destDir, { recursive: true, force: true });
   for (const entry of fileEntries) {
     const target = path.join(destDir, safeRelativePath(entry.entryName));
-    if (!path.resolve(target).startsWith(path.resolve(destDir) + path.sep)) {
+    if (!isPathWithin(destDir, target)) {
       throw new HttpError(400, `ZIP 包内含不安全的路径条目：${entry.entryName}`);
     }
     fs.mkdirSync(path.dirname(target), { recursive: true });
@@ -129,12 +108,9 @@ export function extractZipSafely(buffer: Buffer, destDir: string): number {
   return fileEntries.length;
 }
 
-/** TAR / TAR.GZ / TGZ（bz2、xz 暂不支持，给出明确提示） */
-export function extractTarArchive(buffer: Buffer, destDir: string, fileName: string): void {
+/** TAR / TAR.GZ / TGZ（bz2/xz 不在支持清单里，入口 isArchiveFileName 已提前拒绝） */
+function extractTarArchive(buffer: Buffer, destDir: string, fileName: string): void {
   const lower = fileName.toLowerCase();
-  if (BZ2_XZ_RE.test(lower)) {
-    throw new HttpError(400, '暂不支持 .tar.bz2 / .tar.xz 压缩，请改用 ZIP、7Z 或 tar.gz');
-  }
   fs.rmSync(destDir, { recursive: true, force: true });
   fs.mkdirSync(destDir, { recursive: true });
   const tmpFile = path.join(
@@ -200,7 +176,7 @@ export function collectLanguageStats(dir: string): Record<string, number> {
       return;
     }
     for (const entry of entries) {
-      if (entry.name === 'node_modules' || entry.name === '.git') continue;
+      if (ALWAYS_SKIP_DIR_NAMES.has(entry.name)) continue;
       if (entry.isSymbolicLink()) continue;
       const full = path.join(current, entry.name);
       if (entry.isDirectory()) {
