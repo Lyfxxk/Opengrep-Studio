@@ -1,5 +1,4 @@
 import AdmZip from 'adm-zip';
-import fs from 'node:fs';
 import path from 'node:path';
 
 // 默认钉死 IPv4 回环：服务端只绑 127.0.0.1，localhost 在部分机器上解析为 ::1 会被拦（EACCES）
@@ -418,19 +417,15 @@ assert(patched.json.baselineScanId === s1.id, '项目基线已更新');
 const badPatch = await api('PATCH', `/api/projects/${pid}`, { baselineScanId: 'scan-不存在' });
 assert(badPatch.status === 400, '非法基线被拒绝');
 
-console.log('== 10. 失败路径（legacy 规则目录模式 + 非法 YAML） ==');
-// 服务端从 <server>/rules 解析 legacy 规则目录，这里必须写到同一位置（与进程 CWD 无关）
-// 注意用 path 拼接：new URL('broken.yaml', dirUrl) 在目录 URL 缺尾斜杠时会错误地写到上一层
-const brokenDir = path.join(import.meta.dirname, '..', 'rules', 'broken-rules-test');
-fs.mkdirSync(brokenDir, { recursive: true });
-fs.writeFileSync(path.join(brokenDir, 'broken.yaml'), 'rules: [ { id: [unclosed');
-const badScan = await api('POST', `/api/projects/${pid}/scans`, { rules: 'broken-rules-test' });
-const bad = await pollScan(badScan.json.id);
-assert(bad.status === 'failed', '坏规则导致 failed', JSON.stringify(bad));
-assert((bad.message ?? '').length > 0, '失败原因已回传', bad.message);
-const failedReport = await api('GET', `/api/scans/${bad.id}/report`);
-assert(failedReport.status === 400, '未完成扫描拒绝生成报告', JSON.stringify(failedReport.json));
-fs.rmSync(brokenDir, { recursive: true, force: true });
+console.log('== 10. 未完成扫描拒绝生成报告 ==');
+// pid 已绑定配置（第 5 节）且有源码，直接走配置通道发起扫描
+const scanning = await api('POST', `/api/projects/${pid}/scans`, {});
+assert(scanning.status === 201 && scanning.json.id, '扫描已发起', JSON.stringify(scanning.json));
+// 引擎启动需要数秒，紧接着的报表请求必然落在 scanning 窗口内
+const earlyReport = await api('GET', `/api/scans/${scanning.json.id}/report`);
+assert(earlyReport.status === 400, '未完成扫描拒绝生成报告', JSON.stringify(earlyReport.json));
+const doneScan = await pollScan(scanning.json.id);
+assert(doneScan.status === 'completed', '扫描正常完成', JSON.stringify(doneScan));
 
 console.log('== 11. 未上传就扫描 / 损坏 ZIP 被拒 ==');
 const p2 = await api('POST', '/api/projects', { name: 'E2E-空项目', language: 'Java' });

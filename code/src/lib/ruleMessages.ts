@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
+import { USE_MOCK } from '@/lib/api';
 
 type RuleMessageMap = Record<string, string>;
 
 let cache: Promise<RuleMessageMap> | null = null;
 
 function loadOnce(): Promise<RuleMessageMap> {
+  // 演示模式无后端，消息表请求必然失败，直接短路避免每次渲染发出注定 404 的请求
+  if (USE_MOCK) return Promise.resolve({});
   cache ??= fetch('/api/messages-zh')
     .then((res) => (res.ok ? (res.json() as Promise<RuleMessageMap>) : {}))
     .catch(() => ({}));

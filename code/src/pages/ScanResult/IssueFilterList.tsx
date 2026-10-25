@@ -11,8 +11,9 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { COMPARISON_LABELS, REVIEW_BADGE_CLASS, REVIEW_STATUS_LABELS, SEVERITY_LABELS, type IIssue } from '@/data/issues';
+import { COMPARISON_VISUALS } from '@/data/constants';
 import { lookupRuleMessage, useRuleMessageMap } from '@/lib/ruleMessages';
-import { COMPARISON_BADGE_CLASS, SEVERITY_BADGE_CLASS } from '@/lib/severity';
+import { SEVERITY_BADGE_CLASS, SEVERITY_ORDER } from '@/lib/severity';
 import { cn } from '@/lib/utils';
 import { KnowledgeLink } from './KnowledgeSheet';
 
@@ -77,10 +78,11 @@ export default function IssueFilterList({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">全部等级</SelectItem>
-            <SelectItem value="critical">严重</SelectItem>
-            <SelectItem value="high">高危</SelectItem>
-            <SelectItem value="medium">中危</SelectItem>
-            <SelectItem value="low">低危</SelectItem>
+            {SEVERITY_ORDER.map((item) => (
+              <SelectItem key={item} value={item}>
+                {SEVERITY_LABELS[item]}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
         <div className="relative">
@@ -139,7 +141,7 @@ export default function IssueFilterList({
                 <Badge
                   className={cn(
                     'shrink-0 text-xs font-normal',
-                    COMPARISON_BADGE_CLASS[issue.comparisonStatus],
+                    COMPARISON_VISUALS[issue.comparisonStatus].badge,
                   )}
                 >
                   {COMPARISON_LABELS[issue.comparisonStatus]}

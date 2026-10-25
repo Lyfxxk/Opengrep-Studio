@@ -17,15 +17,21 @@ import {
   extractArchive,
   extractZipSafely,
   isArchiveFileName,
+  isPathWithin,
   safeRelativePath,
 } from './archive.js';
 import { pruneIgnoredFiles } from './ignore-filter.js';
 import { HttpError } from './errors.js';
-import { engineAvailable, engineDisplayPath, engineInstallHint, engineSourceLabel } from './engine.js';
+import {
+  engineAvailable,
+  engineDisplayPath,
+  engineInstallHint,
+  engineSourceLabel,
+  getEngineVersion,
+} from './engine.js';
 import {
   deleteConfig,
   deleteProject,
-  deleteProjectReviews,
   deleteReview,
   deleteRulePack,
   getConfig,
@@ -33,6 +39,7 @@ import {
   getProject,
   getRulePack,
   getScan,
+  isActiveIssue,
   insertConfig,
   insertProject,
   insertRulePack,
@@ -78,20 +85,39 @@ import {
 } from './pack-format.js';
 import { buildSarifReport } from './sarif.js';
 import { parseSarifImport } from './sarif-import.js';
-import { buildReportData, getEngineVersion, renderReportHtml } from './report.js';
+import { buildReportData, renderReportHtml } from './report.js';
 import { applyBaselineComparison, enqueueScan, markStaleScansFailed, type ScanPlan } from './scan-runner.js';
 
 const app = express();
 app.use(express.json());
+
+// 把 multer 的 LIMIT_FILE_SIZE 转成带该通道准确上限的 400（各通道上限不同，全局中间件无法区分）
+function limit400(limited: import('express').RequestHandler, limitBytes: number): import('express').RequestHandler {
+  return (req, res, next) => {
+    limited(req, res, (error) => {
+      if (error instanceof multer.MulterError && error.code === 'LIMIT_FILE_SIZE') {
+        next(new HttpError(400, `文件超过 ${Math.round(limitBytes / 1024 / 1024)}MB 上传上限`));
+        return;
+      }
+      next(error);
+    });
+  };
+}
 
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: config.maxUploadBytes },
 });
 
+/** 规则包 YAML 上传与实验室运行的体积上限（同一策略，报错文案从这里取数） */
+const MAX_RULE_YAML_BYTES = 1024 * 1024;
+/** 规则包 zip 导入 / SARIF 导入的体积上限（两条独立通道，文案分别取数） */
+const MAX_PACK_ZIP_BYTES = 20 * 1024 * 1024;
+const MAX_SARIF_BYTES = 20 * 1024 * 1024;
+
 const uploadYaml = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 1024 * 1024 },
+  limits: { fileSize: MAX_RULE_YAML_BYTES },
   fileFilter: (_req, file, cb) => {
     if (!/\.ya?ml$/i.test(file.originalname)) {
       cb(new HttpError(400, '仅支持 .yaml / .yml 规则包文件'));
@@ -170,24 +196,6 @@ function pruneStaleBuiltinPacks(): void {
       console.log(`[rulepack] 已清理失效的内置规则包 ${pack.id}`);
     }
   }
-}
-
-const LEGACY_PLAN_DEFAULTS = {
-  timeoutSeconds: 30,
-  jobs: 4,
-  maxTargetBytes: 5_000_000,
-  excludes: ['dist', 'build'] as string[],
-  includes: [] as string[],
-};
-
-function buildLegacyPlan(rulesName: string): ScanPlan {
-  const dir = path.join(config.rulesDir, rulesName);
-  if (!fs.existsSync(dir)) throw new HttpError(400, `规则集 ${rulesName} 不存在`);
-  return {
-    rulesLabel: rulesName,
-    configFiles: collectRuleFiles(dir),
-    ...LEGACY_PLAN_DEFAULTS,
-  };
 }
 
 function buildConfigPlan(project: Project): ScanPlan {
@@ -313,6 +321,23 @@ function requireValidConfigValues(body: Record<string, unknown>, existingId?: st
   };
 }
 
+/** 基线校验：必须是本项目下已完成的扫描（POST /scans、PATCH /projects、SARIF 导入共用） */
+function requireValidBaseline(projectId: string, baselineParam: unknown): string {
+  const scan = getScan(String(baselineParam));
+  if (!scan || scan.projectId !== projectId || scan.status !== 'completed') {
+    throw new HttpError(400, '基线必须是本项目下已完成的扫描');
+  }
+  return scan.id;
+}
+
+/** 规则包名称校验（创建 / 上传 / 导入三条入口共用） */
+function requireValidPackName(raw: unknown): string {
+  const name = String(raw ?? '').trim();
+  if (!name) throw new HttpError(400, '请输入规则包名称');
+  if (name.length > 50) throw new HttpError(400, '规则包名称不能超过 50 个字符');
+  return name;
+}
+
 app.get('/api/configs', (_req, res) => {
   res.json(listConfigs());
 });
@@ -436,9 +461,7 @@ app.post('/api/rulepacks', asyncHandler(async (req, res) => {
     res.status(400).json({ error: { message: '文件上传请使用 /api/rulepacks/upload' } });
     return;
   }
-  const name = String(req.body?.name ?? '').trim();
-  if (!name) throw new HttpError(400, '请输入规则包名称');
-  if (name.length > 50) throw new HttpError(400, '规则包名称不能超过 50 个字符');
+  const name = requireValidPackName(req.body?.name);
   const language = String(req.body?.language ?? '').trim() || 'Java';
   const content = String(req.body?.content ?? '');
   if (!content.trim()) throw new HttpError(400, '请输入规则包 YAML 内容');
@@ -447,7 +470,7 @@ app.post('/api/rulepacks', asyncHandler(async (req, res) => {
     negative: String(req.body?.samples?.negative ?? ''),
   };
   if (samples.positive.length > MAX_SAMPLE_BYTES || samples.negative.length > MAX_SAMPLE_BYTES) {
-    throw new HttpError(400, '单个测试样本超过 200KB 上限');
+    throw new HttpError(400, `单个测试样本超过 ${MAX_SAMPLE_BYTES / 1024}KB 上限`);
   }
   const hasSamples = Boolean(samples.positive.trim() || samples.negative.trim());
   try {
@@ -471,12 +494,10 @@ app.patch('/api/rulepacks/:id', asyncHandler(async (req, res) => {
 
 app.post(
   '/api/rulepacks/upload',
-  uploadYaml.single('file'),
+  limit400(uploadYaml.single('file'), MAX_RULE_YAML_BYTES),
   asyncHandler(async (req, res) => {
     if (!req.file) throw new HttpError(400, '请通过 multipart 表单上传 file 字段');
-    const name = String(req.body?.name ?? '').trim();
-    if (!name) throw new HttpError(400, '请输入规则包名称');
-    if (name.length > 50) throw new HttpError(400, '规则包名称不能超过 50 个字符');
+    const name = requireValidPackName(req.body?.name);
     const language = String(req.body?.language ?? '').trim() || 'Java';
     const content = req.file.buffer.toString('utf8');
     try {
@@ -618,7 +639,7 @@ app.get('/api/rulepacks/:id/export', asyncHandler(async (req, res) => {
 
 const importPackUpload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 20 * 1024 * 1024 },
+  limits: { fileSize: MAX_PACK_ZIP_BYTES },
   fileFilter: (_req, file, cb) => {
     if (!/\.zip$/i.test(file.originalname)) {
       cb(new HttpError(400, '仅支持 .zip 规则包压缩包'));
@@ -643,7 +664,7 @@ function detectPackRoot(dir: string): string | null {
 
 app.post(
   '/api/rulepacks/import',
-  importPackUpload.single('file'),
+  limit400(importPackUpload.single('file'), MAX_PACK_ZIP_BYTES),
   asyncHandler(async (req, res) => {
     if (!req.file) throw new HttpError(400, '请通过 multipart 表单上传 file 字段（.zip）');
     const zipName = req.file.originalname.replace(/\.zip$/i, '');
@@ -735,9 +756,7 @@ app.post(
         );
       }
       const content = fs.readFileSync(path.join(tmpDir, looseFiles[0].name), 'utf8');
-      const name = String(req.body?.name ?? '').trim() || zipName;
-      if (!name) throw new HttpError(400, '请输入规则包名称');
-      if (name.length > 50) throw new HttpError(400, '规则包名称不能超过 50 个字符');
+      const name = requireValidPackName(String(req.body?.name ?? '').trim() || zipName);
       let language = String(req.body?.language ?? '').trim();
       try {
         // 坏 YAML 在这里就拦下（否则 saveNewRulePack 内部抛普通 Error 会变成 500）
@@ -763,8 +782,8 @@ app.post('/api/rulepacks/:id/check', asyncHandler(async (req, res) => {
   if (!pack.isDir || !fs.existsSync(customPackDir(pack.id))) {
     throw new HttpError(400, '旧式单文件规则包没有样本可检查，请以可移植格式重新导入');
   }
-  if (ruleLabBusy) throw new HttpError(409, '规则实验室正在运行，请稍候再试');
-  ruleLabBusy = true;
+  if (engineJobBusy) throw new HttpError(409, '上一次引擎任务（实验室/质量检查）还在运行，请稍候再试');
+  engineJobBusy = true;
   try {
     const result = await runPackCheck(customPackDir(pack.id));
     const count = (verdict: string) => result.items.filter((item) => item.verdict === verdict).length;
@@ -779,7 +798,7 @@ app.post('/api/rulepacks/:id/check', asyncHandler(async (req, res) => {
     updateRulePack(pack.id, { lastCheck: summary });
     res.json({ ...result, summary });
   } finally {
-    ruleLabBusy = false;
+    engineJobBusy = false;
   }
 }));
 
@@ -819,11 +838,7 @@ app.patch('/api/projects/:id', asyncHandler(async (req, res) => {
     if (scanId === null || scanId === '') {
       patch.baselineScanId = null;
     } else {
-      const scan = getScan(String(scanId));
-      if (!scan || scan.projectId !== project.id || scan.status !== 'completed') {
-        throw new HttpError(400, '基线必须是本项目下已完成的扫描');
-      }
-      patch.baselineScanId = scan.id;
+      patch.baselineScanId = requireValidBaseline(project.id, scanId);
     }
   }
   if (req.body?.configId !== undefined) {
@@ -841,8 +856,8 @@ app.patch('/api/projects/:id', asyncHandler(async (req, res) => {
 
 app.delete('/api/projects/:id', asyncHandler(async (req, res) => {
   const project = requireProject(req.params.id);
+  // 级联删除（扫描/问题/复核）在 db 层 deleteProject 内完成，路由不再重复调用
   deleteProject(project.id);
-  deleteProjectReviews(project.id);
   fs.rmSync(projectWorkspace(project.id), { recursive: true, force: true });
   res.status(204).end();
 }));
@@ -873,7 +888,7 @@ app.post(
   '/api/projects/:id/source',
   upload.fields([
     { name: 'file', maxCount: 1 },
-    { name: 'files', maxCount: config.maxZipEntries },
+    { name: 'files', maxCount: config.maxImportEntries },
   ]),
   asyncHandler(async (req, res) => {
     const project = requireProject(req.params.id);
@@ -916,8 +931,8 @@ app.post(
       if (relPaths.length !== looseFiles.length) {
         throw new HttpError(400, '文件列表与路径参数数量不匹配');
       }
-      if (looseFiles.length > config.maxZipEntries) {
-        throw new HttpError(400, `文件数超过 ${config.maxZipEntries} 上限`);
+      if (looseFiles.length > config.maxImportEntries) {
+        throw new HttpError(400, `文件数超过 ${config.maxImportEntries} 上限`);
       }
       let totalBytes = 0;
       fs.rmSync(destDir, { recursive: true, force: true });
@@ -927,12 +942,12 @@ app.post(
           const rel = safeRelativePath(relPaths[index] || file.originalname);
           if (!rel) throw new HttpError(400, '文件路径不能为空');
           const target = path.join(destDir, rel);
-          if (!path.resolve(target).startsWith(path.resolve(destDir) + path.sep)) {
+          if (!isPathWithin(destDir, target)) {
             throw new HttpError(400, `文件路径不安全：${relPaths[index]}`);
           }
           totalBytes += file.size;
           if (totalBytes > config.maxExtractedBytes) {
-            throw new HttpError(400, '总体积超过 1GB 上限');
+            throw new HttpError(400, `总体积超过 ${config.maxExtractedBytes / 1024 ** 3}GB 上限`);
           }
           fs.mkdirSync(path.dirname(target), { recursive: true });
           fs.writeFileSync(target, file.buffer);
@@ -1004,17 +1019,12 @@ app.post('/api/projects/:id/scans', asyncHandler(async (req, res) => {
     throw new HttpError(400, '请先上传源码或克隆仓库再发起扫描');
   }
 
-  const explicitRules = req.body?.rules ? String(req.body.rules) : undefined;
-  const plan = explicitRules ? buildLegacyPlan(explicitRules) : buildConfigPlan(project);
+  const plan = buildConfigPlan(project);
 
   let baselineScanId: string | undefined;
   const baselineParam = req.body?.baselineScanId;
   if (baselineParam !== undefined && baselineParam !== null && baselineParam !== '') {
-    const baseline = getScan(String(baselineParam));
-    if (!baseline || baseline.projectId !== project.id || baseline.status !== 'completed') {
-      throw new HttpError(400, '基线必须是本项目下已完成的扫描');
-    }
-    baselineScanId = baseline.id;
+    baselineScanId = requireValidBaseline(project.id, baselineParam);
   } else if (project.baselineScanId) {
     baselineScanId = project.baselineScanId;
   }
@@ -1100,7 +1110,7 @@ app.get('/api/scans/:scanId/snippet', asyncHandler(async (req, res) => {
   const context = config.snippetContextLines;
   const srcRoot = path.resolve(scanSourceDir(scan.projectId, scan.id));
   const full = path.resolve(srcRoot, filePath);
-  if (full !== srcRoot && !full.startsWith(srcRoot + path.sep)) {
+  if (full !== srcRoot && !isPathWithin(srcRoot, full)) {
     throw new HttpError(400, '非法的文件路径');
   }
 
@@ -1191,7 +1201,7 @@ app.get('/api/scans/:scanId/sarif', asyncHandler(async (req, res) => {
 
 const importSarifUpload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 20 * 1024 * 1024 },
+  limits: { fileSize: MAX_SARIF_BYTES },
   fileFilter: (_req, file, cb) => {
     if (!/\.(sarif|json)$/i.test(file.originalname)) {
       cb(new HttpError(400, '仅支持 .sarif / .json 文件'));
@@ -1208,7 +1218,7 @@ const importSarifUpload = multer({
  */
 app.post(
   '/api/projects/:id/sarif',
-  importSarifUpload.single('file'),
+  limit400(importSarifUpload.single('file'), MAX_SARIF_BYTES),
   asyncHandler(async (req, res) => {
     const project = requireProject(req.params.id);
     if (!req.file) throw new HttpError(400, '请通过 multipart 表单上传 file 字段（.sarif / .json）');
@@ -1216,11 +1226,7 @@ app.post(
     let baselineScanId: string | undefined;
     const baselineParam = req.body?.baselineScanId;
     if (baselineParam !== undefined && baselineParam !== null && baselineParam !== '') {
-      const baseline = getScan(String(baselineParam));
-      if (!baseline || baseline.projectId !== project.id || baseline.status !== 'completed') {
-        throw new HttpError(400, '基线必须是本项目下已完成的扫描');
-      }
-      baselineScanId = baseline.id;
+      baselineScanId = requireValidBaseline(project.id, baselineParam);
     }
 
     const { toolName, issues } = parseSarifImport(req.file.buffer.toString('utf8'));
@@ -1238,7 +1244,7 @@ app.post(
     };
     for (const issue of issues) issue.scanId = scan.id;
     applyBaselineComparison(issues, scan.id, baselineScanId);
-    scan.issueCount = issues.filter((issue) => issue.comparisonStatus !== 'fixed').length;
+    scan.issueCount = issues.filter(isActiveIssue).length;
 
     insertScan(scan);
     replaceIssues(scan.id, issues);
@@ -1391,27 +1397,29 @@ app.get('/api/rules/knowledge/:ruleId', asyncHandler(async (req, res) => {
   res.json(getRuleKnowledge(ruleId));
 }));
 
-// 实验室跑的是两个微型样本，秒级返回；全局单并发避免引擎进程堆积（与规则包质量检查共用）
-let ruleLabBusy = false;
+// 实验室与规则包质量检查共用一个全局互斥：单并发避免引擎进程堆积，也保证互不干扰
+let engineJobBusy = false;
 
 app.post('/api/rulelab/run', asyncHandler(async (req, res) => {
   const yaml = String(req.body?.yaml ?? '');
   if (!yaml.trim()) throw new HttpError(400, '请输入规则 YAML');
-  if (yaml.length > 1024 * 1024) throw new HttpError(400, '规则 YAML 超过 1MB 上限');
+  if (yaml.length > MAX_RULE_YAML_BYTES) {
+    throw new HttpError(400, `规则 YAML 超过 ${MAX_RULE_YAML_BYTES / 1024 / 1024}MB 上限`);
+  }
   const samples = {
     positive: String(req.body?.samples?.positive ?? ''),
     negative: String(req.body?.samples?.negative ?? ''),
   };
-  if (samples.positive.length > 200 * 1024 || samples.negative.length > 200 * 1024) {
-    throw new HttpError(400, '单个测试样本超过 200KB 上限');
+  if (samples.positive.length > MAX_SAMPLE_BYTES || samples.negative.length > MAX_SAMPLE_BYTES) {
+    throw new HttpError(400, `单个测试样本超过 ${MAX_SAMPLE_BYTES / 1024}KB 上限`);
   }
   const language = String(req.body?.language ?? '').trim() || undefined;
-  if (ruleLabBusy) throw new HttpError(409, '上一次实验还在运行，请稍候再试');
-  ruleLabBusy = true;
+  if (engineJobBusy) throw new HttpError(409, '上一次引擎任务（实验室/质量检查）还在运行，请稍候再试');
+  engineJobBusy = true;
   try {
     res.json(await runRuleLab(yaml, samples, language));
   } finally {
-    ruleLabBusy = false;
+    engineJobBusy = false;
   }
 }));
 
@@ -1436,7 +1444,7 @@ app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
   if (error instanceof multer.MulterError) {
     const message =
       error.code === 'LIMIT_FILE_SIZE'
-        ? '文件超过 200MB 上传上限'
+        ? `文件超过 ${Math.round(config.maxUploadBytes / 1024 / 1024)}MB 上传上限`
         : `上传失败：${error.message}`;
     res.status(400).json({ error: { message } });
     return;

@@ -5,7 +5,6 @@
  */
 // 与 e2e.mjs 一致：默认钉死 IPv4 回环，可用 BASE_URL 覆盖
 const BASE = process.env.BASE_URL ?? 'http://127.0.0.1:8787';
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const results = [];
 let passed = 0, failed = 0;
 
@@ -32,9 +31,15 @@ function record(label, ok, detail) {
   results.push(`${ok ? 'PASS' : 'FAIL'}  ${label}${ok ? '' : '  <<< ' + detail}`);
   ok ? passed++ : failed++;
 }
-const expect4xx = (label, res, contains) =>
-  record(label, res.status >= 400 && res.status < 500, `status=${res.status} body=${JSON.stringify(res.body).slice(0, 120)}`) &&
-  (contains === undefined || JSON.stringify(res.body).includes(contains));
+const expect4xx = (label, res, contains) => {
+  const statusOk = res.status >= 400 && res.status < 500;
+  const containsOk = contains === undefined || JSON.stringify(res.body).includes(contains);
+  record(
+    label,
+    statusOk && containsOk,
+    `status=${res.status}${containsOk ? '' : ` 未含期望报文「${contains}」`} body=${JSON.stringify(res.body).slice(0, 120)}`,
+  );
+};
 const expect2xx = (label, res) =>
   record(label, res.status >= 200 && res.status < 300, `status=${res.status} body=${JSON.stringify(res.body).slice(0, 120)}`);
 
@@ -134,7 +139,7 @@ async function main() {
     ['jobs=0', { name: 'X配置', rulePackIds: packIds, timeoutSeconds: 30, jobs: 0, maxTargetBytes: 1000000 }],
     ['jobs=17', { name: 'X配置', rulePackIds: packIds, timeoutSeconds: 30, jobs: 17, maxTargetBytes: 1000000 }],
     ['maxTargetBytes=50000', { name: 'X配置', rulePackIds: packIds, timeoutSeconds: 30, jobs: 4, maxTargetBytes: 50000 }],
-    ['maxTargetBytes=1e9', { name: 'X配置', rulePackIds: packIds, timeoutSeconds: 30, jobs: 4, maxTargetBytes: 100000001 }],
+    ['maxTargetBytes=100000001（100MB 上限 +1 越界）', { name: 'X配置', rulePackIds: packIds, timeoutSeconds: 30, jobs: 4, maxTargetBytes: 100000001 }],
   ];
   for (const [label, payload] of badConfigs) {
     res = await call('/api/configs', postJson(payload));
@@ -219,8 +224,8 @@ async function main() {
   expect4xx('未绑定配置的扫描 → 400', res);
   res = await call('/api/projects/p-none/scans', postJson({}));
   expect4xx('扫描不存在项目 → 404', res);
-  res = await call(`/api/projects/${uploadProject.id}/scans`, postJson({ rules: 'no-such-ruleset' }));
-  expect4xx('旧式 rules 目录不存在 → 400', res);
+  res = await call(`/api/projects/${bare.id}/scans`, postJson({ rules: 'no-such-ruleset' }));
+  expect4xx('未知字段不能绕过配置校验 → 400', res);
 
   console.log('===== 八、人工复核 =====');
   const reviewProject = await ensureProject('脏测试-复核边界', '脏测试保留：复核边界数据');

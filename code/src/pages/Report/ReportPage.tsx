@@ -29,16 +29,12 @@ import {
 import { COMPARISON_VISUALS } from '@/data/constants';
 import { formatDateTime, formatDuration } from '@/lib/format';
 import { api } from '@/lib/api';
-import {
-  REPORT_SEVERITY_ORDER,
-  type IReportData,
-  type IReportMeta,
-} from '@/data/reports';
+import { type IReportData, type IReportMeta } from '@/data/reports';
 import { lookupRuleMessage, useRuleMessageMap } from '@/lib/ruleMessages';
 import {
-  COMPARISON_BADGE_CLASS,
   SEVERITY_BADGE_CLASS,
   SEVERITY_BAR_CLASS,
+  SEVERITY_ORDER,
   SEVERITY_TEXT_CLASS,
 } from '@/lib/severity';
 import { cn } from '@/lib/utils';
@@ -163,7 +159,7 @@ function IssueGroupTable({
                   <Badge
                     className={cn(
                       'px-1.5 text-xs font-normal',
-                      COMPARISON_BADGE_CLASS[issue.comparisonStatus],
+                      COMPARISON_VISUALS[issue.comparisonStatus].badge,
                     )}
                   >
                     {COMPARISON_LABELS[issue.comparisonStatus]}
@@ -387,7 +383,7 @@ export default function ReportPage() {
             {conclusion}
           </p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-            {REPORT_SEVERITY_ORDER.map((sev) => (
+            {SEVERITY_ORDER.map((sev) => (
               <Card key={sev} className="py-4 print:break-inside-avoid">
                 <CardContent className="px-4">
                   <div className={cn('text-2xl font-bold tabular-nums', SEVERITY_TEXT_CLASS[sev])}>
@@ -477,7 +473,7 @@ export default function ReportPage() {
           <SectionTitle>三、风险分布</SectionTitle>
           <h3 className="mb-2 text-sm font-semibold text-muted-foreground">按严重度</h3>
           <div className="mb-5 space-y-2">
-            {REPORT_SEVERITY_ORDER.map((sev) => (
+            {SEVERITY_ORDER.map((sev) => (
               <DistBar
                 key={sev}
                 label={SEVERITY_LABELS[sev]}
@@ -590,7 +586,7 @@ export default function ReportPage() {
               本次扫描未发现风险问题。
             </p>
           ) : (
-            REPORT_SEVERITY_ORDER.map((sev) => {
+            SEVERITY_ORDER.map((sev) => {
               const list = current.filter((issue) => issue.severity === sev);
               if (list.length === 0) return null;
               return (

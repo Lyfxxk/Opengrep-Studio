@@ -38,7 +38,7 @@ export const LANG_EXT: Record<string, string> = {
   generic: 'txt',
 };
 
-export interface RuleLabMatch {
+interface RuleLabMatch {
   ruleId: string;
   checkId: string;
   startLine: number;
@@ -51,7 +51,7 @@ export interface RuleLabMatch {
   taintFlow?: TaintStep[];
 }
 
-export interface RuleLabSampleResult {
+interface RuleLabSampleResult {
   provided: boolean;
   matches: RuleLabMatch[];
 }
@@ -119,7 +119,7 @@ export function cleanupRuleLabScratch(): void {
   fs.rmSync(path.join(config.dataDir, 'rulelab'), { recursive: true, force: true });
 }
 
-export interface PackCheckItem {
+interface PackCheckItem {
   ruleId: string;
   /** 规则文件相对包根目录的路径 */
   ruleFile: string;
@@ -140,10 +140,10 @@ export interface PackCheckResult {
  * 规则包质量检查：复用实验室 runner，逐规则跑它自己的正反例样本。
  * 无样本的规则记为 unverified（basic 档）；这是导入校验之外的"能不能命中"级验证。
  */
-export async function runPackCheck(
-  packDir: string,
-  maxSampledRules = 20,
-): Promise<PackCheckResult> {
+/** 单次质量检查最多实测的规则条数（其余记 unverified，避免大包把检查拖到分钟级） */
+const MAX_SAMPLED_RULES = 20;
+
+export async function runPackCheck(packDir: string): Promise<PackCheckResult> {
   const startedAt = Date.now();
   const ruleFiles = collectRuleFiles(path.join(packDir, 'rules'));
   if (ruleFiles.length === 0) {
@@ -174,14 +174,14 @@ export async function runPackCheck(
         items.push({ ruleId, ruleFile: relFile, positiveCount, negativeCount, verdict: 'unverified' });
         continue;
       }
-      if (sampled >= maxSampledRules) {
+      if (sampled >= MAX_SAMPLED_RULES) {
         items.push({
           ruleId,
           ruleFile: relFile,
           positiveCount,
           negativeCount,
           verdict: 'unverified',
-          detail: `超出单次检查上限（${maxSampledRules} 条），未验证`,
+          detail: `超出单次检查上限（${MAX_SAMPLED_RULES} 条），未验证`,
         });
         continue;
       }

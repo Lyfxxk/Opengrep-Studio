@@ -161,8 +161,8 @@ export function parseSarifImport(text: string): SarifImportResult {
     }
     for (const result of run?.results ?? []) {
       totalResults += 1;
-      if (totalResults > config.maxZipEntries) {
-        throw new HttpError(400, `SARIF 结果数超过 ${config.maxZipEntries} 上限`);
+      if (totalResults > config.maxImportEntries) {
+        throw new HttpError(400, `SARIF 结果数超过 ${config.maxImportEntries} 上限`);
       }
       const rule =
         (typeof result.ruleIndex === 'number' ? rules[result.ruleIndex] : undefined) ?? undefined;

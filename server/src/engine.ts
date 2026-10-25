@@ -46,6 +46,31 @@ export function engineDisplayPath(): string {
   return path.resolve(config.opengrepBin);
 }
 
+let engineVersionPromise: Promise<string | undefined> | null = null;
+
+/** 惰性探测引擎版本（只 spawn 一次，失败不缓存重试）；与 runEngine 同一套 spawn 策略 */
+export function getEngineVersion(): Promise<string | undefined> {
+  engineVersionPromise ??= new Promise((resolve) => {
+    const child = spawn(config.opengrepBin, ['--version'], {
+      windowsHide: true,
+      env: { ...process.env, OPENGREP_ENABLE_VERSION_CHECK: '0' },
+    });
+    let out = '';
+    const timer = setTimeout(() => child.kill(), 5000);
+    child.stdout.on('data', (chunk) => { out += String(chunk); });
+    child.on('error', () => {
+      clearTimeout(timer);
+      resolve(undefined);
+    });
+    child.on('close', () => {
+      clearTimeout(timer);
+      const match = out.match(/\d+\.\d+\.\d+/);
+      resolve(match ? match[0] : out.trim().split(/\r?\n/)[0] || undefined);
+    });
+  });
+  return engineVersionPromise;
+}
+
 export interface EngineRunResult {
   code: number;
   stdout: string;

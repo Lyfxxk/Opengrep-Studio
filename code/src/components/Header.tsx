@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import { NAV_ITEMS } from '@/components/AppSidebar';
 import { getCurrentUsername, logout } from '@/lib/auth';
 import avatarUrl from '@/assets/images/avatar.jpg';
 
@@ -30,18 +31,13 @@ export default function Header() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
-  // 每级面包屑带可选跳转地址；末级固定为当前页（不可点）
   const segments = pathname.split('/').filter(Boolean);
+  // 一级面包屑标签与侧栏导航同源；实验室挂在规则中心下，路由名与导航项不同名
+  const navLabel = NAV_ITEMS.find((item) => item.path === `/${segments[0]}`)?.label;
   let crumbs: Crumb[];
-  if (segments[0] === 'configs') {
-    crumbs = [{ label: '扫描配置' }];
-  } else if (segments[0] === 'dashboard') {
-    crumbs = [{ label: '仪表看盘' }];
-  } else if (segments[0] === 'scans') {
-    crumbs = [{ label: '扫描中心' }];
-  } else if (segments[0] === 'reports') {
-    crumbs = [{ label: '报告中心' }];
-  } else if (segments[0] === 'rules' || segments[0] === 'lab') {
+  if (navLabel && segments[0] !== 'projects') {
+    crumbs = [{ label: navLabel }];
+  } else if (segments[0] === 'lab') {
     crumbs = [{ label: '规则中心' }];
   } else if (segments.length === 0) {
     crumbs = [{ label: '项目管理' }];

@@ -6,7 +6,7 @@ const store = sessionStorage;
 
 // 固定本地账号：仅为防误触的前端门禁，不是安全机制（后端接口无鉴权，服务只监听本机）。
 // 登录页已显著标注此声明；若要接入鉴权请另行设计，不要简单替换这里的常量。
-export const LOCAL_ACCOUNT = { username: 'admin', password: '123456' } as const;
+const LOCAL_ACCOUNT = { username: 'admin', password: '123456' } as const;
 
 export function validateCredentials(username: string, password: string): boolean {
   return username === LOCAL_ACCOUNT.username && password === LOCAL_ACCOUNT.password;

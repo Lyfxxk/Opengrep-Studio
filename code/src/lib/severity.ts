@@ -25,9 +25,3 @@ export const SEVERITY_TEXT_CLASS: Record<IIssue['severity'], string> = {
   medium: 'text-primary',
   low: 'text-muted-foreground',
 };
-
-export const COMPARISON_BADGE_CLASS: Record<IIssue['comparisonStatus'], string> = {
-  new: 'bg-destructive/15 text-destructive border-transparent',
-  fixed: 'bg-success/15 text-success border-transparent',
-  remaining: 'bg-warning/15 text-warning border-transparent',
-};

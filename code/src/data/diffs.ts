@@ -54,7 +54,7 @@ export interface IScanDiff {
   };
 }
 
-export interface IKnowledgeCwe {
+interface IKnowledgeCwe {
   id: string;
   name?: string;
   fix?: string;

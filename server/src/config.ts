@@ -5,7 +5,11 @@ import { fileURLToPath } from 'node:url';
 const serverRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 
 /** 引擎可执行文件名按平台解析：Windows 是 opengrep.exe，其余平台是 opengrep */
-export const engineExecutableName = process.platform === 'win32' ? 'opengrep.exe' : 'opengrep';
+function engineNameFor(platform: NodeJS.Platform): string {
+  return platform === 'win32' ? 'opengrep.exe' : 'opengrep';
+}
+
+export const engineExecutableName = engineNameFor(process.platform);
 
 /** 引擎解析来源（供 /api/health 与启动日志展示） */
 export type EngineSource = 'env' | 'bundled-dir' | 'path' | 'missing';
@@ -30,7 +34,7 @@ export function resolveEngineBin(deps?: {
   platform?: NodeJS.Platform;
 }): ResolvedEngine {
   const platform = deps?.platform ?? process.platform;
-  const executableName = platform === 'win32' ? 'opengrep.exe' : 'opengrep';
+  const executableName = engineNameFor(platform);
   const envBin = deps?.envBin ?? process.env.OPENGREP_BIN?.trim();
   if (envBin) return { bin: envBin, source: 'env' };
   const bundled =
@@ -66,7 +70,8 @@ export const config = {
   engineVersion: '1.31.0',
   maxUploadBytes: 200 * 1024 * 1024,
   maxExtractedBytes: 1024 * 1024 * 1024,
-  maxZipEntries: 50000,
+  /** 单次导入的条目上限（ZIP 条目 / 解压文件数 / 克隆文件数 / SARIF 结果数共用同一闸） */
+  maxImportEntries: 50000,
   scanTimeoutMs: 10 * 60 * 1000,
   cloneTimeoutMs: (Number(process.env.CLONE_TIMEOUT_SECONDS) || 240) * 1000,
   ruleLabTimeoutMs: (Number(process.env.RULE_LAB_TIMEOUT_SECONDS) || 30) * 1000,
@@ -74,7 +79,7 @@ export const config = {
   maxSnippetFileBytes: 2 * 1024 * 1024,
 };
 
-export const workspaceDir = path.join(config.dataDir, 'workspace');
+const workspaceDir = path.join(config.dataDir, 'workspace');
 export const dbPath = path.join(config.dataDir, 'studio.db');
 
 export function projectWorkspace(projectId: string): string {

@@ -26,7 +26,7 @@ import {
 } from '@/lib/storage';
 
 // 演示模式开关：只认显式的 'true' / '1'，避免 VITE_USE_MOCK=false 被 Boolean('false') 误判为开
-const USE_MOCK = ['true', '1'].includes(
+export const USE_MOCK = ['true', '1'].includes(
   (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_USE_MOCK ?? '',
 );
 
@@ -143,13 +143,16 @@ export interface RuleLabRunResult {
   engineErrors: string[];
 }
 
-/** /api/health 响应（引擎解析结果；引擎缺失时 ok=false 且附指引） */
+/** /api/health 响应；ok 恒为 true 仅表示服务存活，引擎可用性看 engine 是否为 'MISSING' */
 export interface HealthInfo {
   ok: boolean;
+  platform?: string;
+  arch?: string;
   engineVersion?: string;
   engineSource?: string;
+  /** 解析后的引擎路径；未找到时为 'MISSING'，并附 engineHint 修复指引 */
   engine?: string;
-  hint?: string;
+  engineHint?: string;
 }
 
 /** mock 扫描从发起到完成的时长；读取时按 scannedAt 惰性收敛，刷新页面/丢失定时器也不会永久卡在 scanning */
@@ -784,9 +787,15 @@ export const api = {
     return request('/api/scans');
   },
 
-  /** 健康检查（引擎版本与解析来源）；演示模式下无后端，直接返回不可用 */
+  /** 健康检查（引擎版本与解析来源）；演示模式下无后端，直接标记引擎缺失 */
   getHealth(): Promise<HealthInfo> {
-    if (USE_MOCK) return Promise.resolve({ ok: false });
+    if (USE_MOCK) {
+      return Promise.resolve({
+        ok: false,
+        engine: 'MISSING',
+        engineHint: '演示模式：未连接后端与引擎，展示的均为本地演示数据。',
+      });
+    }
     return request('/api/health');
   },
 

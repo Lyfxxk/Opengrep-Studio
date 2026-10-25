@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { ALWAYS_SKIP_DIR_NAMES } from './fs-walk.js';
 
 /**
  * 无 Git 双快照 diff：对两次扫描的不可变源码快照做文件级 + 行级对比。
@@ -11,14 +12,15 @@ import path from 'node:path';
 const HASH_READ_CAP = 5 * 1024 * 1024;
 /** 行级 LCS 的规模上限（行列乘积），超过则不做行级统计 */
 const DIFF_MATRIX_CAP = 1_000_000;
-const SKIP_DIRS = new Set(['node_modules', '.git']);
+/** 三个差异列表（added/removed/modified）各自的条数上限，防大仓库撑爆响应 */
+const DIFF_LIST_CAP = 500;
 
-export interface FileEntry {
+interface FileEntry {
   sha256: string;
   size: number;
 }
 
-export interface FileDiffEntry {
+interface FileDiffEntry {
   path: string;
   /** 行级统计（diffable=false 时为 null） */
   addedLines: number | null;
@@ -52,7 +54,7 @@ function hashFile(file: string): FileEntry {
 }
 
 /** 遍历快照目录：跳过 node_modules/.git 与符号链接，返回 相对路径 → 文件信息 */
-export function hashSnapshot(dir: string): Map<string, FileEntry> {
+function hashSnapshot(dir: string): Map<string, FileEntry> {
   const map = new Map<string, FileEntry>();
   const walk = (current: string) => {
     let entries: fs.Dirent[];
@@ -65,7 +67,7 @@ export function hashSnapshot(dir: string): Map<string, FileEntry> {
       if (entry.isSymbolicLink()) continue;
       const full = path.join(current, entry.name);
       if (entry.isDirectory()) {
-        if (SKIP_DIRS.has(entry.name)) continue;
+        if (ALWAYS_SKIP_DIR_NAMES.has(entry.name)) continue;
         walk(full);
       } else if (entry.isFile()) {
         const rel = path.relative(dir, full).replace(/\\/g, '/');
@@ -131,13 +133,12 @@ function readForDiff(file: string): string {
 }
 
 /** 对比两份源码快照（调用方需保证两目录存在且属于已完成扫描） */
-export function diffSnapshots(dirA: string, dirB: string, options?: { modifiedCap?: number }): SnapshotDiff {
+export function diffSnapshots(dirA: string, dirB: string): SnapshotDiff {
   const a = hashSnapshot(dirA);
   const b = hashSnapshot(dirB);
   const added: string[] = [];
   const removed: string[] = [];
   const modified: FileDiffEntry[] = [];
-  const modifiedCap = options?.modifiedCap ?? 500;
 
   for (const [rel, entryA] of a) {
     const entryB = b.get(rel);
@@ -146,7 +147,7 @@ export function diffSnapshots(dirA: string, dirB: string, options?: { modifiedCa
       continue;
     }
     if (entryA.sha256 === entryB.sha256) continue;
-    if (modified.length < modifiedCap) {
+    if (modified.length < DIFF_LIST_CAP) {
       let lineStats: { added: number; removed: number } | null = null;
       try {
         lineStats = countLineDiff(readForDiff(path.join(dirA, rel)), readForDiff(path.join(dirB, rel)));
@@ -167,8 +168,8 @@ export function diffSnapshots(dirA: string, dirB: string, options?: { modifiedCa
     if (!a.has(rel)) added.push(rel);
   }
   return {
-    added: added.sort().slice(0, modifiedCap),
-    removed: removed.sort().slice(0, modifiedCap),
+    added: added.sort().slice(0, DIFF_LIST_CAP),
+    removed: removed.sort().slice(0, DIFF_LIST_CAP),
     modified: modified.sort((x, y) => x.path.localeCompare(y.path)),
     filesA: a.size,
     filesB: b.size,

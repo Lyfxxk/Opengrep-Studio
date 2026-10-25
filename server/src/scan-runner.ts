@@ -11,6 +11,7 @@ import { extractTaintFlow, relativizeTaintFlow } from './taint.js';
 import {
   db,
   getScan,
+  isActiveIssue,
   listIssues,
   replaceIssues,
   updateScan,
@@ -328,7 +329,7 @@ async function runScan(scanId: string, plan: ScanPlan): Promise<void> {
 
     applyBaselineComparison(currentIssues, scanId, scan.baselineScanId);
 
-    const issueCount = currentIssues.filter((issue) => issue.comparisonStatus !== 'fixed').length;
+    const issueCount = currentIssues.filter(isActiveIssue).length;
     replaceIssues(scanId, currentIssues);
     updateScan(scanId, {
       status: 'completed',

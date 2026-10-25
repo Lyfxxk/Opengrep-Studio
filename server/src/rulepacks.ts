@@ -3,7 +3,7 @@ import path from 'node:path';
 import { config } from './config.js';
 
 /** 自定义规则包落盘目录（Docker 内指入数据卷） */
-export const customRulesDir = config.customRulesDir;
+const customRulesDir = config.customRulesDir;
 export const builtinRulesDir = path.join(config.rulesDir, 'security');
 
 /** 递归收集目录下所有 .yaml 规则文件（排序保证稳定） */

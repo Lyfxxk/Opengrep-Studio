@@ -132,7 +132,7 @@ export default function UploadZone({
       return;
     }
     if (file.size > MAX_FILE_SIZE) {
-      toast.error('文件超过 200MB 上传上限，请拆分后重试');
+      toast.error(`文件超过 ${MAX_FILE_SIZE / 1024 / 1024}MB 上传上限，请拆分后重试`);
       return;
     }
     onSelectItems([{ file }], { respectGitignore: respectIgnore });
@@ -163,7 +163,7 @@ export default function UploadZone({
       rootCount === 1 && rootArchiveCount === 1 && items.length === 1;
     if (isSingleArchive) {
       if (items[0].file.size > MAX_FILE_SIZE) {
-        toast.error('文件超过 200MB 上传上限，请拆分后重试');
+        toast.error(`文件超过 ${MAX_FILE_SIZE / 1024 / 1024}MB 上传上限，请拆分后重试`);
         return;
       }
       onSelectItems([{ file: items[0].file }], { respectGitignore: respectIgnore });
@@ -172,7 +172,7 @@ export default function UploadZone({
     // 散装文件 / 文件夹：逐个校验大小
     for (const item of items) {
       if (item.file.size > MAX_FILE_SIZE) {
-        toast.error(`${item.file.name} 超过 200MB 上传上限，请拆分后重试`);
+        toast.error(`${item.file.name} 超过 ${MAX_FILE_SIZE / 1024 / 1024}MB 上传上限，请拆分后重试`);
         return;
       }
     }
@@ -281,7 +281,7 @@ export default function UploadZone({
           <p className="text-sm font-medium">拖拽源码文件夹或压缩包到此处，或点击选择压缩包</p>
           <p className="mt-1 text-xs text-muted-foreground">
             支持 ZIP / 7Z / RAR / TAR·GZ 压缩包，或直接拖入整个文件夹 ·
-            单个文件不超过 200MB · 已启用路径安全防护
+            单个文件不超过 {MAX_FILE_SIZE / 1024 / 1024}MB · 已启用路径安全防护
           </p>
         </div>
       </div>
