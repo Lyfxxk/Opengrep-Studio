@@ -3,7 +3,7 @@ import path from 'node:path';
 import { load as yamlLoad, dump as yamlDump } from 'js-yaml';
 import { config } from './config.js';
 import { engineInstallHint, runEngine } from './engine.js';
-import { normalizePath, stripRuleIdPrefix } from './engine-output.js';
+import { relativizeToRoot, stripRuleIdPrefix } from './engine-output.js';
 import { parseRuleYaml } from './rule-yaml.js';
 import { readSampleText, scanPackSamples } from './pack-format.js';
 import { collectRuleFiles } from './rulepacks.js';
@@ -340,7 +340,7 @@ export async function runRuleLab(
       if (!kind) continue;
       const taintFlow = relativizeTaintFlow(
         extractTaintFlow(finding.extra.dataflow_trace),
-        (p) => normalizePath(p).replace(/\\/g, '/').replace(/^\/+/, ''),
+        (p) => relativizeToRoot(p, scratchDir),
       );
       byKind[kind].push({
         ruleId: stripRuleIdPrefix(finding.check_id, ruleIds),

@@ -8,6 +8,21 @@ export function normalizePath(p: string): string {
 }
 
 /**
+ * 把引擎返回的路径 relativize 到给定根目录（扫描源码快照 / 实验室临时目录共用）。
+ * 两侧统一剥前导斜杠再比对：引擎在 Linux 上返回绝对路径（/home/...），
+ * 只剥一侧会让 norm（home/...）永远匹配不上带斜杠的 prefix（/home/...）。
+ */
+export function relativizeToRoot(p: string, rootDir: string): string {
+  const stripRoot = (s: string) => normalizePath(s).replace(/^\/+/, '');
+  const norm = stripRoot(p);
+  const prefix = `${stripRoot(rootDir).replace(/\/+$/, '')}/`;
+  if (norm.toLowerCase().startsWith(prefix.toLowerCase())) {
+    return norm.slice(prefix.length);
+  }
+  return norm;
+}
+
+/**
  * 剥离引擎 check_id 的配置路径前缀：opengrep 对目录型 --config 会给规则 id
  * 加上相对路径前缀（如 security/python/rule.yaml.python.avoid-pickle），
  * 按已知规则 id 精确/后缀匹配还原短 id，兜底取最后一段。

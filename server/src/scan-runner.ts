@@ -6,7 +6,7 @@ import {
   scanSourceDir,
 } from './config.js';
 import { engineInstallHint, runEngine } from './engine.js';
-import { normalizePath, stripRuleIdPrefix } from './engine-output.js';
+import { relativizeToRoot, stripRuleIdPrefix } from './engine-output.js';
 import { extractTaintFlow, relativizeTaintFlow } from './taint.js';
 import {
   db,
@@ -94,17 +94,6 @@ function collectRuleIdsByFile(configFiles: string[]): Map<string, Set<string>> {
   return byFile;
 }
 
-function relativizeToSrc(p: string, srcDir: string): string {
-  // 两侧统一剥前导斜杠再比对：引擎在 Linux 上返回绝对路径（/home/...），
-  // 只剥一侧会让 norm（home/...）永远匹配不上带斜杠的 prefix（/home/...）
-  const stripRoot = (s: string) => normalizePath(s).replace(/^\/+/, '');
-  const norm = stripRoot(p);
-  const prefix = `${stripRoot(srcDir).replace(/\/+$/, '')}/`;
-  if (norm.toLowerCase().startsWith(prefix.toLowerCase())) {
-    return norm.slice(prefix.length);
-  }
-  return norm;
-}
 
 /** 服务重启时把上次中断在 scanning 的记录标记为失败（引擎进程已丢失，无法续跑） */
 export function markStaleScansFailed(): void {
@@ -307,7 +296,7 @@ async function runScan(scanId: string, plan: ScanPlan): Promise<void> {
       const pack = ruleIdToPack.get(ruleId);
       const taintFlow = relativizeTaintFlow(
         extractTaintFlow(finding.extra.dataflow_trace),
-        (p) => relativizeToSrc(p, srcDir),
+        (p) => relativizeToRoot(p, srcDir),
       );
       return {
         id: '',
@@ -317,7 +306,7 @@ async function runScan(scanId: string, plan: ScanPlan): Promise<void> {
         severity: mapSeverity(finding),
         comparisonStatus: 'remaining',
         message: finding.extra.message,
-        filePath: relativizeToSrc(finding.path, srcDir),
+        filePath: relativizeToRoot(finding.path, srcDir),
         startLine: finding.start.line,
         endLine: finding.end.line,
         matchedLines: finding.extra.lines,
