@@ -1,8 +1,19 @@
-import os, tempfile, glob, yaml
+import argparse
+import os
+import tempfile
+import glob
+
+import yaml
+
+parser = argparse.ArgumentParser(description="从上游 opengrep-rules 精选/全量生成内置规则包")
+parser.add_argument("--cap", type=int, default=0, help="每语言收录上限；0 或缺省 = 全量收录")
+parser.add_argument("--dry-run", action="store_true", help="只打印各语言收录统计，不写规则文件")
+ARGS = parser.parse_args()
+# None 表示不限量；--cap N 时按 ERROR 优先截断到 N 条
+CAP = ARGS.cap if ARGS.cap > 0 else None
 
 SRC = os.environ.get("OPENGREP_RULES_SRC") or os.path.join(tempfile.gettempdir(), "opengrep-rules")
 DST = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "rules", "security")
-CAP = 50
 
 TARGETS = {
     "python.yaml": ({"python"}, ["python"]),
@@ -19,16 +30,21 @@ TARGETS = {
     "dockerfile.yaml": ({"dockerfile"}, ["dockerfile"]),
 }
 
+# 解析缓存：同一上游 YAML 会被 12 种语言各收集一遍，全量模式下可省 ~12 倍解析时间
+_parsed = {}
+
 def load_rules(path):
+    if path in _parsed:
+        return _parsed[path]
     try:
         with open(path, encoding="utf-8") as f:
             data = yaml.safe_load(f)
     except Exception as e:
         print(f"  [skip] {path}: {type(e).__name__}")
-        return []
-    if not isinstance(data, dict) or not isinstance(data.get("rules"), list):
-        return []
-    return [r for r in data["rules"] if isinstance(r, dict)]
+        data = None
+    rules = [r for r in data["rules"] if isinstance(r, dict)] if isinstance(data, dict) and isinstance(data.get("rules"), list) else []
+    _parsed[path] = rules
+    return rules
 
 def tier(rule):
     md = rule.get("metadata") or {}
@@ -61,14 +77,17 @@ for out_name, (langs, top_dirs) in TARGETS.items():
 
     def try_pick(pool):
         for rid in sorted(pool, key=lambda k: (pool[k][0].get("severity") != "ERROR", k)):
-            if len(picked) >= CAP or rid in seen:
+            if (CAP is not None and len(picked) >= CAP) or rid in seen:
                 continue
             picked.append((rid, pool[rid][0], pool[rid][1]))
             seen.add(rid)
 
     try_pick(t1)
     try_pick(t2)
-    print(f"{out_name}: 候选 {len(candidates)}（一档 {len(t1)}）-> 精选 {len(picked)}")
+    cap_note = f"精选 {len(picked)}" if CAP is not None else f"全量 {len(picked)}"
+    print(f"{out_name}: 候选 {len(candidates)}（一档 {len(t1)}）-> {cap_note}")
+    if ARGS.dry_run:
+        continue
 
     rule_dicts = []
     pack = out_name.replace(".yaml", "")
@@ -84,11 +103,12 @@ for out_name, (langs, top_dirs) in TARGETS.items():
         except Exception as e:
             print(f"  [dump失败，跳过] {rid}: {type(e).__name__}")
 
+    cap_line = f"每语言 ≤ {CAP} 条（不足时全量收录，ERROR 优先）" if CAP is not None else "全量收录（ERROR 优先排序）"
     header = (
         "# Opengrep Studio 内置安全规则包（security）\n"
         "# 来源: https://github.com/opengrep/opengrep-rules （精选子集）\n"
         "# 许可: LGPL 2.1 + Commons Clause（不得将规则单独出售；保留本出处声明）\n"
-        f"# 精选标准: 含安全元数据的优先、每语言 ≤ {CAP} 条（官方不足 50 条时全量收录），剔除 correctness 目录\n"
+        f"# 精选标准: 含 CWE/OWASP 安全元数据的一档优先、{cap_line}，剔除 correctness 目录\n"
         "# 校验: opengrep validate --config server/rules/security\n"
     )
     body = yaml.dump({"rules": rule_dicts}, allow_unicode=True, sort_keys=False,
