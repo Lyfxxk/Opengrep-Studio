@@ -29,6 +29,13 @@ import {
   engineSourceLabel,
   getEngineVersion,
 } from './engine.js';
+import { engineTargetVersion } from './engine-manifest.js';
+import {
+  checkEngineUpdate,
+  engineUpgradeRunning,
+  engineUpgradeState,
+  startEngineUpgrade,
+} from './engine-update.js';
 import {
   deleteConfig,
   deleteProject,
@@ -86,7 +93,13 @@ import {
 import { buildSarifReport } from './sarif.js';
 import { parseSarifImport } from './sarif-import.js';
 import { buildReportData, renderReportHtml } from './report.js';
-import { applyBaselineComparison, enqueueScan, markStaleScansFailed, type ScanPlan } from './scan-runner.js';
+import {
+  applyBaselineComparison,
+  enqueueScan,
+  hasRunningScan,
+  markStaleScansFailed,
+  type ScanPlan,
+} from './scan-runner.js';
 
 const app = express();
 app.use(express.json());
@@ -260,18 +273,44 @@ function requireScan(id: string): ScanRecord {
   return scan;
 }
 
-app.get('/api/health', (_req, res) => {
+app.get('/api/health', asyncHandler(async (_req, res) => {
   const engineReady = engineAvailable();
   res.json({
     ok: true,
     platform: process.platform,
     arch: process.arch,
-    engineVersion: config.engineVersion,
+    // 实际探测的版本（引擎缺失时为 undefined）；清单钉住的版本单独给出，避免"版本漂移看不出来"
+    engineVersion: engineReady ? await getEngineVersion() : undefined,
+    enginePinnedVersion: engineTargetVersion(),
+    // 只有安装位引擎能被一键升级：env / PATH 来源交给用户自己管
+    engineManaged: engineReady && engineSource === 'bundled-dir',
     engine: engineReady ? engineDisplayPath() : 'MISSING',
     engineSource,
+    engineSourceLabel: engineSourceLabel(),
     ...(engineReady ? {} : { engineHint: engineInstallHint() }),
   });
+}));
+
+// ---------- 引擎版本检查与一键升级 ----------
+
+app.get('/api/engine/update', asyncHandler(async (req, res) => {
+  res.json(await checkEngineUpdate(req.query.refresh === '1'));
+}));
+
+// 升级在后台跑，前端轮询这个接口拿进度（50MB 下载不能让请求一直挂着）
+app.get('/api/engine/upgrade', (_req, res) => {
+  res.json(engineUpgradeState());
 });
+
+app.post('/api/engine/upgrade', asyncHandler(async (_req, res) => {
+  if (hasRunningScan()) {
+    throw new HttpError(409, '有扫描任务正在运行，请等扫描结束后再升级引擎');
+  }
+  if (engineJobBusy) {
+    throw new HttpError(409, '规则实验室或规则包质量检查正在运行，请稍后再升级引擎');
+  }
+  res.status(202).json(await startEngineUpgrade());
+}));
 
 app.get('/api/messages-zh', (_req, res) => {
   try {
@@ -782,6 +821,7 @@ app.post('/api/rulepacks/:id/check', asyncHandler(async (req, res) => {
   if (!pack.isDir || !fs.existsSync(customPackDir(pack.id))) {
     throw new HttpError(400, '旧式单文件规则包没有样本可检查，请以可移植格式重新导入');
   }
+  if (engineUpgradeRunning()) throw new HttpError(409, '引擎升级进行中，请升级完成后再做质量检查');
   if (engineJobBusy) throw new HttpError(409, '上一次引擎任务（实验室/质量检查）还在运行，请稍候再试');
   engineJobBusy = true;
   try {
@@ -1021,6 +1061,9 @@ app.post('/api/projects/:id/clone', asyncHandler(async (req, res) => {
 }));
 
 app.post('/api/projects/:id/scans', asyncHandler(async (req, res) => {
+  if (engineUpgradeRunning()) {
+    throw new HttpError(409, '引擎升级进行中，请升级完成后再发起扫描');
+  }
   const project = requireProject(req.params.id);
   const pendingDir = pendingSourceDir(project.id);
   if (!fs.existsSync(pendingDir)) {
@@ -1172,7 +1215,7 @@ app.get('/api/scans/:scanId/report', asyncHandler(async (req, res) => {
   const project = getProject(scan.projectId);
   if (!project) throw new HttpError(404, '扫描所属项目不存在或已被删除');
   const issues = listIssues(scan.id);
-  const engineVersion = await getEngineVersion();
+  const engineVersion = scan.engineVersion ?? (await getEngineVersion());
   const data = buildReportData(scan, project, issues, engineVersion, listReviews(scan.projectId));
 
   const format = String(req.query.format ?? 'json');
@@ -1198,7 +1241,7 @@ app.get('/api/scans/:scanId/sarif', asyncHandler(async (req, res) => {
     throw new HttpError(400, '仅已完成的扫描可导出 SARIF');
   }
   const issues = listIssues(scan.id);
-  const engineVersion = await getEngineVersion();
+  const engineVersion = scan.engineVersion ?? (await getEngineVersion());
   const sarif = buildSarifReport(scan, issues, engineVersion);
   res.setHeader(
     'Content-Disposition',
@@ -1268,7 +1311,7 @@ app.post(
 app.get('/api/scans/:scanId/manifest', asyncHandler(async (req, res) => {
   const scan = requireScan(req.params.scanId);
   const project = getProject(scan.projectId);
-  const engineVersion = await getEngineVersion();
+  const engineVersion = scan.engineVersion ?? (await getEngineVersion());
   res.json({
     scanId: scan.id,
     projectId: scan.projectId,
@@ -1394,6 +1437,14 @@ app.get('/api/scans/:scanId/diff', asyncHandler(async (req, res) => {
       removed: fileDiff.removed,
       modified: fileDiff.modified,
     },
+    // 跨引擎版本的基线对比有噪音（新引擎会新增检测、修复误报），界面据此给出标识
+    engine: {
+      current: scan.engineVersion ?? null,
+      against: against.engineVersion ?? null,
+      mismatch: Boolean(
+        scan.engineVersion && against.engineVersion && scan.engineVersion !== against.engineVersion,
+      ),
+    },
   });
 }));
 
@@ -1422,6 +1473,7 @@ app.post('/api/rulelab/run', asyncHandler(async (req, res) => {
     throw new HttpError(400, `单个测试样本超过 ${MAX_SAMPLE_BYTES / 1024}KB 上限`);
   }
   const language = String(req.body?.language ?? '').trim() || undefined;
+  if (engineUpgradeRunning()) throw new HttpError(409, '引擎升级进行中，请升级完成后再运行实验室');
   if (engineJobBusy) throw new HttpError(409, '上一次引擎任务（实验室/质量检查）还在运行，请稍候再试');
   engineJobBusy = true;
   try {
@@ -1467,7 +1519,9 @@ const server = app.listen(config.port, config.host, () => {
   markStaleScansFailed();
   console.log(`[server] Opengrep Studio 后端已启动: http://${config.host}:${config.port}`);
   console.log(`[server] 引擎路径: ${path.resolve(config.opengrepBin)}（${engineSourceLabel()}）`);
-  console.log(`[server] 运行平台: ${process.platform}/${process.arch}  期望引擎版本: ${config.engineVersion}`);
+  console.log(
+    `[server] 运行平台: ${process.platform}/${process.arch}  清单目标引擎版本: ${engineTargetVersion() ?? '未知'}`,
+  );
   console.log(`[server] 数据目录: ${config.dataDir}`);
   if (!fs.existsSync(config.opengrepBin)) {
     console.error(`[server] 警告：${engineInstallHint().replace(/\n/g, '\n[server] ')}`);

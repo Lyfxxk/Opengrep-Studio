@@ -11,6 +11,8 @@ export interface IScanResult {
   rules?: string
   /** 发起扫描时实际生效的规则包快照（旧记录 / 旧式目录扫描没有） */
   rulepacks?: Array<{ id: string; name: string }>
+  /** 发起扫描时的引擎版本（升级引擎后旧记录仍是当日版本） */
+  engineVersion?: string
   message?: string
 }
 

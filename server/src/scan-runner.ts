@@ -5,7 +5,7 @@ import {
   config,
   scanSourceDir,
 } from './config.js';
-import { engineInstallHint, runEngine } from './engine.js';
+import { engineInstallHint, getEngineVersion, runEngine } from './engine.js';
 import { relativizeToRoot, stripRuleIdPrefix } from './engine-output.js';
 import { extractTaintFlow, relativizeTaintFlow } from './taint.js';
 import {
@@ -94,6 +94,14 @@ function collectRuleIdsByFile(configFiles: string[]): Map<string, Set<string>> {
   return byFile;
 }
 
+
+/** 是否有扫描在跑（引擎升级要等扫描结束：Windows 不允许替换运行中的 exe） */
+export function hasRunningScan(): boolean {
+  const row = db.prepare("SELECT COUNT(*) AS count FROM scans WHERE status = 'scanning'").get() as
+    | { count: number }
+    | undefined;
+  return Number(row?.count ?? 0) > 0;
+}
 
 /** 服务重启时把上次中断在 scanning 的记录标记为失败（引擎进程已丢失，无法续跑） */
 export function markStaleScansFailed(): void {
@@ -196,8 +204,14 @@ function rulesRelativePath(file: string): string {
   return rel.startsWith('..') ? file : rel;
 }
 
-/** 可复现清单：完整命令行 + 规则文件哈希 + 引擎参数快照，扫描引擎运行前落库 */
-function buildReproducibilityRecord(scanId: string, srcDir: string, plan: ScanPlan, args: string[]): void {
+/** 可复现清单：完整命令行 + 规则文件哈希 + 引擎参数快照 + 引擎版本，扫描引擎运行前落库 */
+function buildReproducibilityRecord(
+  scanId: string,
+  srcDir: string,
+  plan: ScanPlan,
+  args: string[],
+  engineVersion: string | undefined,
+): void {
   const commandLine = `opengrep ${args
     .map((arg) => (/\s/.test(arg) ? JSON.stringify(arg) : arg))
     .join(' ')}`;
@@ -218,6 +232,8 @@ function buildReproducibilityRecord(scanId: string, srcDir: string, plan: ScanPl
     srcHash: hashDirectory(srcDir),
     commandLine,
     configSnapshot,
+    // 记录"这次扫描用的是哪版引擎"：升级后重新生成报告时不能按当前版本标注
+    ...(engineVersion ? { engineVersion } : {}),
   });
 }
 
@@ -251,7 +267,7 @@ async function runScan(scanId: string, plan: ScanPlan): Promise<void> {
       srcDir,
     ];
     console.log(`[scan-runner] 扫描 ${scanId} 使用规则: ${plan.rulesLabel}（${plan.configFiles.length} 个规则文件）`);
-    buildReproducibilityRecord(scanId, srcDir, plan, args);
+    buildReproducibilityRecord(scanId, srcDir, plan, args, await getEngineVersion());
     const { code, stdout, stderr, timedOut } = await runEngine(args, srcDir, {
       timeoutMs: config.scanTimeoutMs,
       logLabel: 'scan-runner',

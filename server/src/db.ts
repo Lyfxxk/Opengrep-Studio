@@ -87,6 +87,8 @@ export interface ScanRecord {
   commandLine?: string;
   /** 发起扫描时的规则/配置快照（规则文件哈希 + 引擎参数），可复现清单用 */
   configSnapshot?: ScanConfigSnapshot;
+  /** 发起扫描时的引擎版本（升级引擎后旧记录仍保留当日版本，报告与可复现清单不失真） */
+  engineVersion?: string;
 }
 
 /** 扫描发起时的规则与引擎参数快照（manifest.json 的组成部分） */
@@ -171,7 +173,8 @@ CREATE TABLE IF NOT EXISTS scans (
   message TEXT,
   src_hash TEXT,
   command_line TEXT,
-  config_snapshot TEXT
+  config_snapshot TEXT,
+  engine_version TEXT
 );
 
 CREATE TABLE IF NOT EXISTS issues (
@@ -239,6 +242,7 @@ for (const sql of [
   'ALTER TABLE scans ADD COLUMN src_hash TEXT',
   'ALTER TABLE scans ADD COLUMN command_line TEXT',
   'ALTER TABLE scans ADD COLUMN config_snapshot TEXT',
+  'ALTER TABLE scans ADD COLUMN engine_version TEXT',
   // 污点路径可视化（P1-6）：taint 命中的 source→sink 传播链快照
   'ALTER TABLE issues ADD COLUMN dataflow_trace TEXT',
 ]) {
@@ -317,6 +321,7 @@ function rowToScan(row: SqlRow): ScanRecord {
     srcHash: str(row.src_hash as string | null),
     commandLine: str(row.command_line as string | null),
     configSnapshot: snapshotRaw ? (snapshotRaw as unknown as ScanConfigSnapshot) : undefined,
+    engineVersion: str(row.engine_version as string | null),
   };
 }
 
@@ -421,7 +426,7 @@ export function listAllScans(limit = 200): ScanRecord[] {
 
 export function insertScan(scan: ScanRecord): void {
   db.prepare(
-    'INSERT INTO scans (id, project_id, status, issue_count, scanned_at, finished_at, file_count, baseline_scan_id, rules, rulepacks, message, src_hash, command_line, config_snapshot) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO scans (id, project_id, status, issue_count, scanned_at, finished_at, file_count, baseline_scan_id, rules, rulepacks, message, src_hash, command_line, config_snapshot, engine_version) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
   ).run(
     scan.id,
     scan.projectId,
@@ -437,6 +442,7 @@ export function insertScan(scan: ScanRecord): void {
     scan.srcHash ?? null,
     scan.commandLine ?? null,
     scan.configSnapshot ? JSON.stringify(scan.configSnapshot) : null,
+    scan.engineVersion ?? null,
   );
 }
 
@@ -450,6 +456,7 @@ export function updateScan(id: string, patch: Partial<Omit<ScanRecord, 'id' | 'p
   if (patch.message !== undefined) { sets.push('message = ?'); values.push(patch.message ?? null); }
   if (patch.srcHash !== undefined) { sets.push('src_hash = ?'); values.push(patch.srcHash ?? null); }
   if (patch.commandLine !== undefined) { sets.push('command_line = ?'); values.push(patch.commandLine ?? null); }
+  if (patch.engineVersion !== undefined) { sets.push('engine_version = ?'); values.push(patch.engineVersion ?? null); }
   if (patch.configSnapshot !== undefined) {
     sets.push('config_snapshot = ?');
     values.push(patch.configSnapshot ? JSON.stringify(patch.configSnapshot) : null);

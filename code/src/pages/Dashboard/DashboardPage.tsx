@@ -1,13 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  CheckCircle2,
-  FolderOpen,
-  Puzzle,
-  Radar,
-  ShieldAlert,
-  XCircle,
-} from 'lucide-react';
+import { FolderOpen, Puzzle, Radar, ShieldAlert } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   Card,
@@ -23,6 +16,7 @@ import type { IScanResult } from '@/data/scanresults';
 import { SEVERITY_BAR_CLASS, SEVERITY_ORDER } from '@/lib/severity';
 import { cn } from '@/lib/utils';
 import { api, type HealthInfo } from '@/lib/api';
+import EngineCard from '@/pages/Dashboard/EngineCard';
 
 /** 项目维度的最新风险快照：最近一次已完成扫描及其问题明细 */
 interface ProjectRisk {
@@ -280,43 +274,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex min-h-0 flex-col gap-4">
-          <Card className="flex min-h-0 flex-1 flex-col">
-            <CardHeader className="shrink-0 pb-3">
-              <CardTitle className="text-base">引擎状态</CardTitle>
-            </CardHeader>
-            <CardContent className="flex min-h-0 flex-1 flex-col justify-center space-y-2 text-sm">
-              {health === null ? (
-                <p className="text-muted-foreground">加载中…</p>
-              ) : health.engine && health.engine !== 'MISSING' ? (
-                <>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="size-4 text-success" />
-                    <span>引擎就绪</span>
-                    {health.engineVersion && (
-                      <Badge variant="secondary" className="font-normal">
-                        v{health.engineVersion}
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    来源：{health.engineSource ?? '未知'} · 由 manifest 可复现每次扫描
-                  </p>
-                </>
-              ) : (
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <XCircle className="size-4 text-destructive" />
-                    <span>引擎不可用</span>
-                  </div>
-                  {health.engineHint && (
-                    <p className="whitespace-pre-line text-xs text-muted-foreground">
-                      {health.engineHint}
-                    </p>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <EngineCard health={health} scanRunning={hasScanning} onUpgraded={load} />
 
           <Card className="flex min-h-0 flex-1 flex-col">
             <CardHeader className="shrink-0 pb-3">

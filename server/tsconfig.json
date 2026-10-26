@@ -7,6 +7,8 @@
     "types": ["node"],
     "strict": true,
     "noEmit": true,
+    // scripts/ 下的 .mjs 是脚本与后端共用的纯 JS 模块（如 engine-install.mjs），需要参与解析
+    "allowJs": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true

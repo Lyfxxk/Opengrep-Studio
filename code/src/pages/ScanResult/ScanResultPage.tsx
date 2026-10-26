@@ -35,6 +35,8 @@ export default function ScanResultPage() {
   const { id, scanId } = useParams();
   const [project, setProject] = useState<IProject | null>(null);
   const [scan, setScan] = useState<IScanResult | null>(null);
+  /** 基线扫描记录：只用来比对引擎版本，跨版本基线对比会给标识 */
+  const [baselineScan, setBaselineScan] = useState<IScanResult | null>(null);
   const [issues, setIssues] = useState<IIssue[]>([]);
   const [loading, setLoading] = useState(true);
   /** 首次加载即失败（区别于"记录不存在"：网络/后端异常时给出可重试的提示） */
@@ -56,12 +58,16 @@ export default function ScanResultPage() {
       const scanData = await api.getScan(scanId);
       if (requestSeqRef.current !== seq) return;
       setScan(scanData);
-      const [projects, issueList] = await Promise.all([
+      const [projects, issueList, baseline] = await Promise.all([
         id ? api.listProjects() : Promise.resolve([]),
         scanData.status === 'completed' ? api.listIssues(scanId) : Promise.resolve([]),
+        scanData.baselineScanId
+          ? api.getScan(scanData.baselineScanId).catch(() => null)
+          : Promise.resolve(null),
       ]);
       if (requestSeqRef.current !== seq) return;
       setProject(projects.find((item) => item.id === id) ?? null);
+      setBaselineScan(baseline);
       setIssues(issueList);
       pollErrorShownRef.current = false;
       loadedOnceRef.current = true;
@@ -281,7 +287,20 @@ export default function ScanResultPage() {
                   </dt>
                   <dd className="min-w-0 text-right">
                     {scan.baselineScanId ? (
-                      <span className="font-mono text-xs">{scan.baselineScanId}</span>
+                      <span className="inline-flex flex-wrap items-center justify-end gap-1.5">
+                        <span className="font-mono text-xs">{scan.baselineScanId}</span>
+                        {baselineScan &&
+                          scan.engineVersion &&
+                          baselineScan.engineVersion &&
+                          baselineScan.engineVersion !== scan.engineVersion && (
+                            <Badge
+                              className="bg-warning/15 px-1.5 font-normal text-warning"
+                              title={`基线 v${baselineScan.engineVersion} · 本次 v${scan.engineVersion}，新增/修复项可能来自引擎升级`}
+                            >
+                              引擎版本不同
+                            </Badge>
+                          )}
+                      </span>
                     ) : (
                       <span className="text-muted-foreground">未设置</span>
                     )}

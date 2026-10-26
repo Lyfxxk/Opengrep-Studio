@@ -66,8 +66,6 @@ export const config = {
   customRulesDir:
     process.env.CUSTOM_RULES_DIR ?? path.join(serverRoot, 'rules', 'custom'),
   opengrepBin: resolvedEngine.bin,
-  /** setup:engine 下载引擎时使用的上游版本（与 README 标注一致） */
-  engineVersion: '1.31.0',
   maxUploadBytes: 200 * 1024 * 1024,
   maxExtractedBytes: 1024 * 1024 * 1024,
   /** 单次导入的条目上限（ZIP 条目 / 解压文件数 / 克隆文件数 / SARIF 结果数共用同一闸） */

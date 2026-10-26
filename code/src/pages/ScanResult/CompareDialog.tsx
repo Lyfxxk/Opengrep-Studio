@@ -149,6 +149,17 @@ export default function CompareDialog({ scanId, onClose }: CompareDialogProps) {
           </Button>
         </div>
 
+        {/* 跨引擎版本的基线对比有噪音：新引擎会新增检测、修复误报，先提示再让人看差异 */}
+        {diff?.engine?.mismatch && (
+          <p className="flex items-start gap-1.5 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
+            <CircleAlert className="mt-0.5 size-3.5 shrink-0" />
+            <span>
+              两次扫描的引擎版本不同（v{diff.engine.against ?? '未知'} → v{diff.engine.current ?? '未知'}）：
+              新增 / 修复项可能来自引擎升级而非代码改动，请结合版本差异判断。
+            </span>
+          </p>
+        )}
+
         {diff && (
           <Tabs defaultValue="issues">
             <TabsList>
