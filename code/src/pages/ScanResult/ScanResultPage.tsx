@@ -58,16 +58,21 @@ export default function ScanResultPage() {
       const scanData = await api.getScan(scanId);
       if (requestSeqRef.current !== seq) return;
       setScan(scanData);
+      const settled = scanData.status === 'completed';
+      // 项目列表与基线记录在扫描期间不会变化：只在首次加载与扫描完成时取，避免轮询每 1.5s 白拉两个接口
+      const needMeta = settled || !loadedOnceRef.current;
       const [projects, issueList, baseline] = await Promise.all([
-        id ? api.listProjects() : Promise.resolve([]),
-        scanData.status === 'completed' ? api.listIssues(scanId) : Promise.resolve([]),
-        scanData.baselineScanId
+        needMeta && id ? api.listProjects() : Promise.resolve([]),
+        settled ? api.listIssues(scanId) : Promise.resolve([]),
+        needMeta && scanData.baselineScanId
           ? api.getScan(scanData.baselineScanId).catch(() => null)
           : Promise.resolve(null),
       ]);
       if (requestSeqRef.current !== seq) return;
-      setProject(projects.find((item) => item.id === id) ?? null);
-      setBaselineScan(baseline);
+      if (needMeta) {
+        setProject(projects.find((item) => item.id === id) ?? null);
+        setBaselineScan(baseline);
+      }
       setIssues(issueList);
       pollErrorShownRef.current = false;
       loadedOnceRef.current = true;

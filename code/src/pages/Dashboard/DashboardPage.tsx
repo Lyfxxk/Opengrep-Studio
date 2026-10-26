@@ -61,6 +61,8 @@ export default function DashboardPage() {
   const [packs, setPacks] = useState<IRulePack[] | null>(null);
   const [health, setHealth] = useState<HealthInfo | null>(null);
   const [risks, setRisks] = useState<ProjectRisk[] | null>(null);
+  // 任一核心接口失败置位：失败要显式提示，不能把"加载失败"伪装成零数据
+  const [loadFailed, setLoadFailed] = useState(false);
 
   // 序号守卫：interval 与 visibilitychange 可能并发触发 load，慢的旧响应后到不能覆盖新数据
   const loadSeqRef = useRef(0);
@@ -74,8 +76,10 @@ export default function DashboardPage() {
       api.getHealth(),
     ]);
     if (seq !== loadSeqRef.current) return;
-    setProjects(projectRes.status === 'fulfilled' ? projectRes.value : []);
-    setScans(scanRes.status === 'fulfilled' ? scanRes.value : []);
+    setLoadFailed([projectRes, scanRes, packRes].some((res) => res.status === 'rejected'));
+    // 失败保持 null（未加载态）：渲染成空数组会把失败伪装成"零数据/尚未建档"
+    setProjects(projectRes.status === 'fulfilled' ? projectRes.value : null);
+    setScans(scanRes.status === 'fulfilled' ? scanRes.value : null);
     setPacks(packRes.status === 'fulfilled' ? packRes.value : null);
     setHealth(healthRes.status === 'fulfilled' ? healthRes.value : null);
   }, []);
@@ -172,12 +176,17 @@ export default function DashboardPage() {
   return (
     // 整页锁定在视口内（lg 及以上）：统计卡固定行，主体卡片 flex 撑满剩余高度，内容超出走卡片内滚动
     <div className="flex flex-col gap-4 lg:h-full">
+      {loadFailed && (
+        <p className="shrink-0 rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-2 text-xs text-destructive">
+          部分数据加载失败，当前展示可能不完整，将自动重试
+        </p>
+      )}
       <div className="grid shrink-0 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           icon={FolderOpen}
           label="审计项目"
           value={projects?.length ?? '—'}
-          sub={hasData ? undefined : '尚未建档'}
+          sub={projects === null ? undefined : hasData ? undefined : '尚未建档'}
         />
         <StatCard
           icon={Radar}
@@ -219,7 +228,9 @@ export default function DashboardPage() {
                 <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
                   {hasData
                     ? '最近一轮扫描未检出问题，或尚无已完成的扫描'
-                    : '暂无数据，到「项目管理」创建项目并完成一次扫描后，这里会展示风险分布'}
+                    : projects === null
+                      ? '数据加载中…'
+                      : '暂无数据，到「项目管理」创建项目并完成一次扫描后，这里会展示风险分布'}
                 </p>
               ) : (
                 SEVERITY_ORDER.map((severity) => {

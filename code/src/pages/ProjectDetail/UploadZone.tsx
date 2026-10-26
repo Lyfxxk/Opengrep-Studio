@@ -18,7 +18,6 @@ export interface UploadZoneState {
   progress?: number;
   /** 上传时按 .gitignore 忽略规则剪枝掉的文件数（仅 upload 来源） */
   ignoredCount?: number;
-  languageStats?: Record<string, number>;
 }
 
 const MAX_FILE_SIZE = 200 * 1024 * 1024;
@@ -265,7 +264,12 @@ export default function UploadZone({
           event.preventDefault();
           setDragActive(true);
         }}
-        onDragLeave={() => setDragActive(false)}
+        onDragLeave={(event) => {
+          // 拖拽经过子元素同样触发 dragLeave：只有指针真正离开容器时才取消高亮，避免闪烁
+          if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+            setDragActive(false);
+          }
+        }}
         onDrop={(event) => void handleDrop(event)}
         className={cn(
           'flex cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed p-10 text-center transition-colors',

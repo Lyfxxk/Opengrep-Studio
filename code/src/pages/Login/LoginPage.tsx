@@ -331,7 +331,7 @@ export default function LoginPage() {
               </form>
             </div>
           ) : (
-            <div className="success-state show">
+            <div className="success-state">
               <div className="success-mark" aria-hidden="true">
                 <svg
                   viewBox="0 0 24 24"

@@ -29,9 +29,20 @@ server/scripts/seed-src/*.tgz
 # Docker 本地覆盖配置（docker compose 自动合并，属个人环境）
 docker-compose.override.yml
 
-# 本地工具会话状态（ZCode plans、WorkBuddy 等）
+# 本地工具会话状态（ZCode plans、WorkBuddy 及各主流 AI 编码助手的本地会话/计划/缓存）
 .zcode/
 .workbuddy/
+.claude/
+.cursor/
+.windsurf/
+.gemini/
+.codex/
+.qwen/
+.trae/
+.opencode/
+.aider*
+.copilot/
+.continue/
 
 # 本机私有的 Agent 项目规范（个人维护，不入库）
 AGENTS.md

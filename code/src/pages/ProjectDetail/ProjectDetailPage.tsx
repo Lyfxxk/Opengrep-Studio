@@ -78,6 +78,16 @@ export default function ProjectDetailPage() {
     }
   }, [id]);
 
+  // 路由 :id 切换会复用同一组件实例：先重置上一个项目留下的状态，避免旧数据在新 URL 下闪现甚至误操作
+  useEffect(() => {
+    setProject(null);
+    setScans([]);
+    setLoadFailed(false);
+    loadedOnceRef.current = false;
+    prevScansRef.current = [];
+    pollErrorShownRef.current = false;
+  }, [id]);
+
   useEffect(() => {
     void refresh();
   }, [refresh]);
@@ -164,9 +174,6 @@ export default function ProjectDetailPage() {
       );
       if (result.languageStats) {
         setProject((prev) => (prev ? { ...prev, languageStats: result.languageStats } : prev));
-        setUpload((prev) =>
-          prev.status === 'uploaded' ? { ...prev, languageStats: result.languageStats } : prev,
-        );
       }
     } catch (error) {
       setUpload({ status: 'idle' });
@@ -187,9 +194,6 @@ export default function ProjectDetailPage() {
       toast.success(`仓库克隆成功，共 ${result.fileCount} 个文件，可以开始扫描`);
       if (result.languageStats) {
         setProject((prev) => (prev ? { ...prev, languageStats: result.languageStats } : prev));
-        setUpload((prev) =>
-          prev.status === 'uploaded' ? { ...prev, languageStats: result.languageStats } : prev,
-        );
       }
     } catch (error) {
       setUpload({ status: 'idle' });
@@ -378,35 +382,38 @@ export default function ProjectDetailPage() {
       <Card className="overflow-hidden">
         <CardHeader className="flex-row items-center justify-between space-y-0">
           <CardTitle className="text-base">扫描历史</CardTitle>
-          <div className="flex items-center gap-2">
-            <span className="hidden text-xs text-muted-foreground sm:inline">
-              外部工具的扫描结果（SARIF 2.x）可导入后统一查看与对比
-            </span>
-            <Button
-              variant="outline"
-              className="h-8 gap-1"
-              disabled={importingSarif}
-              onClick={() => sarifInputRef.current?.click()}
-            >
-              {importingSarif ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <FileUp className="size-4" />
-              )}
-              {importingSarif ? '导入中…' : '导入 SARIF'}
-            </Button>
-            <input
-              ref={sarifInputRef}
-              type="file"
-              accept=".sarif,.json"
-              className="hidden"
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                event.target.value = '';
-                if (file) void handleImportSarif(file);
-              }}
-            />
-          </div>
+          {/* 演示模式无后端：SARIF 导入没有 mock 实现，隐藏入口避免点了必失败 */}
+          {!api.isMockMode && (
+            <div className="flex items-center gap-2">
+              <span className="hidden text-xs text-muted-foreground sm:inline">
+                外部工具的扫描结果（SARIF 2.x）可导入后统一查看与对比
+              </span>
+              <Button
+                variant="outline"
+                className="h-8 gap-1"
+                disabled={importingSarif}
+                onClick={() => sarifInputRef.current?.click()}
+              >
+                {importingSarif ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <FileUp className="size-4" />
+                )}
+                {importingSarif ? '导入中…' : '导入 SARIF'}
+              </Button>
+              <input
+                ref={sarifInputRef}
+                type="file"
+                accept=".sarif,.json"
+                className="hidden"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  event.target.value = '';
+                  if (file) void handleImportSarif(file);
+                }}
+              />
+            </div>
+          )}
         </CardHeader>
         <CardContent className="p-0">
           <ScanHistoryTable
