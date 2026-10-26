@@ -1,7 +1,7 @@
 # Opengrep Studio 内置安全规则包（security）
 # 来源: https://github.com/opengrep/opengrep-rules （精选子集）
 # 许可: LGPL 2.1 + Commons Clause（不得将规则单独出售；保留本出处声明）
-# 精选标准: 含安全元数据的优先、每语言 ≤ 50 条（官方不足 50 条时全量收录），剔除 correctness 目录
+# 精选标准: 含 CWE/OWASP 安全元数据的一档优先、全量收录（ERROR 优先排序），剔除 correctness 目录
 # 校验: opengrep validate --config server/rules/security
 rules:
 - id: go.dangerous-command-write
@@ -2564,3 +2564,1019 @@ rules:
       source: opengrep-rules
       upstream-path: go/lang/security/shared-url-struct-mutation.yaml
       upstream-id: shared-url-struct-mutation
+- id: go.ssl-v3-is-insecure
+  message: SSLv3 is insecure because it has known vulnerabilities. Starting with go1.14, SSLv3 will be removed. Instead, use 'tls.VersionTLS13'.
+  metadata:
+    cwe:
+    - 'CWE-327: Use of a Broken or Risky Cryptographic Algorithm'
+    owasp:
+    - A03:2017 - Sensitive Data Exposure
+    - A02:2021 - Cryptographic Failures
+    source-rule-url: https://github.com/securego/gosec/blob/master/rules/tls_config.go
+    references:
+    - https://golang.org/doc/go1.14#crypto/tls
+    - https://www.us-cert.gov/ncas/alerts/TA14-290A
+    category: security
+    technology:
+    - go
+    confidence: HIGH
+    subcategory:
+    - vuln
+    likelihood: MEDIUM
+    impact: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/audit/crypto/ssl.yaml
+      upstream-id: ssl-v3-is-insecure
+  languages:
+  - go
+  severity: WARNING
+  fix-regex:
+    regex: VersionSSL30
+    replacement: VersionTLS13
+  pattern: 'tls.Config{..., MinVersion: $TLS.VersionSSL30, ...}'
+- id: go.string-formatted-query
+  languages:
+  - go
+  message: String-formatted SQL query detected. This could lead to SQL injection if the string is not sanitized properly. Audit this call to ensure the SQL is not manipulable by external data.
+  severity: WARNING
+  metadata:
+    owasp:
+    - A01:2017 - Injection
+    - A03:2021 - Injection
+    cwe:
+    - 'CWE-89: Improper Neutralization of Special Elements used in an SQL Command (''SQL Injection'')'
+    source-rule-url: https://github.com/securego/gosec
+    category: security
+    technology:
+    - go
+    confidence: LOW
+    references:
+    - https://owasp.org/Top10/A03_2021-Injection
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: HIGH
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/audit/database/string-formatted-query.yaml
+      upstream-id: string-formatted-query
+  patterns:
+  - metavariable-regex:
+      metavariable: $OBJ
+      regex: (?i).*(db|database)
+  - pattern-not-inside: '$VAR = "..." + "..."
+
+      ...
+
+      $OBJ.$SINK(..., $VAR, ...)
+
+      '
+  - pattern-not: $OBJ.Exec("...")
+  - pattern-not: $OBJ.ExecContext($CTX, "...")
+  - pattern-not: $OBJ.Query("...")
+  - pattern-not: $OBJ.QueryContext($CTX, "...")
+  - pattern-not: $OBJ.QueryRow("...")
+  - pattern-not: $OBJ.QueryRow($CTX, "...")
+  - pattern-not: $OBJ.QueryRowContext($CTX, "...")
+  - pattern-either:
+    - pattern: $OBJ.Exec($X + ...)
+    - pattern: $OBJ.ExecContext($CTX, $X + ...)
+    - pattern: $OBJ.Query($X + ...)
+    - pattern: $OBJ.QueryContext($CTX, $X + ...)
+    - pattern: $OBJ.QueryRow($X + ...)
+    - pattern: $OBJ.QueryRow($CTX, $X + ...)
+    - pattern: $OBJ.QueryRowContext($CTX, $X + ...)
+    - pattern: $OBJ.Exec(fmt.$P("...", ...))
+    - pattern: $OBJ.ExecContext($CTX, fmt.$P("...", ...))
+    - pattern: $OBJ.Query(fmt.$P("...", ...))
+    - pattern: $OBJ.QueryContext($CTX, fmt.$P("...", ...))
+    - pattern: $OBJ.QueryRow(fmt.$P("...", ...))
+    - pattern: $OBJ.QueryRow($CTX, fmt.$U("...", ...))
+    - pattern: $OBJ.QueryRowContext($CTX, fmt.$P("...", ...))
+    - patterns:
+      - pattern-either:
+        - pattern: $QUERY = fmt.Fprintf($F, "$SQLSTR", ...)
+        - pattern: $QUERY = fmt.Sprintf("$SQLSTR", ...)
+        - pattern: $QUERY = fmt.Printf("$SQLSTR", ...)
+        - pattern: $QUERY = $X + ...
+      - pattern-either:
+        - pattern-inside: "func $FUNC(...) {\n    ...\n    $OBJ.Query($QUERY, ...)\n    ...\n}\n"
+        - pattern-inside: "func $FUNC(...) {\n    ...\n    $OBJ.ExecContext($CTX, $QUERY, ...)\n    ...\n}\n"
+        - pattern-inside: "func $FUNC(...) {\n    ...\n    $OBJ.Exec($QUERY, ...)\n    ...\n}\n"
+        - pattern-inside: "func $FUNC(...) {\n    ...\n    $OBJ.QueryRow($CTX, $QUERY)\n    ...\n}\n"
+        - pattern-inside: "func $FUNC(...) {\n    ...\n    $OBJ.QueryRow($QUERY)\n    ...\n}\n"
+        - pattern-inside: "func $FUNC(...) {\n    ...\n    $OBJ.QueryContext($CTX, $QUERY)\n    ...\n}\n"
+        - pattern-inside: "func $FUNC(...) {\n    ...\n    $OBJ.QueryRowContext($CTX, $QUERY, ...)\n    ...\n}\n"
+- id: go.tainted-url-host
+  languages:
+  - go
+  message: A request was found to be crafted from user-input `$REQUEST`. This can lead to Server-Side Request Forgery (SSRF) vulnerabilities, potentially exposing sensitive data. It is recommend where possible to not allow user-input to craft the base request, but to be treated as part of the path or query parameter. When user-input is necessary to craft the request, it is recommended to follow OWASP best practices to prevent abuse, including using an allowlist.
+  options:
+    interfile: true
+  metadata:
+    cwe:
+    - 'CWE-918: Server-Side Request Forgery (SSRF)'
+    owasp:
+    - A10:2021 - Server-Side Request Forgery (SSRF)
+    references:
+    - https://goteleport.com/blog/ssrf-attacks/
+    category: security
+    technology:
+    - go
+    license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    confidence: HIGH
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    impact: MEDIUM
+    likelihood: MEDIUM
+    interfile: true
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/injection/tainted-url-host.yaml
+      upstream-id: tainted-url-host
+  mode: taint
+  pattern-sources:
+  - label: INPUT
+    patterns:
+    - pattern-either:
+      - pattern: '($REQUEST : *http.Request).$ANYTHING
+
+          '
+      - pattern: '($REQUEST : http.Request).$ANYTHING
+
+          '
+    - metavariable-regex:
+        metavariable: $ANYTHING
+        regex: ^(BasicAuth|Body|Cookie|Cookies|Form|FormValue|GetBody|Host|MultipartReader|ParseForm|ParseMultipartForm|PostForm|PostFormValue|Referer|RequestURI|Trailer|TransferEncoding|UserAgent|URL)$
+  - label: CLEAN
+    requires: INPUT
+    patterns:
+    - pattern-either:
+      - pattern: '"$URLSTR" + $INPUT
+
+          '
+      - patterns:
+        - pattern-either:
+          - pattern: fmt.Fprintf($F, "$URLSTR", $INPUT, ...)
+          - pattern: fmt.Sprintf("$URLSTR", $INPUT, ...)
+          - pattern: fmt.Printf("$URLSTR", $INPUT, ...)
+    - metavariable-regex:
+        metavariable: $URLSTR
+        regex: .*//[a-zA-Z0-10]+\..*
+  pattern-sinks:
+  - requires: INPUT and not CLEAN
+    patterns:
+    - pattern-either:
+      - patterns:
+        - pattern-either:
+          - patterns:
+            - pattern-inside: '$CLIENT := &http.Client{...}
+
+                ...
+
+                '
+            - pattern: $CLIENT.$METHOD($URL, ...)
+          - pattern: http.$METHOD($URL, ...)
+        - metavariable-regex:
+            metavariable: $METHOD
+            regex: ^(Get|Head|Post|PostForm)$
+      - patterns:
+        - pattern: 'http.NewRequest("$METHOD", $URL, ...)
+
+            '
+        - metavariable-regex:
+            metavariable: $METHOD
+            regex: ^(GET|HEAD|POST|POSTFORM)$
+    - focus-metavariable: $URL
+  severity: WARNING
+- id: go.tls-with-insecure-cipher
+  message: Detected an insecure CipherSuite via the 'tls' module. This suite is considered weak. Use the function 'tls.CipherSuites()' to get a list of good cipher suites. See https://golang.org/pkg/crypto/tls/#InsecureCipherSuites for why and what other cipher suites to use.
+  metadata:
+    cwe:
+    - 'CWE-327: Use of a Broken or Risky Cryptographic Algorithm'
+    owasp:
+    - A03:2017 - Sensitive Data Exposure
+    - A02:2021 - Cryptographic Failures
+    source-rule-url: https://github.com/securego/gosec/blob/master/rules/tls.go
+    references:
+    - https://golang.org/pkg/crypto/tls/#InsecureCipherSuites
+    category: security
+    technology:
+    - go
+    confidence: HIGH
+    subcategory:
+    - vuln
+    likelihood: HIGH
+    impact: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/audit/crypto/tls.yaml
+      upstream-id: tls-with-insecure-cipher
+  languages:
+  - go
+  severity: WARNING
+  pattern-either:
+  - pattern: 'tls.Config{..., CipherSuites: []$TYPE{..., tls.TLS_RSA_WITH_RC4_128_SHA, ...}}
+
+      '
+  - pattern: 'tls.Config{..., CipherSuites: []$TYPE{..., tls.TLS_RSA_WITH_3DES_EDE_CBC_SHA, ...}}
+
+      '
+  - pattern: 'tls.Config{..., CipherSuites: []$TYPE{..., tls.TLS_RSA_WITH_AES_128_CBC_SHA256, ...}}
+
+      '
+  - pattern: 'tls.Config{..., CipherSuites: []$TYPE{..., tls.TLS_ECDHE_ECDSA_WITH_RC4_128_SHA, ...}}
+
+      '
+  - pattern: 'tls.Config{..., CipherSuites: []$TYPE{..., tls.TLS_ECDHE_RSA_WITH_RC4_128_SHA, ...}}
+
+      '
+  - pattern: 'tls.Config{..., CipherSuites: []$TYPE{..., tls.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA, ...}}
+
+      '
+  - pattern: 'tls.Config{..., CipherSuites: []$TYPE{..., tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256, ...}}
+
+      '
+  - pattern: 'tls.Config{..., CipherSuites: []$TYPE{..., tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256, ...}}
+
+      '
+  - pattern: 'tls.CipherSuite{..., TLS_RSA_WITH_RC4_128_SHA, ...}
+
+      '
+  - pattern: 'tls.CipherSuite{..., TLS_RSA_WITH_3DES_EDE_CBC_SHA, ...}
+
+      '
+  - pattern: 'tls.CipherSuite{..., TLS_RSA_WITH_AES_128_CBC_SHA256, ...}
+
+      '
+  - pattern: 'tls.CipherSuite{..., TLS_ECDHE_ECDSA_WITH_RC4_128_SHA, ...}
+
+      '
+  - pattern: 'tls.CipherSuite{..., TLS_ECDHE_RSA_WITH_RC4_128_SHA, ...}
+
+      '
+  - pattern: 'tls.CipherSuite{..., TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA, ...}
+
+      '
+  - pattern: 'tls.CipherSuite{..., TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256, ...}
+
+      '
+  - pattern: 'tls.CipherSuite{..., TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256, ...}
+
+      '
+- id: go.unescaped-data-in-htmlattr
+  message: Found a formatted template string passed to 'template. HTMLAttr()'. 'template.HTMLAttr()' does not escape contents. Be absolutely sure there is no user-controlled data in this template or validate and sanitize the data before passing it into the template.
+  metadata:
+    cwe:
+    - 'CWE-79: Improper Neutralization of Input During Web Page Generation (''Cross-site Scripting'')'
+    owasp:
+    - A07:2017 - Cross-Site Scripting (XSS)
+    - A03:2021 - Injection
+    references:
+    - https://golang.org/pkg/html/template/#HTMLAttr
+    category: security
+    technology:
+    - go
+    confidence: LOW
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/audit/net/unescaped-data-in-htmlattr.yaml
+      upstream-id: unescaped-data-in-htmlattr
+  languages:
+  - go
+  severity: WARNING
+  pattern-either:
+  - pattern: template.HTMLAttr($T + $X, ...)
+  - pattern: template.HTMLAttr(fmt.$P("...", ...), ...)
+  - pattern: '$T = "..."
+
+      ...
+
+      $T = $FXN(..., $T, ...)
+
+      ...
+
+      template.HTMLAttr($T, ...)
+
+      '
+  - pattern: '$T = fmt.$P("...", ...)
+
+      ...
+
+      template.HTMLAttr($T, ...)
+
+      '
+  - pattern: '$T, $ERR = fmt.$P("...", ...)
+
+      ...
+
+      template.HTMLAttr($T, ...)
+
+      '
+  - pattern: '$T = $X + $Y
+
+      ...
+
+      template.HTMLAttr($T, ...)
+
+      '
+  - pattern: '$T = "..."
+
+      ...
+
+      $OTHER, $ERR = fmt.$P(..., $T, ...)
+
+      ...
+
+      template.HTMLAttr($OTHER, ...)'
+- id: go.unescaped-data-in-js
+  message: Found a formatted template string passed to 'template.JS()'. 'template.JS()' does not escape contents. Be absolutely sure there is no user-controlled data in this template.
+  metadata:
+    cwe:
+    - 'CWE-79: Improper Neutralization of Input During Web Page Generation (''Cross-site Scripting'')'
+    owasp:
+    - A07:2017 - Cross-Site Scripting (XSS)
+    - A03:2021 - Injection
+    references:
+    - https://golang.org/pkg/html/template/#JS
+    category: security
+    technology:
+    - go
+    confidence: LOW
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/audit/net/unescaped-data-in-js.yaml
+      upstream-id: unescaped-data-in-js
+  languages:
+  - go
+  severity: WARNING
+  pattern-either:
+  - pattern: template.JS($T + $X, ...)
+  - pattern: template.JS(fmt.$P("...", ...), ...)
+  - pattern: '$T = "..."
+
+      ...
+
+      $T = $FXN(..., $T, ...)
+
+      ...
+
+      template.JS($T, ...)
+
+      '
+  - pattern: '$T = fmt.$P("...", ...)
+
+      ...
+
+      template.JS($T, ...)
+
+      '
+  - pattern: '$T, $ERR = fmt.$P("...", ...)
+
+      ...
+
+      template.JS($T, ...)
+
+      '
+  - pattern: '$T = $X + $Y
+
+      ...
+
+      template.JS($T, ...)
+
+      '
+  - pattern: '$T = "..."
+
+      ...
+
+      $OTHER, $ERR = fmt.$P(..., $T, ...)
+
+      ...
+
+      template.JS($OTHER, ...)
+
+      '
+- id: go.unescaped-data-in-url
+  message: Found a formatted template string passed to 'template.URL()'. 'template.URL()' does not escape contents, and this could result in XSS (cross-site scripting) and therefore confidential data being stolen. Sanitize data coming into this function or make sure that no user-controlled input is coming into the function.
+  metadata:
+    cwe:
+    - 'CWE-79: Improper Neutralization of Input During Web Page Generation (''Cross-site Scripting'')'
+    owasp:
+    - A07:2017 - Cross-Site Scripting (XSS)
+    - A03:2021 - Injection
+    references:
+    - https://golang.org/pkg/html/template/#URL
+    category: security
+    technology:
+    - go
+    confidence: LOW
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/audit/net/unescaped-data-in-url.yaml
+      upstream-id: unescaped-data-in-url
+  languages:
+  - go
+  severity: WARNING
+  pattern-either:
+  - pattern: template.URL($T + $X, ...)
+  - pattern: template.URL(fmt.$P("...", ...), ...)
+  - pattern: '$T = "..."
+
+      ...
+
+      $T = $FXN(..., $T, ...)
+
+      ...
+
+      template.URL($T, ...)
+
+      '
+  - pattern: '$T = fmt.$P("...", ...)
+
+      ...
+
+      template.URL($T, ...)
+
+      '
+  - pattern: '$T, $ERR = fmt.$P("...", ...)
+
+      ...
+
+      template.URL($T, ...)
+
+      '
+  - pattern: '$T = $X + $Y
+
+      ...
+
+      template.URL($T, ...)
+
+      '
+  - pattern: '$T = "..."
+
+      ...
+
+      $OTHER, $ERR = fmt.$P(..., $T, ...)
+
+      ...
+
+      template.URL($OTHER, ...)'
+- id: go.unsafe-reflect-by-name
+  patterns:
+  - pattern-either:
+    - pattern: '$SMTH.MethodByName($NAME,...)
+
+        '
+    - pattern: '$SMTH.FieldByName($NAME,...)
+
+        '
+  - pattern-not: '$SMTH.MethodByName("...",...)
+
+      '
+  - pattern-not: '$SMTH.FieldByName("...",...)
+
+      '
+  - pattern-inside: 'import "reflect"
+
+      ...
+
+      '
+  message: If an attacker can supply values that the application then uses to determine which method or field to invoke, the potential exists for the attacker to create control flow paths through the application that were not intended by the application developers. This attack vector may allow the attacker to bypass authentication or access control checks or otherwise cause the application to behave in an unexpected manner.
+  metadata:
+    cwe:
+    - 'CWE-470: Use of Externally-Controlled Input to Select Classes or Code (''Unsafe Reflection'')'
+    owasp:
+    - A03:2021 - Injection
+    category: security
+    technology:
+    - go
+    confidence: LOW
+    references:
+    - https://owasp.org/Top10/A03_2021-Injection
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/audit/unsafe-reflect-by-name.yaml
+      upstream-id: unsafe-reflect-by-name
+  severity: WARNING
+  languages:
+  - go
+- id: go.unsafe-template-type
+  message: Semgrep could not determine that the argument to 'template.HTML()' is a constant. 'template.HTML()' and similar does not escape contents. Be absolutely sure there is no user-controlled data in this template. If user data can reach this template, you may have a XSS vulnerability. Instead, do not use this function and use 'template.Execute()'.
+  metadata:
+    cwe:
+    - 'CWE-79: Improper Neutralization of Input During Web Page Generation (''Cross-site Scripting'')'
+    owasp:
+    - A07:2017 - Cross-Site Scripting (XSS)
+    - A03:2021 - Injection
+    references:
+    - https://golang.org/pkg/html/template/#HTML
+    - https://github.com/0c34/govwa/blob/139693e56406b5684d2a6ae22c0af90717e149b8/vulnerability/xss/xss.go#L33
+    category: security
+    technology:
+    - go
+    confidence: LOW
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/audit/xss/template-html-does-not-escape.yaml
+      upstream-id: unsafe-template-type
+  languages:
+  - go
+  severity: WARNING
+  patterns:
+  - pattern-not: template.$ANY("..." + "...")
+  - pattern-not: template.$ANY("...")
+  - pattern-either:
+    - pattern: template.HTML(...)
+    - pattern: template.CSS(...)
+    - pattern: template.HTMLAttr(...)
+    - pattern: template.JS(...)
+    - pattern: template.JSStr(...)
+    - pattern: template.Srcset(...)
+    - pattern: template.URL(...)
+- id: go.use-of-DES
+  message: Detected DES cipher algorithm which is insecure. The algorithm is considered weak and has been deprecated. Use AES instead.
+  languages:
+  - go
+  severity: WARNING
+  metadata:
+    owasp:
+    - A03:2017 - Sensitive Data Exposure
+    - A02:2021 - Cryptographic Failures
+    cwe:
+    - 'CWE-327: Use of a Broken or Risky Cryptographic Algorithm'
+    source-rule-url: https://github.com/securego/gosec#available-rules
+    category: security
+    technology:
+    - go
+    references:
+    - https://owasp.org/Top10/A02_2021-Cryptographic_Failures
+    subcategory:
+    - vuln
+    likelihood: MEDIUM
+    impact: MEDIUM
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/audit/crypto/use_of_weak_crypto.yaml
+      upstream-id: use-of-DES
+  patterns:
+  - pattern-inside: 'import "crypto/des"
+
+      ...
+
+      '
+  - pattern-either:
+    - pattern: 'des.NewTripleDESCipher(...)
+
+        '
+    - pattern: 'des.NewCipher(...)
+
+        '
+- id: go.use-of-md5
+  message: Detected MD5 hash algorithm which is considered insecure. MD5 is not collision resistant and is therefore not suitable as a cryptographic signature. Use SHA256 or SHA3 instead.
+  languages:
+  - go
+  severity: WARNING
+  metadata:
+    owasp:
+    - A03:2017 - Sensitive Data Exposure
+    - A02:2021 - Cryptographic Failures
+    cwe:
+    - 'CWE-328: Use of Weak Hash'
+    source-rule-url: https://github.com/securego/gosec#available-rules
+    category: security
+    technology:
+    - go
+    confidence: MEDIUM
+    references:
+    - https://owasp.org/Top10/A02_2021-Cryptographic_Failures
+    subcategory:
+    - vuln
+    likelihood: MEDIUM
+    impact: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/audit/crypto/use_of_weak_crypto.yaml
+      upstream-id: use-of-md5
+  patterns:
+  - pattern-inside: 'import "crypto/md5"
+
+      ...
+
+      '
+  - pattern-either:
+    - pattern: 'md5.New()
+
+        '
+    - pattern: 'md5.Sum(...)
+
+        '
+- id: go.use-of-rc4
+  message: Detected RC4 cipher algorithm which is insecure. The algorithm has many known vulnerabilities. Use AES instead.
+  languages:
+  - go
+  severity: WARNING
+  metadata:
+    owasp:
+    - A03:2017 - Sensitive Data Exposure
+    - A02:2021 - Cryptographic Failures
+    cwe:
+    - 'CWE-327: Use of a Broken or Risky Cryptographic Algorithm'
+    source-rule-url: https://github.com/securego/gosec#available-rules
+    category: security
+    technology:
+    - go
+    references:
+    - https://owasp.org/Top10/A02_2021-Cryptographic_Failures
+    subcategory:
+    - vuln
+    likelihood: MEDIUM
+    impact: MEDIUM
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/audit/crypto/use_of_weak_crypto.yaml
+      upstream-id: use-of-rc4
+  patterns:
+  - pattern-inside: 'import "crypto/rc4"
+
+      ...
+
+      '
+  - pattern: rc4.NewCipher(...)
+- id: go.use-of-sha1
+  message: Detected SHA1 hash algorithm which is considered insecure. SHA1 is not collision resistant and is therefore not suitable as a cryptographic signature. Use SHA256 or SHA3 instead.
+  languages:
+  - go
+  severity: WARNING
+  metadata:
+    owasp:
+    - A03:2017 - Sensitive Data Exposure
+    - A02:2021 - Cryptographic Failures
+    cwe:
+    - 'CWE-328: Use of Weak Hash'
+    source-rule-url: https://github.com/securego/gosec#available-rules
+    category: security
+    technology:
+    - go
+    references:
+    - https://owasp.org/Top10/A02_2021-Cryptographic_Failures
+    subcategory:
+    - vuln
+    likelihood: MEDIUM
+    impact: MEDIUM
+    confidence: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/audit/crypto/use_of_weak_crypto.yaml
+      upstream-id: use-of-sha1
+  patterns:
+  - pattern-inside: 'import "crypto/sha1"
+
+      ...
+
+      '
+  - pattern-either:
+    - pattern: 'sha1.New()
+
+        '
+    - pattern: 'sha1.Sum(...)
+
+        '
+- id: go.use-of-unsafe-block
+  message: Using the unsafe package in Go gives you low-level memory management and many of the strengths of the C language, but also steps around the type safety of Go and can lead to buffer overflows and possible arbitrary code execution by an attacker. Only use this package if you absolutely know what you're doing.
+  languages:
+  - go
+  severity: WARNING
+  metadata:
+    cwe:
+    - 'CWE-242: Use of Inherently Dangerous Function'
+    source_rule_url: https://github.com/securego/gosec/blob/master/rules/unsafe.go
+    category: security
+    technology:
+    - go
+    confidence: LOW
+    references:
+    - https://cwe.mitre.org/data/definitions/242.html
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/audit/unsafe.yaml
+      upstream-id: use-of-unsafe-block
+  pattern: unsafe.$FUNC(...)
+- id: go.use-of-weak-rsa-key
+  message: RSA keys should be at least 2048 bits
+  languages:
+  - go
+  severity: WARNING
+  metadata:
+    cwe:
+    - 'CWE-326: Inadequate Encryption Strength'
+    owasp:
+    - A03:2017 - Sensitive Data Exposure
+    - A02:2021 - Cryptographic Failures
+    source-rule-url: https://github.com/securego/gosec/blob/master/rules/rsa.go
+    references:
+    - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html#algorithms
+    category: security
+    technology:
+    - go
+    confidence: HIGH
+    subcategory:
+    - audit
+    likelihood: HIGH
+    impact: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/audit/crypto/use_of_weak_rsa_key.yaml
+      upstream-id: use-of-weak-rsa-key
+  patterns:
+  - pattern-either:
+    - pattern: 'rsa.GenerateKey(..., $BITS)
+
+        '
+    - pattern: 'rsa.GenerateMultiPrimeKey(..., $BITS)
+
+        '
+  - metavariable-comparison:
+      metavariable: $BITS
+      comparison: $BITS < 2048
+  - focus-metavariable:
+    - $BITS
+  fix: '2048
+
+    '
+- id: go.use-tls
+  pattern: http.ListenAndServe($ADDR, $HANDLER)
+  fix: http.ListenAndServeTLS($ADDR, certFile, keyFile, $HANDLER)
+  metadata:
+    cwe:
+    - 'CWE-319: Cleartext Transmission of Sensitive Information'
+    owasp:
+    - A03:2017 - Sensitive Data Exposure
+    - A02:2021 - Cryptographic Failures
+    references:
+    - https://golang.org/pkg/net/http/#ListenAndServeTLS
+    category: security
+    technology:
+    - go
+    confidence: MEDIUM
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/audit/net/use-tls.yaml
+      upstream-id: use-tls
+  message: Found an HTTP server without TLS. Use 'http.ListenAndServeTLS' instead. See https://golang.org/pkg/net/http/#ListenAndServeTLS for more information.
+  languages:
+  - go
+  severity: WARNING
+- id: go.websocket-missing-origin-check
+  patterns:
+  - pattern-inside: 'import ("github.com/gorilla/websocket")
+
+      ...
+
+      '
+  - patterns:
+    - pattern-not-inside: '$UPGRADER = websocket.Upgrader{..., CheckOrigin: $FN ,...}
+
+        ...
+
+        '
+    - pattern-not-inside: '$UPGRADER.CheckOrigin = $FN2
+
+        ...
+
+        '
+    - pattern: '$UPGRADER.Upgrade(...)
+
+        '
+  message: 'The Origin header in the HTTP WebSocket handshake is used to guarantee that the connection accepted by the WebSocket is from a trusted origin domain. Failure to enforce can lead to Cross Site Request Forgery (CSRF). As per "gorilla/websocket" documentation: "A CheckOrigin function should carefully validate the request origin to prevent cross-site request forgery."'
+  languages:
+  - go
+  severity: WARNING
+  metadata:
+    category: security
+    cwe:
+    - 'CWE-352: Cross-Site Request Forgery (CSRF)'
+    owasp:
+    - A01:2021 - Broken Access Control
+    references:
+    - https://pkg.go.dev/github.com/gorilla/websocket#Upgrader
+    technology:
+    - gorilla
+    confidence: MEDIUM
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/gorilla/security/audit/websocket-missing-origin-check.yaml
+      upstream-id: websocket-missing-origin-check
+- id: go.wip-xss-using-responsewriter-and-printf
+  patterns:
+  - pattern-inside: "func $FUNC(..., $W http.ResponseWriter, ...) {\n  ...\n  var $TEMPLATE = \"...\"\n  ...\n  $W.Write([]byte(fmt.$PRINTF($TEMPLATE, ...)), ...)\n  ...\n}\n"
+  - pattern-either:
+    - pattern: '$PARAMS = r.URL.Query()
+
+        ...
+
+        $DATA, $ERR := $PARAMS[...]
+
+        ...
+
+        $INTERM = $ANYTHING(..., $DATA, ...)
+
+        ...
+
+        $W.Write([]byte(fmt.$PRINTF(..., $INTERM, ...)))
+
+        '
+    - pattern: '$PARAMS = r.URL.Query()
+
+        ...
+
+        $DATA, $ERR := $PARAMS[...]
+
+        ...
+
+        $INTERM = $DATA[...]
+
+        ...
+
+        $W.Write([]byte(fmt.$PRINTF(..., $INTERM, ...)))
+
+        '
+    - pattern: '$DATA, $ERR := r.URL.Query()[...]
+
+        ...
+
+        $INTERM = $DATA[...]
+
+        ...
+
+        $W.Write([]byte(fmt.$PRINTF(..., $INTERM, ...)))
+
+        '
+    - pattern: '$DATA, $ERR := r.URL.Query()[...]
+
+        ...
+
+        $INTERM = $ANYTHING(..., $DATA, ...)
+
+        ...
+
+        $W.Write([]byte(fmt.$PRINTF(..., $INTERM, ...)))
+
+        '
+    - pattern: '$PARAMS = r.URL.Query()
+
+        ...
+
+        $DATA, $ERR := $PARAMS[...]
+
+        ...
+
+        $W.Write([]byte(fmt.$PRINTF(..., $DATA, ...)))
+
+        '
+  message: Found data going from url query parameters into formatted data written to ResponseWriter. This could be XSS and should not be done. If you must do this, ensure your data is sanitized or escaped.
+  metadata:
+    cwe:
+    - 'CWE-79: Improper Neutralization of Input During Web Page Generation (''Cross-site Scripting'')'
+    owasp:
+    - A07:2017 - Cross-Site Scripting (XSS)
+    - A03:2021 - Injection
+    category: security
+    technology:
+    - go
+    confidence: MEDIUM
+    references:
+    - https://owasp.org/Top10/A03_2021-Injection
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+    - vuln
+    likelihood: LOW
+    impact: MEDIUM
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/security/audit/net/wip-xss-using-responsewriter-and-printf.yaml
+      upstream-id: wip-xss-using-responsewriter-and-printf
+  severity: WARNING
+  languages:
+  - go
+- id: go.channel-guarded-with-mutex
+  pattern-either:
+  - pattern: '$MUX.Lock()
+
+      $VALUE <- $CHANNEL
+
+      $MUX.Unlock()
+
+      '
+  - pattern: '$MUX.Lock()
+
+      $VALUE = <- $CHANNEL
+
+      $MUX.Unlock()
+
+      '
+  message: Detected a channel guarded with a mutex. Channels already have an internal mutex, so this is unnecessary. Remove the mutex. See https://hackmongo.com/page/golang-antipatterns/#guarded-channel for more information.
+  languages:
+  - go
+  severity: WARNING
+  metadata:
+    category: best-practice
+    technology:
+    - go
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/best-practice/channel-guarded-with-mutex.yaml
+      upstream-id: channel-guarded-with-mutex
+- id: go.hidden-goroutine
+  patterns:
+  - pattern-not: "func $FUNC(...) {\n  go func() {\n    ...\n  }(...)\n  $MORE\n}\n"
+  - pattern: "func $FUNC(...) {\n  go func() {\n    ...\n  }(...)\n}\n"
+  message: Detected a hidden goroutine. Function invocations are expected to synchronous, and this function will execute asynchronously because all it does is call a goroutine. Instead, remove the internal goroutine and call the function using 'go'.
+  languages:
+  - go
+  severity: WARNING
+  metadata:
+    category: best-practice
+    technology:
+    - go
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/best-practice/hidden-goroutine.yaml
+      upstream-id: hidden-goroutine
+- id: go.useless-if-body
+  pattern: "if ($X) {\n    $S\n} else {\n    $S\n}\n"
+  message: Detected identical statements in the if body and the else body of an if-statement. This will lead to the same code being executed no matter what the if-expression evaluates to. Instead, remove the if statement.
+  languages:
+  - go
+  severity: WARNING
+  metadata:
+    category: maintainability
+    technology:
+    - go
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/maintainability/useless-ifelse.yaml
+      upstream-id: useless-if-body
+- id: go.useless-if-conditional
+  message: Detected an if block that checks for the same condition on both branches (`$X`). The second condition check is useless as it is the same as the first, and therefore can be removed from the code,
+  languages:
+  - go
+  severity: WARNING
+  pattern: "if ($X) {\n    ...\n} else if ($X) {\n    ...\n}\n"
+  metadata:
+    category: maintainability
+    technology:
+    - go
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: go/lang/maintainability/useless-ifelse.yaml
+      upstream-id: useless-if-conditional

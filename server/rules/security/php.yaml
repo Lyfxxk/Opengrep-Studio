@@ -1,7 +1,7 @@
 # Opengrep Studio 内置安全规则包（security）
 # 来源: https://github.com/opengrep/opengrep-rules （精选子集）
 # 许可: LGPL 2.1 + Commons Clause（不得将规则单独出售；保留本出处声明）
-# 精选标准: 含安全元数据的优先、每语言 ≤ 50 条（官方不足 50 条时全量收录），剔除 correctness 目录
+# 精选标准: 含 CWE/OWASP 安全元数据的一档优先、全量收录（ERROR 优先排序），剔除 correctness 目录
 # 校验: opengrep validate --config server/rules/security
 rules:
 - id: php.assert-use
@@ -2394,3 +2394,301 @@ rules:
       source: opengrep-rules
       upstream-path: php/wordpress-plugins/security/audit/wp-authorisation-checks-audit.yaml
       upstream-id: wp-authorisation-checks-audit
+- id: php.wp-code-execution-audit
+  patterns:
+  - pattern-either:
+    - pattern: eval(...)
+    - pattern: assert(...)
+    - pattern: call_user_func(...)
+  message: These functions can lead to code injection if the data inside them is user-controlled. Don't use the input directly or validate the data properly before passing it to these functions.
+  paths:
+    include:
+    - wp-content/plugins/**/*.php
+  languages:
+  - php
+  severity: WARNING
+  metadata:
+    category: security
+    confidence: LOW
+    likelihood: LOW
+    impact: HIGH
+    subcategory:
+    - audit
+    technology:
+    - Wordpress Plugins
+    references:
+    - https://github.com/wpscanteam/wpscan/wiki/WordPress-Plugin-Security-Testing-Cheat-Sheet#php-code-execution
+    owasp:
+    - A03:2021 - Injection
+    cwe:
+    - 'CWE-94: Improper Control of Generation of Code (''Code Injection'')'
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/wordpress-plugins/security/audit/wp-code-execution-audit.yaml
+      upstream-id: wp-code-execution-audit
+- id: php.wp-command-execution-audit
+  patterns:
+  - pattern-either:
+    - pattern: system(...)
+    - pattern: exec(...)
+    - pattern: passthru(...)
+    - pattern: shell_exec(...)
+  message: These functions can lead to command execution if the data inside them is user-controlled. Don't use the input directly or validate the data properly before passing it to these functions.
+  paths:
+    include:
+    - wp-content/plugins/**/*.php
+  languages:
+  - php
+  severity: WARNING
+  metadata:
+    category: security
+    confidence: LOW
+    likelihood: LOW
+    impact: HIGH
+    subcategory:
+    - audit
+    technology:
+    - Wordpress Plugins
+    references:
+    - https://github.com/wpscanteam/wpscan/wiki/WordPress-Plugin-Security-Testing-Cheat-Sheet#command-execution
+    owasp:
+    - A03:2021 - Injection
+    cwe:
+    - 'CWE-78: Improper Neutralization of Special Elements used in an OS Command (''OS Command Injection'')'
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/wordpress-plugins/security/audit/wp-command-execution-audit.yaml
+      upstream-id: wp-command-execution-audit
+- id: php.wp-csrf-audit
+  pattern: check_ajax_referer(...,...,false)
+  message: Passing false or 0 as the third argument to this function will not cause the script to die, making the check useless.
+  paths:
+    include:
+    - wp-content/plugins/**/*.php
+  languages:
+  - php
+  severity: WARNING
+  metadata:
+    category: security
+    confidence: LOW
+    likelihood: LOW
+    impact: MEDIUM
+    subcategory:
+    - audit
+    technology:
+    - Wordpress Plugins
+    references:
+    - https://github.com/wpscanteam/wpscan/wiki/WordPress-Plugin-Security-Testing-Cheat-Sheet#cross-site-request-forgery-csrf
+    - https://developer.wordpress.org/reference/functions/check_ajax_referer/
+    owasp:
+    - A05:2021 - Security Misconfiguration
+    cwe:
+    - 'CWE-352: Cross-Site Request Forgery (CSRF)'
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/wordpress-plugins/security/audit/wp-csrf-audit.yaml
+      upstream-id: wp-csrf-audit
+- id: php.wp-file-download-audit
+  patterns:
+  - pattern-either:
+    - pattern: file(...)
+    - pattern: readfile(...)
+    - pattern: file_get_contents(...)
+  message: These functions can be used to read to content of the files if the data inside is user-controlled. Don't use the input directly or validate the data properly before passing it to these functions.
+  paths:
+    include:
+    - wp-content/plugins/**/*.php
+  languages:
+  - php
+  severity: WARNING
+  metadata:
+    category: security
+    confidence: LOW
+    likelihood: LOW
+    impact: MEDIUM
+    subcategory:
+    - audit
+    technology:
+    - Wordpress Plugins
+    references:
+    - https://github.com/wpscanteam/wpscan/wiki/WordPress-Plugin-Security-Testing-Cheat-Sheet#file-download
+    cwe:
+    - 'CWE-73: External Control of File Name or Path'
+    owasp:
+    - A01:2021 - Broken Access Control
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/wordpress-plugins/security/audit/wp-file-download-audit.yaml
+      upstream-id: wp-file-download-audit
+- id: php.wp-file-inclusion-audit
+  patterns:
+  - pattern-either:
+    - pattern: include(...)
+    - pattern: require(...)
+    - pattern: include_once(...)
+    - pattern: require_once(...)
+    - pattern: fread(...)
+  message: These functions can lead to Local File Inclusion (LFI) or Remote File Inclusion (RFI) if the data inside is user-controlled. Validate the data properly before passing it to these functions.
+  paths:
+    include:
+    - wp-content/plugins/**/*.php
+  languages:
+  - php
+  severity: WARNING
+  metadata:
+    category: security
+    confidence: LOW
+    likelihood: LOW
+    impact: HIGH
+    subcategory:
+    - audit
+    technology:
+    - Wordpress Plugins
+    references:
+    - https://github.com/wpscanteam/wpscan/wiki/WordPress-Plugin-Security-Testing-Cheat-Sheet#file-inclusion
+    owasp:
+    - A01:2021 - Broken Access Control
+    - A08:2021 - Software and Data Integrity Failures
+    cwe:
+    - 'CWE-22: Improper Limitation of a Pathname to a Restricted Directory (''Path Traversal'')'
+    - 'CWE-73: The software allows user input to control or influence paths of file names that are used in filesystem operations.'
+    - 'CWE-98: Improper Control of Filename for Include/Require Statement in PHP Program (''PHP Remote File Inclusion'')'
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/wordpress-plugins/security/audit/wp-file-inclusion-audit.yaml
+      upstream-id: wp-file-inclusion-audit
+- id: php.wp-file-manipulation-audit
+  patterns:
+  - pattern-either:
+    - pattern: unlink(...)
+    - pattern: wp_delete_file(...)
+  message: These functions can be used to delete the files if the data inside the functions are user controlled. Use these functions carefully.
+  paths:
+    include:
+    - wp-content/plugins/**/*.php
+  languages:
+  - php
+  severity: WARNING
+  metadata:
+    category: security
+    confidence: LOW
+    likelihood: LOW
+    impact: HIGH
+    subcategory:
+    - audit
+    technology:
+    - Wordpress Plugins
+    references:
+    - https://github.com/wpscanteam/wpscan/wiki/WordPress-Plugin-Security-Testing-Cheat-Sheet#file-manipulation
+    owasp:
+    - A01:2021 - Broken Access Control
+    - A08:2021 - Software and Data Integrity Failures
+    cwe:
+    - 'CWE-22: Improper Limitation of a Pathname to a Restricted Directory (''Path Traversal'')'
+    - 'CWE-73: The software allows user input to control or influence paths of file names that are used in filesystem operations.'
+    - 'CWE-98: Improper Control of Filename for Include/Require Statement in PHP Program (''PHP Remote File Inclusion'')'
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/wordpress-plugins/security/audit/wp-file-manipulation-audit.yaml
+      upstream-id: wp-file-manipulation-audit
+- id: php.wp-open-redirect-audit
+  pattern: wp_redirect(...)
+  message: This function can be used to redirect to user supplied URLs. If user input is not sanitised or validated, this could lead to Open Redirect vulnerabilities. Use "wp_safe_redirect()" to prevent this kind of attack.
+  paths:
+    include:
+    - wp-content/plugins/**/*.php
+  languages:
+  - php
+  severity: WARNING
+  metadata:
+    category: security
+    confidence: LOW
+    likelihood: LOW
+    impact: MEDIUM
+    subcategory:
+    - audit
+    technology:
+    - Wordpress Plugins
+    references:
+    - https://github.com/wpscanteam/wpscan/wiki/WordPress-Plugin-Security-Testing-Cheat-Sheet#open-redirect
+    - https://developer.wordpress.org/reference/functions/wp_safe_redirect/
+    cwe:
+    - 'CWE-601: URL Redirection to Untrusted Site (''Open Redirect'')'
+    owasp:
+    - A05:2021 - Security Misconfiguration
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/wordpress-plugins/security/audit/wp-open-redirect-audit.yaml
+      upstream-id: wp-open-redirect-audit
+- id: php.wp-php-object-injection-audit
+  patterns:
+  - pattern-either:
+    - pattern: unserialize(...)
+    - pattern: maybe_unserialize(...)
+  message: If the data used inside the patterns are directly used without proper sanitization, then this could lead to PHP Object Injection. Do not use these function with user-supplied input, use JSON functions instead.
+  paths:
+    include:
+    - wp-content/plugins/**/*.php
+  languages:
+  - php
+  severity: WARNING
+  metadata:
+    category: security
+    confidence: LOW
+    likelihood: LOW
+    impact: HIGH
+    subcategory:
+    - audit
+    technology:
+    - Wordpress Plugins
+    references:
+    - https://github.com/wpscanteam/wpscan/wiki/WordPress-Plugin-Security-Testing-Cheat-Sheet#php-object-injection
+    - https://owasp.org/www-community/vulnerabilities/PHP_Object_Injection
+    cwe:
+    - 'CWE-502: Deserialization of Untrusted Data'
+    owasp:
+    - A03:2021 - Injection
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/wordpress-plugins/security/audit/wp-php-object-injection-audit.yaml
+      upstream-id: wp-php-object-injection-audit
+- id: php.wp-sql-injection-audit
+  patterns:
+  - pattern-either:
+    - pattern: $wpdb->query(...)
+    - pattern: $wpdb->get_var(...)
+    - pattern: $wpdb->get_row(...)
+    - pattern: $wpdb->get_col(...)
+    - pattern: $wpdb->get_results(...)
+    - pattern: $wpdb->replace(...)
+  - pattern-not: $wpdb->prepare(...)
+  - pattern-not: $wpdb->delete(...)
+  - pattern-not: $wpdb->update(...)
+  - pattern-not: $wpdb->insert(...)
+  message: Detected unsafe API methods. This could lead to SQL Injection if the used variable in the functions are user controlled and not properly escaped or sanitized. In order to prevent SQL Injection, use safe api methods like "$wpdb->prepare" properly or escape/sanitize the data properly.
+  paths:
+    include:
+    - wp-content/plugins/**/*.php
+  languages:
+  - php
+  severity: WARNING
+  metadata:
+    confidence: LOW
+    likelihood: LOW
+    impact: HIGH
+    category: security
+    subcategory:
+    - audit
+    technology:
+    - Wordpress Plugins
+    references:
+    - https://github.com/wpscanteam/wpscan/wiki/WordPress-Plugin-Security-Testing-Cheat-Sheet#sql-injection
+    - https://owasp.org/www-community/attacks/SQL_Injection
+    owasp:
+    - A03:2021 - Injection
+    cwe:
+    - 'CWE-89: Improper Neutralization of Special Elements used in an SQL Command (''SQL Injection'')'
+    opengrep-studio:
+      source: opengrep-rules
+      upstream-path: php/wordpress-plugins/security/audit/wp-sql-injection-audit.yaml
+      upstream-id: wp-sql-injection-audit

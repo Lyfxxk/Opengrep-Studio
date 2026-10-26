@@ -34,13 +34,13 @@ Opengrep Studio completes this pipeline: **drop in code → click scan → triag
 
 - **Security consultants / appsec engineers doing code audits** — client code can't go to third-party clouds, and delivery means a proper audit report;
 - **Small teams without a commercial SAST budget** — commercial platforms cost tens of thousands per year; this is free, open source (MIT), and runs entirely locally;
-- **Anyone learning application security** — 341 rules fully localized in Chinese + a Chinese CWE knowledge base with fix advice + taint-flow visualization, and a rule lab that validates rules on the spot;
+- **Anyone learning application security** — 812 rules fully localized in Chinese + a Chinese CWE knowledge base with fix advice + taint-flow visualization, and a rule lab that validates rules on the spot;
 - **Open-source authors** — scan for hardcoded secrets and dangerous calls before publishing; it takes minutes.
 
 ## Highlights
 
 - **Multi-source import, zero cloud** — drag a folder, upload ZIP / 7Z / RAR / TAR.GZ, or shallow-clone a Git repo. `.gitignore` / `.opengrepignore` respected by default (toggle off to hunt hardcoded secrets in `.env`). Language stats shown after upload.
-- **341 built-in rules across 12 languages** — curated from [opengrep-rules](https://github.com/opengrep/opengrep-rules) (CWE/OWASP metadata first, upstream provenance kept), covering 87 CWEs. Rule messages are **fully localized in Chinese**, with a Chinese CWE knowledge base and fix advice.
+- **812 built-in rules across 12 languages** — curated from [opengrep-rules](https://github.com/opengrep/opengrep-rules) (CWE/OWASP metadata first, upstream provenance kept), covering 108 CWEs. Rule messages are **fully localized in Chinese**, with a Chinese CWE knowledge base and fix advice.
 - **Triage that sticks** — every finding links to file & line with highlighted code; taint findings show the full source → sink chain; review verdicts (confirmed / false positive / accepted) persist across scans by fingerprint.
 - **Baseline & snapshot diffing** — each scan classifies findings as new / fixed / remaining against a baseline; the scan center compares any two completed scans (cross-project) at both issue level (fingerprints) and file level (snapshot content).
 - **Printable report + reproducibility manifest** — paper-styled audit report (print to PDF or download a self-contained offline HTML) with source SHA-256, full engine command line, and rule-file hashes.
@@ -130,7 +130,7 @@ Single-process deployment (the backend also serves the built frontend in product
 
 ## Roadmap
 
-- [x] Chinese localization of all 341 rule messages + CWE knowledge base
+- [x] Chinese localization of all 812 rule messages + CWE knowledge base
 - [x] Baseline & two-snapshot diffing, review evidence chain
 - [x] SARIF 2.1.0 import/export, reproducibility manifest
 - [x] Rule Lab & portable rule packs with sample regression
