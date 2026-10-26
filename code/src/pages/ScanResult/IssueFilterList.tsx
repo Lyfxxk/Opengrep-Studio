@@ -129,7 +129,8 @@ export default function IssueFilterList({
                   : 'border-border hover:bg-muted/50',
               )}
             >
-              <div className="flex min-w-0 items-center gap-2">
+              {/* flex-wrap：窄栏（如 1024 断点三列布局）下徽章放不下时换行，避免把列表撑出横向滚动 */}
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
                 <Badge
                   className={cn(
                     'shrink-0 text-xs font-normal',

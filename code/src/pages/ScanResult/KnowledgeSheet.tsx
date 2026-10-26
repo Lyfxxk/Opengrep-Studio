@@ -217,6 +217,7 @@ export default function KnowledgeSheet({ ruleId, onClose }: KnowledgeSheetProps)
  */
 export function KnowledgeLink({ issue, onOpen }: { issue: IIssue; onOpen: (ruleId: string) => void }) {
   return (
+    // min-w-0 + truncate：规则 ID 可能很长，卡片窄时收缩省略，防止把问题列表撑出横向滚动
     <span
       role="button"
       tabIndex={0}
@@ -231,7 +232,7 @@ export function KnowledgeLink({ issue, onOpen }: { issue: IIssue; onOpen: (ruleI
         event.stopPropagation();
         onOpen(issue.ruleId);
       }}
-      className="shrink-0 cursor-pointer font-mono text-xs text-muted-foreground underline decoration-dotted underline-offset-2 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="min-w-0 cursor-pointer truncate font-mono text-xs text-muted-foreground underline decoration-dotted underline-offset-2 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       {issue.ruleId}
     </span>
