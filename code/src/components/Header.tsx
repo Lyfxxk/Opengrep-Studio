@@ -1,5 +1,6 @@
+import { Fragment } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ChevronRight, LogOut } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -73,20 +74,19 @@ export default function Header() {
           {crumbs.map((crumb, index) => {
             const isLast = index === crumbs.length - 1;
             return (
-              <BreadcrumbItem key={crumb.label}>
-                {isLast || !crumb.to ? (
-                  <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
-                ) : (
-                  <>
+              // 分隔符必须与 BreadcrumbItem 平级（二者都渲染 <li>），嵌套会产生非法 DOM
+              <Fragment key={crumb.label}>
+                <BreadcrumbItem>
+                  {isLast || !crumb.to ? (
+                    <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
+                  ) : (
                     <BreadcrumbLink asChild>
                       <Link to={crumb.to}>{crumb.label}</Link>
                     </BreadcrumbLink>
-                    <BreadcrumbSeparator>
-                      <ChevronRight className="size-3.5" />
-                    </BreadcrumbSeparator>
-                  </>
-                )}
-              </BreadcrumbItem>
+                  )}
+                </BreadcrumbItem>
+                {!isLast && <BreadcrumbSeparator />}
+              </Fragment>
             );
           })}
         </BreadcrumbList>
