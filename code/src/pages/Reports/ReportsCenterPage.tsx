@@ -12,16 +12,13 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import RulePackCell from '@/components/RulePackCell';
-import type { IScanResult } from '@/data/scanresults';
-import { attachProjectNames } from '@/lib/scans';
+import { attachProjectNames, type ScanWithProject } from '@/lib/scans';
 import { formatDateTime } from '@/lib/format';
 import { api } from '@/lib/api';
 
-type ReportRow = IScanResult & { projectName?: string };
-
 /** 报告中心：全部已完成扫描的测试报告总览（在线报告 / 自包含 HTML / 可复现清单） */
 export default function ReportsCenterPage() {
-  const [rows, setRows] = useState<ReportRow[] | null>(null);
+  const [rows, setRows] = useState<ScanWithProject[] | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {

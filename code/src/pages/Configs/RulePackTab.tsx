@@ -196,14 +196,20 @@ export default function RulePackTab() {
     window.open(api.exportRulePackUrl(pack.id), '_blank');
   };
 
+  // 质量检查请求序号：检查耗时数十秒，期间关闭对话框或改查别的包时，晚到的旧响应不得覆盖新状态
+  const checkSeqRef = useRef(0);
+
   const handleCheck = async (pack: IRulePack) => {
+    const seq = ++checkSeqRef.current;
     setChecking(pack);
     setCheckResult(null);
     try {
       const result = await api.checkRulePack(pack.id);
+      if (seq !== checkSeqRef.current) return;
       setCheckResult(result);
       await loadAll();
     } catch (error) {
+      if (seq !== checkSeqRef.current) return;
       setChecking(null);
       toast.error(error instanceof Error ? error.message : '质量检查失败，请重试');
     }
@@ -543,6 +549,8 @@ export default function RulePackTab() {
         open={checking !== null}
         onOpenChange={(open) => {
           if (!open) {
+            // 递增序号让在途请求的迟到响应作废，避免结果窗口重开后闪现旧包的检查结果
+            checkSeqRef.current += 1;
             setChecking(null);
             setCheckResult(null);
           }

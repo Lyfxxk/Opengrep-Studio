@@ -151,7 +151,6 @@ export function readSampleText(file: string): string {
 /** 旧式单文件包导出时自动生成清单（无样本，basic 档） */
 export function buildLegacyManifestYaml(pack: {
   name: string;
-  language: string;
   createdAt: string;
 }): string {
   return yamlDump({
@@ -242,7 +241,7 @@ export function buildPackReadme(pack: PackReadmeInput): string {
   lines.push('```');
   lines.push('');
   lines.push(
-    '或在 [Opengrep Studio](https://github.com/opengrep/opengrep) 生态的工作台中：配置管理 → 规则包 → 导入规则包（本 zip 可直接导入）。',
+    '或在 [Opengrep Studio](https://github.com/Lyfxxk/Opengrep-Studio) 的工作台中：配置管理 → 规则包 → 导入规则包（本 zip 可直接导入）。',
   );
   lines.push('');
 

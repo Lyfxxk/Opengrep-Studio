@@ -34,16 +34,26 @@ export default function RulePackContentDialog({
 
   useEffect(() => {
     if (!open || !pack) return;
+    // 竞态守卫：切换包时晚到的旧响应不得覆盖新包内容
+    let cancelled = false;
     setEditing(false);
     setLoading(true);
     api
       .getRulePackContent(pack.id)
-      .then((data) => setContent(data.content))
+      .then((data) => {
+        if (!cancelled) setContent(data.content);
+      })
       .catch((error: unknown) => {
+        if (cancelled) return;
         toast.error(error instanceof Error ? error.message : String(error));
         onOpenChange(false);
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [open, pack, onOpenChange]);
 
   const handleSave = async () => {

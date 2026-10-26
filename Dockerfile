@@ -19,7 +19,8 @@ COPY server/package.json server/package-lock.json ./server/
 RUN npm ci --prefix server
 
 # 引擎二进制：按构建平台从上游 Release 下载并 SHA256 校验（linux-x64 / linux-arm64）
-COPY server/scripts/engines.json server/scripts/setup-engine.mjs server/scripts/engine-install.mjs ./server/scripts/
+# engine-name.mjs 是 setup-engine.mjs 的 import 依赖，漏拷会让构建在下载一步直接失败
+COPY server/scripts/engines.json server/scripts/setup-engine.mjs server/scripts/engine-install.mjs server/scripts/engine-name.mjs ./server/scripts/
 RUN node server/scripts/setup-engine.mjs
 
 ########## 运行阶段 ##########

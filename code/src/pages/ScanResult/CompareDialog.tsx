@@ -21,8 +21,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SEVERITY_LABELS } from '@/data/issues';
 import type { IScanDiff, IScanDiffIssueList } from '@/data/diffs';
-import type { IScanResult } from '@/data/scanresults';
-import { attachProjectNames } from '@/lib/scans';
+import { attachProjectNames, type ScanWithProject } from '@/lib/scans';
 import { formatDateTime } from '@/lib/format';
 import { SEVERITY_BADGE_CLASS } from '@/lib/severity';
 import { cn } from '@/lib/utils';
@@ -82,7 +81,7 @@ const DIFF_SECTIONS: Array<{ key: 'new' | 'fixed' | 'remaining'; label: string; 
 
 /** 双快照对比对话框：任选两次已完成扫描（含跨项目），问题级 + 文件级差异 */
 export default function CompareDialog({ scanId, onClose }: CompareDialogProps) {
-  const [candidates, setCandidates] = useState<Array<IScanResult & { projectName?: string }> | null>(null);
+  const [candidates, setCandidates] = useState<ScanWithProject[] | null>(null);
   const [againstId, setAgainstId] = useState('');
   const [diff, setDiff] = useState<IScanDiff | null>(null);
   const [loading, setLoading] = useState(false);
@@ -131,7 +130,14 @@ export default function CompareDialog({ scanId, onClose }: CompareDialogProps) {
         </DialogHeader>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Select value={againstId} onValueChange={setAgainstId}>
+          <Select
+            value={againstId}
+            onValueChange={(id) => {
+              setAgainstId(id);
+              // 换对比目标后上一次的对比结果立即失效，避免旧结果被误读为新目标的结论
+              setDiff(null);
+            }}
+          >
             <SelectTrigger className="min-w-[320px] flex-1">
               <SelectValue placeholder="选择要对比的扫描…" />
             </SelectTrigger>

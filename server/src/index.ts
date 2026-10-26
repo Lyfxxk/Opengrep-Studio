@@ -122,6 +122,9 @@ const upload = multer({
   limits: { fileSize: config.maxUploadBytes },
 });
 
+// 实验室与规则包质量检查共用一个全局互斥：单并发避免引擎进程堆积，也保证互不干扰
+let engineJobBusy = false;
+
 /** 规则包 YAML 上传与实验室运行的体积上限（同一策略，报错文案从这里取数） */
 const MAX_RULE_YAML_BYTES = 1024 * 1024;
 /** 规则包 zip 导入 / SARIF 导入的体积上限（两条独立通道，文案分别取数） */
@@ -449,7 +452,6 @@ function savePortablePackFromLab(
   const dir = customPackDir(packId);
   const manifestText = buildLegacyManifestYaml({
     name,
-    language,
     createdAt: new Date().toISOString(),
   });
   fs.mkdirSync(path.join(dir, 'rules'), { recursive: true });
@@ -701,6 +703,14 @@ function detectPackRoot(dir: string): string | null {
   return null;
 }
 
+/** 散装 YAML 的搜索根：顶层无文件且恰有一个子目录时下钻一层（Windows 右键压缩文件夹的产物形态） */
+function detectLooseRoot(dir: string): string {
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  if (entries.some((entry) => entry.isFile())) return dir;
+  const dirs = entries.filter((entry) => entry.isDirectory());
+  return dirs.length === 1 ? path.join(dir, dirs[0].name) : dir;
+}
+
 app.post(
   '/api/rulepacks/import',
   limit400(importPackUpload.single('file'), MAX_PACK_ZIP_BYTES),
@@ -782,8 +792,9 @@ app.post(
       }
 
       // 无清单：单个散装 YAML 走旧式单文件包；多个则要求补齐可移植格式
+      const looseRoot = detectLooseRoot(tmpDir);
       const looseFiles = fs
-        .readdirSync(tmpDir, { withFileTypes: true })
+        .readdirSync(looseRoot, { withFileTypes: true })
         .filter((entry) => entry.isFile() && /\.ya?ml$/i.test(entry.name));
       if (looseFiles.length === 0) {
         throw new HttpError(400, '压缩包中没有找到 YAML 规则文件');
@@ -794,7 +805,7 @@ app.post(
           '压缩包含多个规则文件但缺少 pack.yaml 清单，请按可移植格式打包（pack.yaml + rules/ 目录）',
         );
       }
-      const content = fs.readFileSync(path.join(tmpDir, looseFiles[0].name), 'utf8');
+      const content = fs.readFileSync(path.join(looseRoot, looseFiles[0].name), 'utf8');
       const name = requireValidPackName(String(req.body?.name ?? '').trim() || zipName);
       let language = String(req.body?.language ?? '').trim();
       try {
@@ -940,94 +951,94 @@ app.post(
     }
     importingProjects.add(project.id);
     try {
-    const destDir = pendingSourceDir(project.id);
-    fs.mkdirSync(path.dirname(destDir), { recursive: true });
-    const filesMap = (req.files ?? {}) as Record<string, Express.Multer.File[]>;
-    const archive = filesMap.file?.[0];
-    const looseFiles = filesMap.files ?? [];
-    const respectGitignore = req.body?.respectGitignore !== 'false';
+      const destDir = pendingSourceDir(project.id);
+      fs.mkdirSync(path.dirname(destDir), { recursive: true });
+      const filesMap = (req.files ?? {}) as Record<string, Express.Multer.File[]>;
+      const archive = filesMap.file?.[0];
+      const looseFiles = filesMap.files ?? [];
+      const respectGitignore = req.body?.respectGitignore !== 'false';
 
-    // 形态一：单个压缩包（ZIP / 7Z / RAR / TAR / TAR.GZ），按扩展名分发解压
-    if (archive) {
-      if (!isArchiveFileName(archive.originalname)) {
-        throw new HttpError(400, '仅支持 ZIP / 7Z / RAR / TAR / TAR.GZ 压缩包，或直接拖入文件夹上传');
-      }
-      const extracted = await extractArchive(archive.buffer, destDir, archive.originalname);
-      const { fileCount, ignoredCount } = applyIgnoreFilter(destDir, extracted, respectGitignore);
-      const languageStats = collectLanguageStats(destDir);
-      updateProject(project.id, { languageStats });
-      const ignoreNote = ignoredCount > 0 ? `，已按 .gitignore 忽略 ${ignoredCount} 个文件` : '';
-      res.json({
-        fileName: archive.originalname,
-        fileSize: archive.size,
-        fileCount,
-        ignoredCount,
-        languageStats,
-        message: `上传成功，已解压 ${fileCount} 个文件${ignoreNote}`,
-      });
-      return;
-    }
-
-    // 形态二：散装多文件（文件夹拖拽 / 目录选择），按相对路径落盘
-    if (looseFiles.length > 0) {
-      const pathsRaw = req.body?.paths;
-      const relPaths = Array.isArray(pathsRaw)
-        ? pathsRaw.map(String)
-        : pathsRaw !== undefined
-          ? [String(pathsRaw)]
-          : [];
-      if (relPaths.length !== looseFiles.length) {
-        throw new HttpError(400, '文件列表与路径参数数量不匹配');
-      }
-      if (looseFiles.length > config.maxImportEntries) {
-        throw new HttpError(400, `文件数超过 ${config.maxImportEntries} 上限`);
-      }
-      let totalBytes = 0;
-      fs.rmSync(destDir, { recursive: true, force: true });
-      fs.mkdirSync(destDir, { recursive: true });
-      try {
-        looseFiles.forEach((file, index) => {
-          const rel = safeRelativePath(relPaths[index] || file.originalname);
-          if (!rel) throw new HttpError(400, '文件路径不能为空');
-          const target = path.join(destDir, rel);
-          if (!isPathWithin(destDir, target)) {
-            throw new HttpError(400, `文件路径不安全：${relPaths[index]}`);
-          }
-          totalBytes += file.size;
-          if (totalBytes > config.maxExtractedBytes) {
-            throw new HttpError(400, `总体积超过 ${config.maxExtractedBytes / 1024 ** 3}GB 上限`);
-          }
-          fs.mkdirSync(path.dirname(target), { recursive: true });
-          fs.writeFileSync(target, file.buffer);
+      // 形态一：单个压缩包（ZIP / 7Z / RAR / TAR / TAR.GZ），按扩展名分发解压
+      if (archive) {
+        if (!isArchiveFileName(archive.originalname)) {
+          throw new HttpError(400, '仅支持 ZIP / 7Z / RAR / TAR / TAR.GZ 压缩包，或直接拖入文件夹上传');
+        }
+        const extracted = await extractArchive(archive.buffer, destDir, archive.originalname);
+        const { fileCount, ignoredCount } = applyIgnoreFilter(destDir, extracted, respectGitignore);
+        const languageStats = collectLanguageStats(destDir);
+        updateProject(project.id, { languageStats });
+        const ignoreNote = ignoredCount > 0 ? `，已按 .gitignore 忽略 ${ignoredCount} 个文件` : '';
+        res.json({
+          fileName: archive.originalname,
+          fileSize: archive.size,
+          fileCount,
+          ignoredCount,
+          languageStats,
+          message: `上传成功，已解压 ${fileCount} 个文件${ignoreNote}`,
         });
-      } catch (error) {
-        // 中途失败不留半成品 pending 目录（否则后续扫描会拿到不完整源码）
-        fs.rmSync(destDir, { recursive: true, force: true });
-        throw error;
+        return;
       }
-      const firstSegments = relPaths.map((p) => p.replace(/\\/g, '/').split('/')[0]);
-      const commonRoot =
-        firstSegments.every((seg) => seg && seg === firstSegments[0]) && looseFiles.length > 1
-          ? firstSegments[0]
-          : undefined;
-      const label =
-        commonRoot ?? (looseFiles.length === 1 ? firstSegments[0] : `${looseFiles.length} 个文件`);
-      const { fileCount, ignoredCount } = applyIgnoreFilter(destDir, looseFiles.length, respectGitignore);
-      const languageStats = collectLanguageStats(destDir);
-      updateProject(project.id, { languageStats });
-      const ignoreNote = ignoredCount > 0 ? `，已按 .gitignore 忽略 ${ignoredCount} 个文件` : '';
-      res.json({
-        fileName: label,
-        fileSize: totalBytes,
-        fileCount,
-        ignoredCount,
-        languageStats,
-        message: `上传成功，共 ${fileCount} 个文件${ignoreNote}`,
-      });
-      return;
-    }
 
-    throw new HttpError(400, '请通过 multipart 表单上传 file 或 files 字段');
+      // 形态二：散装多文件（文件夹拖拽 / 目录选择），按相对路径落盘
+      if (looseFiles.length > 0) {
+        const pathsRaw = req.body?.paths;
+        const relPaths = Array.isArray(pathsRaw)
+          ? pathsRaw.map(String)
+          : pathsRaw !== undefined
+            ? [String(pathsRaw)]
+            : [];
+        if (relPaths.length !== looseFiles.length) {
+          throw new HttpError(400, '文件列表与路径参数数量不匹配');
+        }
+        if (looseFiles.length > config.maxImportEntries) {
+          throw new HttpError(400, `文件数超过 ${config.maxImportEntries} 上限`);
+        }
+        let totalBytes = 0;
+        fs.rmSync(destDir, { recursive: true, force: true });
+        fs.mkdirSync(destDir, { recursive: true });
+        try {
+          looseFiles.forEach((file, index) => {
+            const rel = safeRelativePath(relPaths[index] || file.originalname);
+            if (!rel) throw new HttpError(400, '文件路径不能为空');
+            const target = path.join(destDir, rel);
+            if (!isPathWithin(destDir, target)) {
+              throw new HttpError(400, `文件路径不安全：${relPaths[index]}`);
+            }
+            totalBytes += file.size;
+            if (totalBytes > config.maxExtractedBytes) {
+              throw new HttpError(400, `总体积超过 ${config.maxExtractedBytes / 1024 ** 3}GB 上限`);
+            }
+            fs.mkdirSync(path.dirname(target), { recursive: true });
+            fs.writeFileSync(target, file.buffer);
+          });
+        } catch (error) {
+          // 中途失败不留半成品 pending 目录（否则后续扫描会拿到不完整源码）
+          fs.rmSync(destDir, { recursive: true, force: true });
+          throw error;
+        }
+        const firstSegments = relPaths.map((p) => p.replace(/\\/g, '/').split('/')[0]);
+        const commonRoot =
+          firstSegments.every((seg) => seg && seg === firstSegments[0]) && looseFiles.length > 1
+            ? firstSegments[0]
+            : undefined;
+        const label =
+          commonRoot ?? (looseFiles.length === 1 ? firstSegments[0] : `${looseFiles.length} 个文件`);
+        const { fileCount, ignoredCount } = applyIgnoreFilter(destDir, looseFiles.length, respectGitignore);
+        const languageStats = collectLanguageStats(destDir);
+        updateProject(project.id, { languageStats });
+        const ignoreNote = ignoredCount > 0 ? `，已按 .gitignore 忽略 ${ignoredCount} 个文件` : '';
+        res.json({
+          fileName: label,
+          fileSize: totalBytes,
+          fileCount,
+          ignoredCount,
+          languageStats,
+          message: `上传成功，共 ${fileCount} 个文件${ignoreNote}`,
+        });
+        return;
+      }
+
+      throw new HttpError(400, '请通过 multipart 表单上传 file 或 files 字段');
     } finally {
       importingProjects.delete(project.id);
     }
@@ -1154,8 +1165,14 @@ app.get('/api/scans/:scanId/snippet', asyncHandler(async (req, res) => {
   const startLine = Number(req.query.start ?? 0);
   const endLine = Number(req.query.end ?? 0);
   const issueId = req.query.issueId ? String(req.query.issueId) : undefined;
-  if (!filePath || !Number.isInteger(startLine) || !Number.isInteger(endLine) || startLine < 1) {
-    throw new HttpError(400, '需要 path、start、end 查询参数');
+  if (
+    !filePath ||
+    !Number.isInteger(startLine) ||
+    !Number.isInteger(endLine) ||
+    startLine < 1 ||
+    endLine < startLine
+  ) {
+    throw new HttpError(400, '需要 path、start、end 查询参数（start ≥ 1 且 end ≥ start）');
   }
 
   const context = config.snippetContextLines;
@@ -1455,9 +1472,6 @@ app.get('/api/rules/knowledge/:ruleId', asyncHandler(async (req, res) => {
   if (!ruleId || ruleId.length > 200) throw new HttpError(400, '需要 ruleId 路径参数');
   res.json(getRuleKnowledge(ruleId));
 }));
-
-// 实验室与规则包质量检查共用一个全局互斥：单并发避免引擎进程堆积，也保证互不干扰
-let engineJobBusy = false;
 
 app.post('/api/rulelab/run', asyncHandler(async (req, res) => {
   const yaml = String(req.body?.yaml ?? '');

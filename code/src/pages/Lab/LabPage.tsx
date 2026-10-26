@@ -380,10 +380,10 @@ export default function LabPage() {
   };
 
   // P6：打开"另存为新规则包"时，语言标签默认从引擎语言推导
-  const openSaveDialog = (mode: 'create') => {
+  const openSaveDialog = () => {
     const label = engineLangToPackLabel(language);
     if (label) setSaveLanguage(label);
-    setSaveDialog({ mode });
+    setSaveDialog({ mode: 'create' });
   };
 
   const handleSave = async () => {
@@ -560,7 +560,7 @@ export default function LabPage() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem onSelect={() => openSaveDialog('create')}>
+              <DropdownMenuItem onSelect={() => openSaveDialog()}>
                 另存为新规则包…
               </DropdownMenuItem>
               <DropdownMenuSeparator />

@@ -14,17 +14,14 @@ import {
 import ScanStatusBadge from '@/components/ScanStatusBadge';
 import RulePackCell from '@/components/RulePackCell';
 import CompareDialog from '@/pages/ScanResult/CompareDialog';
-import type { IScanResult } from '@/data/scanresults';
-import { attachProjectNames } from '@/lib/scans';
+import { attachProjectNames, type ScanWithProject } from '@/lib/scans';
 import { formatDateTime } from '@/lib/format';
 import { api } from '@/lib/api';
-
-type CenterScan = IScanResult & { projectName?: string };
 
 /** 扫描中心：全部项目的扫描总览，双快照对比的固定入口 */
 export default function ScansCenterPage() {
   const navigate = useNavigate();
-  const [scans, setScans] = useState<CenterScan[] | null>(null);
+  const [scans, setScans] = useState<ScanWithProject[] | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [compareScanId, setCompareScanId] = useState<string | null>(null);
 
@@ -51,7 +48,7 @@ export default function ScansCenterPage() {
     return () => clearInterval(timer);
   }, [hasScanning, load]);
 
-  const viewScan = (scan: CenterScan) => navigate(`/projects/${scan.projectId}/scans/${scan.id}`);
+  const viewScan = (scan: ScanWithProject) => navigate(`/projects/${scan.projectId}/scans/${scan.id}`);
 
   return (
     <div className="space-y-6">

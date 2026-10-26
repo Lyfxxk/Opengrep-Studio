@@ -207,96 +207,92 @@ export default function ScanConfigTab() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {configs.map((config) => {
-                    const visiblePacks = config.rulePackIds
-                      .map(packNameOf)
-                      .filter(Boolean) as string[];
-                    return (
-                      <TableRow key={config.id}>
-                        <TableCell>
-                          <span className="block font-medium">{config.name}</span>
-                          {config.description && (
-                            <span className="block max-w-[220px] truncate text-xs text-muted-foreground">
-                              {config.description}
-                            </span>
+                  {configs.map((config) => (
+                    <TableRow key={config.id}>
+                      <TableCell>
+                        <span className="block font-medium">{config.name}</span>
+                        {config.description && (
+                          <span className="block max-w-[220px] truncate text-xs text-muted-foreground">
+                            {config.description}
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap items-center gap-1">
+                          {/* key 用包 id：包名不保证唯一（同名包可并存），用名称会撞 key */}
+                          {config.rulePackIds.slice(0, 2).map((packId) => (
+                            <Badge
+                              key={packId}
+                              variant="secondary"
+                              className="font-normal"
+                            >
+                              {packNameOf(packId) ?? packId}
+                            </Badge>
+                          ))}
+                          {config.rulePackIds.length > 2 && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge variant="outline" className="cursor-default font-normal">
+                                  +{config.rulePackIds.length - 2}
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-[320px] p-2">
+                                <div className="flex flex-col gap-1.5">
+                                  {config.rulePackIds.slice(2).map((packId) => (
+                                    <span
+                                      key={packId}
+                                      className="flex items-center gap-1.5 whitespace-nowrap rounded-md border border-white/15 bg-white/10 px-2 py-1"
+                                    >
+                                      <Package className="size-3 shrink-0 opacity-70" />
+                                      {packNameOf(packId) ?? packId}
+                                    </span>
+                                  ))}
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
                           )}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-wrap items-center gap-1">
-                            {visiblePacks.slice(0, 2).map((packName) => (
-                              <Badge
-                                key={packName}
-                                variant="secondary"
-                                className="font-normal"
-                              >
-                                {packName}
-                              </Badge>
-                            ))}
-                            {visiblePacks.length > 2 && (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Badge variant="outline" className="cursor-default font-normal">
-                                    +{visiblePacks.length - 2}
-                                  </Badge>
-                                </TooltipTrigger>
-                                <TooltipContent className="max-w-[320px] p-2">
-                                  <div className="flex flex-col gap-1.5">
-                                    {visiblePacks.slice(2).map((packName) => (
-                                      <span
-                                        key={packName}
-                                        className="flex items-center gap-1.5 whitespace-nowrap rounded-md border border-white/15 bg-white/10 px-2 py-1"
-                                      >
-                                        <Package className="size-3 shrink-0 opacity-70" />
-                                        {packName}
-                                      </span>
-                                    ))}
-                                  </div>
-                                </TooltipContent>
-                              </Tooltip>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap tabular-nums">
-                          {config.excludes.length} 条
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap text-muted-foreground">
-                          超时 {config.timeoutSeconds}s · 并发 {config.jobs}
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap tabular-nums">
-                          {boundCountOf(config.id)}
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap tabular-nums text-muted-foreground">
-                          {formatDateTime(config.createdAt)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="size-8">
-                                <MoreHorizontal className="size-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onSelect={() => handleEdit(config)}>
-                                <Pencil className="size-4" />
-                                编辑
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onSelect={() => handleCopy(config)}>
-                                <Plus className="size-4" />
-                                复制
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                className="text-destructive focus:text-destructive"
-                                onSelect={() => setDeleteTarget(config)}
-                              >
-                                <Trash2 className="size-4" />
-                                删除
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
+                        </div>
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap tabular-nums">
+                        {config.excludes.length} 条
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-muted-foreground">
+                        超时 {config.timeoutSeconds}s · 并发 {config.jobs}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap tabular-nums">
+                        {boundCountOf(config.id)}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap tabular-nums text-muted-foreground">
+                        {formatDateTime(config.createdAt)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="size-8">
+                              <MoreHorizontal className="size-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onSelect={() => handleEdit(config)}>
+                              <Pencil className="size-4" />
+                              编辑
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => handleCopy(config)}>
+                              <Plus className="size-4" />
+                              复制
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onSelect={() => setDeleteTarget(config)}
+                            >
+                              <Trash2 className="size-4" />
+                              删除
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             </div>

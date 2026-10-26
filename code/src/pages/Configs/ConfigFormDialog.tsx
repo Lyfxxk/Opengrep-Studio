@@ -35,7 +35,7 @@ interface ConfigFormDialogProps {
   target: ConfigDialogTarget | null;
   rulePacks: IRulePack[];
   existingConfigs: IConfig[];
-  onSubmit: (values: ConfigFormValues, configId?: string) => void;
+  onSubmit: (values: ConfigFormValues, configId?: string) => void | Promise<void>;
 }
 
 const EXCLUDE_PLACEHOLDER = 'node_modules/**、dist/**、**/*.min.js';
@@ -63,6 +63,7 @@ export default function ConfigFormDialog({
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [builtinOpen, setBuiltinOpen] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState(false);
 
   const isEditing = Boolean(target?.id);
 
@@ -84,6 +85,7 @@ export default function ConfigFormDialog({
         ),
       );
       setErrors({});
+      setSubmitting(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, target]);
@@ -138,7 +140,7 @@ export default function ConfigFormDialog({
     setErrors((prev) => ({ ...prev, rulePacks: '' }));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const nextErrors: Record<string, string> = {};
     const trimmedName = name.trim();
     if (!trimmedName) {
@@ -171,22 +173,28 @@ export default function ConfigFormDialog({
       nextErrors.size = '请输入 0.1–100 之间的数值';
     }
     setErrors(nextErrors);
-    if (Object.values(nextErrors).some(Boolean)) {
+    if (Object.values(nextErrors).some(Boolean) || submitting) {
       return;
     }
-    onSubmit(
-      {
-        name: trimmedName,
-        description: description.trim(),
-        rulePackIds: selectedPacks,
-        excludes,
-        includes,
-        timeoutSeconds: timeout,
-        jobs: jobsValue,
-        maxTargetBytes: Math.round(size * 1000000),
-      },
-      target?.id,
-    );
+    // 等待父组件保存完成后再复位按钮，避免双击发出两次创建请求
+    setSubmitting(true);
+    try {
+      await onSubmit(
+        {
+          name: trimmedName,
+          description: description.trim(),
+          rulePackIds: selectedPacks,
+          excludes,
+          includes,
+          timeoutSeconds: timeout,
+          jobs: jobsValue,
+          maxTargetBytes: Math.round(size * 1000000),
+        },
+        target?.id,
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -401,7 +409,9 @@ export default function ConfigFormDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             取消
           </Button>
-          <Button onClick={handleSubmit}>{isEditing ? '保存修改' : '创建配置'}</Button>
+          <Button onClick={() => void handleSubmit()} disabled={submitting}>
+            {isEditing ? '保存修改' : '创建配置'}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

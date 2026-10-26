@@ -785,6 +785,13 @@ const multiImported = await api('POST', '/api/rulepacks/import', packZipForm(mul
 assert(multiImported.status === 400 && (multiImported.json?.error?.message ?? '').includes('pack.yaml'),
   '无清单多 YAML 被拒绝并提示格式', JSON.stringify(multiImported.json));
 
+// Windows 右键"压缩文件夹"的产物：单个 YAML 被包在一层目录里，应能导入为单文件包
+const nestedYaml = new AdmZip();
+nestedYaml.addFile('my-rules/eval.yaml', Buffer.from(LAB_EVAL_RULE, 'utf8'));
+const nestedImported = await api('POST', '/api/rulepacks/import', packZipForm(nestedYaml, 'nested.zip'));
+assert(nestedImported.status === 201 && nestedImported.json.ruleCount === 1,
+  '单层目录内的散装 YAML 可导入', JSON.stringify(nestedImported.json));
+
 const basicPack = new AdmZip();
 basicPack.addFile('pack.yaml', Buffer.from('name: E2E-无样本包\nversion: 0.3.0\n', 'utf8'));
 basicPack.addFile('rules/eval.yaml', Buffer.from(LAB_EVAL_RULE, 'utf8'));
@@ -802,7 +809,7 @@ assert(basicZip.getEntries().some((entry) => /\/?README\.md$/i.test(entry.entryN
 // 收尾：删除本节自建的项目 / 配置 / 规则包
 await api('DELETE', `/api/projects/${packProject}`);
 await api('DELETE', `/api/configs/${packCfg.id}`);
-for (const id of [imported.json.id, reImported.json.id, basicImported.json.id]) {
+for (const id of [imported.json.id, reImported.json.id, basicImported.json.id, nestedImported.json.id]) {
   await api('DELETE', `/api/rulepacks/${id}`);
 }
 
