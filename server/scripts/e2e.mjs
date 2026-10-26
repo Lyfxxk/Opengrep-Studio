@@ -230,8 +230,37 @@ assert(
   ['env', 'bundled-dir', 'path'].includes(health.json?.engineSource),
   '引擎解析来源已标注', health.json?.engineSource,
 );
-assert(typeof health.json?.engineVersion === 'string' && health.json.engineVersion.length > 0,
-  'health 含期望引擎版本', health.json?.engineVersion);
+assert(typeof health.json?.engineVersion === 'string' && /^\d+\.\d+\.\d+$/.test(health.json.engineVersion),
+  'health 引擎版本为实际探测值', health.json?.engineVersion);
+assert(typeof health.json?.enginePinnedVersion === 'string' && health.json.enginePinnedVersion.length > 0,
+  'health 含清单钉住版本', health.json?.enginePinnedVersion);
+assert(typeof health.json?.engineSourceLabel === 'string' && health.json.engineSourceLabel.length > 0,
+  'health 含中文来源标注', health.json?.engineSourceLabel);
+assert(typeof health.json?.engineManaged === 'boolean',
+  'health 标注引擎是否由本应用托管', health.json?.engineManaged);
+
+console.log('== 1b. 引擎更新检查 ==');
+const updateInfo = await api('GET', '/api/engine/update');
+assert(updateInfo.status === 200, 'engine/update 可访问', JSON.stringify(updateInfo.json));
+assert(updateInfo.json?.current === health.json.engineVersion,
+  '检查更新返回的实际版本与 health 一致', JSON.stringify(updateInfo.json));
+assert(typeof updateInfo.json?.updateAvailable === 'boolean'
+  && typeof updateInfo.json?.canUpgrade === 'boolean'
+  && typeof updateInfo.json?.checkedAt === 'string',
+  '检查更新返回结构化结论', JSON.stringify(updateInfo.json));
+assert(
+  updateInfo.json?.canUpgrade !== true
+    || (updateInfo.json.updateAvailable === true && Boolean(updateInfo.json.assetName)),
+  '可升级时必须同时满足"有新版本 + 资产就绪"', JSON.stringify(updateInfo.json),
+);
+// 断网环境下 error 字段承载原因，同样算"给了人话说明"
+assert(
+  Boolean(updateInfo.json?.reason) || Boolean(updateInfo.json?.error) || updateInfo.json?.canUpgrade === true,
+  '不可升级或查不到上游时给出人话说明', JSON.stringify(updateInfo.json),
+);
+const upgradeState = await api('GET', '/api/engine/upgrade');
+assert(upgradeState.status === 200 && ['idle', 'running', 'done', 'error'].includes(upgradeState.json?.state),
+  '升级状态接口可用', JSON.stringify(upgradeState.json));
 
 console.log('== 2. 清理上一轮 E2E 残留（只动 E2E 前缀资源，绝不碰用户已有数据） ==');
 const isE2eName = (name) => typeof name === 'string' && name.startsWith('E2E');
@@ -397,6 +426,8 @@ assert(report.json.totals.byComparison.new === by('new')
 assert(report.json.issues.length === issues2.length, '报告明细条数与 issues 接口一致');
 assert(report.json.topRules.length > 0 && report.json.topFiles.length > 0, 'Top 规则/文件统计存在');
 assert((report.json.conclusion ?? '').includes(s1.id), '结论文本含基线编号');
+assert(typeof report.json.meta?.engineVersion === 'string' && report.json.meta.engineVersion.length > 0,
+  '报告标注扫描时的引擎版本', report.json.meta?.engineVersion);
 
 const reportHtmlRes = await fetch(`${BASE}/api/scans/${s2.id}/report?format=html`);
 const reportHtml = await reportHtmlRes.text();
@@ -671,6 +702,12 @@ assert(manifest.engine?.name === 'opengrep' && Boolean(manifest.engine?.version)
   'manifest 引擎版本', JSON.stringify(manifest.engine));
 const scanRecord = (await api('GET', `/api/scans/${packScanDone.id}`)).json;
 assert(scanRecord.srcHash === manifest.source.sha256, '扫描记录与 manifest 哈希一致');
+assert(typeof scanRecord.engineVersion === 'string' && scanRecord.engineVersion.length > 0,
+  '扫描记录保存了扫描时的引擎版本', scanRecord.engineVersion);
+assert(manifest.engine.version === scanRecord.engineVersion,
+  'manifest 引擎版本取扫描记录快照', `${manifest.engine.version} vs ${scanRecord.engineVersion}`);
+assert(scanRecord.engineVersion === health.json.engineVersion,
+  '扫描记录引擎版本与运行引擎一致', `${scanRecord.engineVersion} vs ${health.json.engineVersion}`);
 
 console.log('== 18c. SARIF 导入：导出 → 导入往返 + 基线对比 ==');
 const roundtripForm = new FormData();
@@ -838,6 +875,9 @@ assert((p20report.json?.conclusion ?? '').includes('人工复核'), '报告结�
 // 20.2 双快照对比：同源对比 + 版本演进对比（含跨扫描指纹与文件行级统计）
 const diffSame = await api('GET', `/api/scans/${p20scanB.id}/diff?against=${p20scanA.id}`);
 assert(diffSame.status === 200, '同源对比可用', JSON.stringify(diffSame.json));
+assert(diffSame.json.engine?.mismatch === false
+  && diffSame.json.engine.current === diffSame.json.engine.against,
+  '同引擎版本对比无版本漂移标识', JSON.stringify(diffSame.json.engine));
 assert(
   diffSame.json.issueDiff.new.count === 0 && diffSame.json.issueDiff.fixed.count === 0
     && diffSame.json.issueDiff.remaining.count === p20scanA.issueCount,

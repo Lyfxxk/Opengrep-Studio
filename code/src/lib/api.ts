@@ -148,11 +148,48 @@ export interface HealthInfo {
   ok: boolean;
   platform?: string;
   arch?: string;
+  /** 实际探测到的引擎版本（引擎缺失时为 undefined） */
   engineVersion?: string;
+  /** 清单钉住的版本（engines.json，或已升级后的 installed.json） */
+  enginePinnedVersion?: string;
+  /** 引擎是否由本应用安装并管理（env / PATH 来源为 false，不支持一键升级） */
+  engineManaged?: boolean;
   engineSource?: string;
+  /** 引擎来源的中文标注 */
+  engineSourceLabel?: string;
   /** 解析后的引擎路径；未找到时为 'MISSING'，并附 engineHint 修复指引 */
   engine?: string;
   engineHint?: string;
+}
+
+/** 引擎更新检查结果（GET /api/engine/update） */
+export interface IEngineUpdateInfo {
+  current?: string;
+  pinned?: string;
+  latest?: string;
+  latestTag?: string;
+  updateAvailable: boolean;
+  canUpgrade: boolean;
+  assetName?: string;
+  releaseUrl?: string;
+  publishedAt?: string;
+  checkedAt: string;
+  /** 不可升级的人话原因 */
+  reason?: string;
+  /** 上游不可达等网络异常说明 */
+  error?: string;
+}
+
+/** 一键升级进度（POST/GET /api/engine/upgrade） */
+export interface IEngineUpgradeState {
+  state: 'idle' | 'running' | 'done' | 'error';
+  phase?: 'downloading' | 'verifying' | 'installing';
+  percent?: number;
+  from?: string;
+  to?: string;
+  message?: string;
+  startedAt?: string;
+  finishedAt?: string;
 }
 
 /** mock 扫描从发起到完成的时长；读取时按 scannedAt 惰性收敛，刷新页面/丢失定时器也不会永久卡在 scanning */
@@ -797,6 +834,32 @@ export const api = {
       });
     }
     return request('/api/health');
+  },
+
+  /** 检查引擎更新（force=true 跳过服务端 10 分钟缓存） */
+  checkEngineUpdate(force = false): Promise<IEngineUpdateInfo> {
+    if (USE_MOCK) {
+      return Promise.resolve({
+        updateAvailable: false,
+        canUpgrade: false,
+        checkedAt: new Date().toISOString(),
+        reason: '演示模式不联网检查引擎更新',
+      });
+    }
+    return request(`/api/engine/update${force ? '?refresh=1' : ''}`);
+  },
+
+  /** 一键升级进度（升级在后台跑，靠轮询拿百分比） */
+  engineUpgradeState(): Promise<IEngineUpgradeState> {
+    return request('/api/engine/upgrade');
+  },
+
+  /** 发起一键升级；失败（扫描中 / 已是最新 / 上游不可达）会抛出可读错误 */
+  startEngineUpgrade(): Promise<IEngineUpgradeState> {
+    if (USE_MOCK) {
+      return Promise.reject(new Error('演示模式不支持升级引擎'));
+    }
+    return request('/api/engine/upgrade', { method: 'POST' });
   },
 
   /** 双快照对比：问题级 + 文件级 */

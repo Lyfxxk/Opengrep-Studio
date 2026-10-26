@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { config, engineSource, type EngineSource } from './config.js';
+import { probeVersion } from '../scripts/engine-install.mjs';
 
 const SOURCE_LABELS: Record<EngineSource, string> = {
   env: '环境变量 OPENGREP_BIN 指定',
@@ -50,25 +51,13 @@ let engineVersionPromise: Promise<string | undefined> | null = null;
 
 /** 惰性探测引擎版本（只 spawn 一次，失败不缓存重试）；与 runEngine 同一套 spawn 策略 */
 export function getEngineVersion(): Promise<string | undefined> {
-  engineVersionPromise ??= new Promise((resolve) => {
-    const child = spawn(config.opengrepBin, ['--version'], {
-      windowsHide: true,
-      env: { ...process.env, OPENGREP_ENABLE_VERSION_CHECK: '0' },
-    });
-    let out = '';
-    const timer = setTimeout(() => child.kill(), 5000);
-    child.stdout.on('data', (chunk) => { out += String(chunk); });
-    child.on('error', () => {
-      clearTimeout(timer);
-      resolve(undefined);
-    });
-    child.on('close', () => {
-      clearTimeout(timer);
-      const match = out.match(/\d+\.\d+\.\d+/);
-      resolve(match ? match[0] : out.trim().split(/\r?\n/)[0] || undefined);
-    });
-  });
+  engineVersionPromise ??= probeVersion(config.opengrepBin);
   return engineVersionPromise;
+}
+
+/** 升级替换引擎后必须失效缓存，否则界面与报告仍显示旧版本 */
+export function resetEngineVersionCache(): void {
+  engineVersionPromise = null;
 }
 
 export interface EngineRunResult {

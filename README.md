@@ -81,6 +81,15 @@ Opengrep Studio 把这条流水线补齐：**拖进代码 → 点一下扫描 �
 
 项目数、累计扫描、检出问题、规则包一目了然；跨项目的风险分布、高频命中规则、引擎状态与各项目风险速览，扫描进行中自动刷新。
 
+### ⬆️ 引擎检查更新与一键升级
+
+仪表盘的「引擎状态」卡片会显示**实际安装的版本**与来源，点「检查更新」比对上游最新 stable，发现新版本可一键升级：
+
+- 升级是原子替换：下载 → SHA-256（GitHub release 资产的 digest）校验 → 运行 `opengrep --version` 核对 → 才替换文件，任一步失败旧引擎原封不动
+- 只对最新 stable 开放（不碰 pre-release）；`OPENGREP_BIN` 自管引擎的用户按钮置灰
+- 扫描 / 规则实验室运行期间禁用升级（Windows 不允许替换运行中的 exe），升级后版本探测缓存自动失效
+- 实际安装版本记录在 `opengrep-tool/installed.json`，重跑 `npm run setup:engine` 不会把升级过的引擎降级回 `engines.json` 的钉住版本
+
 <details>
 <summary><b>界面一览（登录页与仪表盘）</b></summary>
 <table>
@@ -142,7 +151,8 @@ npm run docker:run    # 等价于 docker run --rm -p 8787:8787 -v ogstudio-data:
 <details>
 <summary><b>故障排查</b></summary>
 <ul>
-<li><b>引擎下载慢或失败</b>：设置镜像 <code>set OPENGREP_DOWNLOAD_BASE=&lt;镜像地址&gt;</code>（macOS/Linux 用 <code>export</code>）后重试；或从 <a href="https://github.com/opengrep/opengrep/releases/tag/v1.31.0">opengrep Releases</a> 手动下载，再用 <code>OPENGREP_BIN</code> 指向二进制路径</li>
+<li><b>引擎下载慢或失败</b>：下载会自动按 <code>OPENGREP_DOWNLOAD_BASE 镜像 → github.com → api.github.com</code> 依次降级，github.com 不可达时通常无需干预即可装完；仍失败时可手动设置镜像 <code>set OPENGREP_DOWNLOAD_BASE=&lt;镜像地址&gt;</code>（macOS/Linux 用 <code>export</code>），或从 <a href="https://github.com/opengrep/opengrep/releases/tag/v1.31.0">opengrep Releases</a> 手动下载后用 <code>OPENGREP_BIN</code> 指向二进制路径</li>
+<li><b>检查更新提示 GitHub API 限流</b>：匿名调用上限 60 次/小时，检查结果缓存 10 分钟；稍后再试即可，不影响扫描</li>
 <li><b>macOS 提示无法验证引擎</b>：<code>xattr -d com.apple.quarantine &lt;引擎路径&gt;</code></li>
 <li><b>端口被占用</b>：<code>node server/scripts/kill-port.mjs 8787 1022</code></li>
 <li><b>更多环境变量</b>：<code>PORT</code> / <code>HOST</code> / <code>DATA_DIR</code> / <code>CUSTOM_RULES_DIR</code> / <code>OPENGREP_BIN</code> / <code>OPENGREP_DOWNLOAD_BASE</code></li>
@@ -224,6 +234,7 @@ flowchart LR
 - [x] SARIF 2.1.0 导入导出与可复现清单
 - [x] 规则实验室与便携规则包（含样本回归）
 - [x] Docker 镜像与三平台一键启动
+- [x] 引擎更新检查与一键升级（下载三通道兜底）
 - [ ] 界面英文 i18n
 - [ ] 扫描队列与并行调度
 - [ ] 规则包在线 URL 导入与社区规则包索引
@@ -239,7 +250,7 @@ flowchart LR
 | `npm run dev` | 同时启动后端 `tsx watch`(:8787) 与前端 Vite(:1022) |
 | `npm test` | 后端单测（引擎解析 / gitignore 语义 / 规则 YAML / SARIF 导入） |
 | `npm run test-packs` | 规则包结构校验与样本回归 |
-| `npm run e2e` | 黑盒 REST 回归（需先启动后端与引擎，24 组场景） |
+| `npm run e2e` | 黑盒 REST 回归（需先启动后端与引擎，25 组场景） |
 | `npm run seed` | 灌入演示数据 |
 | `npm --prefix code run lint` | 前端类型检查 + ESLint |
 

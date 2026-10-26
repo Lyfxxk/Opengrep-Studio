@@ -50,6 +50,7 @@ Opengrep Studio completes this pipeline: **drop in code → click scan → triag
 
 - **SARIF interop** — export SARIF 2.1.0 for GitHub Code Scanning / DefectDojo / SonarQube; import SARIF 2.x from other tools as a full scan.
 - **Dashboard** — cross-project risk posture, top-hit rules, engine status, auto-refresh while scans run.
+- **Engine check-update & one-click upgrade** — the dashboard card shows the version actually installed and its source; "Check for updates" compares it against the latest stable release and upgrades in place. The swap is atomic (download → SHA-256 from the release asset digest → `opengrep --version` check → replace), so a failed upgrade leaves the previous engine untouched. Only latest stable (no pre-releases); users who manage the engine via `OPENGREP_BIN` get a disabled button; upgrade is blocked while scans or the Rule Lab are running. The installed version is recorded in `opengrep-tool/installed.json`, so re-running `npm run setup:engine` never downgrades an upgraded engine.
 
 <details>
 <summary><b>More screenshots</b></summary>
@@ -101,7 +102,8 @@ Default login: `admin` / `123456` (see [Security Model](#security-model)). Sugge
 <details>
 <summary><b>Troubleshooting</b></summary>
 <ul>
-<li><b>Engine download slow/blocked</b>: set <code>OPENGREP_DOWNLOAD_BASE</code> to a mirror, or download from <a href="https://github.com/opengrep/opengrep/releases/tag/v1.31.0">opengrep Releases</a> and point <code>OPENGREP_BIN</code> at it</li>
+<li><b>Engine download slow/blocked</b>: downloads fall back automatically (<code>OPENGREP_DOWNLOAD_BASE</code> mirror → github.com → api.github.com), so a blocked github.com usually needs no manual step; if all channels fail, set a mirror or download from <a href="https://github.com/opengrep/opengrep/releases/tag/v1.31.0">opengrep Releases</a> and point <code>OPENGREP_BIN</code> at it</li>
+<li><b>"Check for updates" reports GitHub API rate limit</b>: anonymous calls are capped at 60/hour and results are cached for 10 minutes; retry later — scanning is unaffected</li>
 <li><b>macOS Gatekeeper</b>: <code>xattr -d com.apple.quarantine &lt;engine-path&gt;</code></li>
 <li><b>Ports busy</b>: <code>node server/scripts/kill-port.mjs 8787 1022</code></li>
 <li><b>Other env vars</b>: <code>PORT</code> / <code>HOST</code> / <code>DATA_DIR</code> / <code>CUSTOM_RULES_DIR</code> / <code>OPENGREP_BIN</code> / <code>OPENGREP_DOWNLOAD_BASE</code></li>
@@ -133,6 +135,7 @@ Single-process deployment (the backend also serves the built frontend in product
 - [x] SARIF 2.1.0 import/export, reproducibility manifest
 - [x] Rule Lab & portable rule packs with sample regression
 - [x] Docker image & one-click launch on 3 platforms
+- [x] Engine check-update & one-click upgrade (multi-channel download fallback)
 - [ ] English UI (i18n)
 - [ ] Scan queue & parallel scheduling
 - [ ] Rule-pack import from URL & community index

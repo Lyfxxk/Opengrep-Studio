@@ -52,6 +52,12 @@ export interface IScanDiff {
       diffable: boolean;
     }>;
   };
+  /** 两次扫描各自的引擎版本；mismatch 为 true 时界面提示跨版本对比有噪音 */
+  engine?: {
+    current: string | null;
+    against: string | null;
+    mismatch: boolean;
+  };
 }
 
 interface IKnowledgeCwe {
