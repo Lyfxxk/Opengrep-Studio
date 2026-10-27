@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { FolderOpen, Puzzle, Radar, ShieldAlert } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -9,7 +10,6 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import type { IIssue } from '@/data/issues';
-import { SEVERITY_LABELS } from '@/data/issues';
 import type { IProject } from '@/data/projects';
 import type { IRulePack } from '@/data/rulepacks';
 import type { IScanResult } from '@/data/scanresults';
@@ -56,6 +56,7 @@ function StatCard({
 
 /** 仪表看盘：项目 / 扫描 / 风险分布 / 规则资产的全局概览（自动刷新，无手动刷新入口） */
 export default function DashboardPage() {
+  const { t } = useTranslation();
   const [projects, setProjects] = useState<IProject[] | null>(null);
   const [scans, setScans] = useState<IScanResult[] | null>(null);
   const [packs, setPacks] = useState<IRulePack[] | null>(null);
@@ -178,37 +179,44 @@ export default function DashboardPage() {
     <div className="flex flex-col gap-4 lg:h-full">
       {loadFailed && (
         <p className="shrink-0 rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-2 text-xs text-destructive">
-          部分数据加载失败，当前展示可能不完整，将自动重试
+          {t('dashboard.loadFailed')}
         </p>
       )}
       <div className="grid shrink-0 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           icon={FolderOpen}
-          label="审计项目"
+          label={t('dashboard.statsProjects')}
           value={projects?.length ?? '—'}
-          sub={projects === null ? undefined : hasData ? undefined : '尚未建档'}
+          sub={projects === null ? undefined : hasData ? undefined : t('dashboard.noProjectsYet')}
         />
         <StatCard
           icon={Radar}
-          label="累计扫描"
+          label={t('dashboard.statsScans')}
           value={scans?.length ?? '—'}
           sub={
             scans
-              ? `已完成 ${completedScans.length} · 失败 ${scans.filter((s) => s.status === 'failed').length}`
+              ? t('dashboard.scanStats', {
+                  completed: completedScans.length,
+                  failed: scans.filter((s) => s.status === 'failed').length,
+                })
               : undefined
           }
         />
         <StatCard
           icon={ShieldAlert}
-          label="累计检出问题"
+          label={t('dashboard.statsIssues')}
           value={completedScans.reduce((sum, scan) => sum + scan.issueCount, 0)}
-          sub={risks ? `当前活跃 ${aggregated.total} · 待复核 ${aggregated.pendingReview}` : undefined}
+          sub={
+            risks
+              ? t('dashboard.issueStats', { active: aggregated.total, pending: aggregated.pendingReview })
+              : undefined
+          }
         />
         <StatCard
           icon={Puzzle}
-          label="规则包"
+          label={t('dashboard.statsPacks')}
           value={packs ? packs.length : '—'}
-          sub={packs ? `内置 ${builtinPacks} · 自建 ${customPacks}` : undefined}
+          sub={packs ? t('dashboard.packStats', { builtin: builtinPacks, custom: customPacks }) : undefined}
         />
       </div>
 
@@ -217,9 +225,9 @@ export default function DashboardPage() {
           <Card className="flex min-h-0 flex-1 flex-col">
             <CardHeader className="shrink-0 pb-3">
               <CardTitle className="text-base">
-                风险分布
+                {t('dashboard.riskDistTitle')}
                 <span className="ml-2 text-xs font-normal text-muted-foreground">
-                  口径：各项目最近一次已完成扫描
+                  {t('dashboard.riskDistScope')}
                 </span>
               </CardTitle>
             </CardHeader>
@@ -227,10 +235,10 @@ export default function DashboardPage() {
               {aggregated.total === 0 ? (
                 <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
                   {hasData
-                    ? '最近一轮扫描未检出问题，或尚无已完成的扫描'
+                    ? t('dashboard.riskDistEmpty')
                     : projects === null
-                      ? '数据加载中…'
-                      : '暂无数据，到「项目管理」创建项目并完成一次扫描后，这里会展示风险分布'}
+                      ? t('dashboard.loadingData')
+                      : t('dashboard.riskDistEmptyProject')}
                 </p>
               ) : (
                 SEVERITY_ORDER.map((severity) => {
@@ -238,7 +246,7 @@ export default function DashboardPage() {
                   return (
                     <div key={severity} className="flex items-center gap-3">
                       <span className="w-10 shrink-0 text-sm text-muted-foreground">
-                        {SEVERITY_LABELS[severity]}
+                        {t(`severity.${severity}`)}
                       </span>
                       <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-muted">
                         <div
@@ -258,11 +266,11 @@ export default function DashboardPage() {
 
           <Card className="flex min-h-0 flex-1 flex-col">
             <CardHeader className="shrink-0 pb-3">
-              <CardTitle className="text-base">高频命中规则</CardTitle>
+              <CardTitle className="text-base">{t('dashboard.topRulesTitle')}</CardTitle>
             </CardHeader>
             <CardContent className="flex min-h-0 flex-1 flex-col justify-center overflow-y-auto">
               {aggregated.topRules.length === 0 ? (
-                <p className="text-sm text-muted-foreground">暂无命中数据</p>
+                <p className="text-sm text-muted-foreground">{t('dashboard.topRulesEmpty')}</p>
               ) : (
                 <div className="space-y-2.5">
                   {aggregated.topRules.map((rule) => (
@@ -271,10 +279,10 @@ export default function DashboardPage() {
                         {rule.ruleId}
                       </span>
                       <Badge variant="outline" className="shrink-0 font-normal text-xs">
-                        {SEVERITY_LABELS[rule.severity]}
+                        {t(`severity.${rule.severity}`)}
                       </Badge>
                       <span className="w-14 shrink-0 text-right tabular-nums text-muted-foreground">
-                        {rule.count} 次
+                        {t('dashboard.hits', { count: rule.count })}
                       </span>
                     </div>
                   ))}
@@ -289,12 +297,12 @@ export default function DashboardPage() {
 
           <Card className="flex min-h-0 flex-1 flex-col">
             <CardHeader className="shrink-0 pb-3">
-              <CardTitle className="text-base">项目风险速览</CardTitle>
+              <CardTitle className="text-base">{t('dashboard.riskOverviewTitle')}</CardTitle>
             </CardHeader>
             <CardContent className="flex min-h-0 flex-1 flex-col justify-center gap-3 overflow-y-auto">
               {(risks ?? []).length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  {projects === null ? '加载中…' : '暂无项目'}
+                  {projects === null ? t('common.loading') : t('dashboard.noProjects')}
                 </p>
               ) : (
                 (risks ?? []).map(({ project, latestScan, issues }) => {
@@ -313,18 +321,22 @@ export default function DashboardPage() {
                         <span className="flex shrink-0 items-center gap-1.5 text-xs tabular-nums">
                           {critical > 0 && (
                             <Badge className="bg-destructive/15 px-1.5 font-normal text-destructive">
-                              {SEVERITY_LABELS.critical} {critical}
+                              {t('severity.critical')} {critical}
                             </Badge>
                           )}
                           {high > 0 && (
                             <Badge className="bg-warning/15 px-1.5 font-normal text-warning">
-                              {SEVERITY_LABELS.high} {high}
+                              {t('severity.high')} {high}
                             </Badge>
                           )}
-                          <span className="text-muted-foreground">共 {issues.length}</span>
+                          <span className="text-muted-foreground">
+                            {t('dashboard.totalCount', { count: issues.length })}
+                          </span>
                         </span>
                       ) : (
-                        <span className="shrink-0 text-xs text-muted-foreground">未扫描</span>
+                        <span className="shrink-0 text-xs text-muted-foreground">
+                          {t('dashboard.unscanned')}
+                        </span>
                       )}
                     </div>
                   );
