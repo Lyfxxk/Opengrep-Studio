@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 /** 各语言的品牌色（GitHub Linguist 风格），未收录的语言按名称哈希取备用色 */
 const LANG_COLORS: Record<string, string> = {
@@ -47,6 +48,7 @@ interface LanguageStatsBarProps {
 }
 
 export default function LanguageStatsBar({ stats }: LanguageStatsBarProps) {
+  const { t } = useTranslation();
   const segments = useMemo(() => {
     const total = Object.values(stats).reduce((sum, bytes) => sum + bytes, 0);
     if (total <= 0) return null;
@@ -91,8 +93,8 @@ export default function LanguageStatsBar({ stats }: LanguageStatsBarProps) {
             </span>
           </span>
         ))}
-        <span className="text-xs text-muted-foreground" title="按文件字节数实测统计">
-          合计 {(total / 1024).toFixed(0)} KB
+        <span className="text-xs text-muted-foreground" title={t('langStats.title')}>
+          {t('langStats.total', { kb: (total / 1024).toFixed(0) })}
         </span>
       </div>
     </div>

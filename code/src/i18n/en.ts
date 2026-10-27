@@ -118,6 +118,37 @@ const en: typeof zh = {
     checkFailed: 'Update check failed: {{error}}',
     unavailable: 'Engine unavailable',
   },
+  langStats: {
+    title: 'Measured by file bytes',
+    total: 'Total {{kb}} KB',
+  },
+  upload: {
+    invalidUrl: 'Please enter a Git repository URL starting with http(s)://',
+    invalidArchive: 'Only ZIP / 7Z / RAR / TAR·GZ archives are supported; drop folders directly instead.',
+    tooLarge: 'The file exceeds the {{limit}}MB upload limit. Split it and retry.',
+    fileTooLarge: '{{name}} exceeds the {{limit}}MB upload limit. Split it and retry.',
+    readFailed: 'Failed to read the dropped content. Please retry.',
+    tooManyFiles: 'Too many files: the limit is {{limit}}.',
+    archiveMixed: 'Upload archives separately — do not mix them with folders in one drop.',
+    cloneDone: 'Clone complete — ready to scan',
+    uploadedIgnored: 'Upload complete — {{count}} files ignored via .gitignore',
+    uploadedReady: 'Upload complete — ready to scan',
+    reselect: 'Choose again',
+    cloning: 'Cloning the repository (shallow clone of the latest commit) — may take a minute or more depending on repo size…',
+    uploading: 'Uploading…',
+    dropTitle: 'Drag a source folder or archive here, or click to pick an archive',
+    dropHint:
+      'ZIP / 7Z / RAR / TAR·GZ archives, or drop a whole folder · Max {{limit}}MB per file · Path-traversal protection enabled',
+    respectIgnoreTitle: 'Ignore files per .gitignore (recommended)',
+    ignoreOn:
+      'Uploaded content is filtered by .gitignore / .opengrepignore, matching direct repo scans; ignored files like .env never enter the scan.',
+    ignoreOff:
+      'Scan everything you upload, including ignored files like .env — for deep hunts for hardcoded secrets.',
+    branchPlaceholder: 'Branch / tag (optional)',
+    cloneButton: 'Clone & import',
+    cloneHint:
+      'You can also paste a Git URL (GitHub / GitLab / Gitee and other public repos); the server shallow-clones the latest commit — equivalent to uploading source.',
+  },
   projects: {
     subtitle: 'Create and manage code audit projects; upload a source ZIP and run opengrep scans.',
     newProject: 'New project',
