@@ -15,6 +15,10 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import BatchDeleteBar from '@/components/BatchDeleteBar';
+import BatchDeleteConfirm from '@/components/BatchDeleteConfirm';
+import { useRowSelection } from '@/lib/useRowSelection';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,6 +44,9 @@ export default function ProjectsPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<IProject | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<IProject | null>(null);
+  const selection = useRowSelection(projects.map((project) => project.id));
+  const [batchConfirmOpen, setBatchConfirmOpen] = useState(false);
+  const [batchDeleting, setBatchDeleting] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -93,6 +100,26 @@ export default function ProjectsPage() {
     }
   };
 
+  // 逐个调用单删接口：某一项失败（如正在导入中）不影响其余项，最后汇总报数
+  const handleBatchDelete = async () => {
+    const ids = [...selection.selected];
+    setBatchConfirmOpen(false);
+    setBatchDeleting(true);
+    let failed = 0;
+    for (const id of ids) {
+      try {
+        await api.deleteProject(id);
+      } catch {
+        failed += 1;
+      }
+    }
+    setBatchDeleting(false);
+    selection.clear();
+    await refresh();
+    if (failed === 0) toast.success(`已删除 ${ids.length} 个项目`);
+    else toast.warning(`已删除 ${ids.length - failed} 个项目，${failed} 个失败（可能正在导入或扫描中）`);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -107,6 +134,14 @@ export default function ProjectsPage() {
           新建项目
         </Button>
       </div>
+
+      <BatchDeleteBar
+        count={selection.count}
+        label="项目"
+        deleting={batchDeleting}
+        onDelete={() => setBatchConfirmOpen(true)}
+        onClear={selection.clear}
+      />
 
       <Card className="overflow-hidden">
         <CardHeader>
@@ -131,6 +166,13 @@ export default function ProjectsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-10">
+                      <Checkbox
+                        checked={selection.allSelected ? true : selection.someSelected ? 'indeterminate' : false}
+                        onCheckedChange={() => selection.toggleAll()}
+                        aria-label="全选项目"
+                      />
+                    </TableHead>
                     <TableHead className="whitespace-nowrap">项目名称</TableHead>
                     <TableHead className="whitespace-nowrap">描述</TableHead>
                     <TableHead className="whitespace-nowrap">创建时间</TableHead>
@@ -140,6 +182,13 @@ export default function ProjectsPage() {
                 <TableBody>
                   {projects.map((project) => (
                     <TableRow key={project.id}>
+                      <TableCell className="w-10">
+                        <Checkbox
+                          checked={selection.selected.has(project.id)}
+                          onCheckedChange={() => selection.toggle(project.id)}
+                          aria-label={`选择项目 ${project.name}`}
+                        />
+                      </TableCell>
                       <TableCell>
                         <Link
                           to={`/projects/${project.id}`}
@@ -218,6 +267,14 @@ export default function ProjectsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <BatchDeleteConfirm
+        open={batchConfirmOpen}
+        label="项目"
+        count={selection.count}
+        extra="项目下的扫描记录与源码快照将一并移除。"
+        onOpenChange={setBatchConfirmOpen}
+        onConfirm={handleBatchDelete}
+      />
     </div>
   );
 }

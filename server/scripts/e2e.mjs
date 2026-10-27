@@ -1012,6 +1012,28 @@ assert(
     && taintMatch.taintFlow.some((step) => step.role === 'intermediate'),
   '实验室命中带污点传播链（source→intermediate→sink）', JSON.stringify(taintMatch.taintFlow));
 
+console.log('== 21. 扫描删除（单删 + 基线引用置空） ==');
+// 建一条以扫描 A 为基线的新扫描：删掉 A 后，它的基线引用应被自动置空而不是悬空
+const p21scan = await pollScan(
+  (await api('POST', `/api/projects/${p20proj}/scans`, { baselineScanId: p20scanA.id })).json.id,
+);
+assert(p21scan.status === 'completed' && p21scan.baselineScanId === p20scanA.id,
+  '带基线扫描完成', JSON.stringify(p21scan));
+const delBaseline = await api('DELETE', `/api/scans/${p20scanA.id}`);
+assert(delBaseline.status === 204, '删除基线扫描返回 204');
+const afterDel = await api('GET', `/api/scans/${p21scan.id}`);
+assert(afterDel.status === 200 && (afterDel.json?.baselineScanId ?? null) === null,
+  '删除基线后引用自动置空', JSON.stringify(afterDel.json?.baselineScanId));
+assert((await api('DELETE', `/api/scans/${p20scanA.id}`)).status === 404, '重复删除返回 404');
+assert((await api('GET', `/api/scans/${p20scanA.id}/issues`)).status === 404, '已删扫描的 issues 返回 404');
+for (const scan of [p21scan, p20scanB, p20scanC]) {
+  const del = await api('DELETE', `/api/scans/${scan.id}`);
+  assert(del.status === 204, `删除扫描 ${scan.id} 返回 204`);
+}
+const listAfterDel = await api('GET', '/api/scans');
+const deletedIds = [p20scanA.id, p20scanB.id, p20scanC.id, p21scan.id];
+assert(!listAfterDel.json.some((scan) => deletedIds.includes(scan.id)), '扫描列表已不含被删扫描');
+
 // 收尾
 await api('DELETE', `/api/projects/${p20proj}`);
 await api('DELETE', `/api/configs/${p20cfg.id}`);

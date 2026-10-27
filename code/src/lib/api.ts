@@ -824,6 +824,15 @@ export const api = {
     return request('/api/scans');
   },
 
+  /** 删除单条扫描（问题明细与源码快照一并移除；进行中的扫描后端返回 409） */
+  async deleteScan(id: string): Promise<void> {
+    if (USE_MOCK) {
+      saveScans(loadScans().filter((scan) => scan.id !== id));
+      return;
+    }
+    await request<void>(`/api/scans/${id}`, { method: 'DELETE' });
+  },
+
   /** 健康检查（引擎版本与解析来源）；演示模式下无后端，直接标记引擎缺失 */
   getHealth(): Promise<HealthInfo> {
     if (USE_MOCK) {
