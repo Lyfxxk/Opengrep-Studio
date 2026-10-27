@@ -189,12 +189,8 @@ export default function ScanResultPage() {
             <>
               <span className="mr-1">本次扫描规则包：</span>
               {scan.rulepacks.map((pack) => (
-                <Badge
-                  key={pack.id}
-                  variant="outline"
-                  className="max-w-[200px] truncate px-1.5 font-normal"
-                  title={pack.name}
-                >
+                // 不截断包名：这行是自由换行的元信息，截断会让「JavaScript / TypeScript」这类长包名看不全
+                <Badge key={pack.id} variant="outline" className="px-1.5 font-normal" title={pack.name}>
                   {pack.name}
                 </Badge>
               ))}
