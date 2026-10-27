@@ -1,4 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { FileText, FolderOpen, LayoutDashboard, Puzzle, Radar, SlidersHorizontal } from 'lucide-react';
 import logoUrl from '@/assets/images/logo.png';
 import {
@@ -12,18 +13,28 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
 
-/** 一级导航（侧栏与 Header 面包屑共用；标签改动只改这里） */
-export const NAV_ITEMS = [
-  { path: '/dashboard', label: '仪表看盘', icon: LayoutDashboard },
-  { path: '/projects', label: '项目管理', icon: FolderOpen },
-  { path: '/scans', label: '扫描中心', icon: Radar },
-  { path: '/reports', label: '报告中心', icon: FileText },
-  { path: '/rules', label: '规则中心', icon: Puzzle },
-  { path: '/configs', label: '扫描配置', icon: SlidersHorizontal },
+/** 一级导航 label 的合法 i18n 键（约束 NAV_ITEMS 与 Header 面包屑的取值） */
+export type NavKey =
+  | 'nav.dashboard'
+  | 'nav.projects'
+  | 'nav.scans'
+  | 'nav.reports'
+  | 'nav.rules'
+  | 'nav.configs';
+
+/** 一级导航（侧栏与 Header 面包屑共用；label 存 i18n 键，文案改动改 i18n 资源） */
+export const NAV_ITEMS: Array<{ path: string; label: NavKey; icon: typeof LayoutDashboard }> = [
+  { path: '/dashboard', label: 'nav.dashboard', icon: LayoutDashboard },
+  { path: '/projects', label: 'nav.projects', icon: FolderOpen },
+  { path: '/scans', label: 'nav.scans', icon: Radar },
+  { path: '/reports', label: 'nav.reports', icon: FileText },
+  { path: '/rules', label: 'nav.rules', icon: Puzzle },
+  { path: '/configs', label: 'nav.configs', icon: SlidersHorizontal },
 ];
 
 export default function AppSidebar() {
   const { pathname } = useLocation();
+  const { t } = useTranslation();
 
   return (
     <Sidebar collapsible="icon">
@@ -32,7 +43,7 @@ export default function AppSidebar() {
           <img src={logoUrl} alt="" className="size-8 shrink-0" />
           <div className="min-w-0 flex-1 group-data-[state=collapsed]:hidden">
             <div className="truncate text-sm font-semibold text-sidebar-foreground">Opengrep Studio</div>
-            <div className="truncate text-xs text-sidebar-foreground/60">码审工作台</div>
+            <div className="truncate text-xs text-sidebar-foreground/60">{t('app.tagline')}</div>
           </div>
         </div>
       </SidebarHeader>
@@ -47,7 +58,7 @@ export default function AppSidebar() {
                 <SidebarMenuItem key={item.path}>
                   <SidebarMenuButton
                     asChild
-                    tooltip={item.label}
+                    tooltip={t(item.label)}
                     isActive={isActive}
                     size="lg"
                     className="gap-3 rounded-lg px-3 text-[15px] [&>svg]:size-5"
@@ -55,7 +66,7 @@ export default function AppSidebar() {
                     <NavLink to={item.path} className="flex items-center gap-3">
                       <Icon className="size-5 shrink-0" />
                       <span className="group-data-[state=collapsed]:hidden">
-                        {item.label}
+                        {t(item.label)}
                       </span>
                     </NavLink>
                   </SidebarMenuButton>

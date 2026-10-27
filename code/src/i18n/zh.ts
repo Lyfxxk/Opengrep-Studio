@@ -1,5 +1,78 @@
-// 中文资源：界面文案的中文源头（键结构需与 en.ts 保持一致）
-// 文案适配尚未开始，此处暂为空骨架
-const zh = {};
+// 中文资源：界面文案的中文源头（en.ts 以 typeof zh 锁定键结构，两文件必须同步增删键）
+const zh = {
+  app: {
+    tagline: '码审工作台',
+  },
+  title: {
+    app: 'Opengrep Studio | 码审工作台',
+  },
+  nav: {
+    dashboard: '仪表看盘',
+    projects: '项目管理',
+    scans: '扫描中心',
+    reports: '报告中心',
+    rules: '规则中心',
+    configs: '扫描配置',
+  },
+  breadcrumb: {
+    projectDetail: '项目详情',
+    scanResult: '扫描结果',
+    report: '测试报告',
+  },
+  header: {
+    logout: '退出登录',
+    logoutToast: '已退出登录',
+    avatarAlt: '管理员头像',
+    language: '切换语言',
+  },
+  lang: {
+    zh: '中文',
+    en: 'English',
+  },
+  login: {
+    title: '登录 · Opengrep Studio',
+    introPanel: '产品介绍',
+    formPanel: '登录',
+    heroTitle1: '让隐患，先于攻击者',
+    heroTitleEm: '现形',
+    heroTitle2: '。',
+    heroSub1: '从导入源码到交付测试报告，规则引擎逐条比对，',
+    heroSub2: '风险直达文件与行号，四步完成一次完整审计。',
+    termAria: '审计流程演示：新建项目、导入源码、扫描标记风险、生成测试报告',
+    termTitle: 'opengrep · scan — 示例数据',
+    termEngineLoaded: '引擎就绪 · 已加载',
+    termRules: '条规则',
+    termHigh: '高危',
+    termMedium: '中危',
+    termRuleCredentials: '硬编码凭据',
+    termRuleSql: 'SQL 拼接风险',
+    termRuleAuthz: '越权访问风险',
+    termScanDone: '扫描完成 ·',
+    termFiles: '个文件 ·',
+    termRisks: '处风险 · 用时',
+    step1Title: '新建审计项目',
+    step1Desc: '为待审计代码包建立独立空间。',
+    step2Title: '上传项目源码',
+    step2Desc: '多种形式导入，代码不经云端。',
+    step3Title: '逐条审阅风险',
+    step3Desc: '逐条核对风险清单与规则对比。',
+    step4Title: '查看测试报告',
+    step4Desc: '汇总风险等级，生成测试报告。',
+    username: '账号',
+    password: '密码',
+    usernamePlaceholder: '请输入管理员账号',
+    passwordPlaceholder: '请输入密码',
+    showPassword: '显示密码',
+    hidePassword: '隐藏密码',
+    errorUsername: '请输入账号',
+    errorPassword: '请输入密码',
+    errorInvalid: '账号或密码错误',
+    submit: '登　录',
+    submitting: '登录中…',
+    successTitle: '身份已确认',
+    successDesc: '正在进入工作台…',
+    successToast: '登录成功，欢迎回来',
+  },
+};
 
 export default zh;

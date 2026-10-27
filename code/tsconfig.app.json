@@ -13,6 +13,8 @@
     "jsx": "react-jsx",
 
     "strict": false,
+    // i18next 26 的 t() 键类型解析依赖此开关（关闭时 undefined 可赋给 string，键联合会被算成 never）
+    "strictNullChecks": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noImplicitAny": false,

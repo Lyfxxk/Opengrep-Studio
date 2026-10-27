@@ -1,5 +1,80 @@
-// 英文资源：键结构与 zh.ts 保持一致
-// 文案适配尚未开始，此处暂为空骨架
-const en = {};
+// 英文资源：typeof zh 锁定键结构——键缺失/多余/错拼都会在编译期报错
+import zh from './zh';
+
+const en: typeof zh = {
+  app: {
+    tagline: 'Code Audit Workbench',
+  },
+  title: {
+    app: 'Opengrep Studio | Code Audit Workbench',
+  },
+  nav: {
+    dashboard: 'Dashboard',
+    projects: 'Projects',
+    scans: 'Scans',
+    reports: 'Reports',
+    rules: 'Rules',
+    configs: 'Scan Configs',
+  },
+  breadcrumb: {
+    projectDetail: 'Project Detail',
+    scanResult: 'Scan Results',
+    report: 'Test Report',
+  },
+  header: {
+    logout: 'Sign out',
+    logoutToast: 'Signed out',
+    avatarAlt: 'Admin avatar',
+    language: 'Switch language',
+  },
+  lang: {
+    zh: '中文',
+    en: 'English',
+  },
+  login: {
+    title: 'Sign in · Opengrep Studio',
+    introPanel: 'Product introduction',
+    formPanel: 'Sign in',
+    heroTitle1: 'See risks ',
+    heroTitleEm: 'before',
+    heroTitle2: ' attackers do.',
+    heroSub1: 'From source import to test report, the rule engine compares line by line,',
+    heroSub2: 'pinning risks to files and line numbers — a full audit in four steps.',
+    termAria: 'Audit workflow demo: create a project, import source, scan for risks, generate a test report',
+    termTitle: 'opengrep · scan — sample data',
+    termEngineLoaded: 'engine ready · loaded',
+    termRules: 'rules',
+    termHigh: 'High',
+    termMedium: 'Medium',
+    termRuleCredentials: 'Hardcoded credentials',
+    termRuleSql: 'SQL concatenation risk',
+    termRuleAuthz: 'Unauthorized access risk',
+    termScanDone: 'scan complete ·',
+    termFiles: 'files ·',
+    termRisks: 'risks · took',
+    step1Title: 'Create an audit project',
+    step1Desc: 'A dedicated space for each code package under audit.',
+    step2Title: 'Upload project source',
+    step2Desc: 'Import in multiple ways — code never leaves your machine.',
+    step3Title: 'Review risks one by one',
+    step3Desc: 'Check each finding against its matched rule.',
+    step4Title: 'View the test report',
+    step4Desc: 'Summarize severity levels into a test report.',
+    username: 'Username',
+    password: 'Password',
+    usernamePlaceholder: 'Enter admin username',
+    passwordPlaceholder: 'Enter password',
+    showPassword: 'Show password',
+    hidePassword: 'Hide password',
+    errorUsername: 'Please enter your username',
+    errorPassword: 'Please enter your password',
+    errorInvalid: 'Incorrect username or password',
+    submit: 'Sign in',
+    submitting: 'Signing in…',
+    successTitle: 'Identity confirmed',
+    successDesc: 'Entering the workspace…',
+    successToast: 'Signed in, welcome back',
+  },
+};
 
 export default en;
