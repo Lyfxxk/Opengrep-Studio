@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { login, validateCredentials } from '@/lib/auth';
 import logoUrl from '@/assets/images/logo.png';
@@ -9,6 +10,7 @@ type ErrorField = 'username' | 'password';
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [username, setUsername] = useState('admin');
   const [password, setPassword] = useState('123456');
   const [error, setError] = useState('');
@@ -20,11 +22,11 @@ export default function LoginPage() {
   const passwordRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    document.title = '登录 · Opengrep Studio';
+    document.title = t('login.title');
     return () => {
-      document.title = 'Opengrep Studio | 码审工作台';
+      document.title = t('title.app');
     };
-  }, []);
+  }, [t]);
 
   const showError = (message: string, field: ErrorField) => {
     setError(message);
@@ -42,15 +44,15 @@ export default function LoginPage() {
     if (submitting || success) return;
     const trimmedName = username.trim();
     if (!trimmedName) {
-      showError('请输入账号', 'username');
+      showError(t('login.errorUsername'), 'username');
       return;
     }
     if (!password) {
-      showError('请输入密码', 'password');
+      showError(t('login.errorPassword'), 'password');
       return;
     }
     if (!validateCredentials(trimmedName, password)) {
-      showError('账号或密码错误', 'password');
+      showError(t('login.errorInvalid'), 'password');
       return;
     }
 
@@ -61,7 +63,7 @@ export default function LoginPage() {
       login(trimmedName);
       setSubmitting(false);
       setSuccess(true);
-      toast.success('登录成功，欢迎回来');
+      toast.success(t('login.successToast'));
       setTimeout(() => navigate('/dashboard'), 900);
     }, 800);
   };
@@ -74,23 +76,25 @@ export default function LoginPage() {
   return (
     <div className="login-shell">
       {/* 左侧：暗色展示面板 */}
-      <section className="brand-panel" aria-label="产品介绍">
+      <section className="brand-panel" aria-label={t('login.introPanel')}>
         <div className="brand-hero">
           <p className="hero-eyebrow">// LOCAL-FIRST CODE AUDIT</p>
           <h1>
-            让隐患，先于攻击者<em>现形</em>。
+            {t('login.heroTitle1')}
+            <em>{t('login.heroTitleEm')}</em>
+            {t('login.heroTitle2')}
           </h1>
           <p className="hero-sub">
-            从导入源码到交付测试报告，规则引擎逐条比对，
+            {t('login.heroSub1')}
             <br />
-            风险直达文件与行号，四步完成一次完整审计。
+            {t('login.heroSub2')}
           </p>
         </div>
 
         <div
           className="term"
           role="img"
-          aria-label="审计流程演示：新建项目、导入源码、扫描标记风险、生成测试报告"
+          aria-label={t('login.termAria')}
         >
           <div className="term-bar">
             <span className="term-dots" aria-hidden="true">
@@ -98,19 +102,19 @@ export default function LoginPage() {
               <i />
               <i />
             </span>
-            <span className="term-title">opengrep · scan — 示例数据</span>
+            <span className="term-title">{t('login.termTitle')}</span>
           </div>
           <div className="term-body">
             <div className="term-line">
               <span className="p">$</span> opengrep scan ./payment-service --rules default
             </div>
             <div className="term-line">
-              <span className="ok">✓</span> <span className="dim">引擎就绪 · 已加载</span> 18{' '}
-              <span className="dim">条规则</span>
+              <span className="ok">✓</span> <span className="dim">{t('login.termEngineLoaded')}</span> 18{' '}
+              <span className="dim">{t('login.termRules')}</span>
             </div>
             <div className="term-line">
-              <span className="sev sev-high">高危</span>
-              <span className="rule-name">硬编码凭据</span>
+              <span className="sev sev-high">{t('login.termHigh')}</span>
+              <span className="rule-name">{t('login.termRuleCredentials')}</span>
               <span className="leader" />
               <span className="path">
                 <span className="dir">src/auth/</span>
@@ -119,8 +123,8 @@ export default function LoginPage() {
               </span>
             </div>
             <div className="term-line">
-              <span className="sev sev-mid">中危</span>
-              <span className="rule-name">SQL 拼接风险</span>
+              <span className="sev sev-mid">{t('login.termMedium')}</span>
+              <span className="rule-name">{t('login.termRuleSql')}</span>
               <span className="leader" />
               <span className="path">
                 <span className="dir">src/api/</span>
@@ -129,8 +133,8 @@ export default function LoginPage() {
               </span>
             </div>
             <div className="term-line">
-              <span className="sev sev-mid">中危</span>
-              <span className="rule-name">越权访问风险</span>
+              <span className="sev sev-mid">{t('login.termMedium')}</span>
+              <span className="rule-name">{t('login.termRuleAuthz')}</span>
               <span className="leader" />
               <span className="path">
                 <span className="dir">src/api/</span>
@@ -139,8 +143,8 @@ export default function LoginPage() {
               </span>
             </div>
             <div className="term-line">
-              <span className="ok">✓</span> <span className="dim">扫描完成 ·</span> 1,284{' '}
-              <span className="dim">个文件 ·</span> 3 <span className="dim">处风险 · 用时</span> 3.2s
+              <span className="ok">✓</span> <span className="dim">{t('login.termScanDone')}</span> 1,284{' '}
+              <span className="dim">{t('login.termFiles')}</span> 3 <span className="dim">{t('login.termRisks')}</span> 3.2s
             </div>
             <div className="term-line">
               <span className="p">$</span> <span className="caret" />
@@ -151,29 +155,29 @@ export default function LoginPage() {
         <div className="steps">
           <div className="step">
             <div className="step-num">01</div>
-            <h3>新建审计项目</h3>
-            <p>为待审计代码包建立独立空间。</p>
+            <h3>{t('login.step1Title')}</h3>
+            <p>{t('login.step1Desc')}</p>
           </div>
           <div className="step">
             <div className="step-num">02</div>
-            <h3>上传项目源码</h3>
-            <p>多种形式导入，代码不经云端。</p>
+            <h3>{t('login.step2Title')}</h3>
+            <p>{t('login.step2Desc')}</p>
           </div>
           <div className="step">
             <div className="step-num">03</div>
-            <h3>逐条审阅风险</h3>
-            <p>逐条核对风险清单与规则对比。</p>
+            <h3>{t('login.step3Title')}</h3>
+            <p>{t('login.step3Desc')}</p>
           </div>
           <div className="step">
             <div className="step-num">04</div>
-            <h3>查看测试报告</h3>
-            <p>汇总风险等级，生成测试报告。</p>
+            <h3>{t('login.step4Title')}</h3>
+            <p>{t('login.step4Desc')}</p>
           </div>
         </div>
       </section>
 
       {/* 右侧：登录表单 */}
-      <section className="form-panel" aria-label="登录">
+      <section className="form-panel" aria-label={t('login.formPanel')}>
         <div className="form-col">
           <div className="form-brand">
             <img className="brand-logo" src={logoUrl} alt="" aria-hidden="true" />
@@ -183,7 +187,7 @@ export default function LoginPage() {
                 <span className="ver-badge">v{__APP_VERSION__}</span>
               </div>
               <div className="brand-tagline" style={{ fontSize: '20px' }}>
-                码审工作台
+                {t('app.tagline')}
               </div>
             </div>
           </div>
@@ -193,7 +197,7 @@ export default function LoginPage() {
               <form onSubmit={handleSubmit} noValidate>
                 <div className="field">
                   <label htmlFor="login-username" style={{ fontSize: '20.5px' }}>
-                    账号
+                    {t('login.username')}
                   </label>
                   <div className="input-wrap">
                     <svg
@@ -216,7 +220,7 @@ export default function LoginPage() {
                       name="username"
                       type="text"
                       maxLength={30}
-                      placeholder="请输入管理员账号"
+                      placeholder={t('login.usernamePlaceholder')}
                       autoComplete="username"
                       value={username}
                       aria-invalid={errorField === 'username' ? true : undefined}
@@ -230,7 +234,7 @@ export default function LoginPage() {
 
                 <div className="field">
                   <label htmlFor="login-password" style={{ fontSize: '20.5px' }}>
-                    密码
+                    {t('login.password')}
                   </label>
                   <div className="input-wrap">
                     <svg
@@ -254,7 +258,7 @@ export default function LoginPage() {
                       name="password"
                       type={showPassword ? 'text' : 'password'}
                       maxLength={30}
-                      placeholder="请输入密码"
+                      placeholder={t('login.passwordPlaceholder')}
                       autoComplete="current-password"
                       value={password}
                       style={{ paddingRight: '52px' }}
@@ -268,7 +272,7 @@ export default function LoginPage() {
                       type="button"
                       className="pw-toggle"
                       onClick={togglePassword}
-                      aria-label={showPassword ? '隐藏密码' : '显示密码'}
+                      aria-label={showPassword ? t('login.hidePassword') : t('login.showPassword')}
                       aria-pressed={showPassword}
                     >
                       {showPassword ? (
@@ -322,10 +326,10 @@ export default function LoginPage() {
                   {submitting ? (
                     <>
                       <span className="spinner" aria-hidden="true" />
-                      登录中…
+                      {t('login.submitting')}
                     </>
                   ) : (
-                    '登　录'
+                    t('login.submit')
                   )}
                 </button>
               </form>
@@ -344,8 +348,8 @@ export default function LoginPage() {
                   <path d="m4.5 12.5 5 5 10-11" />
                 </svg>
               </div>
-              <h2>身份已确认</h2>
-              <p>正在进入工作台…</p>
+              <h2>{t('login.successTitle')}</h2>
+              <p>{t('login.successDesc')}</p>
             </div>
           )}
 
