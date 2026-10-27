@@ -210,6 +210,8 @@ export default function ProjectDetailPage() {
       setScans((prev) => [record, ...prev]);
       setUpload({ status: 'idle' });
       toast.info('扫描任务已提交，引擎单并发执行中…');
+      // 服务端可能在提交时自动绑定了「默认扫描配置」，立即刷新让按钮与配置选择器同步
+      void refresh();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : String(error));
     }
@@ -312,7 +314,7 @@ export default function ProjectDetailPage() {
                 onValueChange={(value) => void handleConfigChange(value)}
               >
                 <SelectTrigger className="h-8 w-52">
-                  <SelectValue placeholder="未绑定（无法扫描）" />
+                  <SelectValue placeholder="未绑定（一键扫描自动创建）" />
                 </SelectTrigger>
                 <SelectContent>
                   {configs.map((config) => (
@@ -332,27 +334,33 @@ export default function ProjectDetailPage() {
                 查看配置
               </Link>
               {!project.configId && (
-                <span className="text-xs text-warning">请先绑定扫描配置，否则无法发起扫描</span>
+                <span className="text-xs text-warning">
+                  未绑定扫描配置：一键扫描会自动创建「默认扫描配置」（全部启用的内置规则包）并绑定本项目
+                </span>
               )}
             </div>
           ) : (
             <p className="mt-3 text-xs text-warning">
-              尚未创建任何扫描配置，请先到
+              尚未创建任何扫描配置：可直接点右侧「使用全部内置规则包扫描」，系统会自动创建「默认扫描配置」并绑定本项目；也可到
               <Link to="/configs" className="mx-1 text-primary hover:underline">
                 扫描配置
               </Link>
-              创建配置（规则包可到
+              自行创建后绑定（规则包在
               <Link to="/rules" className="mx-1 text-primary hover:underline">
                 规则中心
               </Link>
-              管理），再回来绑定
+              管理）
             </p>
           )}
         </div>
         <Button
           className="gap-1"
-          disabled={upload.status !== 'uploaded' || isScanning || !project.configId}
-          title={project.configId ? undefined : '请先绑定扫描配置'}
+          disabled={upload.status !== 'uploaded' || isScanning}
+          title={
+            project.configId
+              ? undefined
+              : '未绑定配置：将自动创建「默认扫描配置」（全部启用的内置规则包）并用于本次扫描'
+          }
           onClick={() => void handleStartScan()}
         >
           {isScanning ? (
@@ -360,7 +368,7 @@ export default function ProjectDetailPage() {
           ) : (
             <Play className="size-4" />
           )}
-          {isScanning ? '扫描执行中…' : '开始扫描'}
+          {isScanning ? '扫描执行中…' : project.configId ? '开始扫描' : '使用全部内置规则包扫描'}
         </Button>
       </div>
 

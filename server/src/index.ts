@@ -254,6 +254,36 @@ function buildConfigPlan(project: Project): ScanPlan {
   };
 }
 
+/** 一键扫描自动创建并复用的默认配置名（按名查找复用；seed 演示配置名不同，不会冲突） */
+const DEFAULT_SCAN_CONFIG_NAME = '默认扫描配置';
+
+/**
+ * 一键扫描的兜底：确保「默认扫描配置」存在（全部启用的内置规则包，引擎参数与 configs 表列默认值一致），
+ * 已存在则原样复用（尊重用户在配置页做过的调整）。没有可用内置包时返回 undefined，由调用方给出下一步指引。
+ */
+function ensureDefaultScanConfig(): ScanConfig | undefined {
+  const existing = listConfigs().find((config) => config.name === DEFAULT_SCAN_CONFIG_NAME);
+  if (existing) return existing;
+  const rulePackIds = listRulePacks()
+    .filter((pack) => pack.builtin && pack.enabled)
+    .map((pack) => pack.id);
+  if (rulePackIds.length === 0) return undefined;
+  const scanConfig: ScanConfig = {
+    id: newId('cfg'),
+    name: DEFAULT_SCAN_CONFIG_NAME,
+    description: '一键扫描自动创建：全部启用的内置规则包，可在扫描配置页调整',
+    rulePackIds,
+    excludes: [],
+    includes: [],
+    timeoutSeconds: 5,
+    jobs: 4,
+    maxTargetBytes: 1000000,
+    createdAt: new Date().toISOString(),
+  };
+  insertConfig(scanConfig);
+  return scanConfig;
+}
+
 const asyncHandler =
   (handler: (req: Request, res: Response) => Promise<void>) =>
   (req: Request, res: Response, next: NextFunction) => {
@@ -1079,6 +1109,19 @@ app.post('/api/projects/:id/scans', asyncHandler(async (req, res) => {
   const pendingDir = pendingSourceDir(project.id);
   if (!fs.existsSync(pendingDir)) {
     throw new HttpError(400, '请先上传源码或克隆仓库再发起扫描');
+  }
+
+  // 一键路径：未绑配置时自动创建/复用「默认扫描配置」并绑定，免去先建配置再回来绑定的往返
+  if (!project.configId) {
+    const defaultConfig = ensureDefaultScanConfig();
+    if (!defaultConfig) {
+      throw new HttpError(
+        400,
+        '没有已启用的内置规则包，无法自动创建默认配置；请先在配置管理创建配置并在项目详情页绑定',
+      );
+    }
+    updateProject(project.id, { configId: defaultConfig.id });
+    project.configId = defaultConfig.id;
   }
 
   const plan = buildConfigPlan(project);
