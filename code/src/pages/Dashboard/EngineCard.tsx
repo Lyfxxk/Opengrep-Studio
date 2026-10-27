@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { CheckCircle2, DownloadCloud, Loader2, RefreshCw, XCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -15,17 +16,12 @@ interface EngineCardProps {
   onUpgraded: () => void;
 }
 
-const PHASE_LABELS: Record<NonNullable<IEngineUpgradeState['phase']>, string> = {
-  downloading: '下载中',
-  verifying: '校验中',
-  installing: '安装中',
-};
-
 /**
  * 引擎状态卡片：实际版本 + 来源 + 检查更新 + 一键升级。
  * 升级在服务端后台跑（50MB 下载），这里只负责发起与轮询进度。
  */
 export default function EngineCard({ health, scanRunning, onUpgraded }: EngineCardProps) {
+  const { t } = useTranslation();
   const ready = Boolean(health?.engine && health.engine !== 'MISSING');
   const managed = health?.engineManaged === true;
   const [update, setUpdate] = useState<IEngineUpdateInfo | null>(null);
@@ -60,11 +56,11 @@ export default function EngineCard({ health, scanRunning, onUpgraded }: EngineCa
           if (cancelled) return;
           setUpgrade(next);
           if (next.state === 'done') {
-            toast.success(next.message ?? '引擎已升级，建议重新扫描并重建基线');
+            toast.success(next.message ?? t('engine.upgradedToast'));
             void check(true);
             onUpgraded();
           } else if (next.state === 'error') {
-            toast.error(next.message ?? '引擎升级失败');
+            toast.error(next.message ?? t('engine.upgradeFailedToast'));
           }
         } catch {
           // 轮询失败忽略：升级在服务端继续，下一轮再取状态
@@ -75,7 +71,7 @@ export default function EngineCard({ health, scanRunning, onUpgraded }: EngineCa
       cancelled = true;
       clearInterval(timer);
     };
-  }, [running, check, onUpgraded]);
+  }, [running, check, onUpgraded, t]);
 
   const startUpgrade = async () => {
     setUpgrade({ state: 'running', phase: 'downloading', percent: 0 });
@@ -91,7 +87,7 @@ export default function EngineCard({ health, scanRunning, onUpgraded }: EngineCa
     <Card className="flex min-h-0 flex-1 flex-col">
       <CardHeader className="shrink-0 pb-3">
         <div className="flex items-center justify-between gap-2">
-          <CardTitle className="text-base">引擎状态</CardTitle>
+          <CardTitle className="text-base">{t('engine.title')}</CardTitle>
           {ready && managed && (
             <Button
               variant="ghost"
@@ -99,22 +95,22 @@ export default function EngineCard({ health, scanRunning, onUpgraded }: EngineCa
               className="h-7 gap-1 px-2 text-xs"
               disabled={checking || running}
               onClick={() => void check(true)}
-              title="向 GitHub 查询最新 stable 版本"
+              title={t('engine.checkUpdateTitle')}
             >
               {checking ? <Loader2 className="size-3.5 animate-spin" /> : <RefreshCw className="size-3.5" />}
-              检查更新
+              {t('engine.checkUpdate')}
             </Button>
           )}
         </div>
       </CardHeader>
       <CardContent className="flex min-h-0 flex-1 flex-col justify-center gap-2 overflow-y-auto text-sm">
         {health === null ? (
-          <p className="text-muted-foreground">加载中…</p>
+          <p className="text-muted-foreground">{t('common.loading')}</p>
         ) : ready ? (
           <>
             <div className="flex flex-wrap items-center gap-2">
               <CheckCircle2 className="size-4 text-success" />
-              <span>引擎就绪</span>
+              <span>{t('engine.ready')}</span>
               {health.engineVersion && (
                 <Badge variant="secondary" className="font-normal">
                   v{health.engineVersion}
@@ -124,26 +120,26 @@ export default function EngineCard({ health, scanRunning, onUpgraded }: EngineCa
                 health.enginePinnedVersion &&
                 health.engineVersion !== health.enginePinnedVersion && (
                   <span className="text-xs text-muted-foreground">
-                    清单 v{health.enginePinnedVersion}
+                    {t('engine.pinnedVersion', { version: health.enginePinnedVersion })}
                   </span>
                 )}
             </div>
             <p className="text-xs text-muted-foreground">
-              来源：{health.engineSourceLabel ?? health.engineSource ?? '未知'} · 由 manifest 可复现每次扫描
+              {t('engine.source', {
+                source: health.engineSourceLabel ?? health.engineSource ?? t('engine.sourceUnknown'),
+              })}
             </p>
 
             {!managed && (
-              <p className="text-xs text-muted-foreground">
-                引擎由您自行管理（OPENGREP_BIN 或系统 PATH），不支持一键升级。
-              </p>
+              <p className="text-xs text-muted-foreground">{t('engine.selfManaged')}</p>
             )}
 
             {managed && running && (
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>
-                    {PHASE_LABELS[upgrade?.phase ?? 'downloading']}…
-                    {upgrade?.to ? ` 目标 v${upgrade.to}` : ''}
+                    {t(`engine.${upgrade?.phase ?? 'downloading'}`)}…
+                    {upgrade?.to ? t('engine.upgradeTarget', { version: upgrade.to }) : ''}
                   </span>
                   <span className="tabular-nums">{upgrade?.percent ?? 0}%</span>
                 </div>
@@ -161,19 +157,21 @@ export default function EngineCard({ health, scanRunning, onUpgraded }: EngineCa
 
             {managed && !running && update?.updateAvailable && (
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs text-warning">发现新版本 v{update.latest}</span>
+                <span className="text-xs text-warning">
+                  {t('engine.newVersion', { version: update.latest })}
+                </span>
                 <Button
                   size="sm"
                   className="h-7 gap-1 px-2 text-xs"
                   disabled={!update.canUpgrade || scanRunning || running}
                   onClick={() => void startUpgrade()}
-                  title={scanRunning ? '扫描运行期间不能替换引擎文件' : undefined}
+                  title={scanRunning ? t('engine.upgradeBlockedTitle') : undefined}
                 >
                   <DownloadCloud className="size-3.5" />
-                  一键升级
+                  {t('engine.upgrade')}
                 </Button>
                 {scanRunning && update.canUpgrade && (
-                  <span className="text-xs text-muted-foreground">扫描进行中，暂不可升级</span>
+                  <span className="text-xs text-muted-foreground">{t('engine.upgradeBlockedByScan')}</span>
                 )}
                 {!update.canUpgrade && update.reason && (
                   <span className="text-xs text-muted-foreground">{update.reason}</span>
@@ -186,18 +184,20 @@ export default function EngineCard({ health, scanRunning, onUpgraded }: EngineCa
               !update.updateAvailable &&
               !update.error &&
               upgrade?.state !== 'done' && (
-                <p className="text-xs text-muted-foreground">{update.reason ?? '已是最新版本'}</p>
+                <p className="text-xs text-muted-foreground">{update.reason ?? t('engine.upToDate')}</p>
               )}
 
             {update?.error && (
-              <p className="break-words text-xs text-muted-foreground">检查更新失败：{update.error}</p>
+              <p className="break-words text-xs text-muted-foreground">
+                {t('engine.checkFailed', { error: update.error })}
+              </p>
             )}
           </>
         ) : (
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <XCircle className="size-4 text-destructive" />
-              <span>引擎不可用</span>
+              <span>{t('engine.unavailable')}</span>
             </div>
             {health.engineHint && (
               <p className="whitespace-pre-line text-xs text-muted-foreground">{health.engineHint}</p>
