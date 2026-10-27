@@ -4,6 +4,8 @@ import { BrowserRouter } from "react-router-dom";
 import { ErrorBoundary } from "react-error-boundary";
 import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
+// 初始化 i18n（react-i18next 全局实例，需先于组件树求值）
+import "@/i18n";
 import App from "./app";
 import "./index.css";
 
