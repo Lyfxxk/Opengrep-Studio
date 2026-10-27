@@ -219,13 +219,14 @@ async function main() {
   record('  判定为 pass', res.body.verdict === 'pass', `verdict=${res.body.verdict}`);
 
   console.log('===== 七、扫描 =====');
-  const bare = await ensureProject('脏测试-未绑定配置项目', '脏测试保留：用于验证未绑定配置的扫描拒绝');
+  // 未绑定配置的扫描现由服务端自动兜底（e2e 第 5 节覆盖）；此项目无源码，验证的是「未上传源码」闸门
+  const bare = await ensureProject('脏测试-未绑定配置项目', '脏测试保留：验证扫描入口的参数拒绝路径');
   res = await call(`/api/projects/${bare.id}/scans`, postJson({}));
-  expect4xx('未绑定配置的扫描 → 400', res);
+  expect4xx('未上传源码的扫描 → 400', res);
   res = await call('/api/projects/p-none/scans', postJson({}));
   expect4xx('扫描不存在项目 → 404', res);
   res = await call(`/api/projects/${bare.id}/scans`, postJson({ rules: 'no-such-ruleset' }));
-  expect4xx('未知字段不能绕过配置校验 → 400', res);
+  expect4xx('未上传源码时未知字段同样被拒 → 400', res);
 
   console.log('===== 八、人工复核 =====');
   const reviewProject = await ensureProject('脏测试-复核边界', '脏测试保留：复核边界数据');
