@@ -1,6 +1,7 @@
 import { Fragment } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LogOut } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Check, Languages, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -19,6 +20,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { NAV_ITEMS } from '@/components/AppSidebar';
+import { changeAppLanguage } from '@/i18n';
 import { getCurrentUsername, logout } from '@/lib/auth';
 import avatarUrl from '@/assets/images/avatar.jpg';
 
@@ -31,37 +33,39 @@ interface Crumb {
 export default function Header() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const { t, i18n } = useTranslation();
+  const isZh = i18n.language.startsWith('zh');
 
   const segments = pathname.split('/').filter(Boolean);
-  // 一级面包屑标签与侧栏导航同源；实验室挂在规则中心下，路由名与导航项不同名
+  // 一级面包屑标签与侧栏导航同源（label 为 i18n 键）；实验室挂在规则中心下，路由名与导航项不同名
   const navLabel = NAV_ITEMS.find((item) => item.path === `/${segments[0]}`)?.label;
   let crumbs: Crumb[];
   if (navLabel && segments[0] !== 'projects') {
-    crumbs = [{ label: navLabel }];
+    crumbs = [{ label: t(navLabel) }];
   } else if (segments[0] === 'lab') {
-    crumbs = [{ label: '规则中心' }];
+    crumbs = [{ label: t('nav.rules') }];
   } else if (segments.length === 0) {
-    crumbs = [{ label: '项目管理' }];
+    crumbs = [{ label: t('nav.projects') }];
   } else {
-    crumbs = [{ label: '项目管理', to: '/projects' }];
+    crumbs = [{ label: t('nav.projects'), to: '/projects' }];
     if (segments.length >= 2) {
-      crumbs.push({ label: '项目详情', to: `/${segments[0]}/${segments[1]}` });
+      crumbs.push({ label: t('breadcrumb.projectDetail'), to: `/${segments[0]}/${segments[1]}` });
     }
     if (segments.includes('scans')) {
       // 报告页时“扫描结果”可点击返回，并追加“测试报告”末级面包屑
       const onReport = segments.includes('report');
       crumbs.push(
         onReport
-          ? { label: '扫描结果', to: `/${segments.slice(0, 4).join('/')}` }
-          : { label: '扫描结果' },
+          ? { label: t('breadcrumb.scanResult'), to: `/${segments.slice(0, 4).join('/')}` }
+          : { label: t('breadcrumb.scanResult') },
       );
-      if (onReport) crumbs.push({ label: '测试报告' });
+      if (onReport) crumbs.push({ label: t('breadcrumb.report') });
     }
   }
 
   const handleLogout = () => {
     logout();
-    toast.success('已退出登录');
+    toast.success(t('header.logoutToast'));
     navigate('/login');
   };
 
@@ -97,10 +101,34 @@ export default function Header() {
           <DropdownMenuTrigger asChild>
             <button
               type="button"
+              aria-label={t('header.language')}
+              title={t('header.language')}
+              className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <Languages className="size-4" />
+              <span className="hidden sm:inline">{isZh ? t('lang.zh') : t('lang.en')}</span>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={() => changeAppLanguage('zh')}>
+              {isZh && <Check className="size-4" />}
+              {t('lang.zh')}
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => changeAppLanguage('en')}>
+              {!isZh && <Check className="size-4" />}
+              {t('lang.en')}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
               className="flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <Avatar className="size-7">
-                <AvatarImage src={avatarUrl} alt="管理员头像" />
+                <AvatarImage src={avatarUrl} alt={t('header.avatarAlt')} />
                 <AvatarFallback>🐹</AvatarFallback>
               </Avatar>
               <span className="hidden text-sm sm:inline">
@@ -111,7 +139,7 @@ export default function Header() {
           <DropdownMenuContent align="end" className="w-40">
             <DropdownMenuItem onSelect={handleLogout}>
               <LogOut className="size-4" />
-              退出登录
+              {t('header.logout')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
