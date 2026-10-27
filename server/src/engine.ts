@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process';
+import { spawn, type ChildProcess } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { config, engineSource, type EngineSource } from './config.js';
@@ -60,7 +60,29 @@ export function resetEngineVersionCache(): void {
   engineVersionPromise = null;
 }
 
+/** 引擎单次输出上限：超限即停止拼接（异常巨量输出会先打爆内存再打爆 JSON.parse） */
+const MAX_ENGINE_OUTPUT_BYTES = 64 * 1024 * 1024;
+
+/** 运行中的引擎/git 子进程登记表：服务退出时统一终止，避免孤儿进程占着引擎文件（Windows 上锁死升级） */
+const trackedChildren = new Set<ChildProcess>();
+
+/** 登记子进程（引擎、git 克隆共用）；子进程自然退出时自动移除 */
+export function trackChildProcess(child: ChildProcess): void {
+  trackedChildren.add(child);
+  child.once('close', () => trackedChildren.delete(child));
+}
+
+/** 服务退出时强制终止全部子进程（SIGKILL，Windows 等价 TerminateProcess） */
+export function terminateTrackedChildren(): void {
+  for (const child of trackedChildren) {
+    child.kill('SIGKILL');
+  }
+  trackedChildren.clear();
+}
+
 export interface EngineRunResult {
+  /** stdout 超过上限被截断：内容不完整，调用方必须按失败处理而不是尝试解析 */
+  stdoutTruncated: boolean;
   code: number;
   stdout: string;
   stderr: string;
@@ -86,9 +108,12 @@ export function runEngine(
       windowsHide: true,
       env: { ...process.env, OPENGREP_ENABLE_VERSION_CHECK: '0' },
     });
+    trackChildProcess(child);
     let stdout = '';
     let stderr = '';
     let timedOut = false;
+    let stdoutTruncated = false;
+    let stdoutBytes = 0;
     // 引擎若无视终止信号，Promise 永不 resolve，会把扫描串行链整体卡死并锁死引擎升级：
     // 温和终止无效则 5 秒后 SIGKILL（Windows 等价 TerminateProcess），再不行兜底强制返回
     const killTimers: NodeJS.Timeout[] = [];
@@ -98,7 +123,7 @@ export function runEngine(
       killTimers.push(setTimeout(() => child.kill('SIGKILL'), 5000));
       killTimers.push(
         setTimeout(() => {
-          resolve({ code: -1, stdout, stderr: `${stderr}\n引擎超时且终止失败，已放弃等待`, timedOut: true });
+          resolve({ code: -1, stdout, stderr: `${stderr}\n引擎超时且终止失败，已放弃等待`, timedOut: true, stdoutTruncated });
         }, 15000),
       );
     }, options.timeoutMs);
@@ -106,15 +131,24 @@ export function runEngine(
       clearTimeout(timer);
       for (const t of killTimers) clearTimeout(t);
     };
-    child.stdout.on('data', (chunk) => { stdout += String(chunk); });
+    child.stdout.on('data', (chunk: Buffer) => {
+      // 超限即停止拼接，内容已不完整，调用方按截断报错
+      if (stdoutTruncated) return;
+      stdoutBytes += chunk.length;
+      if (stdoutBytes > MAX_ENGINE_OUTPUT_BYTES) {
+        stdoutTruncated = true;
+        return;
+      }
+      stdout += String(chunk);
+    });
     child.stderr.on('data', (chunk) => { stderr += String(chunk); });
     child.on('error', (error) => {
       stopKillTimers();
-      resolve({ code: -1, stdout, stderr: `${stderr}\n${String(error)}`, timedOut });
+      resolve({ code: -1, stdout, stderr: `${stderr}\n${String(error)}`, timedOut, stdoutTruncated });
     });
     child.on('close', (code) => {
       stopKillTimers();
-      resolve({ code: code ?? -1, stdout, stderr, timedOut });
+      resolve({ code: code ?? -1, stdout, stderr, timedOut, stdoutTruncated });
     });
   });
 }

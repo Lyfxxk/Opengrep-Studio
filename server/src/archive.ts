@@ -1,9 +1,9 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { Worker } from 'node:worker_threads';
 import AdmZip from 'adm-zip';
 import * as tar from 'tar';
-import * as sevenzz from '7z-wasm';
 import { config } from './config.js';
 import { HttpError } from './errors.js';
 import { walkAndStripSymlinks, ALWAYS_SKIP_DIR_NAMES } from './fs-walk.js';
@@ -43,17 +43,17 @@ export function isPathWithin(root: string, target: string): boolean {
 }
 
 /**
- * 递归复制目录。
+ * 递归复制目录（异步：整棵源码树的复制不再冻结事件循环，复制期间健康检查/轮询照常响应）。
  * 不要改成 fs.cpSync：Node 22.x 在 Windows 上源路径字符串含非 ASCII 字符时
  * 会无任何输出直接终止进程（子项含非 ASCII 不受影响，故扫描快照不受此坑影响）。
  */
-export function copyDirectorySync(src: string, dest: string): void {
-  fs.mkdirSync(dest, { recursive: true });
-  for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
+export async function copyDirectory(src: string, dest: string): Promise<void> {
+  await fs.promises.mkdir(dest, { recursive: true });
+  for (const entry of await fs.promises.readdir(src, { withFileTypes: true })) {
     const from = path.join(src, entry.name);
     const to = path.join(dest, entry.name);
-    if (entry.isDirectory()) copyDirectorySync(from, to);
-    else if (entry.isFile()) fs.copyFileSync(from, to);
+    if (entry.isDirectory()) await copyDirectory(from, to);
+    else if (entry.isFile()) await fs.promises.copyFile(from, to);
   }
 }
 
@@ -129,15 +129,30 @@ function extractTarArchive(buffer: Buffer, destDir: string, fileName: string): v
     `ogsrc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.tar`,
   );
   fs.writeFileSync(tmpFile, buffer);
+  // tar 头自带每个条目的原始体积：边解压边计数，炸弹在写盘前就被拦下
+  let entries = 0;
+  let bytes = 0;
   try {
     tar.x({
       file: tmpFile,
       cwd: destDir,
       sync: true,
       gzip: lower.endsWith('.tar.gz') || lower.endsWith('.tgz'),
+      filter: (_entryPath, stat) => {
+        entries += 1;
+        bytes += Number(stat.size);
+        if (entries > config.maxImportEntries) {
+          throw new HttpError(400, `TAR 压缩包文件数超过 ${config.maxImportEntries} 上限`);
+        }
+        if (bytes > config.maxExtractedBytes) {
+          throw new HttpError(400, `TAR 压缩包解压后总体积超过 ${config.maxExtractedBytes / 1024 ** 3}GB 上限`);
+        }
+        return true;
+      },
     });
   } catch (error) {
     fs.rmSync(destDir, { recursive: true, force: true });
+    if (error instanceof HttpError) throw error;
     throw new HttpError(400, `TAR 压缩包解压失败：${error instanceof Error ? error.message : String(error)}`);
   } finally {
     fs.rmSync(tmpFile, { force: true });
@@ -206,61 +221,72 @@ export function collectLanguageStats(dir: string): Record<string, number> {
   return stats;
 }
 
-function copyMemFsDir(seven: sevenzz.SevenZipModule, memDir: string, diskDir: string): void {
-  for (const name of seven.FS.readdir(memDir)) {
-    if (name === '.' || name === '..') continue;
-    const memFull = `${memDir}/${name}`;
-    const diskFull = path.join(diskDir, name);
-    const stat = seven.FS.lstat(memFull);
-    if (seven.FS.isDir(stat.mode)) {
-      fs.mkdirSync(diskFull, { recursive: true });
-      copyMemFsDir(seven, memFull, diskFull);
-    } else if (seven.FS.isFile(stat.mode)) {
-      fs.mkdirSync(path.dirname(diskFull), { recursive: true });
-      fs.writeFileSync(diskFull, seven.FS.readFile(memFull) as Buffer);
+/** 汇总目录体积（7z worker 落盘监控用；目录尚不存在返回 0） */
+async function directoryBytes(dir: string): Promise<number> {
+  let entries: fs.Dirent[];
+  try {
+    entries = await fs.promises.readdir(dir, { withFileTypes: true });
+  } catch {
+    return 0;
+  }
+  let total = 0;
+  for (const entry of entries) {
+    if (entry.isSymbolicLink()) continue;
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) total += await directoryBytes(full);
+    else if (entry.isFile()) {
+      try {
+        total += (await fs.promises.stat(full)).size;
+      } catch {
+      }
     }
   }
+  return total;
 }
 
-/** 7Z / RAR：经 7z-wasm 解压；优先挂载 NODEFS 直写磁盘，失败则回退内存 FS 拷贝 */
+/**
+ * 7Z / RAR：解压放独立 worker（callMain 同步阻塞且不可中断，放主线程会整段冻结还没法限时）。
+ * 主线程对 worker 双保险：整体超时 terminate；每秒轮询落盘体积、超限 terminate。
+ * 体积上限因此是准实时的（轮询间隔内的增量仍可能落盘，失败时随半成品目录一起清理）。
+ */
 async function extractSevenZ(buffer: Buffer, destDir: string, fileName: string): Promise<void> {
-  fs.rmSync(destDir, { recursive: true, force: true });
-  fs.mkdirSync(destDir, { recursive: true });
   const ext = path.extname(fileName).toLowerCase() || '.7z';
-  let stderr = '';
-  // NodeNext 下该 UMD 包的 default 导出被互操作包装成命名空间，运行时实际就是工厂函数
-  const init7z = sevenzz.default as unknown as sevenzz.SevenZipModuleFactory;
-  let seven: sevenzz.SevenZipModule;
+  let abortReason: string | null = null;
+  const worker = new Worker(path.join(import.meta.dirname, 'seven-z-worker.mjs'));
+  // worker 侧以 parentPort.on('message') 为入口：先建 Worker 再投递任务（加载期的消息会被缓存）
+  worker.postMessage({ buffer, ext, destDir });
   try {
-    seven = await init7z({
-      printErr: (line: string) => {
-        stderr += `${line}\n`;
-      },
+    const result = await new Promise<{ ok: boolean; message?: string }>((resolve) => {
+      const timer = setTimeout(() => {
+        abortReason = `压缩包解压超过 ${Math.round(config.sevenZipTimeoutMs / 1000)} 秒被终止`;
+        void worker.terminate();
+      }, config.sevenZipTimeoutMs);
+      const watch = setInterval(() => {
+        void directoryBytes(destDir).then((bytes) => {
+          if (abortReason || bytes <= config.maxExtractedBytes) return;
+          abortReason = `压缩包解压后总体积超过 ${config.maxExtractedBytes / 1024 ** 3}GB 上限`;
+          void worker.terminate();
+        });
+      }, 1000);
+      const settle = (value: { ok: boolean; message?: string }) => {
+        clearTimeout(timer);
+        clearInterval(watch);
+        resolve(value);
+      };
+      worker.once('message', settle);
+      worker.once('error', (error) => {
+        settle({ ok: false, message: error instanceof Error ? error.message : String(error) });
+      });
+      worker.once('exit', () => {
+        if (abortReason) settle({ ok: false, message: abortReason });
+      });
     });
-  } catch (error) {
-    throw new HttpError(500, `解压组件初始化失败：${error instanceof Error ? error.message : String(error)}`);
+    if (!result.ok) {
+      throw new HttpError(400, `压缩包解压失败：${result.message ?? '未知原因'}`);
+    }
+  } finally {
+    await worker.terminate();
   }
-
-  seven.FS.writeFile(`input${ext}`, buffer);
-  let mountedDirect = false;
-  try {
-    seven.FS.mkdir('/out');
-    seven.FS.mount(seven.NODEFS, { root: destDir }, '/out');
-    mountedDirect = true;
-  } catch {
-    mountedDirect = false;
-  }
-
-  try {
-    seven.callMain(['x', '-y', `input${ext}`, '-o/out']);
-  } catch (error) {
-    const detail = stderr.trim().split('\n').pop() ?? '';
-    throw new HttpError(
-      400,
-      `压缩包解压失败：${detail || (error instanceof Error ? error.message : String(error))}`,
-    );
-  }
-  if (!mountedDirect) copyMemFsDir(seven, '/out', destDir);
 }
 
 /** 按扩展名分发解压，返回文件数；失败时清理半成品目录 */

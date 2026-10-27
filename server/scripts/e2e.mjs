@@ -1,5 +1,9 @@
 import AdmZip from 'adm-zip';
+import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
+import * as tar from 'tar';
+import * as sevenzz from '7z-wasm';
 
 // 默认钉死 IPv4 回环：服务端只绑 127.0.0.1，localhost 在部分机器上解析为 ::1 会被拦（EACCES）
 const BASE = process.env.BASE_URL ?? 'http://127.0.0.1:8787';
@@ -423,6 +427,38 @@ igFormAll.append('file', new Blob([allIgnoredZip.toBuffer()], { type: 'applicati
 const igUpAll = await api('POST', `/api/projects/${igProject.id}/source`, igFormAll);
 assert(igUpAll.status === 400, '全被忽略时返回 400', JSON.stringify(igUpAll.json));
 await api('DELETE', `/api/projects/${igProject.id}`);
+
+console.log('== 7c. tar.gz / 7z 上传通道 ==');
+const arcTmp = fs.mkdtempSync(path.join(os.tmpdir(), 'e2e-arc-'));
+fs.mkdirSync(path.join(arcTmp, 'src'), { recursive: true });
+fs.writeFileSync(path.join(arcTmp, 'src', 'main.ts'), SAMPLE_TS_V1, 'utf8');
+fs.writeFileSync(path.join(arcTmp, 'src', 'Util.java'), 'public class Util { }\n', 'utf8');
+const arcProject = (await api('POST', '/api/projects', { name: 'E2E-压缩包通道', language: 'TypeScript' })).json;
+try {
+  // tar.gz：tar 头自带条目体积，走"边解压边限额"通道
+  const tgzPath = path.join(arcTmp, 'src.tar.gz');
+  tar.c({ z: true, cwd: arcTmp, sync: true, file: tgzPath, portable: true }, ['src']);
+  const tgzForm = new FormData();
+  tgzForm.append('file', new Blob([fs.readFileSync(tgzPath)], { type: 'application/gzip' }), 'src.tar.gz');
+  const tgzUp = await api('POST', `/api/projects/${arcProject.id}/source`, tgzForm);
+  assert(tgzUp.status === 200 && tgzUp.json?.fileCount === 2,
+    `tar.gz 上传解压 2 个文件 (got ${tgzUp.status}/${tgzUp.json?.fileCount})`, JSON.stringify(tgzUp.json));
+
+  // 7z：走 worker 解压通道；归档用 7z-wasm 在进程内现做（MEMFS + NODEFS 挂载临时目录）
+  const init7z = typeof sevenzz === 'function' ? sevenzz : sevenzz.default;
+  const seven = await init7z({});
+  seven.FS.mkdir('/in');
+  seven.FS.mount(seven.NODEFS, { root: arcTmp }, '/in');
+  seven.callMain(['a', '/out.7z', '/in/src']);
+  const sevenForm = new FormData();
+  sevenForm.append('file', new Blob([seven.FS.readFile('/out.7z')], { type: 'application/x-7z-compressed' }), 'src.7z');
+  const sevenUp = await api('POST', `/api/projects/${arcProject.id}/source`, sevenForm);
+  assert(sevenUp.status === 200 && sevenUp.json?.fileCount === 2,
+    `7z 上传解压 2 个文件 (got ${sevenUp.status}/${sevenUp.json?.fileCount})`, JSON.stringify(sevenUp.json));
+} finally {
+  fs.rmSync(arcTmp, { recursive: true, force: true });
+  await api('DELETE', `/api/projects/${arcProject.id}`);
+}
 
 console.log('== 8. 测试报告 ==');
 const report = await api('GET', `/api/scans/${s2.id}/report`);

@@ -115,17 +115,18 @@ export function markStaleScansFailed(): void {
   }
 }
 
-/** 统计快照内的源码文件数（跳过扫描时本就排除的 node_modules / .git） */
-function countFiles(dir: string): number {
+/** 统计快照内的源码文件数（跳过扫描时本就排除的 node_modules / .git）；异步遍历避免大快照冻结事件循环 */
+async function countFiles(dir: string): Promise<number> {
   let count = 0;
-  const walk = (current: string) => {
-    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+  const walk = async (current: string) => {
+    for (const entry of await fs.promises.readdir(current, { withFileTypes: true })) {
       if (entry.name === 'node_modules' || entry.name === '.git') continue;
-      if (entry.isDirectory()) walk(path.join(current, entry.name));
+      const full = path.join(current, entry.name);
+      if (entry.isDirectory()) await walk(full);
       else if (entry.isFile()) count += 1;
     }
   };
-  walk(dir);
+  await walk(dir);
   return count;
 }
 
@@ -175,24 +176,25 @@ function sha256File(file: string): string {
 /**
  * 源码快照的 SHA-256 可复现指纹：对"排序后的相对路径 + \0 + 文件内容 + \0"序列计算。
  * 路径参与哈希保证增删文件会改变结果；排序保证遍历顺序跨平台稳定。
+ * 异步逐文件读：大快照哈希期间事件循环保持响应。
  */
-function hashDirectory(dir: string): string {
+async function hashDirectory(dir: string): Promise<string> {
   const files: string[] = [];
-  const walk = (current: string) => {
-    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+  const walk = async (current: string) => {
+    for (const entry of await fs.promises.readdir(current, { withFileTypes: true })) {
       if (entry.isSymbolicLink()) continue;
       const full = path.join(current, entry.name);
-      if (entry.isDirectory()) walk(full);
+      if (entry.isDirectory()) await walk(full);
       else if (entry.isFile()) files.push(path.relative(dir, full).replace(/\\/g, '/'));
     }
   };
-  walk(dir);
+  await walk(dir);
   files.sort();
   const hash = createHash('sha256');
   for (const rel of files) {
     hash.update(rel);
     hash.update('\0');
-    hash.update(fs.readFileSync(path.join(dir, rel)));
+    hash.update(await fs.promises.readFile(path.join(dir, rel)));
     hash.update('\0');
   }
   return hash.digest('hex');
@@ -205,13 +207,13 @@ function rulesRelativePath(file: string): string {
 }
 
 /** 可复现清单：完整命令行 + 规则文件哈希 + 引擎参数快照 + 引擎版本，扫描引擎运行前落库 */
-function buildReproducibilityRecord(
+async function buildReproducibilityRecord(
   scanId: string,
   srcDir: string,
   plan: ScanPlan,
   args: string[],
   engineVersion: string | undefined,
-): void {
+): Promise<void> {
   const commandLine = `opengrep ${args
     .map((arg) => (/\s/.test(arg) ? JSON.stringify(arg) : arg))
     .join(' ')}`;
@@ -229,7 +231,7 @@ function buildReproducibilityRecord(
     maxTargetBytes: plan.maxTargetBytes,
   };
   updateScan(scanId, {
-    srcHash: hashDirectory(srcDir),
+    srcHash: await hashDirectory(srcDir),
     commandLine,
     configSnapshot,
     // 记录"这次扫描用的是哪版引擎"：升级后重新生成报告时不能按当前版本标注
@@ -246,7 +248,7 @@ async function runScan(scanId: string, plan: ScanPlan): Promise<void> {
     if (!fs.existsSync(srcDir)) throw new Error('找不到扫描源码快照');
     if (plan.configFiles.length === 0) throw new Error('没有可用的规则文件');
     if (!fs.existsSync(config.opengrepBin)) throw new Error(engineInstallHint());
-    const fileCount = countFiles(srcDir);
+    const fileCount = await countFiles(srcDir);
 
     const args = [
       'scan',
@@ -267,14 +269,17 @@ async function runScan(scanId: string, plan: ScanPlan): Promise<void> {
       srcDir,
     ];
     console.log(`[scan-runner] 扫描 ${scanId} 使用规则: ${plan.rulesLabel}（${plan.configFiles.length} 个规则文件）`);
-    buildReproducibilityRecord(scanId, srcDir, plan, args, await getEngineVersion());
-    const { code, stdout, stderr, timedOut } = await runEngine(args, srcDir, {
+    await buildReproducibilityRecord(scanId, srcDir, plan, args, await getEngineVersion());
+    const { code, stdout, stderr, timedOut, stdoutTruncated } = await runEngine(args, srcDir, {
       timeoutMs: config.scanTimeoutMs,
       logLabel: 'scan-runner',
     });
 
     if (timedOut) {
       throw new Error(`扫描超过 ${Math.round(config.scanTimeoutMs / 60000)} 分钟被终止，请缩小源码范围后重试`);
+    }
+    if (stdoutTruncated) {
+      throw new Error('引擎输出超过 64MB 上限被截断，无法解析结果；请缩小源码范围或减少规则后重试');
     }
 
     let output: OpengrepOutput;

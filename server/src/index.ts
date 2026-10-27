@@ -14,7 +14,7 @@ import {
 } from './config.js';
 import {
   collectLanguageStats,
-  copyDirectorySync,
+  copyDirectory,
   extractArchive,
   extractZipSafely,
   isArchiveFileName,
@@ -29,6 +29,7 @@ import {
   engineInstallHint,
   engineSourceLabel,
   getEngineVersion,
+  terminateTrackedChildren,
 } from './engine.js';
 import { engineTargetVersion } from './engine-manifest.js';
 import {
@@ -845,8 +846,8 @@ app.post(
         const packId = newId('rp');
         const destDir = customPackDir(packId);
         fs.mkdirSync(config.customRulesDir, { recursive: true });
-        // zip 顶层文件夹名不可控（可能含中文），必须用安全复制（见 copyDirectorySync 注释）
-        copyDirectorySync(root, destDir);
+        // zip 顶层文件夹名不可控（可能含中文），必须用安全复制（见 copyDirectory 注释）
+        await copyDirectory(root, destDir);
         const pack: RulePack = {
           id: packId,
           name: manifest.name,
@@ -1201,8 +1202,9 @@ app.post('/api/projects/:id/scans', asyncHandler(async (req, res) => {
 
   const scanDir = scanSourceDir(project.id, scan.id);
   fs.mkdirSync(path.dirname(scanDir), { recursive: true });
-  // 不用 fs.cpSync：Node 22 在 Windows 上源路径含非 ASCII 字符时会直接终止进程（见 copyDirectorySync 注释）
-  copyDirectorySync(pendingDir, scanDir);
+  // 异步逐文件复制，快照复制（上限 1GB）期间事件循环不再冻结；不用 fs.cpSync：
+  // Node 22 在 Windows 上源路径含非 ASCII 字符时会直接终止进程（见 copyDirectory 注释）
+  await copyDirectory(pendingDir, scanDir);
 
   insertScan(scan);
   enqueueScan(scan.id, plan);
@@ -1510,7 +1512,7 @@ app.get('/api/scans/:scanId/diff', asyncHandler(async (req, res) => {
     throw new HttpError(400, '对比所需的源码快照已被清理，无法做文件级对比（问题级对比不受影响）');
   }
   const againstProject = getProject(against.projectId);
-  const fileDiff = diffSnapshots(srcDir, againstDir);
+  const fileDiff = await diffSnapshots(srcDir, againstDir);
 
   const currentMap = new Map(listIssues(scan.id).map((issue) => [issue.fingerprint, issue]));
   const againstMap = new Map(listIssues(against.id).map((issue) => [issue.fingerprint, issue]));
@@ -1652,3 +1654,18 @@ server.on('error', (err: NodeJS.ErrnoException) => {
   }
   throw err;
 });
+
+// 退出时先杀引擎子进程再关 HTTP：Docker stop / taskkill 只把信号发给 node 本身，
+// 不处理的话孤儿 opengrep 会继续跑完并占着引擎文件（Windows 上会锁死下一次升级）
+let shuttingDown = false;
+function shutdown(signal: NodeJS.Signals): void {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  console.log(`[server] 收到 ${signal}，终止引擎子进程并退出`);
+  terminateTrackedChildren();
+  server.close(() => process.exit(0));
+  // 兜底：个别连接挂着不关也要保证退出
+  setTimeout(() => process.exit(0), 3000).unref();
+}
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));
