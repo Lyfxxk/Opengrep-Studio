@@ -9,6 +9,15 @@ const srcDir = path.dirname(fileURLToPath(import.meta.url));
 const rulesDir = path.join(srcDir, '..', 'rules');
 
 /**
+ * 规则 ID 来自 YAML（不受信输入）：必须是单级安全目录名才可拼进 samples/<id>/ 路径，
+ * 否则 id 含 ../ 或绝对路径时 path.join 会逃出 samples/（读侧与写侧共用此口径）
+ */
+export function isSafeSampleDirName(ruleId: string): boolean {
+  const name = ruleId.replace(/\\/g, '/');
+  return Boolean(name) && !name.includes('/') && name !== '.' && name !== '..';
+}
+
+/**
  * 中文规则知识库：按规则 ID 聚合
  *   规则包 YAML 元数据（severity/CWE/OWASP/上游溯源） + messages-zh 中文说明
  *   + CWE 中文解释与通用修复建议（server/rules/cwe-zh.json） + 命中统计
@@ -240,7 +249,7 @@ export function getRuleKnowledge(ruleId: string): RuleKnowledge {
   // 否则 id 含 ../ 或绝对路径时 path.join 会逃出 samples/ 读到外部文件
   const sampleRoot = path.join(customPackDir(found.pack.id), 'samples');
   const sampleDirName = (found.matchedRuleId ?? ruleId).replace(/\\/g, '/');
-  if (sampleDirName && !sampleDirName.includes('/') && sampleDirName !== '.' && sampleDirName !== '..') {
+  if (isSafeSampleDirName(sampleDirName)) {
     const sampleDir = path.join(sampleRoot, sampleDirName);
     const positives = readSample(sampleDir, 'positive');
     const negatives = readSample(sampleDir, 'negative');

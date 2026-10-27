@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import AdmZip from 'adm-zip';
@@ -71,7 +72,7 @@ import {
   type ScanRecord,
 } from './db.js';
 import { diffSnapshots } from './snapshot-diff.js';
-import { getRuleKnowledge } from './knowledge.js';
+import { getRuleKnowledge, isSafeSampleDirName } from './knowledge.js';
 import { parseRuleYaml } from './rule-yaml.js';
 import {
   builtinRulesDir,
@@ -103,6 +104,46 @@ import {
 
 const app = express();
 app.use(express.json());
+
+/** 主机名是否指向本机：localhost 或 IP 字面量（IPv6 的 URL 形态带方括号，先剥掉） */
+function isLocalHost(hostname: string): boolean {
+  const name = hostname.replace(/^\[|\]$/g, '').toLowerCase();
+  return name === 'localhost' || net.isIP(name) !== 0;
+}
+
+// 防 DNS 重绑定与跨站盲写：攻击页把自己的域名解析到 127.0.0.1 后，浏览器会带着攻击域名的
+// Host 头访问本服务并视为同源（可读取扫描结果与源码片段）。因此 Host 必须是 localhost 或
+// IP 字面量；带 Origin 的变更请求必须来自本机。经 IP 直连的局域网访问不受影响。
+app.use((req, res, next) => {
+  let hostOk = false;
+  if (typeof req.headers.host === 'string') {
+    try {
+      hostOk = isLocalHost(new URL(`http://${req.headers.host.trim()}`).hostname);
+    } catch {
+      hostOk = false;
+    }
+  }
+  if (!hostOk) {
+    next(new HttpError(403, '拒绝访问：Host 头不是本机地址（防 DNS 重绑定）'));
+    return;
+  }
+  const origin = req.headers.origin;
+  if (req.method !== 'GET' && req.method !== 'HEAD' && typeof origin === 'string') {
+    let originOk = false;
+    if (origin !== 'null') {
+      try {
+        originOk = isLocalHost(new URL(origin).hostname);
+      } catch {
+        originOk = false;
+      }
+    }
+    if (!originOk) {
+      next(new HttpError(403, '拒绝跨站请求：Origin 不是本机地址'));
+      return;
+    }
+  }
+  next();
+});
 
 // 把 multer 的 LIMIT_FILE_SIZE 转成带该通道准确上限的 400（各通道上限不同，全局中间件无法区分）
 function limit400(limited: import('express').RequestHandler, limitBytes: number): import('express').RequestHandler {
@@ -477,6 +518,13 @@ function savePortablePackFromLab(
   samples: { positive: string; negative: string },
 ): RulePack {
   const parsed = parseRuleYaml(yamlText);
+  // 规则 id 来自 YAML（不受信输入），落盘前必须确保可作单级样本目录名，否则会写出 customRulesDir
+  if (parsed.ruleIds[0] && !isSafeSampleDirName(parsed.ruleIds[0])) {
+    throw new HttpError(
+      400,
+      `首个规则 id「${parsed.ruleIds[0]}」含不安全字符，无法作为样本目录名；请修改 YAML 中的规则 id 后重试`,
+    );
+  }
   fs.mkdirSync(config.customRulesDir, { recursive: true });
   const packId = newId('rp');
   const dir = customPackDir(packId);
@@ -937,6 +985,11 @@ app.patch('/api/projects/:id', asyncHandler(async (req, res) => {
 
 app.delete('/api/projects/:id', asyncHandler(async (req, res) => {
   const project = requireProject(req.params.id);
+  // 进行中/排队中的扫描还在用项目工作区与 DB 行：放行删除会让引擎把 issue 写回已删的扫描，
+  // Windows 上还会撞上被占用的目录（rmSync 抛 EPERM 但 DB 已删，留下自相矛盾的状态）
+  if (listScans(project.id).some((scan) => scan.status === 'scanning')) {
+    throw new HttpError(409, '项目有进行中的扫描，请等扫描完成后再删除');
+  }
   // 级联删除（扫描/问题/复核）在 db 层 deleteProject 内完成，路由不再重复调用
   deleteProject(project.id);
   fs.rmSync(projectWorkspace(project.id), { recursive: true, force: true });

@@ -5,7 +5,8 @@ services:
     build: .
     image: opengrep-studio
     ports:
-      - "8787:8787"
+      # 只发布到宿主机回环：本服务无鉴权，不能把无鉴权 API 暴露给局域网（需要时再自行放开并自担风险）
+      - "127.0.0.1:8787:8787"
     volumes:
       # 数据卷：SQLite + 源码快照 + 自定义规则包，重建容器不丢失
       - ogstudio-data:/data

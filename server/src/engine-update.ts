@@ -145,71 +145,80 @@ export function engineUpgradeRunning(): boolean {
 export async function startEngineUpgrade(): Promise<EngineUpgradeState> {
   if (upgradePending) throw new HttpError(409, '引擎升级正在进行中，请稍候');
 
-  const info = await checkEngineUpdate(true);
-  if (info.error) {
-    throw new HttpError(
-      502,
-      `${info.error}${info.current ? `；当前 v${info.current} 可正常使用` : ''}`,
-    );
-  }
-  if (!info.canUpgrade || !info.latestTag || !info.assetName || !info.assetSha256) {
-    throw new HttpError(409, info.reason ?? '当前没有可升级的版本');
-  }
-
-  const from = info.current;
-  const to = normalizeVersion(info.latestTag);
-  const { latestTag: tag, assetName, assetSha256: sha256, assetUrl } = info;
-
-  upgradeState = {
-    state: 'running',
-    phase: 'downloading',
-    percent: 0,
-    from,
-    to,
-    startedAt: new Date().toISOString(),
-  };
-
-  upgradePending = (async () => {
-    try {
-      const result = await installEngineAsset({
-        tag,
-        assetFile: assetName,
-        sha256,
-        assetUrl,
-        toolDir: engineToolDir,
-        installedName: engineExecutableName,
-        onProgress: ({ phase, percent }: { phase: EngineUpgradePhase; percent?: number }) => {
-          upgradeState = { ...upgradeState, phase, percent: percent ?? upgradeState.percent };
-        },
-        log: (message: string) => console.log(`[engine-upgrade] ${message}`),
-      });
-      // 换的是同一个安装位：探测缓存必须失效，否则看板与报告还显示旧版本
-      resetEngineVersionCache();
-      cachedCheck = undefined;
-      upgradeState = {
-        ...upgradeState,
-        state: 'done',
-        phase: undefined,
-        percent: 100,
-        to: result.version,
-        message: `引擎已升级到 v${result.version}，建议重新扫描并重建基线`,
-        finishedAt: new Date().toISOString(),
-      };
-      console.log(`[engine-upgrade] 升级完成：v${from} → v${result.version}（${result.channel}）`);
-    } catch (error) {
-      const detail = messageOf(error);
-      upgradeState = {
-        ...upgradeState,
-        state: 'error',
-        phase: undefined,
-        message: `${detail}${from ? `；现有引擎 v${from} 未改动，可继续正常扫描` : ''}`,
-        finishedAt: new Date().toISOString(),
-      };
-      console.error(`[engine-upgrade] 升级失败：${detail}`);
-    } finally {
-      upgradePending = null;
+  // 先同步占住互斥位再走网络检查：检查要等 GitHub 往返（可达数秒），期间扫描/实验室
+  // 若照常发起，随后替换二进制就会撞上运行中的引擎，升级与扫描两边一起失败
+  upgradePending = Promise.resolve();
+  try {
+    const info = await checkEngineUpdate(true);
+    if (info.error) {
+      throw new HttpError(
+        502,
+        `${info.error}${info.current ? `；当前 v${info.current} 可正常使用` : ''}`,
+      );
     }
-  })();
+    if (!info.canUpgrade || !info.latestTag || !info.assetName || !info.assetSha256) {
+      throw new HttpError(409, info.reason ?? '当前没有可升级的版本');
+    }
 
-  return upgradeState;
+    const from = info.current;
+    const to = normalizeVersion(info.latestTag);
+    const { latestTag: tag, assetName, assetSha256: sha256, assetUrl } = info;
+
+    upgradeState = {
+      state: 'running',
+      phase: 'downloading',
+      percent: 0,
+      from,
+      to,
+      startedAt: new Date().toISOString(),
+    };
+
+    upgradePending = (async () => {
+      try {
+        const result = await installEngineAsset({
+          tag,
+          assetFile: assetName,
+          sha256,
+          assetUrl,
+          toolDir: engineToolDir,
+          installedName: engineExecutableName,
+          onProgress: ({ phase, percent }: { phase: EngineUpgradePhase; percent?: number }) => {
+            upgradeState = { ...upgradeState, phase, percent: percent ?? upgradeState.percent };
+          },
+          log: (message: string) => console.log(`[engine-upgrade] ${message}`),
+        });
+        // 换的是同一个安装位：探测缓存必须失效，否则看板与报告还显示旧版本
+        resetEngineVersionCache();
+        cachedCheck = undefined;
+        upgradeState = {
+          ...upgradeState,
+          state: 'done',
+          phase: undefined,
+          percent: 100,
+          to: result.version,
+          message: `引擎已升级到 v${result.version}，建议重新扫描并重建基线`,
+          finishedAt: new Date().toISOString(),
+        };
+        console.log(`[engine-upgrade] 升级完成：v${from} → v${result.version}（${result.channel}）`);
+      } catch (error) {
+        const detail = messageOf(error);
+        upgradeState = {
+          ...upgradeState,
+          state: 'error',
+          phase: undefined,
+          message: `${detail}${from ? `；现有引擎 v${from} 未改动，可继续正常扫描` : ''}`,
+          finishedAt: new Date().toISOString(),
+        };
+        console.error(`[engine-upgrade] 升级失败：${detail}`);
+      } finally {
+        upgradePending = null;
+      }
+    })();
+
+    return upgradeState;
+  } catch (error) {
+    // 检查阶段失败：释放占位并把原本的 4xx/5xx 交回调用方
+    upgradePending = null;
+    throw error;
+  }
 }

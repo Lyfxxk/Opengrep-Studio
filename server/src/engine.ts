@@ -70,7 +70,7 @@ export interface EngineRunResult {
 /**
  * 运行一次 opengrep 引擎并收集输出（scan-runner 的全量扫描与 rule-lab 的单规则实验共用）。
  * - 命令行回显到 stderr：调用方可能直接消费本进程 stdout（如 pack-regression CLI 的 --json），stdout 保持纯净
- * - 超时 kill 后照常 resolve（timedOut=true），由调用方决定失败语义
+ * - 超时终止（5 秒后升级 SIGKILL，仍无响应则兜底强制返回 timedOut=true），由调用方决定失败语义
  */
 export function runEngine(
   args: string[],
@@ -89,18 +89,31 @@ export function runEngine(
     let stdout = '';
     let stderr = '';
     let timedOut = false;
+    // 引擎若无视终止信号，Promise 永不 resolve，会把扫描串行链整体卡死并锁死引擎升级：
+    // 温和终止无效则 5 秒后 SIGKILL（Windows 等价 TerminateProcess），再不行兜底强制返回
+    const killTimers: NodeJS.Timeout[] = [];
     const timer = setTimeout(() => {
       timedOut = true;
       child.kill();
+      killTimers.push(setTimeout(() => child.kill('SIGKILL'), 5000));
+      killTimers.push(
+        setTimeout(() => {
+          resolve({ code: -1, stdout, stderr: `${stderr}\n引擎超时且终止失败，已放弃等待`, timedOut: true });
+        }, 15000),
+      );
     }, options.timeoutMs);
+    const stopKillTimers = () => {
+      clearTimeout(timer);
+      for (const t of killTimers) clearTimeout(t);
+    };
     child.stdout.on('data', (chunk) => { stdout += String(chunk); });
     child.stderr.on('data', (chunk) => { stderr += String(chunk); });
     child.on('error', (error) => {
-      clearTimeout(timer);
+      stopKillTimers();
       resolve({ code: -1, stdout, stderr: `${stderr}\n${String(error)}`, timedOut });
     });
     child.on('close', (code) => {
-      clearTimeout(timer);
+      stopKillTimers();
       resolve({ code: code ?? -1, stdout, stderr, timedOut });
     });
   });

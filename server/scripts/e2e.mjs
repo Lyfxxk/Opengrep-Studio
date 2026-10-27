@@ -262,6 +262,14 @@ const upgradeState = await api('GET', '/api/engine/upgrade');
 assert(upgradeState.status === 200 && ['idle', 'running', 'done', 'error'].includes(upgradeState.json?.state),
   '升级状态接口可用', JSON.stringify(upgradeState.json));
 
+console.log('== 1c. 跨站防护（Origin 校验；Host 校验对本节全部正常请求隐式生效） ==');
+const crossOrigin = await fetchRetry(`${BASE}/api/projects`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json', Origin: 'https://evil.example' },
+  body: JSON.stringify({ name: 'E2E-跨站' }),
+});
+assert(crossOrigin.status === 403, '跨站 Origin 的变更请求被拒绝');
+
 console.log('== 2. 清理上一轮 E2E 残留（只动 E2E 前缀资源，绝不碰用户已有数据） ==');
 const isE2eName = (name) => typeof name === 'string' && name.startsWith('E2E');
 for (const p of (await api('GET', '/api/projects')).json ?? []) {
@@ -547,6 +555,13 @@ assert(cfgAfter && !cfgAfter.rulePackIds.includes(onlinePack.json.id), '删除�
 await api('DELETE', `/api/configs/${boundCfg.id}`);
 
 console.log('== 15. 删除项目 ==');
+// 与进行中扫描的互斥：扫描未完成时删除必须 409
+const delScan = await api('POST', `/api/projects/${pid}/scans`, {});
+assert(delScan.status === 201, '删除互斥用扫描已发起');
+const delBlocked = await api('DELETE', `/api/projects/${pid}`);
+assert(delBlocked.status === 409, '扫描进行中删除项目被拒绝', JSON.stringify(delBlocked.json));
+const sDel = await pollScan(delScan.json.id);
+assert(sDel.status === 'completed', '删除互斥用扫描完成');
 await api('DELETE', `/api/projects/${pid}`);
 const after = await api('GET', `/api/projects/${pid}`);
 assert(after.status === 404, '项目已删除');
@@ -833,6 +848,13 @@ assert(
   labSavedPack.status === 201 && labSavedPack.json.isDir === true
     && labSavedPack.json.ruleCount === 1 && labSavedPack.json.sampleCount === 2,
   '带样本创建 → 可移植目录包', JSON.stringify(labSavedPack.json));
+const evilSamplePack = await api('POST', '/api/rulepacks', {
+  name: 'E2E-恶意样本目录名',
+  language: 'JavaScript',
+  content: LAB_EVAL_RULE.replace('lab-eval', '../../../../pwned'),
+  samples: { positive: 'eval("1+1");', negative: 'const x = 1;' },
+});
+assert(evilSamplePack.status === 400, '规则 id 不可作样本目录名时被拒绝', JSON.stringify(evilSamplePack.json));
 const labSavedCheck = await api('POST', `/api/rulepacks/${labSavedPack.json.id}/check`);
 assert(
   labSavedCheck.status === 200 && labSavedCheck.json.tier === 'verified'
