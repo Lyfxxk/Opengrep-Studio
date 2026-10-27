@@ -108,7 +108,7 @@ export default function ScansCenterPage() {
 
       <BatchDeleteBar
         count={selection.count}
-        label="扫描"
+        entity="scan"
         deleting={batchDeleting}
         onDelete={() => setBatchConfirmOpen(true)}
         onClear={selection.clear}
@@ -234,7 +234,7 @@ export default function ScansCenterPage() {
 
       <BatchDeleteConfirm
         open={batchConfirmOpen}
-        label="扫描"
+        entity="scan"
         count={selection.count}
         extra="扫描的问题明细与源码快照将一并移除；其他扫描指向它的基线对比会自动解除。"
         onOpenChange={setBatchConfirmOpen}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -28,6 +29,7 @@ export default function NewProjectDialog({
   onSubmit,
   project,
 }: NewProjectDialogProps) {
+  const { t } = useTranslation();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [error, setError] = useState('');
@@ -45,11 +47,11 @@ export default function NewProjectDialog({
   const handleSubmit = () => {
     const trimmed = name.trim();
     if (!trimmed) {
-      setError('请输入项目名称');
+      setError(t('projects.nameRequired'));
       return;
     }
     if (trimmed.length > 50) {
-      setError('项目名称不能超过 50 个字符');
+      setError(t('projects.nameTooLong'));
       return;
     }
     onSubmit({ name: trimmed, description: description.trim() }, project?.id);
@@ -59,16 +61,16 @@ export default function NewProjectDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{isEditing ? '编辑项目' : '新建项目'}</DialogTitle>
+          <DialogTitle>{isEditing ? t('projects.editTitle') : t('projects.newProject')}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-2">
-            <Label htmlFor="project-name">项目名称 *</Label>
+            <Label htmlFor="project-name">{t('projects.nameLabel')}</Label>
             <Input
               id="project-name"
               value={name}
               maxLength={50}
-              placeholder="例如：订单服务重构"
+              placeholder={t('projects.namePlaceholder')}
               onChange={(event) => {
                 setName(event.target.value);
                 setError('');
@@ -77,22 +79,22 @@ export default function NewProjectDialog({
             {error && <p className="text-xs text-destructive">{error}</p>}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="project-desc">项目描述</Label>
+            <Label htmlFor="project-desc">{t('projects.descLabel')}</Label>
             <Textarea
               id="project-desc"
               value={description}
               maxLength={200}
               rows={3}
-              placeholder="选填，说明本次审查范围与目标"
+              placeholder={t('projects.descPlaceholder')}
               onChange={(event) => setDescription(event.target.value)}
             />
           </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            取消
+            {t('common.cancel')}
           </Button>
-          <Button onClick={handleSubmit}>{isEditing ? '保存修改' : '创建项目'}</Button>
+          <Button onClick={handleSubmit}>{isEditing ? t('projects.save') : t('projects.createSubmit')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

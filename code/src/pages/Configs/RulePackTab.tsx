@@ -423,7 +423,7 @@ export default function RulePackTab() {
 
       <BatchDeleteBar
         count={selection.count}
-        label="规则包"
+        entity="rulePack"
         deleting={batchDeleting}
         onDelete={() => setBatchConfirmOpen(true)}
         onClear={selection.clear}
@@ -696,7 +696,7 @@ export default function RulePackTab() {
 
       <BatchDeleteConfirm
         open={batchConfirmOpen}
-        label="规则包"
+        entity="rulePack"
         count={selection.count}
         extra="正在被配置引用的规则包删除后，对应配置将自动移除对它的勾选。"
         onOpenChange={setBatchConfirmOpen}
