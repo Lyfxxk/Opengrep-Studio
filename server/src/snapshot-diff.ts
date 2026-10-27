@@ -38,28 +38,28 @@ export interface SnapshotDiff {
 }
 
 /** 流式哈希：大于 5MB 的文件只读前 5MB 参与哈希，size 一起进哈希避免不同大文件碰撞 */
-function hashFile(file: string): FileEntry {
+async function hashFile(file: string): Promise<FileEntry> {
   const hash = createHash('sha256');
-  const stat = fs.statSync(file);
-  const fd = fs.openSync(file, 'r');
+  const stat = await fs.promises.stat(file);
+  const fd = await fs.promises.open(file, 'r');
   try {
     const buffer = Buffer.alloc(Math.min(stat.size, HASH_READ_CAP));
-    fs.readSync(fd, buffer, 0, buffer.length, 0);
+    await fd.read(buffer, 0, buffer.length, 0);
     hash.update(buffer);
   } finally {
-    fs.closeSync(fd);
+    await fd.close();
   }
   hash.update(`|${stat.size}`);
   return { sha256: hash.digest('hex'), size: stat.size };
 }
 
 /** 遍历快照目录：跳过 node_modules/.git 与符号链接，返回 相对路径 → 文件信息 */
-function hashSnapshot(dir: string): Map<string, FileEntry> {
+async function hashSnapshot(dir: string): Promise<Map<string, FileEntry>> {
   const map = new Map<string, FileEntry>();
-  const walk = (current: string) => {
+  const walk = async (current: string) => {
     let entries: fs.Dirent[];
     try {
-      entries = fs.readdirSync(current, { withFileTypes: true });
+      entries = await fs.promises.readdir(current, { withFileTypes: true });
     } catch {
       return;
     }
@@ -68,17 +68,17 @@ function hashSnapshot(dir: string): Map<string, FileEntry> {
       const full = path.join(current, entry.name);
       if (entry.isDirectory()) {
         if (ALWAYS_SKIP_DIR_NAMES.has(entry.name)) continue;
-        walk(full);
+        await walk(full);
       } else if (entry.isFile()) {
         const rel = path.relative(dir, full).replace(/\\/g, '/');
         try {
-          map.set(rel, hashFile(full));
+          map.set(rel, await hashFile(full));
         } catch {
         }
       }
     }
   };
-  walk(dir);
+  await walk(dir);
   return map;
 }
 
@@ -118,24 +118,23 @@ function countLineDiff(a: string, b: string): { added: number; removed: number }
 const READ_CAP_BYTES = 2 * 1024 * 1024;
 const READ_CAP_LINES = 20_000;
 
-function readForDiff(file: string): string {
-  const stat = fs.statSync(file);
+async function readForDiff(file: string): Promise<string> {
+  const stat = await fs.promises.stat(file);
   const cap = Math.min(stat.size, READ_CAP_BYTES);
-  const fd = fs.openSync(file, 'r');
+  const fd = await fs.promises.open(file, 'r');
   try {
     const buffer = Buffer.alloc(cap);
-    fs.readSync(fd, buffer, 0, cap, 0);
+    await fd.read(buffer, 0, cap, 0);
     const lines = buffer.toString('utf8').split(/\r?\n/);
     return lines.slice(0, READ_CAP_LINES).join('\n');
   } finally {
-    fs.closeSync(fd);
+    await fd.close();
   }
 }
 
 /** 对比两份源码快照（调用方需保证两目录存在且属于已完成扫描） */
-export function diffSnapshots(dirA: string, dirB: string): SnapshotDiff {
-  const a = hashSnapshot(dirA);
-  const b = hashSnapshot(dirB);
+export async function diffSnapshots(dirA: string, dirB: string): Promise<SnapshotDiff> {
+  const [a, b] = [await hashSnapshot(dirA), await hashSnapshot(dirB)];
   const added: string[] = [];
   const removed: string[] = [];
   const modified: FileDiffEntry[] = [];
@@ -150,7 +149,7 @@ export function diffSnapshots(dirA: string, dirB: string): SnapshotDiff {
     if (modified.length < DIFF_LIST_CAP) {
       let lineStats: { added: number; removed: number } | null = null;
       try {
-        lineStats = countLineDiff(readForDiff(path.join(dirA, rel)), readForDiff(path.join(dirB, rel)));
+        lineStats = countLineDiff(await readForDiff(path.join(dirA, rel)), await readForDiff(path.join(dirB, rel)));
       } catch {
         lineStats = null;
       }

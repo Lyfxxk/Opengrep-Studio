@@ -72,6 +72,8 @@ export const config = {
   maxImportEntries: 50000,
   scanTimeoutMs: 10 * 60 * 1000,
   cloneTimeoutMs: (Number(process.env.CLONE_TIMEOUT_SECONDS) || 240) * 1000,
+  /** 7z 解压 worker 的时限（wasm callMain 不可中断，超时只能靠终止整个 worker 实现） */
+  sevenZipTimeoutMs: (Number(process.env.SEVEN_Z_TIMEOUT_SECONDS) || 120) * 1000,
   ruleLabTimeoutMs: (Number(process.env.RULE_LAB_TIMEOUT_SECONDS) || 30) * 1000,
   snippetContextLines: 5,
   maxSnippetFileBytes: 2 * 1024 * 1024,

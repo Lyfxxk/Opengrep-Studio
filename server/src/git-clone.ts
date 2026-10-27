@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { config } from './config.js';
+import { trackChildProcess } from './engine.js';
 import { HttpError } from './errors.js';
 import { walkAndStripSymlinks } from './fs-walk.js';
 
@@ -51,6 +52,7 @@ function runGit(args: string[], timeoutMs: number): Promise<GitRunResult> {
     });
     let stderr = '';
     let timedOut = false;
+    trackChildProcess(child);
     const timer = setTimeout(() => {
       timedOut = true;
       child.kill();
@@ -65,6 +67,12 @@ function runGit(args: string[], timeoutMs: number): Promise<GitRunResult> {
       resolve({ code: code ?? -1, stderr, timedOut });
     });
   });
+}
+
+/** 日志与回传错误脱敏：URL 内嵌凭据（https://user:token@host/...）不能进控制台或落库 */
+function redactSecrets(text: string, parsed: URL): string {
+  const userinfo = `${parsed.username}${parsed.password ? `:${parsed.password}` : ''}`;
+  return userinfo ? text.split(`${userinfo}@`).join('***@') : text;
 }
 
 function gitFail(detail: string): HttpError {
@@ -94,7 +102,7 @@ export async function cloneRepo(
   if (ref) args.push('--branch', ref);
   args.push(parsed.toString(), destDir);
 
-  console.log(`[git-clone] git ${args.map((a) => JSON.stringify(a)).join(' ')}`);
+  console.log(`[git-clone] git ${redactSecrets(args.map((a) => JSON.stringify(a)).join(' '), parsed)}`);
   const { code, stderr, timedOut, spawnError } = await runGit(args, config.cloneTimeoutMs);
   const fail = (message: string): never => {
     fs.rmSync(destDir, { recursive: true, force: true });
@@ -110,7 +118,8 @@ export async function cloneRepo(
   if (code !== 0) {
     const detail = stderr.trim().split('\n').filter(Boolean).pop() ?? `git exit ${code}`;
     fs.rmSync(destDir, { recursive: true, force: true });
-    throw gitFail(detail);
+    // git 的报错行会原样带上带凭据的 URL，回传前必须脱敏
+    throw gitFail(redactSecrets(detail, parsed));
   }
 
   fs.rmSync(path.join(destDir, '.git'), { recursive: true, force: true });
