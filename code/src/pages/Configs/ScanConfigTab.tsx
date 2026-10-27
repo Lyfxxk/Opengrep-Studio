@@ -202,7 +202,7 @@ export default function ScanConfigTab() {
 
       <BatchDeleteBar
         count={selection.count}
-        label="配置"
+        entity="config"
         deleting={batchDeleting}
         onDelete={() => setBatchConfirmOpen(true)}
         onClear={selection.clear}
@@ -387,7 +387,7 @@ export default function ScanConfigTab() {
       </AlertDialog>
       <BatchDeleteConfirm
         open={batchConfirmOpen}
-        label="配置"
+        entity="config"
         count={selection.count}
         extra="正在使用中的配置删除后，对应项目将自动解除绑定。"
         onOpenChange={setBatchConfirmOpen}
