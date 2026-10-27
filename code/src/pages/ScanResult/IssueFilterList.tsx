@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -10,7 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { COMPARISON_LABELS, REVIEW_BADGE_CLASS, REVIEW_STATUS_LABELS, SEVERITY_LABELS, type IIssue } from '@/data/issues';
+import { REVIEW_BADGE_CLASS, type IIssue } from '@/data/issues';
 import { COMPARISON_VISUALS } from '@/data/constants';
 import { lookupRuleMessage, useRuleMessageMap } from '@/lib/ruleMessages';
 import { SEVERITY_BADGE_CLASS, SEVERITY_ORDER } from '@/lib/severity';
@@ -30,6 +31,7 @@ export default function IssueFilterList({
   onSelect,
   onOpenKnowledge,
 }: IssueFilterListProps) {
+  const { t } = useTranslation();
   const [severity, setSeverity] = useState('all');
   const [status, setStatus] = useState('all');
   const [keyword, setKeyword] = useState('');
@@ -65,22 +67,22 @@ export default function IssueFilterList({
     <div className="flex h-full flex-col gap-3">
       <Tabs value={status} onValueChange={setStatus}>
         <TabsList className="w-full justify-start">
-          <TabsTrigger value="all">全部</TabsTrigger>
-          <TabsTrigger value="new">新增</TabsTrigger>
-          <TabsTrigger value="fixed">已修复</TabsTrigger>
-          <TabsTrigger value="remaining">遗留</TabsTrigger>
+          <TabsTrigger value="all">{t('issueFilter.all')}</TabsTrigger>
+          <TabsTrigger value="new">{t('comparison.new')}</TabsTrigger>
+          <TabsTrigger value="fixed">{t('comparison.fixed')}</TabsTrigger>
+          <TabsTrigger value="remaining">{t('comparison.remaining')}</TabsTrigger>
         </TabsList>
       </Tabs>
       <div className="grid grid-cols-1 gap-2">
         <Select value={severity} onValueChange={setSeverity}>
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="严重等级" />
+            <SelectValue placeholder={t('issueFilter.severityPlaceholder')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">全部等级</SelectItem>
+            <SelectItem value="all">{t('issueFilter.allSeverities')}</SelectItem>
             {SEVERITY_ORDER.map((item) => (
               <SelectItem key={item} value={item}>
-                {SEVERITY_LABELS[item]}
+                {t(`severity.${item}`)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -90,27 +92,27 @@ export default function IssueFilterList({
           <Input
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
-            placeholder="按文件路径或描述搜索"
+            placeholder={t('issueFilter.searchPlaceholder')}
             className="pl-9"
           />
         </div>
       </div>
-      <div className="text-xs text-muted-foreground">共 {filtered.length} 个问题</div>
+      <div className="text-xs text-muted-foreground">{t('issueFilter.count', { count: filtered.length })}</div>
       <div className="flex-1 space-y-2 overflow-y-auto pr-1">
         {filtered.length === 0 ? (
           <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
             {issues.length === 0 ? (
-              '本次扫描未发现问题'
+              t('issueFilter.emptyScan')
             ) : (
               <>
-                <p>当前筛选条件下没有匹配的问题</p>
+                <p>{t('issueFilter.emptyFiltered')}</p>
                 {hasActiveFilter && (
                   <button
                     type="button"
                     onClick={resetFilters}
                     className="mt-2 text-xs font-medium text-primary hover:underline"
                   >
-                    清除筛选条件
+                    {t('issueFilter.clearFilters')}
                   </button>
                 )}
               </>
@@ -137,7 +139,7 @@ export default function IssueFilterList({
                     SEVERITY_BADGE_CLASS[issue.severity],
                   )}
                 >
-                  {SEVERITY_LABELS[issue.severity]}
+                  {t(`severity.${issue.severity}`)}
                 </Badge>
                 <Badge
                   className={cn(
@@ -145,13 +147,13 @@ export default function IssueFilterList({
                     COMPARISON_VISUALS[issue.comparisonStatus].badge,
                   )}
                 >
-                  {COMPARISON_LABELS[issue.comparisonStatus]}
+                  {t(`comparison.${issue.comparisonStatus}`)}
                 </Badge>
                 {issue.rulepackName && (
                   <Badge
                     variant="outline"
                     className="max-w-[110px] shrink-0 truncate px-1.5 text-xs font-normal text-muted-foreground"
-                    title={`来源规则包：${issue.rulepackName}`}
+                    title={t('issueFilter.packSourceTitle', { name: issue.rulepackName })}
                   >
                     {issue.rulepackName}
                   </Badge>
@@ -164,7 +166,7 @@ export default function IssueFilterList({
                     )}
                     title={issue.review.reason}
                   >
-                    {REVIEW_STATUS_LABELS[issue.review.status]}
+                    {t(`reviewStatus.${issue.review.status}`)}
                   </Badge>
                 )}
                 {onOpenKnowledge ? (

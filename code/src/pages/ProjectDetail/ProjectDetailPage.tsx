@@ -280,10 +280,10 @@ export default function ProjectDetailPage() {
       <div className="space-y-4">
         <div className="rounded-lg border border-dashed p-16 text-center">
           <p className="text-sm text-muted-foreground">
-            {loadFailed ? t('projectDetail.loadFailedHint') : t('projectDetail.notFound')}
+            {loadFailed ? t('common.loadFailedHint') : t('projectDetail.notFound')}
           </p>
           <Button className="mt-4" onClick={() => navigate('/projects')}>
-            {t('projectDetail.backToProjects')}
+            {t('common.backToProjects')}
           </Button>
         </div>
       </div>
