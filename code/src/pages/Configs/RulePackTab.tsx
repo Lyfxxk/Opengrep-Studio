@@ -24,6 +24,10 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import BatchDeleteBar from '@/components/BatchDeleteBar';
+import BatchDeleteConfirm from '@/components/BatchDeleteConfirm';
+import { useRowSelection } from '@/lib/useRowSelection';
 import {
   Dialog,
   DialogContent,
@@ -232,9 +236,41 @@ export default function RulePackTab() {
   const builtinPacks = rulePacks.filter((pack) => pack.builtin);
   const builtinRuleTotal = builtinPacks.reduce((sum, pack) => sum + pack.ruleCount, 0);
 
+  // 批量删除只覆盖自定义包表格（内置包在下方以卡片流呈现，不参与勾选）
+  const selection = useRowSelection(customPacks.map((pack) => pack.id));
+  const [batchConfirmOpen, setBatchConfirmOpen] = useState(false);
+  const [batchDeleting, setBatchDeleting] = useState(false);
+
+  // 逐个调用单删接口：某一项失败不影响其余项，最后汇总报数
+  const handleBatchDelete = async () => {
+    const ids = [...selection.selected];
+    setBatchConfirmOpen(false);
+    setBatchDeleting(true);
+    let failed = 0;
+    for (const id of ids) {
+      try {
+        await api.deleteRulePack(id);
+      } catch {
+        failed += 1;
+      }
+    }
+    setBatchDeleting(false);
+    selection.clear();
+    await loadAll();
+    if (failed === 0) toast.success(`已删除 ${ids.length} 个规则包`);
+    else toast.warning(`已删除 ${ids.length - failed} 个规则包，${failed} 个失败`);
+  };
+
   const renderTableHeader = (
     <TableHeader>
       <TableRow>
+        <TableHead className="w-10">
+          <Checkbox
+            checked={selection.allSelected ? true : selection.someSelected ? 'indeterminate' : false}
+            onCheckedChange={() => selection.toggleAll()}
+            aria-label="全选规则包"
+          />
+        </TableHead>
         <TableHead className="whitespace-nowrap">名称</TableHead>
         <TableHead className="whitespace-nowrap">语言</TableHead>
         <TableHead className="whitespace-nowrap">规则条数</TableHead>
@@ -247,6 +283,13 @@ export default function RulePackTab() {
   // 仅自定义包使用表格；内置包在下方以卡片流呈现
   const renderPackRow = (pack: IRulePack) => (
     <TableRow key={pack.id}>
+      <TableCell className="w-10">
+        <Checkbox
+          checked={selection.selected.has(pack.id)}
+          onCheckedChange={() => selection.toggle(pack.id)}
+          aria-label={`选择规则包 ${pack.name}`}
+        />
+      </TableCell>
       <TableCell className="font-medium">
         <div className="flex flex-wrap items-center gap-1.5">
           <span>{pack.name}</span>
@@ -377,6 +420,14 @@ export default function RulePackTab() {
           onChange={(event) => handleImportZip(event.target.files?.[0])}
         />
       </div>
+
+      <BatchDeleteBar
+        count={selection.count}
+        label="规则包"
+        deleting={batchDeleting}
+        onDelete={() => setBatchConfirmOpen(true)}
+        onClear={selection.clear}
+      />
 
       <Card className="overflow-hidden">
         <CardContent className="p-0">
@@ -642,6 +693,15 @@ export default function RulePackTab() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <BatchDeleteConfirm
+        open={batchConfirmOpen}
+        label="规则包"
+        count={selection.count}
+        extra="正在被配置引用的规则包删除后，对应配置将自动移除对它的勾选。"
+        onOpenChange={setBatchConfirmOpen}
+        onConfirm={handleBatchDelete}
+      />
     </div>
   );
 }

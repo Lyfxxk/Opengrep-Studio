@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Eye, FileText, GitCompareArrows, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Table,
   TableBody,
@@ -13,7 +14,10 @@ import {
 } from '@/components/ui/table';
 import ScanStatusBadge from '@/components/ScanStatusBadge';
 import RulePackCell from '@/components/RulePackCell';
+import BatchDeleteBar from '@/components/BatchDeleteBar';
+import BatchDeleteConfirm from '@/components/BatchDeleteConfirm';
 import CompareDialog from '@/pages/ScanResult/CompareDialog';
+import { useRowSelection } from '@/lib/useRowSelection';
 import { attachProjectNames, type ScanWithProject } from '@/lib/scans';
 import { formatDateTime } from '@/lib/format';
 import { api } from '@/lib/api';
@@ -24,6 +28,14 @@ export default function ScansCenterPage() {
   const [scans, setScans] = useState<ScanWithProject[] | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [compareScanId, setCompareScanId] = useState<string | null>(null);
+  const [batchConfirmOpen, setBatchConfirmOpen] = useState(false);
+  const [batchDeleting, setBatchDeleting] = useState(false);
+  // 进行中的扫描还在被引擎写入，禁止勾选删除；全选范围也只覆盖可删除的行
+  const deletableIds = useMemo(
+    () => (scans ?? []).filter((scan) => scan.status !== 'scanning').map((scan) => scan.id),
+    [scans],
+  );
+  const selection = useRowSelection(deletableIds);
 
   const load = useCallback(async () => {
     try {
@@ -50,6 +62,26 @@ export default function ScansCenterPage() {
 
   const viewScan = (scan: ScanWithProject) => navigate(`/projects/${scan.projectId}/scans/${scan.id}`);
 
+  // 逐个调用单删接口：某一项失败（如刚好进入扫描中）不影响其余项，最后汇总报数
+  const handleBatchDelete = async () => {
+    const ids = [...selection.selected];
+    setBatchConfirmOpen(false);
+    setBatchDeleting(true);
+    let failed = 0;
+    for (const id of ids) {
+      try {
+        await api.deleteScan(id);
+      } catch {
+        failed += 1;
+      }
+    }
+    setBatchDeleting(false);
+    selection.clear();
+    await load();
+    if (failed === 0) toast.success(`已删除 ${ids.length} 条扫描`);
+    else toast.warning(`已删除 ${ids.length - failed} 条扫描，${failed} 条失败（可能刚进入扫描中）`);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -74,6 +106,14 @@ export default function ScansCenterPage() {
         </Button>
       </div>
 
+      <BatchDeleteBar
+        count={selection.count}
+        label="扫描"
+        deleting={batchDeleting}
+        onDelete={() => setBatchConfirmOpen(true)}
+        onClear={selection.clear}
+      />
+
       {scans === null ? (
         <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
           加载中…
@@ -91,6 +131,13 @@ export default function ScansCenterPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-10">
+                  <Checkbox
+                    checked={selection.allSelected ? true : selection.someSelected ? 'indeterminate' : false}
+                    onCheckedChange={() => selection.toggleAll()}
+                    aria-label="全选扫描"
+                  />
+                </TableHead>
                 <TableHead className="whitespace-nowrap">项目</TableHead>
                 <TableHead className="whitespace-nowrap">扫描编号</TableHead>
                 <TableHead className="whitespace-nowrap">状态</TableHead>
@@ -111,6 +158,14 @@ export default function ScansCenterPage() {
                       if (done) viewScan(scan);
                     }}
                   >
+                    <TableCell className="w-10" onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={selection.selected.has(scan.id)}
+                        onCheckedChange={() => selection.toggle(scan.id)}
+                        disabled={scan.status === 'scanning'}
+                        aria-label={`选择扫描 ${scan.id}`}
+                      />
+                    </TableCell>
                     <TableCell className="max-w-[180px]">
                       <span className="block truncate" title={scan.projectName}>
                         {scan.projectName}
@@ -176,6 +231,15 @@ export default function ScansCenterPage() {
       {compareScanId && (
         <CompareDialog scanId={compareScanId} onClose={() => setCompareScanId(null)} />
       )}
+
+      <BatchDeleteConfirm
+        open={batchConfirmOpen}
+        label="扫描"
+        count={selection.count}
+        extra="扫描的问题明细与源码快照将一并移除；其他扫描指向它的基线对比会自动解除。"
+        onOpenChange={setBatchConfirmOpen}
+        onConfirm={handleBatchDelete}
+      />
     </div>
   );
 }

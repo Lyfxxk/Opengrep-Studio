@@ -15,6 +15,10 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import BatchDeleteBar from '@/components/BatchDeleteBar';
+import BatchDeleteConfirm from '@/components/BatchDeleteConfirm';
+import { useRowSelection } from '@/lib/useRowSelection';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -65,6 +69,9 @@ export default function ScanConfigTab() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [target, setTarget] = useState<ConfigDialogTarget | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<IConfig | null>(null);
+  const selection = useRowSelection(configs.map((config) => config.id));
+  const [batchConfirmOpen, setBatchConfirmOpen] = useState(false);
+  const [batchDeleting, setBatchDeleting] = useState(false);
 
   const loadAll = useCallback(async () => {
     try {
@@ -161,6 +168,26 @@ export default function ScanConfigTab() {
   const packNameOf = (packId: string) =>
     rulePacks.find((pack) => pack.id === packId)?.name;
 
+  // 逐个调用单删接口：某一项失败不影响其余项，最后汇总报数
+  const handleBatchDelete = async () => {
+    const ids = [...selection.selected];
+    setBatchConfirmOpen(false);
+    setBatchDeleting(true);
+    let failed = 0;
+    for (const id of ids) {
+      try {
+        await api.deleteConfig(id);
+      } catch {
+        failed += 1;
+      }
+    }
+    setBatchDeleting(false);
+    selection.clear();
+    await loadAll();
+    if (failed === 0) toast.success(`已删除 ${ids.length} 个配置`);
+    else toast.warning(`已删除 ${ids.length - failed} 个配置，${failed} 个失败`);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4">
@@ -172,6 +199,14 @@ export default function ScanConfigTab() {
           新建配置
         </Button>
       </div>
+
+      <BatchDeleteBar
+        count={selection.count}
+        label="配置"
+        deleting={batchDeleting}
+        onDelete={() => setBatchConfirmOpen(true)}
+        onClear={selection.clear}
+      />
 
       <Card className="overflow-hidden">
         <CardContent className="p-0">
@@ -197,6 +232,13 @@ export default function ScanConfigTab() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-10">
+                      <Checkbox
+                        checked={selection.allSelected ? true : selection.someSelected ? 'indeterminate' : false}
+                        onCheckedChange={() => selection.toggleAll()}
+                        aria-label="全选配置"
+                      />
+                    </TableHead>
                     <TableHead className="whitespace-nowrap">配置名称</TableHead>
                     <TableHead className="whitespace-nowrap">规则包</TableHead>
                     <TableHead className="whitespace-nowrap">排除路径</TableHead>
@@ -209,6 +251,13 @@ export default function ScanConfigTab() {
                 <TableBody>
                   {configs.map((config) => (
                     <TableRow key={config.id}>
+                      <TableCell className="w-10">
+                        <Checkbox
+                          checked={selection.selected.has(config.id)}
+                          onCheckedChange={() => selection.toggle(config.id)}
+                          aria-label={`选择配置 ${config.name}`}
+                        />
+                      </TableCell>
                       <TableCell>
                         <span className="block font-medium">{config.name}</span>
                         {config.description && (
@@ -336,6 +385,14 @@ export default function ScanConfigTab() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <BatchDeleteConfirm
+        open={batchConfirmOpen}
+        label="配置"
+        count={selection.count}
+        extra="正在使用中的配置删除后，对应项目将自动解除绑定。"
+        onOpenChange={setBatchConfirmOpen}
+        onConfirm={handleBatchDelete}
+      />
     </div>
   );
 }

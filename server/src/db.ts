@@ -403,6 +403,13 @@ export function deleteProject(id: string): void {
   db.prepare('DELETE FROM projects WHERE id = ?').run(id);
 }
 
+/** 删除单条扫描及其问题明细；把别人指向它的基线引用一并置空（对比入口按 404 兜底） */
+export function deleteScan(id: string): void {
+  db.prepare('DELETE FROM issues WHERE scan_id = ?').run(id);
+  db.prepare('UPDATE scans SET baseline_scan_id = NULL WHERE baseline_scan_id = ?').run(id);
+  db.prepare('DELETE FROM scans WHERE id = ?').run(id);
+}
+
 
 export function getScan(id: string): ScanRecord | undefined {
   const row = db.prepare('SELECT * FROM scans WHERE id = ?').get(id) as SqlRow | undefined;

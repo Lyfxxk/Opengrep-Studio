@@ -65,6 +65,7 @@ import {
   updateProject,
   updateRulePack,
   upsertReview,
+  deleteScan,
   type IssueRow,
   type Project,
   type Review,
@@ -1223,6 +1224,17 @@ app.get('/api/scans', asyncHandler(async (_req, res) => {
 
 app.get('/api/scans/:scanId', asyncHandler(async (req, res) => {
   res.json(requireScan(req.params.scanId));
+}));
+
+app.delete('/api/scans/:scanId', asyncHandler(async (req, res) => {
+  const scan = requireScan(req.params.scanId);
+  // 进行中的扫描还被引擎写入、快照目录被占用（Windows 上删目录会 EPERM，留下 DB 已删的矛盾状态）
+  if (scan.status === 'scanning') {
+    throw new HttpError(409, '扫描进行中，请等扫描完成或失败后再删除');
+  }
+  deleteScan(scan.id);
+  fs.rmSync(scanSourceDir(scan.projectId, scan.id), { recursive: true, force: true });
+  res.status(204).end();
 }));
 
 app.get('/api/scans/:scanId/issues', asyncHandler(async (req, res) => {
