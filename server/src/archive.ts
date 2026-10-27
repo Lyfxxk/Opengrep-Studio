@@ -89,6 +89,10 @@ export function extractZipSafely(buffer: Buffer, destDir: string): number {
   let totalBytes = 0;
   for (const entry of fileEntries) {
     const name = safeRelativePath(entry.entryName);
+    // 声明体积为 0 却带压缩数据 = 骗过预检的炸弹条目：adm-zip 对声明 0 的条目解压不设上限
+    if (entry.header.size === 0 && entry.header.compressedSize > 0) {
+      throw new HttpError(400, `ZIP 包内含伪造体积的条目：${entry.entryName}`);
+    }
     totalBytes += entry.header.size;
     if (totalBytes > config.maxExtractedBytes) {
       throw new HttpError(400, `ZIP 解压后总体积超过 ${config.maxExtractedBytes / 1024 ** 3}GB 上限`);
@@ -97,13 +101,20 @@ export function extractZipSafely(buffer: Buffer, destDir: string): number {
   }
 
   fs.rmSync(destDir, { recursive: true, force: true });
+  let extractedBytes = 0;
   for (const entry of fileEntries) {
     const target = path.join(destDir, safeRelativePath(entry.entryName));
     if (!isPathWithin(destDir, target)) {
       throw new HttpError(400, `ZIP 包内含不安全的路径条目：${entry.entryName}`);
     }
+    const data = entry.getData();
+    // 实际字节数复核：中央目录的声明可伪造，只有解出来的数据可信
+    extractedBytes += data.length;
+    if (extractedBytes > config.maxExtractedBytes) {
+      throw new HttpError(400, `ZIP 解压后总体积超过 ${config.maxExtractedBytes / 1024 ** 3}GB 上限`);
+    }
     fs.mkdirSync(path.dirname(target), { recursive: true });
-    fs.writeFileSync(target, entry.getData());
+    fs.writeFileSync(target, data);
   }
   return fileEntries.length;
 }
