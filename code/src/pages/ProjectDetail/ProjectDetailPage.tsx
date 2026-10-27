@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { formatDateTime } from '@/lib/format';
 import { FileUp, Flag, Loader2, Play } from 'lucide-react';
@@ -23,6 +24,7 @@ import UploadZone, { type UploadZoneState } from './UploadZone';
 const POLL_INTERVAL_MS = 1500;
 
 export default function ProjectDetailPage() {
+  const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   const [project, setProject] = useState<IProject | null>(null);
@@ -55,9 +57,13 @@ export default function ProjectDetailPage() {
       for (const scan of scanList) {
         const before = prevScansRef.current.find((item) => item.id === scan.id);
         if (before?.status === 'scanning' && scan.status === 'completed') {
-          toast.success(`扫描完成，发现 ${scan.issueCount} 个问题`);
+          toast.success(t('projectDetail.scanCompletedToast', { count: scan.issueCount }));
         } else if (before?.status === 'scanning' && scan.status === 'failed') {
-          toast.error(`扫描失败：${scan.message ?? '未知原因'}`);
+          toast.error(
+            t('projectDetail.scanFailedToast', {
+              reason: scan.message ?? t('projectDetail.unknownReason'),
+            }),
+          );
         }
       }
       prevScansRef.current = scanList;
@@ -69,14 +75,14 @@ export default function ProjectDetailPage() {
       if (!loadedOnceRef.current) setLoadFailed(true);
       if (!pollErrorShownRef.current) {
         pollErrorShownRef.current = true;
-        toast.error(`加载项目失败：${error instanceof Error ? error.message : String(error)}`);
+        toast.error(t('projectDetail.loadFailedToast', { error: error instanceof Error ? error.message : String(error) }));
       }
     } finally {
       if (requestSeqRef.current === seq) {
         setProjectsLoaded(true);
       }
     }
-  }, [id]);
+  }, [id, t]);
 
   // 路由 :id 切换会复用同一组件实例：先重置上一个项目留下的状态，避免旧数据在新 URL 下闪现甚至误操作
   useEffect(() => {
@@ -106,7 +112,7 @@ export default function ProjectDetailPage() {
     try {
       const updated = await api.updateProject(id, { configId });
       setProject(updated);
-      toast.success('扫描配置已更新');
+      toast.success(t('projectDetail.configUpdatedToast'));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : String(error));
     }
@@ -139,7 +145,10 @@ export default function ProjectDetailPage() {
     const label =
       items.length === 1
         ? items[0].file.name
-        : `${items[0].relativePath?.split('/')[0] ?? '上传'}（${items.length} 个文件）`;
+        : t('projectDetail.multiFileLabel', {
+            dir: items[0].relativePath?.split('/')[0] ?? t('projectDetail.uploadFallback'),
+            count: items.length,
+          });
     const totalSize = items.reduce((sum, item) => sum + item.file.size, 0);
     setUpload({
       status: 'uploading',
@@ -163,14 +172,16 @@ export default function ProjectDetailPage() {
         progress: 100,
         ignoredCount: result.ignoredCount,
       });
+      const uploadToastKey =
+        result.fileCount > 0
+          ? result.ignoredCount
+            ? 'projectDetail.uploadOkBoth'
+            : 'projectDetail.uploadOkFiles'
+          : result.ignoredCount
+            ? 'projectDetail.uploadOkIgnored'
+            : 'projectDetail.uploadOkPlain';
       toast.success(
-        [
-          result.fileCount > 0 ? `源码上传成功，共 ${result.fileCount} 个文件` : '源码上传成功',
-          result.ignoredCount ? `已按 .gitignore 忽略 ${result.ignoredCount} 个文件` : '',
-          '可以开始扫描',
-        ]
-          .filter(Boolean)
-          .join('，'),
+        t(uploadToastKey, { files: result.fileCount, ignored: result.ignoredCount ?? 0 }),
       );
       if (result.languageStats) {
         setProject((prev) => (prev ? { ...prev, languageStats: result.languageStats } : prev));
@@ -186,12 +197,12 @@ export default function ProjectDetailPage() {
     setUpload({
       status: 'uploading',
       sourceType: 'clone',
-      fileName: ref ? `${url}（${ref}）` : url,
+      fileName: ref ? t('projectDetail.cloneLabelWithRef', { url, ref }) : url,
     });
     try {
       const result = await api.cloneSource(id, url, ref || undefined);
       setUpload({ status: 'uploaded', sourceType: 'clone', fileName: url });
-      toast.success(`仓库克隆成功，共 ${result.fileCount} 个文件，可以开始扫描`);
+      toast.success(t('projectDetail.cloneSuccessToast', { count: result.fileCount }));
       if (result.languageStats) {
         setProject((prev) => (prev ? { ...prev, languageStats: result.languageStats } : prev));
       }
@@ -209,7 +220,7 @@ export default function ProjectDetailPage() {
       });
       setScans((prev) => [record, ...prev]);
       setUpload({ status: 'idle' });
-      toast.info('扫描任务已提交，引擎单并发执行中…');
+      toast.info(t('projectDetail.scanSubmittedToast'));
       // 服务端可能在提交时自动绑定了「默认扫描配置」，立即刷新让按钮与配置选择器同步
       void refresh();
     } catch (error) {
@@ -222,7 +233,7 @@ export default function ProjectDetailPage() {
     try {
       const updated = await api.updateProject(id, { baselineScanId: scanId });
       setProject(updated);
-      toast.info('已设为基线扫描，后续扫描将自动对比');
+      toast.info(t('projectDetail.baselineSetToast'));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : String(error));
     }
@@ -233,7 +244,7 @@ export default function ProjectDetailPage() {
     try {
       const updated = await api.updateProject(id, { baselineScanId: null });
       setProject(updated);
-      toast.info('已取消基线，后续扫描不再自动对比');
+      toast.info(t('projectDetail.baselineUnsetToast'));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : String(error));
     }
@@ -250,9 +261,9 @@ export default function ProjectDetailPage() {
     try {
       const scan = await api.importSarif(id, file, project?.baselineScanId ?? undefined);
       toast.success(
-        `SARIF 导入成功：${scan.issueCount} 个问题${
-          project?.baselineScanId ? '，已与基线对比' : ''
-        }，可在扫描历史查看`,
+        project?.baselineScanId
+          ? t('projectDetail.sarifImportedCompared', { count: scan.issueCount })
+          : t('projectDetail.sarifImportedBase', { count: scan.issueCount }),
       );
       await refresh();
     } catch (error) {
@@ -269,12 +280,10 @@ export default function ProjectDetailPage() {
       <div className="space-y-4">
         <div className="rounded-lg border border-dashed p-16 text-center">
           <p className="text-sm text-muted-foreground">
-            {loadFailed
-              ? '加载失败，请检查后端服务后刷新重试'
-              : '项目不存在或已被删除'}
+            {loadFailed ? t('projectDetail.loadFailedHint') : t('projectDetail.notFound')}
           </p>
           <Button className="mt-4" onClick={() => navigate('/projects')}>
-            返回项目列表
+            {t('projectDetail.backToProjects')}
           </Button>
         </div>
       </div>
@@ -298,23 +307,23 @@ export default function ProjectDetailPage() {
             {project.baselineScanId && (
               <Badge variant="outline" className="gap-1 font-normal">
                 <Flag className="size-3" />
-                基线 {project.baselineScanId}
+                {t('projectDetail.baselineBadge', { id: project.baselineScanId })}
               </Badge>
             )}
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
-            {project.description || '暂无描述'} · 创建于{' '}
-            {formatDateTime(project.createdAt)}
+            {project.description || t('projectDetail.noDescription')} ·{' '}
+            {t('projectDetail.createdAt', { time: formatDateTime(project.createdAt) })}
           </p>
           {configs.length > 0 ? (
             <div className="mt-3 flex flex-wrap items-center gap-2">
-              <span className="text-sm text-muted-foreground">扫描配置</span>
+              <span className="text-sm text-muted-foreground">{t('projectDetail.configLabel')}</span>
               <Select
                 value={project.configId ?? ''}
                 onValueChange={(value) => void handleConfigChange(value)}
               >
                 <SelectTrigger className="h-8 w-52">
-                  <SelectValue placeholder="未绑定（一键扫描自动创建）" />
+                  <SelectValue placeholder={t('projectDetail.configUnboundPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   {configs.map((config) => (
@@ -326,30 +335,30 @@ export default function ProjectDetailPage() {
               </Select>
               {activeConfig && (
                 <span className="text-xs text-muted-foreground">
-                  规则包 {activeConfig.rulePackIds.length} 个 · 排除路径{' '}
-                  {activeConfig.excludes.length} 条
+                  {t('projectDetail.configSummary', {
+                    packs: activeConfig.rulePackIds.length,
+                    excludes: activeConfig.excludes.length,
+                  })}
                 </span>
               )}
               <Link to="/configs" className="text-xs text-primary hover:underline">
-                查看配置
+                {t('projectDetail.viewConfigs')}
               </Link>
               {!project.configId && (
-                <span className="text-xs text-warning">
-                  未绑定扫描配置：一键扫描会自动创建「默认扫描配置」（全部启用的内置规则包）并绑定本项目
-                </span>
+                <span className="text-xs text-warning">{t('projectDetail.unboundWarning')}</span>
               )}
             </div>
           ) : (
             <p className="mt-3 text-xs text-warning">
-              尚未创建任何扫描配置：可直接点右侧「使用全部内置规则包扫描」，系统会自动创建「默认扫描配置」并绑定本项目；也可到
+              {t('projectDetail.noConfigsPrefix')}
               <Link to="/configs" className="mx-1 text-primary hover:underline">
-                扫描配置
+                {t('nav.configs')}
               </Link>
-              自行创建后绑定（规则包在
+              {t('projectDetail.noConfigsMiddle')}
               <Link to="/rules" className="mx-1 text-primary hover:underline">
-                规则中心
+                {t('nav.rules')}
               </Link>
-              管理）
+              {t('projectDetail.noConfigsSuffix')}
             </p>
           )}
         </div>
@@ -357,9 +366,7 @@ export default function ProjectDetailPage() {
           className="gap-1"
           disabled={upload.status !== 'uploaded' || isScanning}
           title={
-            project.configId
-              ? undefined
-              : '未绑定配置：将自动创建「默认扫描配置」（全部启用的内置规则包）并用于本次扫描'
+            project.configId ? undefined : t('projectDetail.startScanUnboundTitle')
           }
           onClick={() => void handleStartScan()}
         >
@@ -368,13 +375,17 @@ export default function ProjectDetailPage() {
           ) : (
             <Play className="size-4" />
           )}
-          {isScanning ? '扫描执行中…' : project.configId ? '开始扫描' : '使用全部内置规则包扫描'}
+          {isScanning
+            ? t('projectDetail.scanningBtn')
+            : project.configId
+              ? t('projectDetail.startScanBtn')
+              : t('projectDetail.startScanAllPacks')}
         </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">导入源码</CardTitle>
+          <CardTitle className="text-base">{t('projectDetail.importSourceTitle')}</CardTitle>
         </CardHeader>
         <CardContent>
           <UploadZone
@@ -389,12 +400,12 @@ export default function ProjectDetailPage() {
 
       <Card className="overflow-hidden">
         <CardHeader className="flex-row items-center justify-between space-y-0">
-          <CardTitle className="text-base">扫描历史</CardTitle>
+          <CardTitle className="text-base">{t('projectDetail.scanHistoryTitle')}</CardTitle>
           {/* 演示模式无后端：SARIF 导入没有 mock 实现，隐藏入口避免点了必失败 */}
           {!api.isMockMode && (
             <div className="flex items-center gap-2">
               <span className="hidden text-xs text-muted-foreground sm:inline">
-                外部工具的扫描结果（SARIF 2.x）可导入后统一查看与对比
+                {t('projectDetail.sarifHint')}
               </span>
               <Button
                 variant="outline"
@@ -407,7 +418,7 @@ export default function ProjectDetailPage() {
                 ) : (
                   <FileUp className="size-4" />
                 )}
-                {importingSarif ? '导入中…' : '导入 SARIF'}
+                {importingSarif ? t('projectDetail.importing') : t('projectDetail.importSarif')}
               </Button>
               <input
                 ref={sarifInputRef}

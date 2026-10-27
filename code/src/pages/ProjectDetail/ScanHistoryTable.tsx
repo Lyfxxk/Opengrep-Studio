@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Eye, Flag, FlagOff } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -29,10 +30,11 @@ export default function ScanHistoryTable({
   onUnsetBaseline,
   onView,
 }: ScanHistoryTableProps) {
+  const { t } = useTranslation();
   if (scans.length === 0) {
     return (
       <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
-        暂无扫描记录，上传源码后点击「开始扫描」
+        {t('projectDetail.historyEmpty')}
       </div>
     );
   }
@@ -42,13 +44,13 @@ export default function ScanHistoryTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="whitespace-nowrap">扫描编号</TableHead>
-            <TableHead className="whitespace-nowrap">状态</TableHead>
-            <TableHead className="whitespace-nowrap">问题数</TableHead>
-            <TableHead className="whitespace-nowrap">规则包</TableHead>
-            <TableHead className="whitespace-nowrap">基线</TableHead>
-            <TableHead className="whitespace-nowrap">扫描时间</TableHead>
-            <TableHead className="whitespace-nowrap text-right">操作</TableHead>
+            <TableHead className="whitespace-nowrap">{t('scans.colScanId')}</TableHead>
+            <TableHead className="whitespace-nowrap">{t('scans.colStatus')}</TableHead>
+            <TableHead className="whitespace-nowrap">{t('scans.colIssues')}</TableHead>
+            <TableHead className="whitespace-nowrap">{t('scans.colRulePacks')}</TableHead>
+            <TableHead className="whitespace-nowrap">{t('projectDetail.colBaseline')}</TableHead>
+            <TableHead className="whitespace-nowrap">{t('scans.colTime')}</TableHead>
+            <TableHead className="whitespace-nowrap text-right">{t('common.actions')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -78,7 +80,7 @@ export default function ScanHistoryTable({
                   {isBaseline ? (
                     <Badge className="gap-1 font-normal">
                       <Flag className="size-3" />
-                      基线
+                      {t('projectDetail.baselineTag')}
                     </Badge>
                   ) : (
                     <span className="text-muted-foreground">—</span>
@@ -97,18 +99,18 @@ export default function ScanHistoryTable({
                       onClick={() => onView(scan.id)}
                     >
                       <Eye className="size-3.5" />
-                      查看
+                      {t('projectDetail.actionView')}
                     </Button>
                     {isBaseline ? (
                       <Button
                         variant="ghost"
                         size="sm"
                         className="gap-1 text-muted-foreground"
-                        title="取消后，后续扫描不再自动与基线对比"
+                        title={t('projectDetail.unsetBaselineTitle')}
                         onClick={onUnsetBaseline}
                       >
                         <FlagOff className="size-3.5" />
-                        取消基线
+                        {t('projectDetail.unsetBaseline')}
                       </Button>
                     ) : (
                       <Button
@@ -119,7 +121,7 @@ export default function ScanHistoryTable({
                         onClick={() => onSetBaseline(scan.id)}
                       >
                         <Flag className="size-3.5" />
-                        设为基线
+                        {t('projectDetail.setBaseline')}
                       </Button>
                     )}
                   </div>
