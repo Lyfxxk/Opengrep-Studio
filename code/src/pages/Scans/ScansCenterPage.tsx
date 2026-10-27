@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Eye, FileText, GitCompareArrows, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -24,6 +25,7 @@ import { api } from '@/lib/api';
 
 /** 扫描中心：全部项目的扫描总览，双快照对比的固定入口 */
 export default function ScansCenterPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [scans, setScans] = useState<ScanWithProject[] | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -78,18 +80,16 @@ export default function ScansCenterPage() {
     setBatchDeleting(false);
     selection.clear();
     await load();
-    if (failed === 0) toast.success(`已删除 ${ids.length} 条扫描`);
-    else toast.warning(`已删除 ${ids.length - failed} 条扫描，${failed} 条失败（可能刚进入扫描中）`);
+    if (failed === 0) toast.success(t('scans.batchDeleted', { count: ids.length }));
+    else toast.warning(t('scans.batchPartial', { count: ids.length - failed, failed }));
   };
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold">扫描中心</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            全部项目的扫描总览：直达结果与报告，任选两次已完成扫描做双快照对比（可跨项目）
-          </p>
+          <h1 className="text-xl font-semibold">{t('nav.scans')}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{t('scans.subtitle')}</p>
         </div>
         <Button
           variant="outline"
@@ -102,7 +102,7 @@ export default function ScansCenterPage() {
           }}
         >
           <RefreshCw className={refreshing ? 'size-3.5 animate-spin' : 'size-3.5'} />
-          刷新
+          {t('scans.refresh')}
         </Button>
       </div>
 
@@ -116,15 +116,15 @@ export default function ScansCenterPage() {
 
       {scans === null ? (
         <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
-          加载中…
+          {t('common.loading')}
         </div>
       ) : scans.length === 0 ? (
         <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
-          暂无扫描记录，到
+          {t('scans.emptyPrefix')}
           <Link to="/projects" className="mx-1 text-primary hover:underline">
-            项目管理
+            {t('nav.projects')}
           </Link>
-          新建项目并上传源码后发起首次扫描
+          {t('scans.emptySuffix')}
         </div>
       ) : (
         <div className="w-full overflow-x-auto">
@@ -135,16 +135,16 @@ export default function ScansCenterPage() {
                   <Checkbox
                     checked={selection.allSelected ? true : selection.someSelected ? 'indeterminate' : false}
                     onCheckedChange={() => selection.toggleAll()}
-                    aria-label="全选扫描"
+                    aria-label={t('scans.selectAllAria')}
                   />
                 </TableHead>
-                <TableHead className="whitespace-nowrap">项目</TableHead>
-                <TableHead className="whitespace-nowrap">扫描编号</TableHead>
-                <TableHead className="whitespace-nowrap">状态</TableHead>
-                <TableHead className="whitespace-nowrap">问题数</TableHead>
-                <TableHead className="whitespace-nowrap">规则包</TableHead>
-                <TableHead className="whitespace-nowrap">扫描时间</TableHead>
-                <TableHead className="whitespace-nowrap text-right">操作</TableHead>
+                <TableHead className="whitespace-nowrap">{t('scans.colProject')}</TableHead>
+                <TableHead className="whitespace-nowrap">{t('scans.colScanId')}</TableHead>
+                <TableHead className="whitespace-nowrap">{t('scans.colStatus')}</TableHead>
+                <TableHead className="whitespace-nowrap">{t('scans.colIssues')}</TableHead>
+                <TableHead className="whitespace-nowrap">{t('scans.colRulePacks')}</TableHead>
+                <TableHead className="whitespace-nowrap">{t('scans.colTime')}</TableHead>
+                <TableHead className="whitespace-nowrap text-right">{t('common.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -163,7 +163,7 @@ export default function ScansCenterPage() {
                         checked={selection.selected.has(scan.id)}
                         onCheckedChange={() => selection.toggle(scan.id)}
                         disabled={scan.status === 'scanning'}
-                        aria-label={`选择扫描 ${scan.id}`}
+                        aria-label={t('scans.rowSelectAria', { id: scan.id })}
                       />
                     </TableCell>
                     <TableCell className="max-w-[180px]">
@@ -192,31 +192,31 @@ export default function ScansCenterPage() {
                           onClick={() => viewScan(scan)}
                         >
                           <Eye className="size-3.5" />
-                          结果
+                          {t('scans.actionResult')}
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
                           className="gap-1"
                           disabled={!done}
-                          title="在线测试报告"
+                          title={t('scans.actionReportTitle')}
                           onClick={() =>
                             navigate(`/projects/${scan.projectId}/scans/${scan.id}/report`)
                           }
                         >
                           <FileText className="size-3.5" />
-                          报告
+                          {t('scans.actionReport')}
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           className="gap-1"
                           disabled={!done}
-                          title="与其他已完成扫描做双快照对比"
+                          title={t('scans.actionCompareTitle')}
                           onClick={() => setCompareScanId(scan.id)}
                         >
                           <GitCompareArrows className="size-3.5" />
-                          对比
+                          {t('scans.actionCompare')}
                         </Button>
                       </div>
                     </TableCell>
@@ -236,7 +236,7 @@ export default function ScansCenterPage() {
         open={batchConfirmOpen}
         entity="scan"
         count={selection.count}
-        extra="扫描的问题明细与源码快照将一并移除；其他扫描指向它的基线对比会自动解除。"
+        extra={t('scans.batchExtra')}
         onOpenChange={setBatchConfirmOpen}
         onConfirm={handleBatchDelete}
       />
