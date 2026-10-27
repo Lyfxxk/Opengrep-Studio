@@ -1,4 +1,5 @@
 import { useRef, useState, type DragEvent, type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { CheckCircle2, FileArchive, GitBranch, RotateCcw, Upload } from 'lucide-react';
 import LanguageStatsBar from '@/components/LanguageStatsBar';
@@ -103,6 +104,7 @@ export default function UploadZone({
   onClone,
   onReset,
 }: UploadZoneProps) {
+  const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = useState(false);
   const [repoUrl, setRepoUrl] = useState('');
@@ -118,7 +120,7 @@ export default function UploadZone({
       const parsed = new URL(url);
       if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') throw new Error('bad protocol');
     } catch {
-      toast.error('请输入 http(s):// 开头的 Git 仓库地址');
+      toast.error(t('upload.invalidUrl'));
       return;
     }
     onClone(url, branch.trim());
@@ -127,11 +129,11 @@ export default function UploadZone({
   const pickArchive = (file: File | undefined) => {
     if (!file) return;
     if (!ARCHIVE_RE.test(file.name)) {
-      toast.error('仅支持 ZIP / 7Z / RAR / TAR·GZ 压缩包，文件夹请直接拖入');
+      toast.error(t('upload.invalidArchive'));
       return;
     }
     if (file.size > MAX_FILE_SIZE) {
-      toast.error(`文件超过 ${MAX_FILE_SIZE / 1024 / 1024}MB 上传上限，请拆分后重试`);
+      toast.error(t('upload.tooLarge', { limit: MAX_FILE_SIZE / 1024 / 1024 }));
       return;
     }
     onSelectItems([{ file }], { respectGitignore: respectIgnore });
@@ -144,25 +146,25 @@ export default function UploadZone({
     try {
       collected = await collectFromDataTransfer(event.dataTransfer);
     } catch {
-      toast.error('读取拖拽内容失败，请重试');
+      toast.error(t('upload.readFailed'));
       return;
     }
     const { items, rootCount, rootArchiveCount } = collected;
     if (items.length === 0) return;
     if (items.length > MAX_FILE_COUNT) {
-      toast.error(`文件数超过 ${MAX_FILE_COUNT} 上限`);
+      toast.error(t('upload.tooManyFiles', { limit: MAX_FILE_COUNT }));
       return;
     }
     // 只拦根级别混选（拖了压缩包+文件夹）；文件夹内部嵌套的压缩包是正常源码附件，放行
     if (rootCount > 1 && rootArchiveCount > 0) {
-      toast.error('压缩包请单独上传，不要与文件夹混选拖入');
+      toast.error(t('upload.archiveMixed'));
       return;
     }
     const isSingleArchive =
       rootCount === 1 && rootArchiveCount === 1 && items.length === 1;
     if (isSingleArchive) {
       if (items[0].file.size > MAX_FILE_SIZE) {
-        toast.error(`文件超过 ${MAX_FILE_SIZE / 1024 / 1024}MB 上传上限，请拆分后重试`);
+        toast.error(t('upload.tooLarge', { limit: MAX_FILE_SIZE / 1024 / 1024 }));
         return;
       }
       onSelectItems([{ file: items[0].file }], { respectGitignore: respectIgnore });
@@ -171,7 +173,7 @@ export default function UploadZone({
     // 散装文件 / 文件夹：逐个校验大小
     for (const item of items) {
       if (item.file.size > MAX_FILE_SIZE) {
-        toast.error(`${item.file.name} 超过 ${MAX_FILE_SIZE / 1024 / 1024}MB 上传上限，请拆分后重试`);
+        toast.error(t('upload.fileTooLarge', { name: item.file.name, limit: MAX_FILE_SIZE / 1024 / 1024 }));
         return;
       }
     }
@@ -188,10 +190,10 @@ export default function UploadZone({
             <div className="text-xs text-muted-foreground">
               {state.fileSize ? formatFileSize(state.fileSize) : ''}
               {state.sourceType === 'clone'
-                ? ' · 克隆完成，可以开始扫描'
+                ? ` · ${t('upload.cloneDone')}`
                 : state.ignoredCount
-                  ? ` · 上传完成，已按 .gitignore 忽略 ${state.ignoredCount} 个文件`
-                  : ' · 上传完成，可以开始扫描'}
+                  ? ` · ${t('upload.uploadedIgnored', { count: state.ignoredCount })}`
+                  : ` · ${t('upload.uploadedReady')}`}
             </div>
           </div>
           <Button
@@ -202,7 +204,7 @@ export default function UploadZone({
             onClick={onReset}
           >
             <RotateCcw className="size-3.5" />
-            重新选择
+            {t('upload.reselect')}
           </Button>
         </div>
         {languageStats && (
@@ -223,7 +225,7 @@ export default function UploadZone({
             <div className="min-w-0 flex-1">
               <div className="truncate text-sm font-medium">{state.fileName}</div>
               <div className="text-xs text-muted-foreground">
-                正在克隆仓库（浅克隆最新一次提交），视仓库大小可能需要一到数分钟…
+                {t('upload.cloning')}
               </div>
             </div>
           </div>
@@ -237,7 +239,7 @@ export default function UploadZone({
           <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-medium">{state.fileName}</div>
             <div className="text-xs text-muted-foreground">
-              {state.fileSize ? formatFileSize(state.fileSize) : ''} · 正在上传…
+              {state.fileSize ? formatFileSize(state.fileSize) : ''} · {t('upload.uploading')}
             </div>
           </div>
           <span className="shrink-0 text-sm tabular-nums text-muted-foreground">
@@ -282,10 +284,9 @@ export default function UploadZone({
           <Upload className="size-5 text-primary" />
         </div>
         <div>
-          <p className="text-sm font-medium">拖拽源码文件夹或压缩包到此处，或点击选择压缩包</p>
+          <p className="text-sm font-medium">{t('upload.dropTitle')}</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            支持 ZIP / 7Z / RAR / TAR·GZ 压缩包，或直接拖入整个文件夹 ·
-            单个文件不超过 {MAX_FILE_SIZE / 1024 / 1024}MB · 已启用路径安全防护
+            {t('upload.dropHint', { limit: MAX_FILE_SIZE / 1024 / 1024 })}
           </p>
         </div>
       </div>
@@ -310,11 +311,9 @@ export default function UploadZone({
           className="mt-0.5"
         />
         <span className="min-w-0 flex-1">
-          <span className="block text-sm font-medium">按 .gitignore 忽略文件（推荐）</span>
+          <span className="block text-sm font-medium">{t('upload.respectIgnoreTitle')}</span>
           <span className="mt-0.5 block text-xs text-muted-foreground">
-            {respectIgnore
-              ? '上传内容按 .gitignore / .opengrepignore 过滤，与 Git 仓库直扫口径一致；.env 等被忽略的文件不会进入扫描'
-              : '扫描全部上传内容，包括 .env 等被忽略的文件——适用于深度排查硬编码密钥'}
+            {respectIgnore ? t('upload.ignoreOn') : t('upload.ignoreOff')}
           </span>
         </span>
       </label>
@@ -334,17 +333,15 @@ export default function UploadZone({
         <Input
           value={branch}
           onChange={(event) => setBranch(event.target.value)}
-          placeholder="分支/Tag（可选）"
+          placeholder={t('upload.branchPlaceholder')}
           className="sm:w-44"
         />
         <Button type="submit" variant="outline" className="shrink-0 gap-1" disabled={!repoUrl.trim()}>
           <GitBranch className="size-4" />
-          克隆并导入
+          {t('upload.cloneButton')}
         </Button>
       </form>
-      <p className="mt-2 text-xs text-muted-foreground">
-        也可以直接粘贴 Git 仓库地址（GitHub / GitLab / Gitee 等公开仓库），服务端浅克隆最新提交后导入，与上传源码等效
-      </p>
+      <p className="mt-2 text-xs text-muted-foreground">{t('upload.cloneHint')}</p>
     </div>
   );
 }
