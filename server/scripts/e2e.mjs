@@ -331,8 +331,14 @@ form.append('file', new Blob([makeZip()], { type: 'application/zip' }), 'sample-
 const up = await api('POST', `/api/projects/${pid}/source`, form);
 assert(up.status === 200 && up.json.fileCount === 4, `上传解压 4 个文件 (got ${up.json?.fileCount})`);
 
+// 未绑定配置时服务端自动创建/复用「默认扫描配置」（全部启用的内置规则包）并绑定项目后扫描
 const noConfigScan = await api('POST', `/api/projects/${pid}/scans`, {});
-assert(noConfigScan.status === 400, '未绑定配置时拒绝扫描', JSON.stringify(noConfigScan.json));
+assert(noConfigScan.status === 201, '未绑定配置时自动绑定默认配置并扫描', JSON.stringify(noConfigScan.json));
+assert((noConfigScan.json.rulepacks ?? []).length >= 1, '默认配置解析到可用规则包', JSON.stringify(noConfigScan.json.rulepacks));
+const rebound = ((await api('GET', '/api/projects')).json ?? []).find((p) => p.id === pid);
+assert(rebound?.configId === noConfigScan.json.rules, '项目已自动绑定默认配置', JSON.stringify(rebound));
+const s0 = await pollScan(noConfigScan.json.id);
+assert(s0.status === 'completed', '一键扫描完成', JSON.stringify(s0));
 await api('PATCH', `/api/projects/${pid}`, { configId: fullConfig.id });
 
 const scan1 = await api('POST', `/api/projects/${pid}/scans`, {});
