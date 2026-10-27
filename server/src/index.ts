@@ -1647,8 +1647,8 @@ server.on('listening', () => {
 server.on('error', (err: NodeJS.ErrnoException) => {
   if (err.code === 'EADDRINUSE') {
     console.error(
-      `[server] 端口 ${config.port} 已被占用（通常是上次未完全退出的残留进程），` +
-        `请在仓库根目录执行: node server/scripts/kill-port.mjs ${config.port}`,
+      `[server] 端口 ${config.port} 已被占用——很可能是另一个正在使用的实例，不要杀它（可能有人在用）。` +
+        `换个端口：PORT=${config.port + 1} npm start；确认是残留进程时才执行: node server/scripts/kill-port.mjs ${config.port}`,
     );
     process.exit(1);
   }

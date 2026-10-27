@@ -71,11 +71,14 @@ if not exist "opengrep-tool\opengrep.exe" (
 )
 
 echo [4/5] 启动前后端服务...
-echo     前端: http://localhost:1022    后端: http://localhost:8787
-echo     提示：关闭本窗口即停止全部服务
+echo     端口被占用时自动顺延：绝不终止已在运行的实例（可能有人正在使用）
+echo     默认前端: http://localhost:1022    默认后端: http://localhost:8787
+echo     提示：关闭本窗口即停止本次启动的全部服务
 echo [5/5] 前端就绪后将自动打开浏览器（后台探测进行中）
 echo.
-rem 派出后台探测进程：前端端口就绪后自动打开浏览器（最多等 40 秒）
+rem 派出后台探测进程：前端端口就绪后自动打开浏览器（最多等 40 秒）。
+rem 打开的是"新出现"的监听端口：若 1022 已被别的实例占用、本次顺延到 1023+，
+rem 不能错开成打开旧实例的 1022。
 start "" /b cmd /c ""%~f0" waitopen"
 call npm run dev
 
@@ -85,16 +88,29 @@ pause
 exit /b 0
 
 :waitopen
+setlocal enabledelayedexpansion
+rem 快照启动前 1022-1031 中已监听的端口：之后"新出现"的监听端口才属于本次实例
+set "BEFORE= "
+for /l %%P in (1022,1,1031) do (
+    %SystemRoot%\System32\netstat.exe -ano | %SystemRoot%\System32\findstr.exe /C:":%%P " | %SystemRoot%\System32\findstr.exe /C:"LISTENING" >nul 2>&1
+    if not errorlevel 1 set "BEFORE=!BEFORE!%%P "
+)
 set /a TRIES=0
 :waitloop
 %SystemRoot%\System32\ping.exe -n 3 127.0.0.1 >nul
-%SystemRoot%\System32\netstat.exe -ano | %SystemRoot%\System32\findstr.exe /C:":1022 " | %SystemRoot%\System32\findstr.exe /C:"LISTENING" >nul 2>&1
-if not errorlevel 1 (
-    start "" http://127.0.0.1:1022/
-    exit /b 0
+for /l %%P in (1022,1,1031) do (
+    echo(!BEFORE! | %SystemRoot%\System32\findstr.exe /C:" %%P " >nul 2>&1
+    if errorlevel 1 (
+        %SystemRoot%\System32\netstat.exe -ano | %SystemRoot%\System32\findstr.exe /C:":%%P " | %SystemRoot%\System32\findstr.exe /C:"LISTENING" >nul 2>&1
+        if not errorlevel 1 (
+            endlocal
+            start "" http://127.0.0.1:%%P/
+            exit /b 0
+        )
+    )
 )
 set /a TRIES+=1
-if %TRIES% LSS 60 goto waitloop
+if !TRIES! LSS 60 goto waitloop
 exit /b 0
 
 :node_too_old
