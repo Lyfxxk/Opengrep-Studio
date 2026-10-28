@@ -447,6 +447,7 @@ const en: typeof zh = {
     zhMessageMissing: 'No explanation for this rule yet — contributions welcome in the rule pack.',
     metadataTitle: 'Metadata',
     engineSeverity: 'Engine severity: {{severity}}',
+    securitySeverity: 'security-severity: {{severity}}',
     packSource: 'Source pack: {{name}}',
     packBuiltinSuffix: ' (built-in)',
     cweTitle: 'CWE weaknesses',

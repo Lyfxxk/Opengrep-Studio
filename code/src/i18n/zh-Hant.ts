@@ -433,6 +433,7 @@ const zhHant: typeof zh = {
     zhMessageMissing: '該規則暫無中文說明，歡迎在規則包中補充。',
     metadataTitle: '後設資料',
     engineSeverity: '引擎嚴重度：{{severity}}',
+    securitySeverity: 'security-severity：{{severity}}',
     packSource: '來源包：{{name}}',
     packBuiltinSuffix: '（內建）',
     cweTitle: 'CWE 弱點分類',

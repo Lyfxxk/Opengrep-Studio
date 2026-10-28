@@ -432,6 +432,7 @@ const zh = {
     zhMessageMissing: '该规则暂无中文说明，欢迎在规则包中补充。',
     metadataTitle: '元数据',
     engineSeverity: '引擎严重度：{{severity}}',
+    securitySeverity: 'security-severity：{{severity}}',
     packSource: '来源包：{{name}}',
     packBuiltinSuffix: '（内置）',
     cweTitle: 'CWE 弱点分类',
