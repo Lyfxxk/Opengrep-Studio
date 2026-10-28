@@ -23,6 +23,7 @@ import type { ConfigFormValues } from '@/lib/api';
 import type { IConfig } from '@/data/configs';
 import type { IRulePack } from '@/data/rulepacks';
 import { cn } from '@/lib/utils';
+import { usePackDisplayName } from '@/lib/packName';
 import TagPathInput from './TagPathInput';
 
 export interface ConfigDialogTarget {
@@ -54,6 +55,7 @@ export default function ConfigFormDialog({
   onSubmit,
 }: ConfigFormDialogProps) {
   const { t } = useTranslation();
+  const packDisplayName = usePackDisplayName();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [selectedPacks, setSelectedPacks] = useState<string[]>([]);
@@ -115,7 +117,7 @@ export default function ConfigFormDialog({
         htmlFor={`pack-${pack.id}`}
         className="min-w-0 flex-1 cursor-pointer text-sm font-normal leading-5"
       >
-        {pack.name}
+        {packDisplayName(pack.name, pack.id)}
         <Badge
           variant="secondary"
           className="ml-1.5 inline-flex h-4 items-center rounded-sm px-1.5 align-middle text-[10px] font-normal text-muted-foreground"

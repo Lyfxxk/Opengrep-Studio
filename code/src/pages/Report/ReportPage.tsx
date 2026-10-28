@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { usePackDisplayName } from '@/lib/packName';
 import { ArrowLeft, Download, Loader2, Printer } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -220,6 +221,7 @@ const PRINT_TABLE_FIX =
 
 export default function ReportPage() {
   const { t, i18n } = useTranslation();
+  const packDisplayName = usePackDisplayName();
   const { id, scanId } = useParams();
   const [report, setReport] = useState<IReportData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -674,7 +676,7 @@ export default function ReportPage() {
                 {meta.rulepacks?.length ? (
                   meta.rulepacks.map((pack) => (
                     <TableRow key={pack.id}>
-                      <TableCell className="text-xs">{pack.name}</TableCell>
+                      <TableCell className="text-xs">{packDisplayName(pack.name, pack.id)}</TableCell>
                       <TableCell className="font-mono text-xs text-muted-foreground">
                         {pack.id}
                       </TableCell>

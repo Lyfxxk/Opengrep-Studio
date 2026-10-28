@@ -57,6 +57,8 @@ import {
 } from '@/components/ui/table';
 import type { IRulePack, IRulePackCheckResult } from '@/data/rulepacks';
 import { cn } from '@/lib/utils';
+import { usePackDisplayName } from '@/lib/packName';
+import Pagination from '@/components/Pagination';
 import { PACK_LANGUAGES } from '@/data/constants';
 import { api } from '@/lib/api';
 import RulePackContentDialog from './RulePackContentDialog';
@@ -86,6 +88,7 @@ function verdictLabel(
 
 export default function RulePackTab() {
   const { t } = useTranslation();
+  const packDisplayName = usePackDisplayName();
   const [rulePacks, setRulePacks] = useState<IRulePack[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState<IRulePack | null>(null);
@@ -126,7 +129,9 @@ export default function RulePackTab() {
     try {
       await api.toggleRulePack(pack.id, enabled);
       toast.success(
-        t(enabled ? 'rulePacks.toggleEnabledToast' : 'rulePacks.toggleDisabledToast', { name: pack.name }),
+        t(enabled ? 'rulePacks.toggleEnabledToast' : 'rulePacks.toggleDisabledToast', {
+          name: packDisplayName(pack.name, pack.id),
+        }),
       );
       await loadAll();
     } catch (error) {
@@ -252,6 +257,28 @@ export default function RulePackTab() {
   const builtinPacks = rulePacks.filter((pack) => pack.builtin);
   const builtinRuleTotal = builtinPacks.reduce((sum, pack) => sum + pack.ruleCount, 0);
 
+  // 分页：自定义包表格与内置包卡片流各自翻页，删行 / 导入后夹页码防空页
+  const [customPage, setCustomPage] = useState(1);
+  const [builtinPage, setBuiltinPage] = useState(1);
+  const customPageSize = 20;
+  const builtinPageSize = 8;
+  const customPageCount = Math.max(1, Math.ceil(customPacks.length / customPageSize));
+  const builtinPageCount = Math.max(1, Math.ceil(builtinPacks.length / builtinPageSize));
+  const safeCustomPage = Math.min(customPage, customPageCount);
+  const safeBuiltinPage = Math.min(builtinPage, builtinPageCount);
+  useEffect(() => {
+    setCustomPage(safeCustomPage);
+    setBuiltinPage(safeBuiltinPage);
+  }, [safeCustomPage, safeBuiltinPage]);
+  const pagedCustomPacks = customPacks.slice(
+    (safeCustomPage - 1) * customPageSize,
+    safeCustomPage * customPageSize,
+  );
+  const pagedBuiltinPacks = builtinPacks.slice(
+    (safeBuiltinPage - 1) * builtinPageSize,
+    safeBuiltinPage * builtinPageSize,
+  );
+
   // 批量删除只覆盖自定义包表格（内置包在下方以卡片流呈现，不参与勾选）
   const selection = useRowSelection(customPacks.map((pack) => pack.id));
   const [batchConfirmOpen, setBatchConfirmOpen] = useState(false);
@@ -308,7 +335,7 @@ export default function RulePackTab() {
       </TableCell>
       <TableCell className="font-medium">
         <div className="flex flex-wrap items-center gap-1.5">
-          <span>{pack.name}</span>
+          <span>{packDisplayName(pack.name, pack.id)}</span>
           {pack.version && (
             <Badge variant="outline" className="px-1.5 py-0 text-[11px] font-normal">
               v{pack.version}
@@ -464,13 +491,22 @@ export default function RulePackTab() {
                 <div className="w-full overflow-x-auto">
                   <Table>
                     {renderTableHeader}
-                    <TableBody>{customPacks.map(renderPackRow)}</TableBody>
+                    <TableBody>{pagedCustomPacks.map(renderPackRow)}</TableBody>
                   </Table>
                 </div>
               ) : (
                 <div className="m-4 rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
                   {t('rulePacks.emptyCustom')}
                 </div>
+              )}
+
+              {customPacks.length > customPageSize && (
+                <Pagination
+                  page={safeCustomPage}
+                  pageCount={customPageCount}
+                  onPage={setCustomPage}
+                  className="border-t px-4 py-2"
+                />
               )}
 
               {/* 内置规则包：文件夹式分区头 + 缩进浅底卡片流，与上方自定义数据行形成父子层级 */}
@@ -506,13 +542,15 @@ export default function RulePackTab() {
                 {builtinOpen && (
                   <div className="ml-5 border-l-2 border-border/70 pl-4 sm:ml-6 sm:pl-6">
                     <div className="mt-3 grid grid-cols-1 gap-2 rounded-lg bg-muted/25 p-3 lg:grid-cols-2">
-                      {builtinPacks.map((pack) => (
+                      {pagedBuiltinPacks.map((pack) => (
                         <div
                           key={pack.id}
                           className="flex items-center gap-3 rounded-lg border bg-card px-3 py-2.5"
                         >
                           <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium">{pack.name}</p>
+                            <p className="truncate text-sm font-medium">
+                              {packDisplayName(pack.name, pack.id)}
+                            </p>
                             <div className="mt-1.5 flex items-center gap-2">
                               <Badge
                                 variant="secondary"
@@ -542,6 +580,14 @@ export default function RulePackTab() {
                         </div>
                       ))}
                     </div>
+                    {builtinPacks.length > builtinPageSize && (
+                      <Pagination
+                        page={safeBuiltinPage}
+                        pageCount={builtinPageCount}
+                        onPage={setBuiltinPage}
+                        className="pb-3"
+                      />
+                    )}
                   </div>
                 )}
               </div>
