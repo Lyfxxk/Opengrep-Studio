@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { login, validateCredentials } from '@/lib/auth';
+import LanguageMenu from '@/components/LanguageMenu';
 import logoUrl from '@/assets/images/logo.png';
 import './login.css';
 
@@ -178,6 +179,8 @@ export default function LoginPage() {
 
       {/* 右侧：登录表单 */}
       <section className="form-panel" aria-label={t('login.formPanel')}>
+        {/* 未登录用户唯一可见的语言切换入口（应用内切换在 Header） */}
+        <LanguageMenu className="lang-switch" />
         <div className="form-col">
           <div className="form-brand">
             <img className="brand-logo" src={logoUrl} alt="" aria-hidden="true" />
