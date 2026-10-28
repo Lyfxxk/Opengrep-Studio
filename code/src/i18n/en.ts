@@ -345,7 +345,7 @@ const en: typeof zh = {
     all: 'All',
     allSeverities: 'All levels',
     severityPlaceholder: 'Severity',
-    searchPlaceholder: 'Search by file path or description',
+    searchPlaceholder: 'Search by rule ID, file path, or description',
     count: '{{count}} issues',
     emptyScan: 'This scan found no issues',
     emptyFiltered: 'No issues match the current filters',

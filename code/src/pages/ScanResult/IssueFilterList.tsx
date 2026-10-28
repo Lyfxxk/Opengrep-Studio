@@ -49,6 +49,7 @@ export default function IssueFilterList({
         if (keywordTrimmed === '') return true;
         const translated = lookupRuleMessage(messageMap, issue.ruleId, '');
         return (
+          issue.ruleId.toLowerCase().includes(keywordTrimmed) ||
           issue.filePath.toLowerCase().includes(keywordTrimmed) ||
           issue.message.toLowerCase().includes(keywordTrimmed) ||
           translated.toLowerCase().includes(keywordTrimmed)

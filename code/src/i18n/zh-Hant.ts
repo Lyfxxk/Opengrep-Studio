@@ -334,7 +334,7 @@ const zhHant: typeof zh = {
     all: '全部',
     allSeverities: '全部等級',
     severityPlaceholder: '嚴重等級',
-    searchPlaceholder: '按檔案路徑或描述搜尋',
+    searchPlaceholder: '按規則 ID、檔案路徑或描述搜尋',
     count: '共 {{count}} 個問題',
     emptyScan: '本次掃描未發現問題',
     emptyFiltered: '目前篩選條件下沒有匹配的問題',
