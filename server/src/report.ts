@@ -812,7 +812,6 @@ export function renderReportHtml(
       'PingFang SC', 'Microsoft Yahei', 'Hiragino Sans GB', sans-serif;
     font-size: 14px; line-height: 1.6;
   }
-  /* 繁体报告优先 TC 字形：按 lang 作用域覆盖，简体与英文不受影响 */
   html:lang(zh-Hant) body {
     font-family: -apple-system, 'BlinkMacSystemFont', 'Helvetica Neue', Tahoma,
       'PingFang TC', 'PingFang SC', 'Microsoft JhengHei', 'Microsoft Yahei', 'Hiragino Sans GB', sans-serif;
