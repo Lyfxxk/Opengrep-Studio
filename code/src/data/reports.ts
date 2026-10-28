@@ -127,7 +127,7 @@ export function buildMockReport(scan: IScanResult, projectName: string): IReport
     topFiles: [...fileAgg.values()]
       .map(({ ruleCounts, ...rest }) => {
         const [topRule] = [...ruleCounts.entries()].sort((a, b) => b[1] - a[1]);
-        return topRule ? { ...rest, topRule } : rest;
+        return topRule ? { ...rest, topRule: topRule[0] } : rest;
       })
       .sort((a, b) => b.count - a.count || SEVERITY_RANK[a.maxSeverity] - SEVERITY_RANK[b.maxSeverity])
       .slice(0, 10),
