@@ -402,6 +402,8 @@ const zhHant: typeof zh = {
     snippetLoading: '正在讀取程式碼片段…',
     snippetFailed: '程式碼片段載入失敗：{{error}}',
     noSnippet: '該問題暫無程式碼片段資料',
+    wrapOn: '開啟自動換行',
+    wrapOff: '關閉自動換行',
   },
   knowledge: {
     title: '規則知識 · {{ruleId}}',

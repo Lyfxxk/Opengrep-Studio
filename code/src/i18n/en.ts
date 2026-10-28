@@ -416,6 +416,8 @@ const en: typeof zh = {
     snippetLoading: 'Loading code snippet…',
     snippetFailed: 'Failed to load code snippet: {{error}}',
     noSnippet: 'No code snippet data for this issue',
+    wrapOn: 'Enable word wrap',
+    wrapOff: 'Disable word wrap',
   },
   knowledge: {
     title: 'Rule knowledge · {{ruleId}}',

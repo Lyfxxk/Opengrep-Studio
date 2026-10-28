@@ -401,6 +401,8 @@ const zh = {
     snippetLoading: '正在读取代码片段…',
     snippetFailed: '代码片段加载失败：{{error}}',
     noSnippet: '该问题暂无代码片段数据',
+    wrapOn: '开启自动换行',
+    wrapOff: '关闭自动换行',
   },
   knowledge: {
     title: '规则知识 · {{ruleId}}',
