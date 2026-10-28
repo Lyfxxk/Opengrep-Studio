@@ -269,7 +269,7 @@ export default function ConfigFormDialog({
                 customPacks.map(renderPackRow)
               ) : (
                 <p className="px-2 py-1.5 text-xs text-muted-foreground">
-                  t('configs.noCustomPacks')
+                  {t('configs.noCustomPacks')}
                 </p>
               )}
 
