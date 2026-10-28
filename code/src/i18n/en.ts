@@ -191,6 +191,7 @@ const en: typeof zh = {
     noProjects: 'No projects',
     totalCount: '{{count}} total',
     unscanned: 'Not scanned',
+    viewScanResult: 'View scan result · {{id}}',
   },
   engine: {
     title: 'Engine Status',

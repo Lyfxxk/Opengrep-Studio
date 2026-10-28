@@ -188,6 +188,7 @@ const zhHant: typeof zh = {
     noProjects: '暫無專案',
     totalCount: '共 {{count}}',
     unscanned: '未掃描',
+    viewScanResult: '查看掃描結果 · {{id}}',
   },
   engine: {
     title: '引擎狀態',

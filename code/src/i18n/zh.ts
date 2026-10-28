@@ -187,6 +187,7 @@ const zh = {
     noProjects: '暂无项目',
     totalCount: '共 {{count}}',
     unscanned: '未扫描',
+    viewScanResult: '查看扫描结果 · {{id}}',
   },
   engine: {
     title: '引擎状态',
