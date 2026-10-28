@@ -7,6 +7,7 @@ import {
   engineAvailable,
   engineDisplayPath,
   engineInstallHint,
+  engineNotRunnableHint,
   engineSourceLabel,
   getEngineVersion,
 } from '../engine.js';
@@ -30,19 +31,34 @@ export const miscRoutes = Router();
 
 miscRoutes.get('/api/health', asyncHandler(async (_req, res) => {
   const engineReady = engineAvailable();
+  // 引擎文件存在也可能跑不起来（损坏/被杀软拦截，Windows 同步抛 spawn EFTYPE）：
+  // 探测异常必须降级为 undefined 而不是抛出去——health 一旦 500，前端卡片拿不到任何状态，永远停在「加载中」
+  let engineVersion: string | undefined;
+  if (engineReady) {
+    try {
+      engineVersion = await getEngineVersion();
+    } catch {
+      engineVersion = undefined;
+    }
+  }
+  const engineHint = !engineReady
+    ? engineInstallHint()
+    : engineVersion
+      ? undefined
+      : engineNotRunnableHint();
   res.json({
     ok: true,
     platform: process.platform,
     arch: process.arch,
-    // 实际探测的版本（引擎缺失时为 undefined）；清单钉住的版本单独给出，避免"版本漂移看不出来"
-    engineVersion: engineReady ? await getEngineVersion() : undefined,
+    // 实际探测的版本（引擎缺失或探测失败时为 undefined）；清单钉住的版本单独给出，避免"版本漂移看不出来"
+    engineVersion,
     enginePinnedVersion: engineTargetVersion(),
     // 只有安装位引擎能被一键升级：env / PATH 来源交给用户自己管
     engineManaged: engineReady && engineSource === 'bundled-dir',
     engine: engineReady ? engineDisplayPath() : 'MISSING',
     engineSource,
     engineSourceLabel: engineSourceLabel(),
-    ...(engineReady ? {} : { engineHint: engineInstallHint() }),
+    ...(engineHint ? { engineHint } : {}),
   });
 }));
 

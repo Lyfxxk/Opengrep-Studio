@@ -166,9 +166,15 @@ async function scanAndWait(projectId, label) {
 const log = (msg) => console.log(msg);
 
 async function main() {
-  // ① 健康检查
+  // ① 健康检查：ok 恒为 true 只表示服务存活，不能作为预检依据；
+  // 引擎缺失（engine === 'MISSING'）或存在但探测不到版本（跑不起来）都算不可用，继续跑只会逐条扫描失败
   const health = await j('/api/health');
-  if (!health.ok) throw new Error('引擎不可用，先运行 npm run setup:engine');
+  if (health.engine === 'MISSING' || !health.engineVersion) {
+    throw new Error(
+      `引擎不可用（engine=${health.engine}，版本=${health.engineVersion ?? '探测不到'}）。` +
+        '请先在仓库根目录运行 npm run setup:engine 安装或修复引擎，重启后端后再执行本脚本。',
+    );
+  }
   log(`引擎就绪：v${health.engineVersion}（${health.engineSource}）`);
 
   // ② 自定义规则包

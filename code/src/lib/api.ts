@@ -183,7 +183,7 @@ export interface HealthInfo {
   ok: boolean;
   platform?: string;
   arch?: string;
-  /** 实际探测到的引擎版本（引擎缺失时为 undefined） */
+  /** 实际探测到的引擎版本（引擎缺失或存在但无法执行时为 undefined，此时 engineHint 附修复指引） */
   engineVersion?: string;
   /** 清单钉住的版本（engines.json，或已升级后的 installed.json） */
   enginePinnedVersion?: string;

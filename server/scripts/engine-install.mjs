@@ -138,10 +138,18 @@ export function probeVersion(binPath, timeoutMs = 8000) {
       settled = true;
       resolve(value);
     };
-    const child = spawn(binPath, ['--version'], {
-      windowsHide: true,
-      env: { ...process.env, OPENGREP_ENABLE_VERSION_CHECK: '0' },
-    });
+    let child;
+    try {
+      child = spawn(binPath, ['--version'], {
+        windowsHide: true,
+        env: { ...process.env, OPENGREP_ENABLE_VERSION_CHECK: '0' },
+      });
+    } catch {
+      // Windows 对非可执行文件（下载损坏/被杀软拦截）在 spawn 内部同步抛 spawn EFTYPE，
+      // error 事件监听器根本挂不上：与 error 事件分支同语义返回 undefined
+      done(undefined);
+      return;
+    }
     let out = '';
     const timer = setTimeout(() => {
       child.kill();

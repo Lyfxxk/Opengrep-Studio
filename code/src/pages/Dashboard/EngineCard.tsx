@@ -22,7 +22,9 @@ interface EngineCardProps {
  */
 export default function EngineCard({ health, scanRunning, onUpgraded }: EngineCardProps) {
   const { t } = useTranslation();
-  const ready = Boolean(health?.engine && health.engine !== 'MISSING');
+  // 引擎文件在但探测不到版本（health.engineVersion 为空）同样按不可用处理：
+  // 显示「就绪」却没有版本徽章会误导用户以为引擎可正常扫描
+  const ready = Boolean(health?.engine && health.engine !== 'MISSING' && health.engineVersion);
   const managed = health?.engineManaged === true;
   const [update, setUpdate] = useState<IEngineUpdateInfo | null>(null);
   const [checking, setChecking] = useState(false);

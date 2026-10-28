@@ -5,7 +5,7 @@ import {
   config,
   scanSourceDir,
 } from './config.js';
-import { engineInstallHint, getEngineVersion, runEngine } from './engine.js';
+import { engineInstallHint, engineNotRunnableHint, getEngineVersion, runEngine } from './engine.js';
 import { HttpError } from './errors.js';
 
 /**
@@ -281,6 +281,11 @@ async function runScan(scanId: string, plan: ScanPlan): Promise<void> {
     if (!fs.existsSync(srcDir)) throw new ScanError('scan.snapshotMissing', '找不到扫描源码快照');
     if (plan.configFiles.length === 0) throw new ScanError('scan.noRuleFiles', '没有可用的规则文件');
     if (!fs.existsSync(config.opengrepBin)) throw new Error(engineInstallHint());
+    // 引擎文件在但探测不到版本（损坏/被杀软拦截，Windows 同步抛 spawn EFTYPE）= 跑不起来：
+    // 在发起引擎前挡下，落库可执行的修复指引而不是裸 spawn 报错；
+    // 版本本来就要探测（复现清单需要），这里复用同一份结果，不增加探测次数
+    const engineVersion = await getEngineVersion();
+    if (!engineVersion) throw new Error(engineNotRunnableHint());
     const fileCount = await countFiles(srcDir);
 
     const args = [
@@ -302,7 +307,7 @@ async function runScan(scanId: string, plan: ScanPlan): Promise<void> {
       srcDir,
     ];
     console.log(`[scan-runner] 扫描 ${scanId} 使用规则: ${plan.rulesLabel}（${plan.configFiles.length} 个规则文件）`);
-    await buildReproducibilityRecord(scanId, srcDir, plan, args, await getEngineVersion());
+    await buildReproducibilityRecord(scanId, srcDir, plan, args, engineVersion);
     const { code, stdout, stderr, timedOut, stdoutTruncated } = await runEngine(args, srcDir, {
       timeoutMs: config.scanTimeoutMs,
       logLabel: 'scan-runner',
