@@ -604,8 +604,9 @@ const zh = {
     tooLong: '单条路径不超过 {{limit}} 字符',
     tooMany: '最多添加 {{limit}} 条',
     duplicate: '该路径已存在',
+    globSeparator: '不能用顿号/逗号分隔多条路径：glob 中这些字符非法，请逐条回车添加',
     removeAria: '删除 {{item}}',
-    hint: '输入后回车添加，最多 {{limit}} 条',
+    hint: '支持 glob（* / **），回车逐条添加，相对于项目根，最多 {{limit}} 条',
   },
   rulesCenter: {
     subtitle: '管理规则包（内置 / 自建 / 导入导出 / 质量检查），或在规则实验室在线验证规则正反例',
@@ -830,6 +831,7 @@ const zh = {
       builtinNotDeletable: '内置规则包不可删除，如不需要可在配置中取消勾选或停用',
       builtinNotExportable: '内置规则包不可导出，请从官方 opengrep-rules 仓库获取',
       packDirMissing: '规则包目录已丢失',
+      noRulesDir: '包内缺少 rules/ 目录：请按 pack.yaml + rules/ + samples/ 结构打包',
       noRulesInZip: '包内 rules/ 目录没有任何 YAML 规则文件',
       tooManyRuleFiles: '规则文件数超过 50 上限，请拆分规则包',
       noYamlInZip: '压缩包中没有找到 YAML 规则文件',

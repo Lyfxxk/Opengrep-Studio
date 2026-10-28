@@ -605,8 +605,9 @@ const zhHant: typeof zh = {
     tooLong: '單條路徑不超過 {{limit}} 字元',
     tooMany: '最多新增 {{limit}} 條',
     duplicate: '該路徑已存在',
+    globSeparator: '不能用頓號/逗號分隔多條路徑：glob 不支援這些字元，請逐條按 Enter 新增',
     removeAria: '刪除 {{item}}',
-    hint: '輸入後按 Enter 新增，最多 {{limit}} 條',
+    hint: '支援 glob（* / **），按 Enter 逐條新增，相對於專案根，最多 {{limit}} 條',
   },
   rulesCenter: {
     subtitle: '管理規則包（內建 / 自建 / 匯入匯出 / 品質檢查），或在規則實驗室線上驗證規則正反例',
@@ -831,6 +832,7 @@ const zhHant: typeof zh = {
       builtinNotDeletable: '內建規則包不可刪除，如不需要可在設定中取消勾選或停用',
       builtinNotExportable: '內建規則包不可匯出，請從官方 opengrep-rules 儲存庫獲取',
       packDirMissing: '規則包目錄已丟失',
+      noRulesDir: '包內缺少 rules/ 目錄：請按 pack.yaml + rules/ + samples/ 結構打包',
       noRulesInZip: '包內 rules/ 目錄沒有任何 YAML 規則檔案',
       tooManyRuleFiles: '規則檔案數超過 50 上限，請拆分規則包',
       noYamlInZip: '壓縮檔中沒有找到 YAML 規則檔案',
