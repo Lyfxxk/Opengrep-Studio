@@ -363,6 +363,11 @@ function newScanId(projectName: string): string {
   return `scan-${slug}-${time}-${Math.random().toString(36).slice(2, 6)}`;
 }
 
+/** HTTP 头只放得下 ASCII：扫描编号可能含中文项目名，ASCII 回退文件名必须剥掉非 ASCII，完整名走 filename*（RFC 5987） */
+function asciiFilename(name: string): string {
+  return name.replace(/[^\x20-\x7E]+/g, '_');
+}
+
 function requireProject(id: string): Project {
   const project = getProject(id);
   if (!project) throw new HttpError(404, '项目不存在或已被删除', { code: 'srv.projectNotFound' });
@@ -1496,7 +1501,7 @@ app.get('/api/scans/:scanId/report', asyncHandler(async (req, res) => {
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="report-${scan.id}.html"; filename*=UTF-8''${encodeURIComponent(fileName)}`,
+      `attachment; filename="report-${asciiFilename(scan.id)}.html"; filename*=UTF-8''${encodeURIComponent(fileName)}`,
     );
     res.send(html);
     return;
@@ -1515,7 +1520,7 @@ app.get('/api/scans/:scanId/sarif', asyncHandler(async (req, res) => {
   const sarif = buildSarifReport(scan, issues, engineVersion);
   res.setHeader(
     'Content-Disposition',
-    `attachment; filename="sarif-${scan.id}.json"; filename*=UTF-8''${encodeURIComponent(`SARIF-${scan.id}.json`)}`,
+    `attachment; filename="sarif-${asciiFilename(scan.id)}.json"; filename*=UTF-8''${encodeURIComponent(`SARIF-${scan.id}.json`)}`,
   );
   res.json(sarif);
 }));
