@@ -317,7 +317,7 @@ const zhHant: typeof zh = {
     packsUnit: ' 個',
     rulesetDir: '規則集目錄：{{rules}}',
     failedTitle: '本次掃描執行失敗',
-    failedHint: '請返回專案詳情頁重新上傳原始碼並發起掃描',
+    failedHint: '原始碼快照仍在，返回專案詳情頁可直接重新發起掃描，無需重新上傳',
     scanningHint: '掃描進行中，完成後此處將展示問題列表',
     summaryTitle: '掃描概要',
     zeroIssues: '0 問題',
@@ -845,6 +845,8 @@ const zhHant: typeof zh = {
       gitUrlRequired: '請提供 Git 儲存庫位址',
       scanUpgradeBusy: '引擎升級進行中，請升級完成後再發起掃描',
       noSourceToScan: '請先上傳原始碼或克隆儲存庫再發起掃描',
+      engineMissing:
+        '未找到 opengrep 引擎，無法發起掃描：請在儲存庫根目錄執行 npm run setup:engine 安裝引擎，或設定環境變數 OPENGREP_BIN 指向引擎可執行檔',
       scanBusy: '掃描進行中，請等掃描完成或失敗後再刪除',
       snippetParamsInvalid: '需要 path、start、end 查詢參數（start ≥ 1 且 end ≥ start）',
       snippetPathInvalid: '非法的檔案路徑',

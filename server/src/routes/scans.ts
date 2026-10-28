@@ -29,7 +29,7 @@ import {
   type ScanRecord,
 } from '../db.js';
 import { listRuleMessages } from '../knowledge.js';
-import { getEngineVersion } from '../engine.js';
+import { engineAvailable, engineInstallHint, getEngineVersion } from '../engine.js';
 import { engineUpgradeRunning } from '../engine-update.js';
 import { diffSnapshots } from '../snapshot-diff.js';
 import { packRuleFiles } from '../rulepacks.js';
@@ -156,6 +156,12 @@ scanRoutes.post('/api/projects/:id/scans', asyncHandler(async (req, res) => {
   const pendingDir = pendingSourceDir(project.id);
   if (!fs.existsSync(pendingDir)) {
     throw new HttpError(400, '请先上传源码或克隆仓库再发起扫描', { code: 'srv.noSourceToScan' });
+  }
+  // 引擎缺失在发扫描前同步拦截：否则快照复制、落库都做完后异步 runScan 才失败，
+  // 列表里留下一条难以找回原因的失败记录；前置拦截直接给出修复指引（runScan 里的
+  // 同款检查保留作双保险，覆盖服务运行期间引擎被删除的窗口）
+  if (!engineAvailable()) {
+    throw new HttpError(400, engineInstallHint(), { code: 'srv.engineMissing' });
   }
 
   // 一键路径：未绑配置时自动创建/复用「默认扫描配置」并绑定，免去先建配置再回来绑定的往返

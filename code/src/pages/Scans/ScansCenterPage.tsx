@@ -203,12 +203,14 @@ export default function ScansCenterPage() {
             <TableBody>
               {pagedScans.map((scan) => {
                 const done = scan.status === 'completed';
+                // 失败扫描也开放查看：结果页的失败卡片是失败原因唯一展示点，不放行就零入口
+                const viewable = done || scan.status === 'failed';
                 return (
                   <TableRow
                     key={scan.id}
-                    className={done ? 'cursor-pointer' : ''}
+                    className={viewable ? 'cursor-pointer' : ''}
                     onClick={() => {
-                      if (done) viewScan(scan);
+                      if (viewable) viewScan(scan);
                     }}
                   >
                     <TableCell className="w-10" onClick={(e) => e.stopPropagation()}>
@@ -241,7 +243,7 @@ export default function ScansCenterPage() {
                           variant="ghost"
                           size="sm"
                           className="gap-1"
-                          disabled={!done}
+                          disabled={!viewable}
                           onClick={() => viewScan(scan)}
                         >
                           <Eye className="size-3.5" />

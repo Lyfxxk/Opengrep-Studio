@@ -56,12 +56,14 @@ export default function ScanHistoryTable({
         <TableBody>
           {scans.map((scan) => {
             const isBaseline = scan.id === baselineScanId;
+            // 失败扫描也开放查看：结果页的失败卡片是失败原因唯一展示点，不放行就零入口
+            const viewable = scan.status === 'completed' || scan.status === 'failed';
             return (
               <TableRow
                 key={scan.id}
-                className={scan.status === 'completed' ? 'cursor-pointer' : ''}
+                className={viewable ? 'cursor-pointer' : ''}
                 onClick={() => {
-                  if (scan.status === 'completed') {
+                  if (viewable) {
                     onView(scan.id);
                   }
                 }}
@@ -95,7 +97,7 @@ export default function ScanHistoryTable({
                       variant="ghost"
                       size="sm"
                       className="gap-1"
-                      disabled={scan.status !== 'completed'}
+                      disabled={!viewable}
                       onClick={() => onView(scan.id)}
                     >
                       <Eye className="size-3.5" />
