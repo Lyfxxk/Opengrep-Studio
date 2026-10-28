@@ -253,6 +253,8 @@ const zh = {
     batchPartial_other: '已删除 {{count}} 个项目，{{failed}} 个失败（可能正在导入或扫描中）',
     listTitle: '项目列表',
     empty: '暂无项目，点击右上角「新建项目」开始第一次代码审查',
+    searchPlaceholder: '按项目名称或描述搜索',
+    searchEmpty: '没有符合搜索条件的项目',
     selectAllAria: '全选项目',
     rowSelectAria: '选择项目 {{name}}',
     colName: '项目名称',

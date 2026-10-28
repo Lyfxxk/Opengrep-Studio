@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { formatDateTime } from '@/lib/format';
-import { FolderOpen, MoreHorizontal, Pencil, Plus, Trash2 } from 'lucide-react';
+import { FolderOpen, MoreHorizontal, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import Pagination from '@/components/Pagination';
+import { Input } from '@/components/ui/input';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,6 +48,7 @@ export default function ProjectsPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<IProject | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<IProject | null>(null);
+  const [keyword, setKeyword] = useState('');
   const [page, setPage] = useState(1);
   const selection = useRowSelection(projects.map((project) => project.id));
   const [batchConfirmOpen, setBatchConfirmOpen] = useState(false);
@@ -54,12 +56,22 @@ export default function ProjectsPage() {
 
   // 页码夹取：删除 / 新建后不落在空页上
   const pageSize = 20;
-  const pageCount = Math.max(1, Math.ceil(projects.length / pageSize));
+  const filteredProjects = useMemo(() => {
+    const trimmed = keyword.trim().toLowerCase();
+    if (trimmed === '') return projects;
+    return projects.filter(
+      (project) =>
+        project.name.toLowerCase().includes(trimmed) ||
+        (project.description ?? '').toLowerCase().includes(trimmed),
+    );
+  }, [projects, keyword]);
+
+  const pageCount = Math.max(1, Math.ceil(filteredProjects.length / pageSize));
   const safePage = Math.min(page, pageCount);
   useEffect(() => {
     setPage(safePage);
   }, [safePage]);
-  const pagedProjects = projects.slice((safePage - 1) * pageSize, safePage * pageSize);
+  const pagedProjects = filteredProjects.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   const refresh = useCallback(async () => {
     try {
@@ -149,6 +161,20 @@ export default function ProjectsPage() {
         </Button>
       </div>
 
+      {(projects.length > 0) && (
+        <div className="flex items-center gap-2">
+          <div className="relative min-w-[180px] flex-1 sm:max-w-[320px]">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={keyword}
+              onChange={(event) => setKeyword(event.target.value)}
+              placeholder={t('projects.searchPlaceholder')}
+              className="pl-9"
+            />
+          </div>
+        </div>
+      )}
+
       <BatchDeleteBar
         count={selection.count}
         entity="project"
@@ -168,10 +194,12 @@ export default function ProjectsPage() {
                 <Skeleton key={index} className="h-10 w-full" />
               ))}
             </div>
-          ) : projects.length === 0 ? (
+          ) : filteredProjects.length === 0 ? (
             <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">
               <FolderOpen className="size-8 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">{t('projects.empty')}</p>
+              <p className="text-sm text-muted-foreground">
+                {projects.length === 0 ? t('projects.empty') : t('projects.searchEmpty')}
+              </p>
             </div>
           ) : (
             <div className="w-full overflow-x-auto">
