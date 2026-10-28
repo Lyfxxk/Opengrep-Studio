@@ -288,7 +288,7 @@ export default function ScanConfigTab() {
                                   {config.rulePackIds.slice(2).map((packId) => (
                                     <span
                                       key={packId}
-                                      className="flex items-center gap-1.5 whitespace-nowrap rounded-md border border-white/15 bg-white/10 px-2 py-1"
+                                      className="flex items-center gap-1.5 whitespace-nowrap rounded-md border border-background/15 bg-background/10 px-2 py-1"
                                     >
                                       <Package className="size-3 shrink-0 opacity-70" />
                                       {packNameOf(packId) ?? packId}
