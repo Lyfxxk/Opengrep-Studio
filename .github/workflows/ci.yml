@@ -5,10 +5,20 @@ on:
     branches: [main]
   pull_request:
 
+# 同一 ref（main 推送 / 同一 PR）只保留最新一次运行，过时的中途取消
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   server:
     name: 后端（typecheck + 单测）
-    runs-on: ubuntu-latest
+    strategy:
+      # Windows 失败时不连坐 ubuntu，平台差异按平台单独看日志
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -27,7 +37,11 @@ jobs:
 
   frontend:
     name: 前端（lint + 构建）
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -42,6 +56,7 @@ jobs:
 
   e2e:
     name: 后端 E2E（真实引擎扫描）
+    # 真实引擎 E2E 只在 ubuntu 跑：Windows 上下载引擎 + 扫描成本高，单测矩阵已覆盖平台盲区
     runs-on: ubuntu-latest
     needs: [server]
     steps:
@@ -77,3 +92,30 @@ jobs:
           name: e2e-log
           path: e2e.log
           retention-days: 7
+
+  docker:
+    name: Docker（构建 + 启动冒烟）
+    # 镜像内会重新构建前后端，基础检查没过就不必烧 Docker 构建时长
+    needs: [server, frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 构建镜像（构建期内自动下载并校验引擎）
+        run: docker build -t opengrep-studio:ci .
+      - name: 启动冒烟（容器内探活 /api/health）
+        # 防"构建成功但启动即失败"复发（如 docker-entrypoint.sh 缺执行位，见 410d46d）：
+        # 起容器轮询健康检查，起不来就打印容器日志并失败
+        run: |
+          docker run -d --name smoke -p 127.0.0.1:8787:8787 opengrep-studio:ci
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:8787/api/health > /dev/null; then
+              echo "容器启动冒烟通过"
+              docker rm -f smoke > /dev/null
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "容器启动冒烟失败，容器日志："
+          docker logs smoke || true
+          docker rm -f smoke > /dev/null 2>&1 || true
+          exit 1
