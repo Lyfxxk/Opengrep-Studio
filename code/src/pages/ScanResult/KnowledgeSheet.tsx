@@ -125,7 +125,7 @@ export default function KnowledgeSheet({ ruleId, onClose }: KnowledgeSheetProps)
                 )}
                 {knowledge.securitySeverity !== undefined && (
                   <Badge variant="outline" className="font-normal">
-                    security-severity：{knowledge.securitySeverity}
+                    {t('knowledge.securitySeverity', { severity: knowledge.securitySeverity })}
                   </Badge>
                 )}
                 {knowledge.pack && (
