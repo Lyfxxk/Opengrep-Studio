@@ -697,6 +697,13 @@ const en: typeof zh = {
       'The current rule YAML differs from every built-in example; loading one replaces the rule and test samples, and cannot be undone.',
     confirmContinue: 'Load anyway',
   },
+  notFound: {
+    text: 'Page not found',
+  },
+  errorBoundary: {
+    title: 'Something went wrong',
+    retry: 'Retry',
+  },
   login: {
     title: 'Sign in · Opengrep Studio',
     introPanel: 'Product introduction',
