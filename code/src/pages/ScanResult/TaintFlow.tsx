@@ -1,5 +1,6 @@
+import { useTranslation } from 'react-i18next';
 import { ArrowDown, Crosshair, Waypoints, Zap } from 'lucide-react';
-import { TAINT_ROLE_LABELS, type ITaintStep } from '@/data/issues';
+import type { ITaintStep } from '@/data/issues';
 import { cn } from '@/lib/utils';
 
 const ROLE_STYLES: Record<ITaintStep['role'], { icon: typeof Zap; badgeClass: string }> = {
@@ -10,6 +11,7 @@ const ROLE_STYLES: Record<ITaintStep['role'], { icon: typeof Zap; badgeClass: st
 
 /** 污点传播链：source → 传播… → sink 的垂直步骤视图（结果页与规则实验室共用） */
 export default function TaintFlow({ steps }: { steps: ITaintStep[] }) {
+  const { t } = useTranslation();
   if (steps.length === 0) return null;
   return (
     <div className="space-y-1">
@@ -31,7 +33,7 @@ export default function TaintFlow({ steps }: { steps: ITaintStep[] }) {
                 )}
               >
                 <Icon className="size-3" />
-                {TAINT_ROLE_LABELS[step.role]}
+                {t(`taintRole.${step.role}`)}
               </span>
               <span className="min-w-0 truncate font-mono text-xs text-foreground/90" title={step.path}>
                 {step.path}:{step.line}
