@@ -302,6 +302,11 @@ const en: typeof zh = {
     batchPartial_other: 'Deleted {{count}} scans; {{failed}} failed (they may have just started scanning)',
     batchExtra:
       'Issue details and source snapshots of these scans will be removed; baseline comparisons pointing to them are released automatically.',
+    filterProjectPlaceholder: 'Filter by project',
+    filterProjectAll: 'All projects',
+    filterKeywordPlaceholder: 'Search by scan ID or project name',
+    filterCount: '{{count}} scans',
+    filterEmpty: 'No scans match the current filters',
   },
   scanResult: {
     loadFailedToast: 'Failed to load scan result: {{error}}',
@@ -617,6 +622,11 @@ const en: typeof zh = {
     actionHtmlTitle: 'Self-contained offline HTML report (printable to PDF / archivable)',
     actionManifest: 'manifest',
     actionManifestTitle: 'Reproducible manifest: source SHA-256 + engine command line + rule hashes',
+    filterProjectPlaceholder: 'Filter by project',
+    filterProjectAll: 'All projects',
+    filterKeywordPlaceholder: 'Search by scan ID or project name',
+    filterCount: '{{count}} reports',
+    filterEmpty: 'No reports match the current filters',
   },
   reportConclusion: {
     noIssues: 'This scan checked {{files}} source files, matched no enabled rules, and found no risk issues.',

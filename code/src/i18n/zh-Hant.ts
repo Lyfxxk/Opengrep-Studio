@@ -292,6 +292,11 @@ const zhHant: typeof zh = {
     batchPartial_one: '已刪除 {{count}} 條掃描，{{failed}} 條失敗（可能剛進入掃描中）',
     batchPartial_other: '已刪除 {{count}} 條掃描，{{failed}} 條失敗（可能剛進入掃描中）',
     batchExtra: '掃描的問題明細與原始碼快照將一併移除；其他掃描指向它的基線對比會自動解除。',
+    filterProjectPlaceholder: '按專案篩選',
+    filterProjectAll: '全部專案',
+    filterKeywordPlaceholder: '按掃描編號或專案名稱搜尋',
+    filterCount: '{{count}} 條掃描',
+    filterEmpty: '沒有符合篩選條件的掃描記錄',
   },
   scanResult: {
     loadFailedToast: '載入掃描結果失敗：{{error}}',
@@ -597,6 +602,11 @@ const zhHant: typeof zh = {
     actionHtmlTitle: '自包含離線 HTML 報告（可列印 PDF / 歸檔轉發）',
     actionManifest: 'manifest',
     actionManifestTitle: '可復現清單：原始碼 SHA-256 + 引擎命令列 + 規則雜湊',
+    filterProjectPlaceholder: '按專案篩選',
+    filterProjectAll: '全部專案',
+    filterKeywordPlaceholder: '按掃描編號或專案名稱搜尋',
+    filterCount: '{{count}} 份報告',
+    filterEmpty: '沒有符合篩選條件的報告',
   },
   reportConclusion: {
     noIssues: '本次掃描共檢查 {{files}} 個原始碼檔案，未命中任何已啟用規則，未發現風險問題。',

@@ -291,6 +291,11 @@ const zh = {
     batchPartial_one: '已删除 {{count}} 条扫描，{{failed}} 条失败（可能刚进入扫描中）',
     batchPartial_other: '已删除 {{count}} 条扫描，{{failed}} 条失败（可能刚进入扫描中）',
     batchExtra: '扫描的问题明细与源码快照将一并移除；其他扫描指向它的基线对比会自动解除。',
+    filterProjectPlaceholder: '按项目筛选',
+    filterProjectAll: '全部项目',
+    filterKeywordPlaceholder: '按扫描编号或项目名搜索',
+    filterCount: '{{count}} 条扫描',
+    filterEmpty: '没有符合筛选条件的扫描记录',
   },
   scanResult: {
     loadFailedToast: '加载扫描结果失败：{{error}}',
@@ -596,6 +601,11 @@ const zh = {
     actionHtmlTitle: '自包含离线 HTML 报告（可打印 PDF / 归档转发）',
     actionManifest: 'manifest',
     actionManifestTitle: '可复现清单：源码 SHA-256 + 引擎命令行 + 规则哈希',
+    filterProjectPlaceholder: '按项目筛选',
+    filterProjectAll: '全部项目',
+    filterKeywordPlaceholder: '按扫描编号或项目名搜索',
+    filterCount: '{{count}} 份报告',
+    filterEmpty: '没有符合筛选条件的报告',
   },
   reportConclusion: {
     noIssues: '本次扫描共检查 {{files}} 个源码文件，未命中任何已启用规则，未发现风险问题。',
