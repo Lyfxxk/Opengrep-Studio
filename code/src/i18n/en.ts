@@ -388,6 +388,8 @@ const en: typeof zh = {
     uploadOkIgnored: 'Source uploaded — {{count}} files ignored via .gitignore — ready to scan',
     uploadOkBoth: 'Source uploaded — {{files}} files in total, {{ignored}} ignored via .gitignore — ready to scan',
     cloneSuccessToast: 'Repository cloned — {{count}} files — ready to scan',
+    // 克隆失败只清临时目录，既有源码不受影响；前导空格用于与错误消息拼接
+    cloneFailedSourceKept: ' (previously uploaded source remains unchanged)',
     scanSubmittedToast: 'Scan submitted — the engine runs one scan at a time…',
     baselineSetToast: 'Baseline set — future scans will compare against it automatically',
     baselineUnsetToast: 'Baseline cleared — future scans will no longer compare automatically',

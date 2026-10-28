@@ -234,7 +234,9 @@ export default function ProjectDetailPage() {
       }
     } catch (error) {
       setUpload({ status: 'idle' });
-      toast.error(error instanceof Error ? error.message : String(error));
+      // 服务端克隆失败只清临时目录、不动既有源码；toast 明说这一点，避免用户误以为要重新上传
+      const message = error instanceof Error ? error.message : String(error);
+      toast.error(`${message}${t('projectDetail.cloneFailedSourceKept')}`);
     }
   };
 
