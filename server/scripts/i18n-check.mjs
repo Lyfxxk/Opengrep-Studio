@@ -1,7 +1,7 @@
 /**
  * i18n 资源一致性校验：
  *   1. UI 三份语言包（zh / en / zh-Hant）的叶子键必须完全一致；
- *   2. 规则说明 messages-zh.json 与 messages-zh-Hant.json 必须同键。
+ *   2. 服务端简繁 JSON（规则说明 messages-zh[-Hant].json、CWE 知识库 cwe-zh[-Hant].json）必须同键。
  *
  * 任一不一致即退出码 1，CI 与本地都跑同一份口径。
  * 用法：npm --prefix server run i18n:check
@@ -41,19 +41,26 @@ for (const lang of langs) {
 
 const readJson = (file) =>
   JSON.parse(fs.readFileSync(path.join(root, 'server', 'rules', file), 'utf8'));
-const zhMessages = readJson('messages-zh.json');
-const hantMessages = readJson('messages-zh-Hant.json');
-const missingMessages = Object.keys(zhMessages).filter((key) => !(key in hantMessages));
-const extraMessages = Object.keys(hantMessages).filter((key) => !(key in zhMessages));
-if (missingMessages.length) {
-  problems.push(`messages-zh-Hant 缺少 ${missingMessages.length} 条：${missingMessages.slice(0, 5).join('、')}`);
-}
-if (extraMessages.length) {
-  problems.push(`messages-zh-Hant 多出 ${extraMessages.length} 条：${extraMessages.slice(0, 5).join('、')}`);
-}
+
+// 服务端简繁 JSON 共用同一段键集校验：file 取简体文件名（报错文案即形如 "cwe-zh-Hant 缺少 …"），
+// display 是汇总行里的展示名
+const checkPair = (file, display) => {
+  const zh = readJson(`${file}.json`);
+  const hant = readJson(`${file}-Hant.json`);
+  const missing = Object.keys(zh).filter((key) => !(key in hant));
+  const extra = Object.keys(hant).filter((key) => !(key in zh));
+  if (missing.length) {
+    problems.push(`${file}-Hant 缺少 ${missing.length} 条：${missing.slice(0, 5).join('、')}`);
+  }
+  if (extra.length) {
+    problems.push(`${file}-Hant 多出 ${extra.length} 条：${extra.slice(0, 5).join('、')}`);
+  }
+  console.log(`${display}：zh=${Object.keys(zh).length} / zh-Hant=${Object.keys(hant).length}`);
+};
 
 console.log(`UI 叶子键：${langs.map((lang) => `${lang}=${ui[lang].size}`).join(' / ')}`);
-console.log(`规则说明：zh=${Object.keys(zhMessages).length} / zh-Hant=${Object.keys(hantMessages).length}`);
+checkPair('messages-zh', '规则说明');
+checkPair('cwe-zh', 'CWE 知识库');
 
 if (problems.length) {
   console.error('\n发现不一致：');
