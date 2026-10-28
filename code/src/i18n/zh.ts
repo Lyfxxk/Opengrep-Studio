@@ -696,6 +696,9 @@ const zh = {
     demoEngineHint: '演示模式：未连接后端与引擎，展示的均为本地演示数据。',
     demoUpdateReason: '演示模式不联网检查引擎更新',
     demoUpgradeUnsupported: '演示模式不支持升级引擎',
+    demoNoRiskConclusion: '本次扫描未命中任何已启用规则，未发现风险问题。',
+    demoConclusion: '本次扫描发现 {{total}} 个风险问题，其中严重 {{critical}} 项、高危 {{high}} 项、中危 {{medium}} 项、低危 {{low}} 项。',
+    demoRootDir: '（根目录）',
   },
   notFound: {
     text: '页面不存在',
