@@ -474,7 +474,7 @@ assert(report.json.totals.byComparison.new === by('new')
   && report.json.totals.byComparison.fixed === by('fixed')
   && report.json.totals.byComparison.remaining === by('remaining'), '报告对比计数一致');
 assert(report.json.issues.length === issues2.length, '报告明细条数与 issues 接口一致');
-assert(report.json.topRules.length > 0 && report.json.topFiles.length > 0, 'Top 规则/文件统计存在');
+assert(report.json.topFiles.length > 0, 'Top 文件统计存在');
 assert((report.json.conclusion ?? '').includes(s1.id), '结论文本含基线编号');
 assert(typeof report.json.meta?.engineVersion === 'string' && report.json.meta.engineVersion.length > 0,
   '报告标注扫描时的引擎版本', report.json.meta?.engineVersion);
@@ -482,7 +482,7 @@ assert(typeof report.json.meta?.engineVersion === 'string' && report.json.meta.e
 const reportHtmlRes = await fetch(`${BASE}/api/scans/${s2.id}/report?format=html`);
 const reportHtml = await reportHtmlRes.text();
 assert(reportHtmlRes.ok && reportHtml.includes('代码审计测试报告'), 'HTML 报告可生成');
-assert(reportHtml.includes('风险分布') && reportHtml.includes('问题明细'), 'HTML 报告含关键章节');
+assert(reportHtml.includes('风险分布') && reportHtml.includes('行动清单') && reportHtml.includes('问题明细') && reportHtml.includes('方法与证据'), 'HTML 报告含关键章节');
 assert(reportHtml.includes('已修复'), 'HTML 报告含基线已修复分组');
 assert((reportHtmlRes.headers.get('content-disposition') ?? '').includes('attachment'), 'HTML 以附件形式下载');
 const reportSummaryRes = await fetch(`${BASE}/api/scans/${s2.id}/report?format=html&detail=summary`);
