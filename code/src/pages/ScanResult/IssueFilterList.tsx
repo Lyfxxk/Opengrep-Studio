@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -77,6 +77,40 @@ export default function IssueFilterList({
   }, [safePage]);
   const paged = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
 
+  /** ↑/↓ 在筛选后列表中逐条移动选中项；输入框内不劫持方向键 */
+  const listRef = useRef<HTMLDivElement>(null);
+  const moveSelection = useCallback(
+    (offset: 1 | -1) => {
+      if (filtered.length === 0) return;
+      const currentIndex = filtered.findIndex((issue) => issue.id === selectedIssueId);
+      const nextIndex =
+        currentIndex === -1
+          ? 0
+          : Math.min(filtered.length - 1, Math.max(0, currentIndex + offset));
+      onSelect(filtered[nextIndex].id);
+    },
+    [filtered, selectedIssueId, onSelect],
+  );
+
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+      const target = event.target as HTMLElement | null;
+      if (target?.closest('input, textarea, [contenteditable]')) return;
+      event.preventDefault();
+      moveSelection(event.key === 'ArrowDown' ? 1 : -1);
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [moveSelection]);
+
+  // 键盘切换后把选中项滚动到可视区域
+  useEffect(() => {
+    if (!selectedIssueId) return;
+    const el = listRef.current?.querySelector(`[data-issue-id="${CSS.escape(selectedIssueId)}"]`);
+    el?.scrollIntoView({ block: 'nearest' });
+  }, [selectedIssueId]);
+
   return (
     <div className="flex h-full flex-col gap-3">
       <Tabs value={status} onValueChange={setStatus}>
@@ -112,7 +146,7 @@ export default function IssueFilterList({
         </div>
       </div>
       <div className="text-xs text-muted-foreground">{t('issueFilter.count', { count: filtered.length })}</div>
-      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
+      <div ref={listRef} className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
         {filtered.length === 0 ? (
           <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
             {issues.length === 0 ? (
@@ -136,6 +170,7 @@ export default function IssueFilterList({
           paged.map((issue) => (
             <button
               key={issue.id}
+              data-issue-id={issue.id}
               type="button"
               onClick={() => onSelect(issue.id)}
               className={cn(
