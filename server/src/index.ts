@@ -403,13 +403,19 @@ app.post('/api/engine/upgrade', asyncHandler(async (_req, res) => {
   res.status(202).json(await startEngineUpgrade());
 }));
 
-app.get('/api/messages-zh', (_req, res) => {
-  try {
-    res.json(JSON.parse(fs.readFileSync(path.join(config.rulesDir, 'messages-zh.json'), 'utf8')));
-  } catch {
-    res.json({});
-  }
-});
+// 规则说明按语言分包：文件名与语言标签一一对应；文件缺失时回空表，前端自然回落规则原文
+function serveRuleMessages(fileName: string) {
+  return (_req: Request, res: Response) => {
+    try {
+      res.json(JSON.parse(fs.readFileSync(path.join(config.rulesDir, fileName), 'utf8')));
+    } catch {
+      res.json({});
+    }
+  };
+}
+
+app.get('/api/messages-zh', serveRuleMessages('messages-zh.json'));
+app.get('/api/messages-zh-Hant', serveRuleMessages('messages-zh-Hant.json'));
 
 function requireValidConfigValues(body: Record<string, unknown>, existingId?: string) {
   const name = String(body?.name ?? '').trim();
