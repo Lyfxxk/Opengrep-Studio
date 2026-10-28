@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
 // 初始化 i18n（react-i18next 全局实例，需先于组件树求值）
 import "@/i18n";
+import i18n from "@/i18n";
 import App from "./app";
 import "./index.css";
 
@@ -20,11 +21,11 @@ createRoot(document.getElementById("root")!).render(
             role="alert"
             className="flex min-h-screen flex-col items-center justify-center gap-3 p-8 text-center"
           >
-            <h1 className="text-lg font-semibold">页面出错了</h1>
+            <h1 className="text-lg font-semibold">{i18n.t('errorBoundary.title')}</h1>
             <p className="max-w-md text-sm text-muted-foreground">
               {error instanceof Error ? error.message : String(error)}
             </p>
-            <Button onClick={resetErrorBoundary}>重试</Button>
+            <Button onClick={resetErrorBoundary}>{i18n.t('errorBoundary.retry')}</Button>
           </div>
         )}
       >
