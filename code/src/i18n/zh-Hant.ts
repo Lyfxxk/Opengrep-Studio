@@ -26,11 +26,17 @@ const zhHant: typeof zh = {
     logoutToast: '已登出',
     avatarAlt: '管理員頭像',
     language: '切換語言',
+    theme: '切換主題',
   },
   lang: {
     zh: '简体中文',
     zhHant: '繁體中文',
     en: 'English',
+  },
+  theme: {
+    light: '淺色',
+    dark: '深色',
+    system: '跟隨系統',
   },
   common: {
     loading: '載入中…',
