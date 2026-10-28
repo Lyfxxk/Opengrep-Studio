@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -19,7 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { REVIEW_STATUS_LABELS, type IIssue, type ReviewStatus } from '@/data/issues';
+import { REVIEW_BADGE_CLASS, type IIssue, type ReviewStatus } from '@/data/issues';
 import { getCurrentUsername } from '@/lib/auth';
 import { api } from '@/lib/api';
 
@@ -30,14 +31,17 @@ interface ReviewDialogProps {
   onSaved: () => void;
 }
 
-const STATUS_OPTIONS: Array<{ value: 'confirmed' | 'false_positive' | 'accepted'; hint: string }> = [
-  { value: 'confirmed', hint: '核实为真实风险，需要修复' },
-  { value: 'false_positive', hint: '误报，说明依据后可忽略' },
-  { value: 'accepted', hint: '真实风险但暂不修复，记录理由' },
+type ReviewableStatus = 'confirmed' | 'false_positive' | 'accepted';
+
+const STATUS_OPTIONS: Array<{ value: ReviewableStatus; hintKey: 'review.hintConfirmed' | 'review.hintFalsePositive' | 'review.hintAccepted' }> = [
+  { value: 'confirmed', hintKey: 'review.hintConfirmed' },
+  { value: 'false_positive', hintKey: 'review.hintFalsePositive' },
+  { value: 'accepted', hintKey: 'review.hintAccepted' },
 ];
 
 /** 人工复核对话框：结论以 (项目, fingerprint) 落库，后续扫描自动继承 */
 export default function ReviewDialog({ projectId, issue, onClose, onSaved }: ReviewDialogProps) {
+  const { t } = useTranslation();
   const [status, setStatus] = useState<ReviewStatus>('confirmed');
   const [reason, setReason] = useState('');
   const [reviewer, setReviewer] = useState(getCurrentUsername());
@@ -53,21 +57,21 @@ export default function ReviewDialog({ projectId, issue, onClose, onSaved }: Rev
 
   const submit = async () => {
     if (!issue?.fingerprint) {
-      toast.error('该问题缺少指纹，无法复核（旧扫描记录），请重新扫描后再试');
+      toast.error(t('review.fingerprintMissing'));
       return;
     }
     if (status !== 'confirmed' && !reason.trim()) {
-      toast.error('判定误报/有条件接受时请填写理由，作为审计证据');
+      toast.error(t('review.reasonRequired'));
       return;
     }
     setSubmitting(true);
     try {
       await api.setReview(projectId, issue.fingerprint, {
-        status: status as 'confirmed' | 'false_positive' | 'accepted',
+        status: status as ReviewableStatus,
         ...(reason.trim() ? { reason: reason.trim() } : {}),
         reviewer: reviewer.trim() || undefined,
       });
-      toast.success('复核结论已保存，后续扫描将自动继承');
+      toast.success(t('review.savedToast'));
       onSaved();
       onClose();
     } catch (error) {
@@ -81,7 +85,7 @@ export default function ReviewDialog({ projectId, issue, onClose, onSaved }: Rev
     <Dialog open={issue !== null} onOpenChange={(open) => (!open ? onClose() : undefined)}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>人工复核</DialogTitle>
+          <DialogTitle>{t('review.title')}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div className="rounded-lg border bg-muted/40 px-3 py-2 text-xs">
@@ -91,7 +95,7 @@ export default function ReviewDialog({ projectId, issue, onClose, onSaved }: Rev
             <p className="mt-1 font-mono text-muted-foreground">{issue?.ruleId}</p>
           </div>
           <div className="space-y-2">
-            <Label>复核结论</Label>
+            <Label>{t('review.verdictLabel')}</Label>
             <Select value={status} onValueChange={(value) => setStatus(value as ReviewStatus)}>
               <SelectTrigger className="w-full">
                 <SelectValue />
@@ -99,8 +103,8 @@ export default function ReviewDialog({ projectId, issue, onClose, onSaved }: Rev
               <SelectContent>
                 {STATUS_OPTIONS.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
-                    {REVIEW_STATUS_LABELS[option.value]}
-                    <span className="ml-2 text-xs text-muted-foreground">{option.hint}</span>
+                    {t(`reviewStatus.${option.value}`)}
+                    <span className="ml-2 text-xs text-muted-foreground">{t(option.hintKey)}</span>
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -108,7 +112,8 @@ export default function ReviewDialog({ projectId, issue, onClose, onSaved }: Rev
           </div>
           <div className="space-y-2">
             <Label htmlFor="review-reason">
-              复核理由{status !== 'confirmed' ? '（必填，写入审计证据）' : '（可选）'}
+              {t('review.reasonLabel')}
+              {status !== 'confirmed' ? t('review.reasonRequiredSuffix') : t('review.reasonOptionalSuffix')}
             </Label>
             <Textarea
               id="review-reason"
@@ -116,11 +121,11 @@ export default function ReviewDialog({ projectId, issue, onClose, onSaved }: Rev
               onChange={(event) => setReason(event.target.value)}
               rows={3}
               maxLength={500}
-              placeholder="例如：该接口仅内网可达且入口已做白名单校验，判定为误报"
+              placeholder={t('review.reasonPlaceholder')}
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="review-reviewer">复核人</Label>
+            <Label htmlFor="review-reviewer">{t('review.reviewerLabel')}</Label>
             <Input
               id="review-reviewer"
               value={reviewer}
@@ -131,11 +136,11 @@ export default function ReviewDialog({ projectId, issue, onClose, onSaved }: Rev
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
-            取消
+            {t('common.cancel')}
           </Button>
           <Button className="gap-1" disabled={submitting} onClick={() => void submit()}>
             {submitting && <Loader2 className="size-4 animate-spin" />}
-            保存复核结论
+            {t('review.submit')}
           </Button>
         </DialogFooter>
       </DialogContent>

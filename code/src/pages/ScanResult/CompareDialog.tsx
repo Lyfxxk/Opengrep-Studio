@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { CircleAlert, CircleDot, FilePlus2, FileMinus2, FilePen, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -19,7 +20,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { SEVERITY_LABELS } from '@/data/issues';
 import type { IScanDiff, IScanDiffIssueList } from '@/data/diffs';
 import { attachProjectNames, type ScanWithProject } from '@/lib/scans';
 import { formatDateTime } from '@/lib/format';
@@ -33,18 +33,19 @@ interface CompareDialogProps {
 }
 
 function IssueDiffTable({ list }: { list: IScanDiffIssueList }) {
+  const { t } = useTranslation();
   if (list.count === 0) {
-    return <p className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">无</p>;
+    return <p className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">{t('compare.empty')}</p>;
   }
   return (
     <div className="overflow-hidden rounded-lg border">
       <table className="w-full text-xs">
         <thead className="bg-muted/50 text-left text-muted-foreground">
           <tr>
-            <th className="px-3 py-2 font-medium">位置</th>
-            <th className="px-3 py-2 font-medium">规则</th>
-            <th className="px-3 py-2 font-medium">严重度</th>
-            <th className="px-3 py-2 font-medium">描述</th>
+            <th className="px-3 py-2 font-medium">{t('compare.thLocation')}</th>
+            <th className="px-3 py-2 font-medium">{t('compare.thRule')}</th>
+            <th className="px-3 py-2 font-medium">{t('compare.thSeverity')}</th>
+            <th className="px-3 py-2 font-medium">{t('compare.thDescription')}</th>
           </tr>
         </thead>
         <tbody>
@@ -56,7 +57,7 @@ function IssueDiffTable({ list }: { list: IScanDiffIssueList }) {
               <td className="px-3 py-1.5 font-mono">{item.ruleId}</td>
               <td className="px-3 py-1.5">
                 <Badge className={cn('px-1.5 font-normal', SEVERITY_BADGE_CLASS[item.severity])}>
-                  {SEVERITY_LABELS[item.severity]}
+                  {t(`severity.${item.severity}`)}
                 </Badge>
               </td>
               <td className="max-w-[280px] truncate px-3 py-1.5 text-muted-foreground">{item.message}</td>
@@ -66,21 +67,22 @@ function IssueDiffTable({ list }: { list: IScanDiffIssueList }) {
       </table>
       {list.count > list.items.length && (
         <p className="border-t bg-muted/30 px-3 py-1.5 text-xs text-muted-foreground">
-          仅展示前 {list.items.length} 条，共 {list.count} 条。
+          {t('compare.truncated', { shown: list.items.length, total: list.count })}
         </p>
       )}
     </div>
   );
 }
 
-const DIFF_SECTIONS: Array<{ key: 'new' | 'fixed' | 'remaining'; label: string; icon: typeof CircleAlert; tone: string }> = [
-  { key: 'new', label: '本次新增', icon: CircleAlert, tone: 'text-destructive' },
-  { key: 'fixed', label: '对方独有（已修复方向）', icon: CircleDot, tone: 'text-success' },
-  { key: 'remaining', label: '两次扫描共有', icon: CircleDot, tone: 'text-warning' },
+const DIFF_SECTIONS: Array<{ key: 'new' | 'fixed' | 'remaining'; labelKey: 'compare.sectionNew' | 'compare.sectionFixed' | 'compare.sectionRemaining'; icon: typeof CircleAlert; tone: string }> = [
+  { key: 'new', labelKey: 'compare.sectionNew', icon: CircleAlert, tone: 'text-destructive' },
+  { key: 'fixed', labelKey: 'compare.sectionFixed', icon: CircleDot, tone: 'text-success' },
+  { key: 'remaining', labelKey: 'compare.sectionRemaining', icon: CircleDot, tone: 'text-warning' },
 ];
 
 /** 双快照对比对话框：任选两次已完成扫描（含跨项目），问题级 + 文件级差异 */
 export default function CompareDialog({ scanId, onClose }: CompareDialogProps) {
+  const { t } = useTranslation();
   const [candidates, setCandidates] = useState<ScanWithProject[] | null>(null);
   const [againstId, setAgainstId] = useState('');
   const [diff, setDiff] = useState<IScanDiff | null>(null);
@@ -123,10 +125,8 @@ export default function CompareDialog({ scanId, onClose }: CompareDialogProps) {
     <Dialog open onOpenChange={(open) => (!open ? onClose() : undefined)}>
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
-          <DialogTitle>双快照对比</DialogTitle>
-          <DialogDescription>
-            任选一次已完成扫描与当前扫描对比（可跨项目来源）：问题级按指纹比对，文件级按快照内容比对。
-          </DialogDescription>
+          <DialogTitle>{t('compare.title')}</DialogTitle>
+          <DialogDescription>{t('compare.subtitle')}</DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -139,19 +139,23 @@ export default function CompareDialog({ scanId, onClose }: CompareDialogProps) {
             }}
           >
             <SelectTrigger className="min-w-[320px] flex-1">
-              <SelectValue placeholder="选择要对比的扫描…" />
+              <SelectValue placeholder={t('compare.targetPlaceholder')} />
             </SelectTrigger>
             <SelectContent>
               {(candidates ?? []).map((scan) => (
                 <SelectItem key={scan.id} value={scan.id}>
-                  {scan.projectName} / {scan.id}（{formatDateTime(scan.scannedAt)}）
+                  {t('compare.targetItem', {
+                    project: scan.projectName,
+                    id: scan.id,
+                    time: formatDateTime(scan.scannedAt),
+                  })}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           <Button disabled={!againstId || loading} onClick={() => void runDiff()}>
             {loading ? <Loader2 className="size-4 animate-spin" /> : null}
-            开始对比
+            {t('compare.runBtn')}
           </Button>
         </div>
 
@@ -160,8 +164,10 @@ export default function CompareDialog({ scanId, onClose }: CompareDialogProps) {
           <p className="flex items-start gap-1.5 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
             <CircleAlert className="mt-0.5 size-3.5 shrink-0" />
             <span>
-              两次扫描的引擎版本不同（v{diff.engine.against ?? '未知'} → v{diff.engine.current ?? '未知'}）：
-              新增 / 修复项可能来自引擎升级而非代码改动，请结合版本差异判断。
+              {t('compare.engineMismatch', {
+                from: diff.engine.against ?? t('compare.unknownVersion'),
+                to: diff.engine.current ?? t('compare.unknownVersion'),
+              })}
             </span>
           </p>
         )}
@@ -169,8 +175,8 @@ export default function CompareDialog({ scanId, onClose }: CompareDialogProps) {
         {diff && (
           <Tabs defaultValue="issues">
             <TabsList>
-              <TabsTrigger value="issues">问题差异</TabsTrigger>
-              <TabsTrigger value="files">文件差异</TabsTrigger>
+              <TabsTrigger value="issues">{t('compare.tabIssues')}</TabsTrigger>
+              <TabsTrigger value="files">{t('compare.tabFiles')}</TabsTrigger>
             </TabsList>
             <TabsContent value="issues" className="space-y-4 pt-3">
               {DIFF_SECTIONS.map((section) => {
@@ -180,7 +186,7 @@ export default function CompareDialog({ scanId, onClose }: CompareDialogProps) {
                   <div key={section.key}>
                     <h4 className={cn('mb-2 flex items-center gap-1.5 text-sm font-semibold', section.tone)}>
                       <Icon className="size-4" />
-                      {section.label}（{list.count}）
+                      {t(section.labelKey, { count: list.count })}
                     </h4>
                     <IssueDiffTable list={list} />
                   </div>
@@ -189,16 +195,16 @@ export default function CompareDialog({ scanId, onClose }: CompareDialogProps) {
             </TabsContent>
             <TabsContent value="files" className="space-y-4 pt-3">
               <p className="text-xs text-muted-foreground">
-                两次快照分别含 {diff.fileDiff.filesA} / {diff.fileDiff.filesB} 个文件（不含 node_modules 与 .git）
+                {t('compare.filesSummary', { a: diff.fileDiff.filesA, b: diff.fileDiff.filesB })}
               </p>
               <div>
                 <h4 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-success">
                   <FilePlus2 className="size-4" />
-                  新增文件（{diff.fileDiff.added.length}）
+                  {t('compare.addedFiles', { count: diff.fileDiff.added.length })}
                 </h4>
                 <div className="max-h-40 overflow-y-auto rounded-lg border p-2 font-mono text-xs">
                   {diff.fileDiff.added.length === 0 ? (
-                    <p className="text-muted-foreground">无</p>
+                    <p className="text-muted-foreground">{t('compare.empty')}</p>
                   ) : (
                     diff.fileDiff.added.map((path) => <div key={path}>{path}</div>)
                   )}
@@ -207,11 +213,11 @@ export default function CompareDialog({ scanId, onClose }: CompareDialogProps) {
               <div>
                 <h4 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-muted-foreground">
                   <FileMinus2 className="size-4" />
-                  删除文件（{diff.fileDiff.removed.length}）
+                  {t('compare.removedFiles', { count: diff.fileDiff.removed.length })}
                 </h4>
                 <div className="max-h-40 overflow-y-auto rounded-lg border p-2 font-mono text-xs">
                   {diff.fileDiff.removed.length === 0 ? (
-                    <p className="text-muted-foreground">无</p>
+                    <p className="text-muted-foreground">{t('compare.empty')}</p>
                   ) : (
                     diff.fileDiff.removed.map((path) => <div key={path}>{path}</div>)
                   )}
@@ -220,14 +226,14 @@ export default function CompareDialog({ scanId, onClose }: CompareDialogProps) {
               <div>
                 <h4 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-warning">
                   <FilePen className="size-4" />
-                  修改文件（{diff.fileDiff.modified.length}）
+                  {t('compare.modifiedFiles', { count: diff.fileDiff.modified.length })}
                 </h4>
                 <div className="max-h-56 overflow-y-auto rounded-lg border">
                   <table className="w-full text-xs">
                     <thead className="bg-muted/50 text-left text-muted-foreground">
                       <tr>
-                        <th className="px-3 py-2 font-medium">文件</th>
-                        <th className="w-32 px-3 py-2 font-medium">行级变更</th>
+                        <th className="px-3 py-2 font-medium">{t('compare.thFile')}</th>
+                        <th className="w-32 px-3 py-2 font-medium">{t('compare.thLineChanges')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -242,7 +248,7 @@ export default function CompareDialog({ scanId, onClose }: CompareDialogProps) {
                                 <span className="text-destructive">-{file.removedLines}</span>
                               </>
                             ) : (
-                              <span className="text-muted-foreground">内容已变化</span>
+                              <span className="text-muted-foreground">{t('compare.contentChanged')}</span>
                             )}
                           </td>
                         </tr>
@@ -257,7 +263,7 @@ export default function CompareDialog({ scanId, onClose }: CompareDialogProps) {
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
-            关闭
+            {t('common.close')}
           </Button>
         </DialogFooter>
       </DialogContent>
