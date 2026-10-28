@@ -51,14 +51,32 @@ export interface ScanPlan {
 }
 
 
-let chain: Promise<void> = Promise.resolve();
+/** 最多同时运行 2 个扫描（opengrep 自身已用 -j 并行，2 个扫描足以利用多核又不会撑爆内存） */
+const MAX_CONCURRENT_SCANS = 2;
+let activeScans = 0;
+const scanWaitQueue: Array<() => void> = [];
+
+function acquireScanSlot(): Promise<void> {
+  if (activeScans < MAX_CONCURRENT_SCANS) {
+    activeScans += 1;
+    return Promise.resolve();
+  }
+  return new Promise((resolve) => scanWaitQueue.push(resolve));
+}
+
+function releaseScanSlot(): void {
+  const next = scanWaitQueue.shift();
+  if (next) next();
+  else activeScans -= 1;
+}
 
 export function enqueueScan(scanId: string, plan: ScanPlan): void {
-  chain = chain
+  void acquireScanSlot()
     .then(() => runScan(scanId, plan))
     .catch((error) => {
       console.error(`[scan-runner] 扫描 ${scanId} 执行异常:`, error);
-    });
+    })
+    .finally(() => releaseScanSlot());
 }
 
 
