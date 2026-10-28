@@ -334,10 +334,13 @@ export default function ReportPage() {
   }
 
   const { meta, totals, conclusion, conclusionCode, topFiles, issues, reviewStats } = report;
-  // 结论按语言重拼；载荷缺失（演示模式/旧缓存）回落服务端原文
+  // 结论按语言重拼；载荷缺失（演示模式/旧缓存）回落服务端原文。
+  // urgent=0 时没有可"优先处理"的对象，切到 NoUrgent 键，与服务端 buildConclusion 的中低危兜底句口径一致
   const conclusionKey =
-    conclusionCode?.code === 'summary' && conclusionCode.params.baseline
-      ? 'summaryBaseline'
+    conclusionCode?.code === 'summary'
+      ? `${conclusionCode.params.baseline ? 'summaryBaseline' : 'summary'}${
+          Number(conclusionCode.params.urgent) > 0 ? '' : 'NoUrgent'
+        }`
       : conclusionCode?.code;
   const conclusionText = conclusionCode
     ? t(`reportConclusion.${conclusionKey}`, {

@@ -665,6 +665,10 @@ const en: typeof zh = {
       'This scan checked {{files}} source files and found {{total}} risk issues: {{critical}} critical, {{high}} high, {{medium}} medium, and {{low}} low. Prioritize the critical and high issues ({{urgent}} in total), then rescan after fixing to verify.',
     summaryBaseline:
       'This scan checked {{files}} source files and found {{total}} risk issues: {{critical}} critical, {{high}} high, {{medium}} medium, and {{low}} low. Compared with baseline scan {{baseline}}: {{baselineNew}} new, {{baselineRemaining}} remaining, and {{baselineFixed}} fixed. Prioritize the critical and high issues ({{urgent}} in total), then rescan after fixing to verify.',
+    summaryNoUrgent:
+      'This scan checked {{files}} source files and found {{total}} risk issues: {{critical}} critical, {{high}} high, {{medium}} medium, and {{low}} low. No critical or high issues right now; schedule fixes for the medium and low issues by business priority.',
+    summaryBaselineNoUrgent:
+      'This scan checked {{files}} source files and found {{total}} risk issues: {{critical}} critical, {{high}} high, {{medium}} medium, and {{low}} low. Compared with baseline scan {{baseline}}: {{baselineNew}} new, {{baselineRemaining}} remaining, and {{baselineFixed}} fixed. No critical or high issues right now; schedule fixes for the medium and low issues by business priority.',
   },
   report: {
     loadFailedToast: 'Failed to load the report: {{error}}',
