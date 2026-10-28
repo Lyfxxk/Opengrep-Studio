@@ -333,7 +333,7 @@ const zh = {
     all: '全部',
     allSeverities: '全部等级',
     severityPlaceholder: '严重等级',
-    searchPlaceholder: '按文件路径或描述搜索',
+    searchPlaceholder: '按规则 ID、文件路径或描述搜索',
     count: '共 {{count}} 个问题',
     emptyScan: '本次扫描未发现问题',
     emptyFiltered: '当前筛选条件下没有匹配的问题',
