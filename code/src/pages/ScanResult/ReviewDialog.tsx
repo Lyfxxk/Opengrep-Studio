@@ -81,6 +81,22 @@ export default function ReviewDialog({ projectId, issue, onClose, onSaved }: Rev
     }
   };
 
+  /** 撤回复核结论：回到未复核（待复核）状态，与保存互斥展示 */
+  const resetReview = async () => {
+    if (!issue?.fingerprint) return;
+    setSubmitting(true);
+    try {
+      await api.clearReview(projectId, issue.fingerprint);
+      toast.success(t('review.resetToast'));
+      onSaved();
+      onClose();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : String(error));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <Dialog open={issue !== null} onOpenChange={(open) => (!open ? onClose() : undefined)}>
       <DialogContent className="sm:max-w-md">
@@ -134,14 +150,28 @@ export default function ReviewDialog({ projectId, issue, onClose, onSaved }: Rev
             />
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            {t('common.cancel')}
-          </Button>
-          <Button className="gap-1" disabled={submitting} onClick={() => void submit()}>
-            {submitting && <Loader2 className="size-4 animate-spin" />}
-            {t('review.submit')}
-          </Button>
+        <DialogFooter className="sm:justify-between">
+          {issue?.review && issue.fingerprint ? (
+            <Button
+              variant="outline"
+              className="text-destructive hover:text-destructive"
+              disabled={submitting}
+              onClick={() => void resetReview()}
+            >
+              {t('review.resetBtn')}
+            </Button>
+          ) : (
+            <span />
+          )}
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onClose}>
+              {t('common.cancel')}
+            </Button>
+            <Button className="gap-1" disabled={submitting} onClick={() => void submit()}>
+              {submitting && <Loader2 className="size-4 animate-spin" />}
+              {t('review.submit')}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
