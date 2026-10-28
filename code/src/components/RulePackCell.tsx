@@ -31,7 +31,9 @@ export default function RulePackCell({
       </span>
     );
   }
-  if (scan.rules) {
+  // 旧扫描曾把配置内部 ID（cfg-xxx）当规则集落库：内部标识对用户无意义，按无信息占位；
+  // 现行配置扫描必带规则包快照（走上面分支），此处只为守住旧字段的全局展示口径
+  if (scan.rules && !scan.rules.startsWith('cfg-')) {
     return (
       <span
         className={`block truncate font-mono text-xs text-muted-foreground ${className}`}

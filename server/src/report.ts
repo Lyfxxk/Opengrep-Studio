@@ -522,7 +522,9 @@ export function buildReportData(
     fileCount: scan.fileCount,
     baselineScanId: scan.baselineScanId,
     rulepacks: scan.rulepacks,
-    rules: scan.rules,
+    // 旧扫描曾把配置内部 ID（cfg-xxx）当规则集落库，报告面向交付不作展示（页面与 HTML 导出
+    // 各自按无值兜底渲染为「未记录/—」）；可复现信息不受影响：manifest.config 仍保留原始快照
+    rules: scan.rules?.startsWith('cfg-') ? undefined : scan.rules,
     engineVersion,
     sourceHash: scan.srcHash,
     commandLine: scan.commandLine,
