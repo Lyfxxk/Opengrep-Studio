@@ -327,7 +327,8 @@ const en: typeof zh = {
     packsUnit: '',
     rulesetDir: 'Ruleset directory: {{rules}}',
     failedTitle: 'This scan failed',
-    failedHint: 'Go back to the project detail page, re-upload source, and start a new scan.',
+    failedHint:
+      'The source snapshot is still available — go back to the project detail page and start a new scan directly, no re-upload needed.',
     scanningHint: 'Scan in progress — the issue list appears here once it finishes.',
     summaryTitle: 'Scan summary',
     zeroIssues: '0 issues',
@@ -874,6 +875,8 @@ const en: typeof zh = {
       gitUrlRequired: 'Please provide a Git repository URL',
       scanUpgradeBusy: 'An engine upgrade is in progress — wait for it to finish before starting a scan.',
       noSourceToScan: 'Upload source or clone a repository before starting a scan.',
+      engineMissing:
+        'OpenGrep engine not found — the scan cannot start. Run "npm run setup:engine" in the repo root to install it, or set the OPENGREP_BIN environment variable to the engine executable.',
       scanBusy: 'The scan is running — wait for it to complete or fail before deleting.',
       snippetParamsInvalid: 'path, start, and end query parameters are required (start ≥ 1 and end ≥ start)',
       snippetPathInvalid: 'Invalid file path',
