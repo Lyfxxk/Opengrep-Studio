@@ -9,6 +9,8 @@ export interface IProject {
   createdAt: string
   baselineScanId?: string
   configId?: string
+  /** 服务端 pending/src 目录是否存在（源码已上传），用于页面刷新后恢复扫描按钮可用态 */
+  hasSource?: boolean
 }
 
 export const MOCK_PROJECTS: IProject[] = [

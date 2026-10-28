@@ -347,6 +347,7 @@ const zh = {
     unknownReason: '未知原因',
     loadFailedToast: '加载项目失败：{{error}}',
     configUpdatedToast: '扫描配置已更新',
+    sourceRestored: '源码已导入',
     uploadFallback: '上传',
     multiFileLabel: '{{dir}}（{{count}} 个文件）',
     cloneLabelWithRef: '{{url}}（{{ref}}）',

@@ -52,7 +52,16 @@ export default function ProjectDetailPage() {
         api.listScans(id),
       ]);
       if (requestSeqRef.current !== seq) return;
-      setProject(projects.find((item) => item.id === id) ?? null);
+      const found = projects.find((item) => item.id === id) ?? null;
+      setProject(found);
+      // 从后端恢复源码上传态：API 上传或页面刷新后扫描按钮不再丢失可用态
+      if (found?.hasSource) {
+        setUpload((prev) =>
+          prev.status === 'idle'
+            ? { status: 'uploaded', sourceType: 'upload', fileName: t('projectDetail.sourceRestored') }
+            : prev,
+        );
+      }
       loadedOnceRef.current = true;
       for (const scan of scanList) {
         const before = prevScansRef.current.find((item) => item.id === scan.id);
