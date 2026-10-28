@@ -88,14 +88,14 @@ const child = spawn(
 );
 
 // 关窗口/被强杀时 dev.mjs 来不及执行收尾，Windows 会把孙进程留成孤儿。
-// 挂一个 detached 哨兵：父进程消失后由它按仓库路径清理整棵 dev 进程树。
+// 挂一个 detached 哨兵：父进程消失后由它沿父子关系只清理自己拉起的这棵 dev 进程树，
+// 不碰同仓库其他正在使用的实例。
 if (isWin) {
   const reaper = spawn(
     process.execPath,
     [
       path.join(rootDir, 'server', 'scripts', 'dev-reaper.mjs'),
       String(process.pid),
-      rootDir,
     ],
     { detached: true, stdio: 'ignore', windowsHide: true },
   );
