@@ -396,18 +396,34 @@ export function updateProject(
   db.prepare(`UPDATE projects SET ${sets.join(', ')} WHERE id = ?`).run(...values);
 }
 
+// 删除跨 issues / scans / reviews / projects 多张表，包事务保证中途失败可整体回滚，不留孤儿数据
 export function deleteProject(id: string): void {
-  db.prepare('DELETE FROM issues WHERE scan_id IN (SELECT id FROM scans WHERE project_id = ?)').run(id);
-  db.prepare('DELETE FROM scans WHERE project_id = ?').run(id);
-  deleteProjectReviews(id);
-  db.prepare('DELETE FROM projects WHERE id = ?').run(id);
+  db.exec('BEGIN');
+  try {
+    db.prepare('DELETE FROM issues WHERE scan_id IN (SELECT id FROM scans WHERE project_id = ?)').run(id);
+    db.prepare('DELETE FROM scans WHERE project_id = ?').run(id);
+    deleteProjectReviews(id);
+    db.prepare('DELETE FROM projects WHERE id = ?').run(id);
+    db.exec('COMMIT');
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
 }
 
 /** 删除单条扫描及其问题明细；把别人指向它的基线引用一并置空（对比入口按 404 兜底） */
+// 删除跨 issues / scans 两张表，包事务保证中途失败可整体回滚，不留孤儿 issues 或悬空基线
 export function deleteScan(id: string): void {
-  db.prepare('DELETE FROM issues WHERE scan_id = ?').run(id);
-  db.prepare('UPDATE scans SET baseline_scan_id = NULL WHERE baseline_scan_id = ?').run(id);
-  db.prepare('DELETE FROM scans WHERE id = ?').run(id);
+  db.exec('BEGIN');
+  try {
+    db.prepare('DELETE FROM issues WHERE scan_id = ?').run(id);
+    db.prepare('UPDATE scans SET baseline_scan_id = NULL WHERE baseline_scan_id = ?').run(id);
+    db.prepare('DELETE FROM scans WHERE id = ?').run(id);
+    db.exec('COMMIT');
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
 }
 
 
