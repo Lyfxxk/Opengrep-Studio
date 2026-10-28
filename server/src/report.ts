@@ -38,23 +38,12 @@ interface ReportTotals {
   byComparison: Record<ComparisonStatus, number>;
 }
 
-interface ReportRuleAgg {
-  ruleId: string;
-  count: number;
-  /** 该规则命中的最高严重度 */
-  severity: Severity;
-  rulepackName?: string;
-}
-
 interface ReportFileAgg {
   filePath: string;
   count: number;
   maxSeverity: Severity;
-}
-
-interface ReportDirAgg {
-  dir: string;
-  count: number;
+  /** 该文件命中次数最多的规则（行动清单副行用） */
+  topRule?: string;
 }
 
 interface ReportReviewSummary {
@@ -85,9 +74,7 @@ export interface ReportData {
   conclusion: string;
   /** 在线报告页按语言重拼结论用；旧扫描缓存或异常场景可能缺失（前端回落 conclusion 原文） */
   conclusionCode?: ConclusionPayload | null;
-  topRules: ReportRuleAgg[];
   topFiles: ReportFileAgg[];
-  topDirs: ReportDirAgg[];
   issues: Array<Issue & { review?: ReportIssueReview }>;
   /** 人工复核统计（无复核记录时为 undefined） */
   reviewStats?: ReportReviewSummary;
@@ -106,12 +93,6 @@ const REVIEW_LABEL: Record<ReviewStatus, string> = {
   confirmed: '已确认',
   false_positive: '误报',
   accepted: '已接受',
-};
-const REVIEW_COLOR: Record<ReviewStatus, string> = {
-  pending: '#8a94a6',
-  confirmed: '#d92b2b',
-  false_positive: '#1e9e6a',
-  accepted: '#e8930c',
 };
 
 export type ReportLang = 'zh' | 'zh-Hant' | 'en';
@@ -139,65 +120,74 @@ const REPORT_TEXT_ZH = {
   htmlLang: 'zh-CN',
   brand: 'Opengrep Studio · 码审工作台',
   docTitle: '代码审计测试报告',
-  titleSuffix: '测试报告',
   severity: SEVERITY_LABEL,
   comparison: COMPARISON_LABEL,
   review: REVIEW_LABEL,
   sections: {
-    summary: '一、扫描概要',
-    conclusion: '二、总体结论',
-    distribution: '三、风险分布',
-    issues: '四、问题明细',
+    actions: '行动清单 · 按文件',
+    details: '问题明细',
+    method: '方法与证据',
+    rulesAppendix: '附录 · 规则说明',
   },
   meta: {
-    projectName: '项目名称',
-    projectDescription: '项目描述',
-    language: '主要语言',
-    scanId: '扫描编号',
-    scannedAt: '扫描时间',
-    duration: '引擎耗时',
-    fileCount: '检查文件数',
-    baseline: '基线扫描',
     engine: '扫描引擎',
     sourceHash: '源码哈希',
     commandLine: '引擎命令行',
-    rulepacks: '生效规则包',
     generatedAt: '报告生成时间',
+    finishedAt: '完成时间',
+    duration: '引擎耗时',
+    rulesLabel: '规则',
   },
-  fileCountUnit: (n: number) => `${n} 个`,
+  metrics: { total: '风险总数', critical: '严重', high: '高危', files: '涉及文件' },
+  distTitle: '风险分布',
+  top5Title: '问题最多的 5 个文件',
+  top5Hint: '按条数排序，不代表风险优先级；风险优先级见「行动清单」。',
+  thFile: '文件',
+  thCount: '合计',
+  thMaxSeverity: '最高等级',
+  scopeLabel: '检查范围',
+  baselineLabel: '基线对比',
+  distLabel: '问题分布',
+  distSentence: (total: number, files: number, rules: number) =>
+    `${total} 条问题落在 ${files} 个文件、${rules} 条规则上`,
+  firstScanNoBaseline: '首次扫描，无基线可比',
+  baselineSentence: (id: string, added: number, remaining: number, fixed: number) =>
+    `对比基线 ${id}：新增 ${added} · 遗留 ${remaining} · 已修复 ${fixed}`,
+  actionsHint: (files: number) =>
+    `共 ${files} 个文件，排序为「最高等级优先，同级按问题数降序」。建议自上而下安排修复。`,
+  thFileMainIssue: '文件 / 主要问题',
+  groupCount: (count: number, files: number) => `${count} 条 · ${files} 个文件`,
+  groupHint: {
+    critical: '可直接导致远程代码执行或凭据泄露，建议立即修复并单独出具说明。',
+    high: '位于常见攻击路径上，建议本迭代内修复。',
+    medium: '需特定前置条件或影响有限，建议纳入下个迭代的技术债清单。',
+    low: '编码规范与可维护性问题，随日常改动顺手修即可。',
+  },
+  fixedHeading: (count: number) => `已修复（对比基线，${count} 项）`,
+  appendixHint: (rules: number) =>
+    `${rules} 条规则按命中次数排序，同一规则的完整说明（含修复建议）只在此处出现一次。`,
+  ruleStat: (count: number, files: number) => `命中 ${count} 次 · ${files} 个文件`,
+  noMessage: '（暂无说明）',
+  methodSub: { packs: '规则集', repro: '引擎与可复现性', review: '复核与覆盖', exclusions: '排除项', boundaries: '覆盖边界' },
+  packThName: '规则包',
+  packThId: '标识',
+  noPacks: '未记录规则包',
+  filesChecked: '扫描文件',
+  filesUnit: (n: number) => `${n} 个`,
+  issuesUnit: (n: number) => `${n} 条`,
   durationSeconds: (s: number) => `${s} 秒`,
   durationMinutes: (m: number, s: number) => `${m} 分 ${s} 秒`,
-  totalIssues: '问题总数',
-  reviewed: '已人工复核',
-  confirmed: '复核确认',
-  falsePositive: '判定误报',
-  accepted: '有条件接受',
-  vsBaseline: '（对比基线）',
-  bySeverity: '按严重度',
-  topRules: (n: number) => `高频规则 Top ${n}`,
-  topFiles: (n: number) => `热点文件 Top ${n}`,
-  dirDist: '目录分布',
-  thRule: '规则',
-  thSeverity: '描述最高严重度',
-  thHits: '命中',
-  thPack: '规则包',
-  thFile: '文件',
-  thMaxSeverity: '最高严重度',
-  noRules: '无命中规则',
-  noFiles: '无命中文件',
-  noData: '无数据',
-  issueTableHead: ['#', '位置', '规则', '描述', '状态', '人工复核', '规则包'],
-  reviewPending: '待复核',
-  reviewerLabel: '复核人',
-  severityHeading: (label: string, count: number) => `${label}问题（${count} 项）`,
-  fixedHeading: (count: number) => `已修复（对比基线，${count} 项）`,
+  exclusions: '遵循项目 .gitignore；跳过 node_modules 与 .git',
+  notCovered: '本报告只反映已加载规则的命中结果，不代表不存在其他缺陷',
+  reviewLabel: '人工复核',
+  reviewLine: (s: ReportReviewSummary) =>
+    `已复核 ${s.reviewed} 条：确认 ${s.confirmed} · 误报 ${s.falsePositives} · 已接受 ${s.accepted}。`,
+  reviewNone: '本次扫描未进行人工复核，全部问题为引擎原始判定结果。',
+  noIssues: '本次扫描未发现风险问题。',
   snippetOverflow: (limit: number) =>
     `代码片段超过上限，仅展示前 ${limit} 条，其余请结合扫描结果页查看。`,
-  noIssues: '本次扫描未发现风险问题。',
   footer: (time: string) =>
     `本报告由 Opengrep Studio 码审工作台自动生成 · 生成时间 ${time} · 规则命中与严重度由 opengrep 引擎产出，请结合业务上下文人工复核。`,
-  summaryReview: (s: ReportReviewSummary) =>
-    ` 人工复核已完成 ${s.reviewed} 项（确认 ${s.confirmed}、误报 ${s.falsePositives}、有条件接受 ${s.accepted}）。`,
   listSeparator: '、',
   sentenceSeparator: '',
   severityPhrase: (label: string, count: number) => `${label} ${count} 项`,
@@ -208,71 +198,82 @@ const REPORT_TEXT_ZH = {
   comparisonSentence: (baseline: string, added: number, remaining: number, fixed: number) =>
     `与基线扫描 ${baseline} 相比：新增 ${added} 项、遗留 ${remaining} 项、已修复 ${fixed} 项。`,
   urgentHint: (urgent: number) => `建议优先处理严重与高危问题（共 ${urgent} 项），修复后重新扫描回归验证。`,
+  summaryReview: (s: ReportReviewSummary) =>
+    ` 人工复核已完成 ${s.reviewed} 项（确认 ${s.confirmed}、误报 ${s.falsePositives}、有条件接受 ${s.accepted}）。`,
 };
 
 const REPORT_TEXT_HANT: typeof REPORT_TEXT_ZH = {
   htmlLang: 'zh-Hant',
   brand: 'Opengrep Studio · 碼審工作台',
   docTitle: '程式碼稽核測試報告',
-  titleSuffix: '測試報告',
   severity: HANT_SEVERITY,
   comparison: HANT_COMPARISON,
   review: HANT_REVIEW,
   sections: {
-    summary: '一、掃描概要',
-    conclusion: '二、總體結論',
-    distribution: '三、風險分佈',
-    issues: '四、問題明細',
+    actions: '行動清單 · 按檔案',
+    details: '問題明細',
+    method: '方法與證據',
+    rulesAppendix: '附錄 · 規則說明',
   },
   meta: {
-    projectName: '專案名稱',
-    projectDescription: '專案描述',
-    language: '主要語言',
-    scanId: '掃描編號',
-    scannedAt: '掃描時間',
-    duration: '引擎耗時',
-    fileCount: '檢查檔案數',
-    baseline: '基線掃描',
     engine: '掃描引擎',
     sourceHash: '原始碼雜湊',
     commandLine: '引擎命令列',
-    rulepacks: '生效規則包',
     generatedAt: '報告產生時間',
+    finishedAt: '完成時間',
+    duration: '引擎耗時',
+    rulesLabel: '規則',
   },
-  fileCountUnit: (n: number) => `${n} 個`,
+  metrics: { total: '風險總數', critical: '嚴重', high: '高危', files: '涉及檔案' },
+  distTitle: '風險分佈',
+  top5Title: '問題最多的 5 個檔案',
+  top5Hint: '按條數排序，不代表風險優先級；風險優先級見「行動清單」。',
+  thFile: '檔案',
+  thCount: '合計',
+  thMaxSeverity: '最高等級',
+  scopeLabel: '檢查範圍',
+  baselineLabel: '基線對比',
+  distLabel: '問題分佈',
+  distSentence: (total: number, files: number, rules: number) =>
+    `${total} 條問題落在 ${files} 個檔案、${rules} 條規則上`,
+  firstScanNoBaseline: '首次掃描，無基線可比',
+  baselineSentence: (id: string, added: number, remaining: number, fixed: number) =>
+    `對比基線 ${id}：新增 ${added} · 遺留 ${remaining} · 已修復 ${fixed}`,
+  actionsHint: (files: number) =>
+    `共 ${files} 個檔案，排序為「最高等級優先，同級按問題數降序」。建議自上而下安排修復。`,
+  thFileMainIssue: '檔案 / 主要問題',
+  groupCount: (count: number, files: number) => `${count} 條 · ${files} 個檔案`,
+  groupHint: {
+    critical: '可直接導致遠端程式碼執行或憑證洩露，建議立即修復並單獨出具說明。',
+    high: '位於常見攻擊路徑上，建議本迭代內修復。',
+    medium: '需特定前置條件或影響有限，建議納入下個迭代的技術債清單。',
+    low: '編碼規範與可維護性問題，隨日常改動順手修即可。',
+  },
+  fixedHeading: (count: number) => `已修復（對比基線，${count} 項）`,
+  appendixHint: (rules: number) =>
+    `${rules} 條規則按命中次數排序，同一規則的完整說明（含修復建議）只在此處出現一次。`,
+  ruleStat: (count: number, files: number) => `命中 ${count} 次 · ${files} 個檔案`,
+  noMessage: '（暫無說明）',
+  methodSub: { packs: '規則集', repro: '引擎與可重現性', review: '複核與覆蓋', exclusions: '排除項', boundaries: '覆蓋邊界' },
+  packThName: '規則包',
+  packThId: '標識',
+  noPacks: '未記錄規則包',
+  filesChecked: '掃描檔案',
+  filesUnit: (n: number) => `${n} 個`,
+  issuesUnit: (n: number) => `${n} 條`,
   durationSeconds: (s: number) => `${s} 秒`,
   durationMinutes: (m: number, s: number) => `${m} 分 ${s} 秒`,
-  totalIssues: '問題總數',
-  reviewed: '已人工複核',
-  confirmed: '複核確認',
-  falsePositive: '判定誤報',
-  accepted: '有條件接受',
-  vsBaseline: '（對比基線）',
-  bySeverity: '按嚴重度',
-  topRules: (n: number) => `高頻規則 Top ${n}`,
-  topFiles: (n: number) => `熱點檔案 Top ${n}`,
-  dirDist: '目錄分佈',
-  thRule: '規則',
-  thSeverity: '最高嚴重度',
-  thHits: '命中',
-  thPack: '規則包',
-  thFile: '檔案',
-  thMaxSeverity: '最高嚴重度',
-  noRules: '無命中規則',
-  noFiles: '無命中檔案',
-  noData: '無資料',
-  issueTableHead: ['#', '位置', '規則', '描述', '狀態', '人工複核', '規則包'],
-  reviewPending: '待複核',
-  reviewerLabel: '複核人',
-  severityHeading: (label: string, count: number) => `${label}問題（${count} 項）`,
-  fixedHeading: (count: number) => `已修復（對比基線，${count} 項）`,
+  exclusions: '遵循專案 .gitignore；跳過 node_modules 與 .git',
+  notCovered: '本報告只反映已載入規則的命中結果，不代表不存在其他缺陷',
+  reviewLabel: '人工複核',
+  reviewLine: (s: ReportReviewSummary) =>
+    `已複核 ${s.reviewed} 條：確認 ${s.confirmed} · 誤報 ${s.falsePositives} · 已接受 ${s.accepted}。`,
+  reviewNone: '本次掃描未進行人工複核，全部問題為引擎原始判定結果。',
+  noIssues: '本次掃描未發現風險問題。',
   snippetOverflow: (limit: number) =>
     `程式碼片段超過上限，僅展示前 ${limit} 條，其餘請結合掃描結果頁查看。`,
-  noIssues: '本次掃描未發現風險問題。',
   footer: (time: string) =>
     `本報告由 Opengrep Studio 碼審工作台自動產生 · 產生時間 ${time} · 規則命中與嚴重度由 opengrep 引擎產出，請結合業務上下文人工複核。`,
-  summaryReview: (s: ReportReviewSummary) =>
-    ` 人工複核已完成 ${s.reviewed} 項（確認 ${s.confirmed}、誤報 ${s.falsePositives}、有條件接受 ${s.accepted}）。`,
   listSeparator: '、',
   sentenceSeparator: '',
   severityPhrase: (label: string, count: number) => `${label} ${count} 項`,
@@ -283,6 +284,8 @@ const REPORT_TEXT_HANT: typeof REPORT_TEXT_ZH = {
   comparisonSentence: (baseline: string, added: number, remaining: number, fixed: number) =>
     `與基線掃描 ${baseline} 相比：新增 ${added} 項、遺留 ${remaining} 項、已修復 ${fixed} 項。`,
   urgentHint: (urgent: number) => `建議優先處理嚴重與高危問題（共 ${urgent} 項），修復後重新掃描回歸驗證。`,
+  summaryReview: (s: ReportReviewSummary) =>
+    ` 人工複核已完成 ${s.reviewed} 項（確認 ${s.confirmed}、誤報 ${s.falsePositives}、有條件接受 ${s.accepted}）。`,
 };
 
 const EN_SEVERITY: Record<Severity, string> = {
@@ -307,65 +310,74 @@ const REPORT_TEXT_EN: typeof REPORT_TEXT_ZH = {
   htmlLang: 'en',
   brand: 'Opengrep Studio · Code Audit Workbench',
   docTitle: 'Code Audit Test Report',
-  titleSuffix: 'Test Report',
   severity: EN_SEVERITY,
   comparison: EN_COMPARISON,
   review: EN_REVIEW,
   sections: {
-    summary: '1. Scan summary',
-    conclusion: '2. Overall conclusion',
-    distribution: '3. Risk distribution',
-    issues: '4. Issue details',
+    actions: 'Action list · by file',
+    details: 'Issue details',
+    method: 'Method & evidence',
+    rulesAppendix: 'Appendix · Rule notes',
   },
   meta: {
-    projectName: 'Project name',
-    projectDescription: 'Description',
-    language: 'Primary language',
-    scanId: 'Scan ID',
-    scannedAt: 'Scanned at',
-    duration: 'Engine time',
-    fileCount: 'Files checked',
-    baseline: 'Baseline scan',
     engine: 'Scan engine',
     sourceHash: 'Source SHA-256',
     commandLine: 'Engine command line',
-    rulepacks: 'Rule packs used',
     generatedAt: 'Report generated at',
+    finishedAt: 'Finished at',
+    duration: 'Engine time',
+    rulesLabel: 'Rules',
   },
-  fileCountUnit: (n: number) => `${n} files`,
+  metrics: { total: 'Total issues', critical: 'Critical', high: 'High', files: 'Files involved' },
+  distTitle: 'Risk distribution',
+  top5Title: 'Top 5 files by issue count',
+  top5Hint: 'Sorted by count — this is not a risk priority; see the action list for priority.',
+  thFile: 'File',
+  thCount: 'Total',
+  thMaxSeverity: 'Max severity',
+  scopeLabel: 'Scope',
+  baselineLabel: 'Baseline',
+  distLabel: 'Distribution',
+  distSentence: (total: number, files: number, rules: number) =>
+    `${total} issues across ${files} files and ${rules} rules`,
+  firstScanNoBaseline: 'First scan — no baseline to compare',
+  baselineSentence: (id: string, added: number, remaining: number, fixed: number) =>
+    `vs baseline ${id}: ${added} new · ${remaining} remaining · ${fixed} fixed`,
+  actionsHint: (files: number) =>
+    `${files} files, sorted by max severity then issue count. Work top-down.`,
+  thFileMainIssue: 'File / main issue',
+  groupCount: (count: number, files: number) => `${count} issues · ${files} files`,
+  groupHint: {
+    critical: 'Can directly lead to remote code execution or credential leaks. Fix immediately and document separately.',
+    high: 'On common attack paths; fix within this iteration.',
+    medium: 'Requires specific preconditions or has limited impact; schedule as tech debt.',
+    low: 'Coding-style and maintainability issues; fix opportunistically.',
+  },
+  fixedHeading: (count: number) => `Fixed (vs baseline, ${count})`,
+  appendixHint: (rules: number) =>
+    `${rules} rules sorted by hit count; the full note (with fix guidance) appears here only once per rule.`,
+  ruleStat: (count: number, files: number) => `${count} hits · ${files} files`,
+  noMessage: '(no note available)',
+  methodSub: { packs: 'Rule packs', repro: 'Engine & reproducibility', review: 'Review & coverage', exclusions: 'Exclusions', boundaries: 'Coverage boundary' },
+  packThName: 'Rule pack',
+  packThId: 'ID',
+  noPacks: 'No rule packs recorded',
+  filesChecked: 'Files scanned',
+  filesUnit: (n: number) => `${n} files`,
+  issuesUnit: (n: number) => (n === 1 ? '1 issue' : `${n} issues`),
   durationSeconds: (s: number) => `${s}s`,
   durationMinutes: (m: number, s: number) => `${m}m ${s}s`,
-  totalIssues: 'Total issues',
-  reviewed: 'Reviewed',
-  confirmed: 'Confirmed',
-  falsePositive: 'False positive',
-  accepted: 'Accepted',
-  vsBaseline: ' (vs baseline)',
-  bySeverity: 'By severity',
-  topRules: (n: number) => `Top ${n} rules`,
-  topFiles: (n: number) => `Top ${n} files`,
-  dirDist: 'By directory',
-  thRule: 'Rule',
-  thSeverity: 'Max severity',
-  thHits: 'Hits',
-  thPack: 'Rule pack',
-  thFile: 'File',
-  thMaxSeverity: 'Max severity',
-  noRules: 'No rule hits',
-  noFiles: 'No file hits',
-  noData: 'No data',
-  issueTableHead: ['#', 'Location', 'Rule', 'Description', 'Status', 'Review', 'Rule pack'],
-  reviewPending: 'Pending review',
-  reviewerLabel: 'Reviewer',
-  severityHeading: (label: string, count: number) => `${label} issues (${count})`,
-  fixedHeading: (count: number) => `Fixed (vs baseline, ${count})`,
+  exclusions: "Respects the project's .gitignore; skips node_modules and .git",
+  notCovered: 'This report only reflects hits from the loaded rules; absence of findings is not proof of absence of defects.',
+  reviewLabel: 'Manual review',
+  reviewLine: (s: ReportReviewSummary) =>
+    `${s.reviewed} reviewed: ${s.confirmed} confirmed · ${s.falsePositives} false positive · ${s.accepted} accepted.`,
+  reviewNone: 'No manual review was performed; all findings are raw engine verdicts.',
+  noIssues: 'No risk issues were found in this scan.',
   snippetOverflow: (limit: number) =>
     `Snippet limit reached — showing the first ${limit}; open the scan result page for the rest.`,
-  noIssues: 'No risk issues were found in this scan.',
   footer: (time: string) =>
     `Generated by Opengrep Studio · ${time} · Rule hits and severities come from the opengrep engine; review them in business context.`,
-  summaryReview: (s: ReportReviewSummary) =>
-    ` Manual review: ${s.reviewed} reviewed (${s.confirmed} confirmed, ${s.falsePositives} false positive, ${s.accepted} accepted).`,
   listSeparator: ', ',
   sentenceSeparator: ' ',
   severityPhrase: (label: string, count: number) => `${label} ${count}`,
@@ -377,6 +389,8 @@ const REPORT_TEXT_EN: typeof REPORT_TEXT_ZH = {
     `Compared with baseline scan ${baseline}: ${added} new, ${remaining} remaining, ${fixed} fixed.`,
   urgentHint: (urgent: number) =>
     `Prioritize critical and high issues (${urgent} in total), then rescan to verify.`,
+  summaryReview: (s: ReportReviewSummary) =>
+    ` Manual review: ${s.reviewed} reviewed (${s.confirmed} confirmed, ${s.falsePositives} false positive, ${s.accepted} accepted).`,
 };
 
 type ReportText = typeof REPORT_TEXT_ZH;
@@ -420,9 +434,7 @@ function localizedConclusion(data: ReportData, text: ReportText): string {
   return review && review.reviewed > 0 ? `${base}${text.summaryReview(review)}` : base;
 }
 
-const TOP_RULES_LIMIT = 10;
 const TOP_FILES_LIMIT = 10;
-const TOP_DIRS_LIMIT = 8;
 /** HTML 报告内嵌代码片段的条数上限（严重+高危合计），避免大扫描把报告撑到几十 MB */
 const SNIPPET_LIMIT = 100;
 
@@ -462,58 +474,32 @@ export function buildReportData(
     };
   };
 
-  const ruleAgg = new Map<string, ReportRuleAgg>();
+  // 文件级聚合带每个文件的代表规则（行动清单副行展示），规则计数与问题计数同步维护
+  const fileAgg = new Map<string, ReportFileAgg & { ruleCounts: Map<string, number> }>();
   for (const issue of current) {
-    const entry = ruleAgg.get(issue.ruleId);
-    if (entry) {
-      entry.count += 1;
-      if (SEVERITY_RANK[issue.severity] < SEVERITY_RANK[entry.severity]) {
-        entry.severity = issue.severity;
-      }
-      entry.rulepackName ??= issue.rulepackName;
-    } else {
-      ruleAgg.set(issue.ruleId, {
-        ruleId: issue.ruleId,
-        count: 1,
-        severity: issue.severity,
-        rulepackName: issue.rulepackName,
-      });
-    }
-  }
-  const topRules = [...ruleAgg.values()]
-    .sort((a, b) => b.count - a.count || SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity])
-    .slice(0, TOP_RULES_LIMIT);
-
-  const fileAgg = new Map<string, ReportFileAgg>();
-  for (const issue of current) {
-    const entry = fileAgg.get(issue.filePath);
-    if (entry) {
-      entry.count += 1;
-      if (SEVERITY_RANK[issue.severity] < SEVERITY_RANK[entry.maxSeverity]) {
-        entry.maxSeverity = issue.severity;
-      }
-    } else {
-      fileAgg.set(issue.filePath, {
+    let entry = fileAgg.get(issue.filePath);
+    if (!entry) {
+      entry = {
         filePath: issue.filePath,
-        count: 1,
+        count: 0,
         maxSeverity: issue.severity,
-      });
+        ruleCounts: new Map(),
+      };
+      fileAgg.set(issue.filePath, entry);
+    }
+    entry.count += 1;
+    entry.ruleCounts.set(issue.ruleId, (entry.ruleCounts.get(issue.ruleId) ?? 0) + 1);
+    if (SEVERITY_RANK[issue.severity] < SEVERITY_RANK[entry.maxSeverity]) {
+      entry.maxSeverity = issue.severity;
     }
   }
-  const topFiles = [...fileAgg.values()]
+  const fileAggList = [...fileAgg.values()].map(({ ruleCounts, ...rest }) => {
+    const [topRule] = [...ruleCounts.entries()].sort((a, b) => b[1] - a[1]);
+    return topRule ? { ...rest, topRule: topRule[0] } : rest;
+  });
+  const topFiles = [...fileAggList]
     .sort((a, b) => b.count - a.count || SEVERITY_RANK[a.maxSeverity] - SEVERITY_RANK[b.maxSeverity])
     .slice(0, TOP_FILES_LIMIT);
-
-  const dirAgg = new Map<string, number>();
-  for (const issue of current) {
-    const sep = issue.filePath.indexOf('/');
-    const dir = sep > 0 ? issue.filePath.slice(0, sep) : '（根目录）';
-    dirAgg.set(dir, (dirAgg.get(dir) ?? 0) + 1);
-  }
-  const topDirs = [...dirAgg.entries()]
-    .map(([dir, count]) => ({ dir, count }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, TOP_DIRS_LIMIT);
 
   const durationSeconds =
     scan.finishedAt && scan.scannedAt
@@ -553,9 +539,7 @@ export function buildReportData(
     totals: { total: current.length, bySeverity, byComparison },
     conclusion: `${conclusion}${reviewSentence}`,
     conclusionCode: buildConclusionPayload(scan, current.length, bySeverity, byComparison),
-    topRules,
     topFiles,
-    topDirs,
     issues: mappedIssues,
     ...(reviewStats.reviewed > 0 ? { reviewStats } : {}),
   };
@@ -659,62 +643,119 @@ const SEVERITY_COLOR: Record<Severity, string> = {
   low: '#8a94a6',
 };
 
-function barRows(
-  rows: Array<{ label: string; count: number; color: string }>,
-): string {
-  const max = Math.max(1, ...rows.map((row) => row.count));
-  return rows
-    .map(
-      (row) => `
-      <div class="bar-row">
-        <span class="bar-label">${escapeHtml(row.label)}</span>
-        <span class="bar-track"><span class="bar-fill" style="width:${(row.count / max) * 100}%;background:${row.color}"></span></span>
-        <span class="bar-value">${row.count}</span>
-      </div>`,
-    )
-    .join('');
+
+/** 取说明首句：明细条目只放一句话，同一规则的完整说明去重到附录 */
+function firstSentence(value: string): string {
+  const text = String(value ?? '').trim();
+  const cut = text.split(/(?<=[。！？])/)[0] || text;
+  return cut.length > 64 ? `${cut.slice(0, 64)}…` : cut;
 }
 
-function issueTableHtml(
-  issues: Array<Issue & { review?: ReportIssueReview }>,
+/** 命令行含本机绝对路径：对外交付泄露目录结构且撑坏版面，统一折叠成 <repo>/ */
+function sanitizeCommand(cmd: string): string {
+  const paths = [...cmd.matchAll(/"([^"]+)"/g)].map((match) => match[1]);
+  if (!paths.length) return cmd;
+  let prefix = paths[0];
+  for (const p of paths) while (prefix && !p.startsWith(prefix)) prefix = prefix.slice(0, -1);
+  const cut = Math.max(prefix.lastIndexOf('\\'), prefix.lastIndexOf('/')) + 1;
+  const root = prefix.slice(0, cut);
+  if (!root) return cmd;
+  return cmd.split(root).join('<repo>/').replace(/\\/g, '/');
+}
+
+/** 路径拆「目录 + 文件名」：目录允许断行，文件名不折断，避免按字符断词 */
+function pathHtml(p: string): string {
+  const s = String(p ?? '');
+  const cut = s.lastIndexOf('/') + 1;
+  return `<span class="dir">${escapeHtml(s.slice(0, cut))}</span><span class="fname">${escapeHtml(s.slice(cut))}</span>`;
+}
+
+/** 规则说明查找：messages 键为完整规则 ID，精确未命中时按末段后缀匹配（与知识库同口径） */
+function buildMessageLookup(messages?: Record<string, string>) {
+  if (!messages) return (_ruleId: string, fallback: string) => fallback;
+  const exact = new Map(Object.entries(messages));
+  const bySuffix = new Map<string, string>();
+  for (const [key, value] of exact) {
+    const idx = key.lastIndexOf('.');
+    if (idx >= 0 && !bySuffix.has(key.slice(idx + 1))) bySuffix.set(key.slice(idx + 1), value);
+  }
+  return (ruleId: string, fallback: string) => exact.get(ruleId) ?? bySuffix.get(ruleId) ?? fallback;
+}
+
+type ReportIssue = Issue & { review?: ReportIssueReview };
+
+/** 明细条目：位置行（行号 + 规则）+ 一句话说明 + 可选片段与状态标签 */
+function issueEntryHtml(
+  issue: ReportIssue,
   snippets: Map<string, string>,
   snippetBudget: { left: number },
   text: ReportText,
+  lookup: (ruleId: string, fallback: string) => string,
 ): string {
-  const rows = issues
-    .map((issue, index) => {
-      let snippetHtml = '';
-      if (
-        snippetBudget.left > 0 &&
-        (issue.severity === 'critical' || issue.severity === 'high')
-      ) {
-        const snippet = snippets.get(issue.id);
-        if (snippet) {
-          snippetBudget.left -= 1;
-          snippetHtml = `<tr class="snippet-row"><td colspan="7"><pre>${escapeHtml(snippet)}</pre></td></tr>`;
-        }
-      }
-      const reviewTag = issue.review
-        ? `<span class="tag" style="background:${REVIEW_COLOR[issue.review.status]}1a;color:${REVIEW_COLOR[issue.review.status]}" title="${escapeHtml([`${text.reviewerLabel}：${issue.review.reviewer ?? '—'}`, issue.review.reason].filter(Boolean).join('；'))}">${text.review[issue.review.status]}</span>`
-        : `<span class="tag tag-pending">${text.reviewPending}</span>`;
-      return `<tr>
-          <td class="cell-num">${index + 1}</td>
-          <td class="cell-mono">${escapeHtml(issue.filePath)}:${issue.startLine}</td>
-          <td class="cell-mono">${escapeHtml(issue.ruleId)}</td>
-          <td>${escapeHtml(issue.message)}</td>
-          <td><span class="tag tag-${issue.comparisonStatus}">${text.comparison[issue.comparisonStatus]}</span></td>
-          <td>${reviewTag}</td>
-          <td class="cell-sub">${escapeHtml(issue.rulepackName ?? '—')}</td>
-        </tr>${snippetHtml}`;
-    })
+  const showSnippet =
+    snippetBudget.left > 0 &&
+    (issue.severity === 'critical' || issue.severity === 'high') &&
+    snippets.has(issue.id);
+  if (showSnippet) snippetBudget.left -= 1;
+  const lineRange =
+    issue.endLine && issue.endLine !== issue.startLine
+      ? `:${issue.startLine}\u2013${issue.endLine}`
+      : `:${issue.startLine}`;
+  const tags = [
+    issue.comparisonStatus !== 'remaining'
+      ? `<span class="tag tag-${issue.comparisonStatus}">${text.comparison[issue.comparisonStatus]}</span>`
+      : '',
+    issue.review ? `<span class="tag tag-review">${text.review[issue.review.status]}</span>` : '',
+  ]
+    .filter(Boolean)
     .join('');
-  return `
-    <table class="issue-table">
-      <thead>
-        <tr>${text.issueTableHead.map((th) => `<th>${th}</th>`).join('')}</tr>
-      </thead>
-      <tbody>${rows}</tbody>
-    </table>`;
+  return `<div class="entry">
+      <div class="entry-head">
+        <span class="line">${escapeHtml(lineRange)}</span>
+        <span class="rule">${escapeHtml(issue.ruleId)}</span>
+      </div>
+      <div class="entry-msg">${escapeHtml(lookup(issue.ruleId, firstSentence(issue.message)))}</div>
+      ${showSnippet ? `<pre class="entry-snippet">${escapeHtml(snippets.get(issue.id) ?? '')}</pre>` : ''}
+      ${tags ? `<div class="entry-tags">${tags}</div>` : ''}
+    </div>`;
+}
+
+/** 明细组：按严重度（或"已修复"）一组，组内按文件归并，同一文件的 N 条只写一次路径 */
+function detailGroupHtml(options: {
+  heading: string;
+  sub: string;
+  hint?: string;
+  accent: string;
+  first: boolean;
+  list: ReportIssue[];
+  snippets: Map<string, string>;
+  snippetBudget: { left: number };
+  text: ReportText;
+  lookup: (ruleId: string, fallback: string) => string;
+}): string {
+  const { text, lookup } = options;
+  const byFile = new Map<string, ReportIssue[]>();
+  for (const issue of options.list) {
+    const bucket = byFile.get(issue.filePath);
+    if (bucket) bucket.push(issue);
+    else byFile.set(issue.filePath, [issue]);
+  }
+  const blocks = [...byFile.entries()]
+    .map(
+      ([filePath, list]) => `<div class="file-block">
+      <div class="file-head">
+        <span class="fpath">${pathHtml(filePath)}</span>
+        <span class="file-count">${text.issuesUnit(list.length)}</span>
+      </div>
+      ${list.map((issue) => issueEntryHtml(issue, options.snippets, options.snippetBudget, text, lookup)).join('')}
+    </div>`,
+    )
+    .join('');
+  return `<section class="block${options.first ? '' : ' flow'}">
+    <h2 class="group" style="border-left-color:${options.accent}">${escapeHtml(options.heading)}<span class="count">${escapeHtml(options.sub)}</span></h2>
+    ${options.hint ? `<p class="hint">${escapeHtml(options.hint)}</p>` : ''}
+    ${blocks}
+  </section>`;
 }
 
 export interface HtmlRenderOptions {
@@ -722,17 +763,21 @@ export interface HtmlRenderOptions {
   includeSnippets: boolean;
 }
 
-/** 渲染自包含 HTML 报告：内联 CSS、无外部依赖，可直接离线打开或打印为 PDF */
+/** 渲染自包含 HTML 报告：内联 CSS、无外部依赖，可直接离线打开或打印为 PDF。
+ * 版式四章：结论（决策者 30 秒）→ 行动清单（按文件）→ 明细（按严重度分组、组内按文件归并的条目式）→ 方法与证据 + 规则附录。
+ * 全程 A4 纵向，任何元素不允许超出纸宽（明细弃用表格改条目式正是为此）。 */
 export function renderReportHtml(
   data: ReportData,
   issues: IssueRow[],
   options: HtmlRenderOptions,
   lang: ReportLang = 'zh',
+  messages?: Record<string, string>,
 ): string {
-  const { meta, totals, topRules, topFiles, topDirs, reviewStats } = data;
+  const { meta, totals, topFiles, reviewStats } = data;
   const text = REPORT_TEXT[lang];
   const current = issues.filter(isActiveIssue);
   const fixed = issues.filter((issue) => issue.comparisonStatus === 'fixed');
+  const lookup = buildMessageLookup(messages);
 
   const snippets = new Map<string, string>();
   if (options.includeSnippets) {
@@ -742,237 +787,376 @@ export function renderReportHtml(
   }
   const snippetBudget = { left: SNIPPET_LIMIT };
 
-  const severityStats = SEVERITY_ORDER.map((sev) => ({
-    label: text.severity[sev],
-    count: totals.bySeverity[sev],
-    color: SEVERITY_COLOR[sev],
-  }));
-  const comparisonStats: Array<{ label: string; count: number; color: string }> = meta.baselineScanId
-    ? [
-        { label: text.comparison.new, count: totals.byComparison.new, color: '#d92b2b' },
-        { label: text.comparison.remaining, count: totals.byComparison.remaining, color: '#e8930c' },
-        { label: text.comparison.fixed, count: totals.byComparison.fixed, color: '#1e9e6a' },
-      ]
-    : [];
+  // 文件级聚合：封面 Top5 与行动清单共用（排序：最高等级 → 条数）
+  const fileMap = new Map<
+    string,
+    { path: string; count: number; bySev: Record<Severity, number>; maxSev: Severity; ruleCounts: Map<string, number> }
+  >();
+  for (const issue of current) {
+    let file = fileMap.get(issue.filePath);
+    if (!file) {
+      file = {
+        path: issue.filePath,
+        count: 0,
+        bySev: { critical: 0, high: 0, medium: 0, low: 0 },
+        maxSev: issue.severity,
+        ruleCounts: new Map(),
+      };
+      fileMap.set(issue.filePath, file);
+    }
+    file.count += 1;
+    file.bySev[issue.severity] += 1;
+    file.ruleCounts.set(issue.ruleId, (file.ruleCounts.get(issue.ruleId) ?? 0) + 1);
+    if (SEVERITY_RANK[issue.severity] < SEVERITY_RANK[file.maxSev]) file.maxSev = issue.severity;
+  }
+  const fileList = [...fileMap.values()]
+    .map(({ ruleCounts, ...rest }) => {
+      const [topRule] = [...ruleCounts.entries()].sort((a, b) => b[1] - a[1]);
+      return { ...rest, topRule: topRule?.[0] ?? '' };
+    })
+    .sort((a, b) => SEVERITY_RANK[a.maxSev] - SEVERITY_RANK[b.maxSev] || b.count - a.count);
 
-  const metaRows: Array<[string, string]> = [
-    [text.meta.projectName, escapeHtml(meta.projectName)],
-    ...(meta.projectDescription ? ([[text.meta.projectDescription, escapeHtml(meta.projectDescription)]] as Array<[string, string]>) : []),
-    ...(meta.language ? ([[text.meta.language, escapeHtml(meta.language)]] as Array<[string, string]>) : []),
-    [text.meta.scanId, `<span class="cell-mono">${escapeHtml(meta.scanId)}</span>`],
-    [text.meta.scannedAt, formatDateTime(meta.scannedAt)],
-    ...(meta.durationSeconds !== undefined
-      ? ([[text.meta.duration, formatDuration(meta.durationSeconds, text)]] as Array<[string, string]>)
-      : []),
-    [text.meta.fileCount, meta.fileCount ? text.fileCountUnit(meta.fileCount) : '—'],
-    ...(meta.baselineScanId
-      ? ([[text.meta.baseline, `<span class="cell-mono">${escapeHtml(meta.baselineScanId)}</span>`]] as Array<[string, string]>)
-      : []),
-    ...(meta.engineVersion ? ([[text.meta.engine, `opengrep v${escapeHtml(meta.engineVersion)}`]] as Array<[string, string]>) : []),
-    ...(meta.sourceHash
-      ? ([[text.meta.sourceHash, `<span class="cell-mono">${escapeHtml(meta.sourceHash)}</span>`]] as Array<[string, string]>)
-      : []),
-    ...(meta.commandLine
-      ? ([[text.meta.commandLine, `<span class="cell-mono" style="word-break:break-all">${escapeHtml(meta.commandLine)}</span>`]] as Array<[string, string]>)
-      : []),
-    [
-      text.meta.rulepacks,
-      meta.rulepacks?.length
-        ? meta.rulepacks.map((pack) => escapeHtml(pack.name)).join('、')
-        : meta.rules
-          ? escapeHtml(meta.rules)
-          : '—',
-    ],
-    [text.meta.generatedAt, formatDateTime(meta.generatedAt)],
-  ];
+  // 规则级聚合：附录规则卡（同一规则的完整说明只出现一次）
+  const ruleMap = new Map<string, { id: string; count: number; files: Set<string>; maxSev: Severity }>();
+  for (const issue of current) {
+    let rule = ruleMap.get(issue.ruleId);
+    if (!rule) {
+      rule = { id: issue.ruleId, count: 0, files: new Set(), maxSev: issue.severity };
+      ruleMap.set(issue.ruleId, rule);
+    }
+    rule.count += 1;
+    rule.files.add(issue.filePath);
+    if (SEVERITY_RANK[issue.severity] < SEVERITY_RANK[rule.maxSev]) rule.maxSev = issue.severity;
+  }
+  const ruleList = [...ruleMap.values()].sort(
+    (a, b) => SEVERITY_RANK[a.maxSev] - SEVERITY_RANK[b.maxSev] || b.count - a.count,
+  );
 
-  const detailSections = SEVERITY_ORDER.map((sev) => {
-    const list = current.filter((issue) => issue.severity === sev);
-    if (list.length === 0) return '';
-    const urgent = sev === 'critical' || sev === 'high';
-    return `
-      <h3><span class="sev-dot" style="background:${SEVERITY_COLOR[sev]}"></span>${text.severityHeading(text.severity[sev], list.length)}</h3>
-      ${issueTableHtml(list, snippets, snippetBudget, text)}
-      ${urgent && options.includeSnippets && snippetBudget.left <= 0
-        ? `<p class="note">${text.snippetOverflow(SNIPPET_LIMIT)}</p>`
-        : ''}`;
+  const conclusionText = escapeHtml(lang === 'zh' ? data.conclusion : localizedConclusion(data, text));
+  const metricsHtml = `
+    <div class="metrics">
+      <div class="metric"><div class="k">${text.metrics.total}</div><div class="v">${totals.total}</div></div>
+      <div class="metric"><div class="k">${text.metrics.critical}</div><div class="v" style="color:${totals.bySeverity.critical ? SEVERITY_COLOR.critical : 'var(--faint)'}">${totals.bySeverity.critical}</div></div>
+      <div class="metric"><div class="k">${text.metrics.high}</div><div class="v" style="color:${totals.bySeverity.high ? SEVERITY_COLOR.high : 'var(--faint)'}">${totals.bySeverity.high}</div></div>
+      <div class="metric"><div class="k">${text.metrics.files}</div><div class="v">${fileList.length}</div></div>
+    </div>`;
+
+  const distBars = SEVERITY_ORDER.map((sev) => {
+    const count = totals.bySeverity[sev];
+    const pct = totals.total ? Math.round((count / totals.total) * 100) : 0;
+    return `<div class="bar-row">
+      <span class="bar-label"><i class="dot" style="background:${SEVERITY_COLOR[sev]}"></i>${text.severity[sev]}</span>
+      <span class="bar-track"><span class="bar-fill" style="width:${pct}%;background:${SEVERITY_COLOR[sev]}"></span></span>
+      <span class="bar-value">${count}<em>${pct}%</em></span>
+    </div>`;
   }).join('');
+
+  const top5Rows = [...fileList]
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5)
+    .map(
+      (file) => `<tr>
+        <td class="path">${pathHtml(file.path)}</td>
+        <td class="num strong">${file.count}</td>
+        ${SEVERITY_ORDER.filter((sev) => sev !== 'low')
+          .map((sev) => `<td class="num">${file.bySev[sev] || '—'}</td>`)
+          .join('')}
+        <td><span class="sev-chip" style="color:#fff;background:${SEVERITY_COLOR[file.maxSev]}">${text.severity[file.maxSev]}</span></td>
+      </tr>`,
+    )
+    .join('');
+
+  const actionRows = fileList
+    .map(
+      (file) => `<tr>
+        <td class="path">${pathHtml(file.path)}<div class="sub-rule">${escapeHtml(file.topRule)}</div></td>
+        <td class="num strong">${file.count}</td>
+        <td class="num hi">${file.bySev.high || '—'}</td>
+        <td class="num mid">${file.bySev.medium || '—'}</td>
+        <td class="num low">${file.bySev.low || '—'}</td>
+      </tr>`,
+    )
+    .join('');
+
+  const detailHtml =
+    current.length === 0
+      ? `<p class="conclusion">${text.noIssues}</p>`
+      : SEVERITY_ORDER.map((sev, index) => {
+          const list = current.filter((issue) => issue.severity === sev);
+          if (list.length === 0) return '';
+          const byFileCount = new Set(list.map((issue) => issue.filePath)).size;
+          return detailGroupHtml({
+            heading: text.severity[sev],
+            sub: text.groupCount(list.length, byFileCount),
+            hint: text.groupHint[sev],
+            accent: SEVERITY_COLOR[sev],
+            first: index === 0,
+            list,
+            snippets,
+            snippetBudget,
+            text,
+            lookup,
+          });
+        }).join('');
+
+  const fixedHtml = fixed.length
+    ? detailGroupHtml({
+        heading: text.fixedHeading(fixed.length),
+        sub: '',
+        accent: '#1e9e6a',
+        first: false,
+        list: fixed,
+        snippets: new Map(),
+        snippetBudget: { left: 0 },
+        text,
+        lookup,
+      })
+    : '';
+
+  const packsRows =
+    meta.rulepacks?.length
+      ? meta.rulepacks
+          .map(
+            (pack) =>
+              `<tr><td>${escapeHtml(pack.name)}</td><td class="cell-mono">${escapeHtml(pack.id)}</td></tr>`,
+          )
+          .join('')
+      : `<tr><td colspan="2" class="hint">${meta.rules ? escapeHtml(meta.rules) : text.noPacks}</td></tr>`;
+
+  const ruleCards = ruleList
+    .map((rule, index) => {
+      const note = lang === 'en' ? '' : lookup(rule.id, '');
+      return `<div class="rule-card">
+      <div class="rule-head">
+        <span class="rule-idx">${String(index + 1).padStart(2, '0')}</span>
+        <span class="rule-name">${escapeHtml(rule.id)}</span>
+        <span class="rule-stat">${text.ruleStat(rule.count, rule.files.size)} · <i class="dot" style="background:${SEVERITY_COLOR[rule.maxSev]}"></i>${text.severity[rule.maxSev]}</span>
+      </div>
+      ${note ? `<p class="rule-text">${escapeHtml(note)}</p>` : lang !== 'en' ? `<p class="rule-text muted">${text.noMessage}</p>` : ''}
+    </div>`;
+    })
+    .join('');
+
+  const reviewValue = reviewStats ? text.reviewLine(reviewStats) : text.reviewNone;
+  const scopeValue = `${text.filesUnit(meta.fileCount)}${meta.language ? ` · ${escapeHtml(meta.language)}` : ''}`;
+  const baselineValue = meta.baselineScanId
+    ? text.baselineSentence(
+        meta.baselineScanId,
+        totals.byComparison.new,
+        totals.byComparison.remaining,
+        totals.byComparison.fixed,
+      )
+    : text.firstScanNoBaseline;
 
   return `<!DOCTYPE html>
 <html lang="${text.htmlLang}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${text.titleSuffix} · ${escapeHtml(meta.projectName)} · ${escapeHtml(meta.scanId)}</title>
+<title>${text.docTitle} · ${escapeHtml(meta.projectName)} · ${escapeHtml(meta.scanId)}</title>
 <style>
+  :root{
+    --fg:#1a1f29; --fg-2:#3d4657; --muted:#6b7689; --faint:#8a94a6;
+    --line:#e3e8f0; --soft:#f5f7fb; --softer:#fafbfd; --brand:#1a4f9c;
+    --mono:'JetBrains Mono',Consolas,'Cascadia Code','Courier New',monospace;
+  }
   * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   body {
-    margin: 0; color: #1f2633; background: #f1f4f9;
+    margin: 0; color: var(--fg); background: #fff;
     font-family: -apple-system, 'BlinkMacSystemFont', 'Helvetica Neue', Tahoma,
       'PingFang SC', 'Microsoft Yahei', 'Hiragino Sans GB', sans-serif;
-    font-size: 14px; line-height: 1.6;
+    font-size: 14px; line-height: 1.55;
   }
   html:lang(zh-Hant) body {
     font-family: -apple-system, 'BlinkMacSystemFont', 'Helvetica Neue', Tahoma,
       'PingFang TC', 'PingFang SC', 'Microsoft JhengHei', 'Microsoft Yahei', 'Hiragino Sans GB', sans-serif;
   }
-  .doc { max-width: 860px; margin: 0 auto; padding: 40px 32px 32px; background: #fff; }
-  .cover { border-bottom: 3px solid #1f7fe0; padding-bottom: 20px; margin-bottom: 24px; }
-  .brand { font-size: 12px; letter-spacing: .08em; color: #6b7689; text-transform: uppercase; }
-  .cover h1 { margin: 8px 0 4px; font-size: 28px; }
-  .cover .subtitle { color: #4a5468; font-size: 16px; }
-  section { margin: 28px 0; }
-  h2 { font-size: 18px; margin: 0 0 12px; padding-left: 10px; border-left: 4px solid #1f7fe0; }
-  h3 { font-size: 15px; margin: 20px 0 8px; }
-  h3 .sev-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
-  .conclusion { background: #f0f6ff; border: 1px solid #d4e6ff; border-radius: 8px; padding: 12px 16px; margin: 0 0 16px; }
-  .stat-grid { display: flex; flex-wrap: wrap; gap: 12px; margin: 12px 0; }
-  .stat-card { flex: 1 1 120px; border: 1px solid #e3e8f0; border-radius: 8px; padding: 10px 14px; }
-  .stat-card .num { font-size: 24px; font-weight: 700; }
-  .stat-card .label { font-size: 12px; color: #6b7689; }
-  table { width: 100%; border-collapse: collapse; margin: 8px 0 16px; }
-  th, td { border: 1px solid #e3e8f0; padding: 6px 10px; text-align: left; vertical-align: top; }
-  th { background: #f5f7fb; font-size: 13px; }
-  .meta-table th { width: 130px; background: #fafbfd; color: #4a5468; font-weight: 500; }
-  .cell-num { color: #8a94a6; white-space: nowrap; }
-  .cell-mono { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 12.5px; }
-  .cell-sub { color: #6b7689; font-size: 12.5px; }
-  .tag { display: inline-block; padding: 0 8px; border-radius: 999px; font-size: 12px; line-height: 20px; white-space: nowrap; }
-  .tag-new { background: #fbe9e9; color: #d92b2b; }
-  .tag-remaining { background: #fdf1dd; color: #b26e05; }
-  .tag-fixed { background: #e2f5ec; color: #1e9e6a; }
-  .tag-pending { background: #eef1f6; color: #8a94a6; }
-  .bar-row { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
-  .bar-label { flex: 0 0 190px; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .bar-track { flex: 1; height: 14px; background: #eef1f6; border-radius: 7px; overflow: hidden; }
-  .bar-fill { display: block; height: 100%; border-radius: 7px; }
-  .bar-value { flex: 0 0 44px; text-align: right; font-variant-numeric: tabular-nums; color: #4a5468; }
-  .snippet-row td { background: #fafbfd; padding: 0 10px; }
-  .snippet-row pre {
-    margin: 6px 0; padding: 8px 10px; background: #0f172a; color: #dce4f2;
-    border-radius: 6px; font-family: 'JetBrains Mono', Consolas, monospace;
-    font-size: 12px; line-height: 1.5; overflow-x: auto; white-space: pre-wrap; word-break: break-all;
+  .doc { max-width: 760px; margin: 0 auto; padding: 28px 32px 48px; }
+  h1, h2, h3 { margin: 0; font-weight: 600; }
+  .mono { font-family: var(--mono); }
+  .muted { color: var(--muted); }
+
+  .cover-top { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid var(--fg); padding-bottom: 10px; margin-bottom: 16px; }
+  .cover-top .proj { font-size: 12.5px; color: var(--muted); }
+  h1 { font-size: 28px; letter-spacing: .5px; margin-top: 2px; }
+  .doc-meta { font-size: 12px; color: var(--muted); text-align: right; line-height: 1.7; }
+  .doc-meta b { color: var(--fg-2); font-weight: 500; }
+
+  .conclusion { background: var(--softer); border-left: 3px solid var(--brand); padding: 12px 14px; margin: 0 0 16px; }
+  .conclusion p { margin: 0; }
+
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 18px; }
+  .metric { border: 1px solid var(--line); border-radius: 6px; padding: 9px 12px; background: var(--softer); }
+  .metric .k { font-size: 12px; color: var(--muted); }
+  .metric .v { font-size: 25px; font-weight: 600; line-height: 1.3; font-variant-numeric: tabular-nums; }
+
+  h2.sec { font-size: 17px; padding-bottom: 5px; border-bottom: 1px solid var(--line); margin: 0 0 8px; }
+  h3.sub { font-size: 14px; margin: 16px 0 6px; color: var(--fg-2); }
+
+  .bar-row { display: flex; align-items: center; gap: 8px; margin: 5px 0; font-size: 12.5px; }
+  .bar-label { flex: 0 0 84px; color: var(--fg-2); }
+  .bar-track { flex: 1; height: 10px; background: var(--soft); border: 1px solid var(--line); border-radius: 5px; overflow: hidden; }
+  .bar-fill { display: block; height: 100%; border-radius: 5px; }
+  .bar-value { flex: 0 0 92px; text-align: right; font-variant-numeric: tabular-nums; }
+  .bar-value em { font-style: normal; color: var(--faint); font-size: 11px; margin-left: 4px; }
+  .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; vertical-align: 1px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th, td { border-bottom: 1px solid var(--line); padding: 4px 6px; text-align: left; vertical-align: top; }
+  th { background: var(--soft); font-weight: 600; font-size: 12px; color: var(--fg-2); white-space: nowrap; }
+  tbody tr:nth-child(even) { background: var(--softer); }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td.num.strong { font-weight: 600; }
+  td.num.hi { color: var(--high-c, #c76a00); }
+  td.num.mid { color: #1f7fe0; }
+  td.num.low { color: var(--faint); }
+  td.path { overflow-wrap: anywhere; }
+  .path .dir { color: var(--muted); word-break: break-all; }
+  .path .fname { color: var(--fg-2); white-space: nowrap; }
+  .sub-rule { font-family: var(--mono); font-size: 11px; color: var(--faint); margin-top: 1px; }
+  .sev-chip { display: inline-block; font-size: 11px; padding: 0 6px; border-radius: 3px; white-space: nowrap; }
+
+  .block { break-before: page; page-break-before: always; }
+  .block:first-of-type { break-before: auto; page-break-before: auto; }
+  .block.flow { break-before: auto; page-break-before: auto; }
+  h2.group { font-size: 17px; border-bottom: 1px solid var(--line); border-left: 4px solid var(--line); padding: 0 0 5px 9px; margin: 14px 0 3px; break-after: avoid; page-break-after: avoid; }
+  h2.group .count { font-size: 12.5px; color: var(--muted); font-weight: 400; margin-left: 6px; }
+  .hint { font-size: 12px; color: var(--muted); margin: 0 0 6px; }
+
+  .file-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin: 12px 0 3px; padding: 3px 8px; background: var(--soft); border-left: 3px solid var(--brand); border-radius: 0 4px 4px 0; break-after: avoid; page-break-after: avoid; }
+  .file-head .fpath { font-size: 12px; font-weight: 600; min-width: 0; }
+  .file-head .fname { color: var(--fg); }
+  .file-count { font-size: 11px; color: var(--muted); white-space: nowrap; flex: 0 0 auto; }
+
+  .entry { padding: 4px 0; border-bottom: 1px solid var(--line); break-inside: avoid; page-break-inside: avoid; }
+  .entry-head { display: flex; align-items: baseline; gap: 10px; }
+  .entry .line { font-family: var(--mono); font-size: 11px; color: var(--muted); flex: 0 0 66px; white-space: nowrap; }
+  .entry .rule { font-family: var(--mono); font-size: 11px; color: var(--fg-2); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .entry-msg { font-size: 12.5px; color: var(--fg-2); margin: 1px 0 0 68px; }
+  .entry-tags { margin: 3px 0 0 68px; display: flex; gap: 5px; }
+  .entry-snippet {
+    margin: 4px 0 2px 68px; padding: 8px 10px; background: #0f172a; color: #dce4f2;
+    border-radius: 6px; font-family: var(--mono); font-size: 11px; line-height: 1.5;
+    white-space: pre-wrap; word-break: break-all;
   }
-  .note { color: #8a94a6; font-size: 12.5px; }
-  footer { margin-top: 36px; padding-top: 12px; border-top: 1px solid #e3e8f0; color: #8a94a6; font-size: 12px; }
+  .tag { display: inline-block; font-size: 10.5px; padding: 0 6px; border-radius: 3px; line-height: 1.6; white-space: nowrap; }
+  .tag-new { background: #fbe9e9; color: #c92a2a; }
+  .tag-remaining { background: #fdf1dd; color: #a35a00; }
+  .tag-fixed { background: #e2f5ec; color: #1e7d55; }
+  .tag-review { background: var(--soft); color: var(--muted); }
+
+  .rule-card { padding: 7px 0; border-bottom: 1px solid var(--line); break-inside: avoid; page-break-inside: avoid; }
+  .rule-head { display: flex; align-items: baseline; gap: 8px; }
+  .rule-idx { font-size: 11px; color: var(--faint); flex: 0 0 18px; }
+  .rule-name { font-family: var(--mono); font-size: 12px; color: var(--fg-2); font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+  .rule-stat { font-size: 11px; color: var(--muted); margin-left: auto; white-space: nowrap; }
+  .rule-text { margin: 2px 0 0 26px; font-size: 12px; color: var(--fg-2); line-height: 1.5; }
+
+  .kv { display: grid; grid-template-columns: 96px 1fr; gap: 4px 12px; font-size: 12.5px; margin: 0 0 12px; }
+  .kv dt { color: var(--muted); }
+  .kv dd { margin: 0; word-break: break-all; }
+  pre.cmd { background: var(--softer); border: 1px solid var(--line); border-radius: 5px; padding: 8px 10px; font-family: var(--mono); font-size: 11px; line-height: 1.5; white-space: pre-wrap; word-break: break-all; margin: 0 0 10px; }
+
+  .foot { margin-top: 24px; padding-top: 8px; border-top: 1px solid var(--line); font-size: 11px; color: var(--faint); display: flex; justify-content: space-between; gap: 12px; }
+
   @media print {
     body { background: #fff; }
     .doc { max-width: none; padding: 0; }
     @page { size: A4; margin: 14mm 12mm; }
     thead { display: table-header-group; }
-    tr, .stat-card, .bar-row, .conclusion { break-inside: avoid; }
-    section { break-inside: auto; }
+    tr, .metric, .bar-row, .conclusion, .rule-card { break-inside: avoid; page-break-inside: avoid; }
+    h2.sec, h2.group, h3.sub, .file-head { break-after: avoid; page-break-after: avoid; }
   }
 </style>
 </head>
 <body>
 <div class="doc">
-  <header class="cover">
-    <div class="brand">${text.brand}</div>
-    <h1>${text.docTitle}</h1>
-    <div class="subtitle">${escapeHtml(meta.projectName)}<span class="cell-mono" style="margin-left:10px;font-size:13px;color:#6b7689">${escapeHtml(meta.scanId)}</span></div>
-  </header>
 
   <section>
-    <h2>${text.sections.summary}</h2>
-    <table class="meta-table">
-      <tbody>
-        ${metaRows.map(([label, value]) => `<tr><th>${label}</th><td>${value}</td></tr>`).join('')}
-      </tbody>
-    </table>
-  </section>
-
-  <section>
-    <h2>${text.sections.conclusion}</h2>
-    <p class="conclusion">${escapeHtml(lang === 'zh' ? data.conclusion : localizedConclusion(data, text))}</p>
-    <div class="stat-grid">
-      ${severityStats
-        .map(
-          (item) =>
-            `<div class="stat-card"><div class="num" style="color:${item.color}">${item.count}</div><div class="label">${item.label}</div></div>`,
-        )
-        .join('')}
-      <div class="stat-card"><div class="num">${totals.total}</div><div class="label">${text.totalIssues}</div></div>
+    <div class="cover-top">
+      <div>
+        <div class="proj">${escapeHtml(meta.projectName)}${meta.projectDescription ? ` · ${escapeHtml(meta.projectDescription)}` : ''}</div>
+        <h1>${text.docTitle}</h1>
+      </div>
+      <div class="doc-meta">
+        <b class="mono">${escapeHtml(meta.scanId)}</b><br>
+        ${text.meta.finishedAt} <b>${formatDateTime(meta.finishedAt ?? meta.scannedAt)}</b><br>
+        ${text.meta.engine} <b>opengrep v${escapeHtml(meta.engineVersion ?? '—')}</b> · ${text.meta.rulesLabel} <b>${escapeHtml(meta.rules ?? '—')}</b>
+      </div>
     </div>
-    ${
-      comparisonStats.length
-        ? `<div class="stat-grid">${comparisonStats
-            .map(
-              (item) =>
-                `<div class="stat-card"><div class="num" style="color:${item.color}">${item.count}</div><div class="label">${item.label}${text.vsBaseline}</div></div>`,
-            )
-            .join('')}</div>`
-        : ''
-    }
-    ${
-      reviewStats
-        ? `<div class="stat-grid">
-            <div class="stat-card"><div class="num" style="color:#1f7fe0">${reviewStats.reviewed}</div><div class="label">${text.reviewed}</div></div>
-            <div class="stat-card"><div class="num" style="color:#d92b2b">${reviewStats.confirmed}</div><div class="label">${text.confirmed}</div></div>
-            <div class="stat-card"><div class="num" style="color:#1e9e6a">${reviewStats.falsePositives}</div><div class="label">${text.falsePositive}</div></div>
-            <div class="stat-card"><div class="num" style="color:#e8930c">${reviewStats.accepted}</div><div class="label">${text.accepted}</div></div>
-          </div>`
-        : ''
-    }
-  </section>
 
-  <section>
-    <h2>${text.sections.distribution}</h2>
-    <h3>${text.bySeverity}</h3>
-    ${barRows(severityStats)}
-    <h3>${text.topRules(topRules.length)}</h3>
+    <div class="conclusion"><p>${conclusionText}</p></div>
+
+    ${metricsHtml}
+
+    <h2 class="sec">${text.distTitle}</h2>
+    ${distBars}
+
+    <h3 class="sub">${text.top5Title}</h3>
+    <p class="hint">${text.top5Hint}</p>
     <table>
-      <thead><tr><th>${text.thRule}</th><th>${text.thSeverity}</th><th>${text.thHits}</th><th>${text.thPack}</th></tr></thead>
-      <tbody>
-        ${
-          topRules.length
-            ? topRules
-                .map(
-                  (row) =>
-                    `<tr><td class="cell-mono">${escapeHtml(row.ruleId)}</td><td><span style="color:${SEVERITY_COLOR[row.severity]};font-weight:600">${text.severity[row.severity]}</span></td><td class="cell-num">${row.count}</td><td class="cell-sub">${escapeHtml(row.rulepackName ?? '—')}</td></tr>`,
-                )
-                .join('')
-            : '<tr><td colspan="4" class="note">${text.noRules}</td></tr>'
-        }
-      </tbody>
+      <thead><tr><th>${text.thFile}</th><th class="num">${text.thCount}</th>${SEVERITY_ORDER.filter((sev) => sev !== 'low' && totals.bySeverity[sev] > 0).map((sev) => `<th class="num">${text.severity[sev]}</th>`).join('')}<th>${text.thMaxSeverity}</th></tr></thead>
+      <tbody>${top5Rows}</tbody>
     </table>
-    <h3>${text.topFiles(topFiles.length)}</h3>
+
+    <dl class="kv" style="margin-top:14px">
+      <dt>${text.scopeLabel}</dt><dd>${scopeValue}</dd>
+      <dt>${text.baselineLabel}</dt><dd>${escapeHtml(baselineValue)}</dd>
+      <dt>${text.distLabel}</dt><dd>${text.distSentence(totals.total, fileList.length, ruleList.length)}</dd>
+    </dl>
+
+    <div class="foot"><span>${text.brand}</span><span>${formatDateTime(meta.generatedAt)}</span></div>
+  </section>
+
+  <section class="block">
+    <h2 class="sec">${text.sections.actions}</h2>
+    <p class="hint">${text.actionsHint(fileList.length)}</p>
     <table>
-      <thead><tr><th>${text.thFile}</th><th>${text.thMaxSeverity}</th><th>${text.thHits}</th></tr></thead>
-      <tbody>
-        ${
-          topFiles.length
-            ? topFiles
-                .map(
-                  (row) =>
-                    `<tr><td class="cell-mono">${escapeHtml(row.filePath)}</td><td><span style="color:${SEVERITY_COLOR[row.maxSeverity]};font-weight:600">${text.severity[row.maxSeverity]}</span></td><td class="cell-num">${row.count}</td></tr>`,
-                )
-                .join('')
-            : '<tr><td colspan="3" class="note">${text.noFiles}</td></tr>'
-        }
-      </tbody>
+      <thead><tr><th>${text.thFileMainIssue}</th><th class="num">${text.thCount}</th><th class="num">${text.severity.high}</th><th class="num">${text.severity.medium}</th><th class="num">${text.severity.low}</th></tr></thead>
+      <tbody>${actionRows}</tbody>
     </table>
-    <h3>${text.dirDist}</h3>
-    ${topDirs.length ? barRows(topDirs.map((row) => ({ label: row.dir, count: row.count, color: '#1f7fe0' }))) : '<p class="note">' + text.noData + '</p>'}
   </section>
 
-  <section>
-    <h2>${text.sections.issues}</h2>
-    ${
-      current.length === 0
-        ? '<p class="conclusion">' + text.noIssues + '</p>'
-        : detailSections
-    }
-    ${
-      fixed.length
-        ? `<h3>${text.fixedHeading(fixed.length)}</h3>${issueTableHtml(fixed, snippets, { left: 0 }, text)}`
-        : ''
-    }
+  <section class="block">
+    <h2 class="sec">${text.sections.details}</h2>
+    ${detailHtml}
+  </section>
+  ${fixedHtml}
+
+  <section class="flow">
+    <h2 class="sec">${text.sections.rulesAppendix}</h2>
+    <p class="hint">${text.appendixHint(ruleList.length)}</p>
+    ${ruleCards}
   </section>
 
-  <footer>
-    ${text.footer(formatDateTime(meta.generatedAt))}
-  </footer>
+  <section class="block">
+    <h2 class="sec">${text.sections.method}</h2>
+
+    <h3 class="sub">${text.methodSub.packs}</h3>
+    <table>
+      <thead><tr><th>${text.packThName}</th><th>${text.packThId}</th></tr></thead>
+      <tbody>${packsRows}</tbody>
+    </table>
+
+    <h3 class="sub">${text.methodSub.repro}</h3>
+    <dl class="kv">
+      <dt>${text.meta.engine}</dt><dd>opengrep v${escapeHtml(meta.engineVersion ?? '—')}${meta.durationSeconds !== undefined ? ` · ${formatDuration(meta.durationSeconds, text)}` : ''}</dd>
+      <dt>${text.meta.sourceHash}</dt><dd class="mono">${escapeHtml(meta.sourceHash ?? '—')}</dd>
+      <dt>${text.meta.generatedAt}</dt><dd>${formatDateTime(meta.generatedAt)}</dd>
+    </dl>
+    ${meta.commandLine ? `<pre class="cmd">${escapeHtml(sanitizeCommand(meta.commandLine))}</pre>` : ''}
+
+    <h3 class="sub">${text.methodSub.review}</h3>
+    <dl class="kv">
+      <dt>${text.reviewLabel}</dt><dd>${escapeHtml(reviewValue)}</dd>
+      <dt>${text.filesChecked}</dt><dd>${text.filesUnit(meta.fileCount)}</dd>
+      <dt>${text.methodSub.exclusions}</dt><dd>${text.exclusions}</dd>
+      <dt>${text.methodSub.boundaries}</dt><dd>${text.notCovered}</dd>
+    </dl>
+
+    <div class="foot"><span>${escapeHtml(meta.projectName)} · ${escapeHtml(meta.scanId)}</span><span>${text.brand}</span></div>
+  </section>
+
 </div>
 </body>
 </html>`;

@@ -31,22 +31,12 @@ interface IReportTotals {
   byComparison: Record<IIssue['comparisonStatus'], number>;
 }
 
-interface IReportRuleAgg {
-  ruleId: string;
-  count: number;
-  severity: IIssue['severity'];
-  rulepackName?: string;
-}
-
 interface IReportFileAgg {
   filePath: string;
   count: number;
   maxSeverity: IIssue['severity'];
-}
-
-interface IReportDirAgg {
-  dir: string;
-  count: number;
+  /** 该文件命中次数最多的规则（行动清单副行用） */
+  topRule?: string;
 }
 
 /** 服务端结论的结构化载荷：code 对应 i18n 键 reportConclusion.<code>，message 为中文兜底 */
@@ -62,9 +52,7 @@ export interface IReportData {
   conclusion: string;
   /** 服务端下发的结论载荷（演示模式与旧数据缺失，此时回落 conclusion 原文） */
   conclusionCode?: IReportConclusionCode | null;
-  topRules: IReportRuleAgg[];
   topFiles: IReportFileAgg[];
-  topDirs: IReportDirAgg[];
   issues: IIssue[];
   /** 人工复核统计（无复核记录时为 undefined） */
   reviewStats?: IReportReviewStats;
@@ -85,47 +73,19 @@ export function buildMockReport(scan: IScanResult, projectName: string): IReport
   const byComparison: IReportTotals['byComparison'] = { new: 0, fixed: 0, remaining: 0 };
   for (const issue of issues) byComparison[issue.comparisonStatus] += 1;
 
-  const ruleAgg = new Map<string, IReportRuleAgg>();
+  // 文件级聚合带每个文件的代表规则，与服务端 buildReportData 同口径
+  const fileAgg = new Map<string, IReportFileAgg & { ruleCounts: Map<string, number> }>();
   for (const issue of current) {
-    const entry = ruleAgg.get(issue.ruleId);
-    if (entry) {
-      entry.count += 1;
-      if (SEVERITY_RANK[issue.severity] < SEVERITY_RANK[entry.severity]) {
-        entry.severity = issue.severity;
-      }
-      entry.rulepackName ??= issue.rulepackName;
-    } else {
-      ruleAgg.set(issue.ruleId, {
-        ruleId: issue.ruleId,
-        count: 1,
-        severity: issue.severity,
-        rulepackName: issue.rulepackName,
-      });
+    let entry = fileAgg.get(issue.filePath);
+    if (!entry) {
+      entry = { filePath: issue.filePath, count: 0, maxSeverity: issue.severity, ruleCounts: new Map() };
+      fileAgg.set(issue.filePath, entry);
     }
-  }
-
-  const fileAgg = new Map<string, IReportFileAgg>();
-  for (const issue of current) {
-    const entry = fileAgg.get(issue.filePath);
-    if (entry) {
-      entry.count += 1;
-      if (SEVERITY_RANK[issue.severity] < SEVERITY_RANK[entry.maxSeverity]) {
-        entry.maxSeverity = issue.severity;
-      }
-    } else {
-      fileAgg.set(issue.filePath, {
-        filePath: issue.filePath,
-        count: 1,
-        maxSeverity: issue.severity,
-      });
+    entry.count += 1;
+    entry.ruleCounts.set(issue.ruleId, (entry.ruleCounts.get(issue.ruleId) ?? 0) + 1);
+    if (SEVERITY_RANK[issue.severity] < SEVERITY_RANK[entry.maxSeverity]) {
+      entry.maxSeverity = issue.severity;
     }
-  }
-
-  const dirAgg = new Map<string, number>();
-  for (const issue of current) {
-    const sep = issue.filePath.indexOf('/');
-    const dir = sep > 0 ? issue.filePath.slice(0, sep) : i18n.t('api.demoRootDir');
-    dirAgg.set(dir, (dirAgg.get(dir) ?? 0) + 1);
   }
 
   const durationSeconds =
@@ -164,16 +124,13 @@ export function buildMockReport(scan: IScanResult, projectName: string): IReport
     },
     totals: { total: current.length, bySeverity, byComparison },
     conclusion,
-    topRules: [...ruleAgg.values()]
-      .sort((a, b) => b.count - a.count || SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity])
-      .slice(0, 10),
     topFiles: [...fileAgg.values()]
+      .map(({ ruleCounts, ...rest }) => {
+        const [topRule] = [...ruleCounts.entries()].sort((a, b) => b[1] - a[1]);
+        return topRule ? { ...rest, topRule } : rest;
+      })
       .sort((a, b) => b.count - a.count || SEVERITY_RANK[a.maxSeverity] - SEVERITY_RANK[b.maxSeverity])
       .slice(0, 10),
-    topDirs: [...dirAgg.entries()]
-      .map(([dir, count]) => ({ dir, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 8),
     issues,
   };
 }

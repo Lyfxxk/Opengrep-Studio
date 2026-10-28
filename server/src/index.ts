@@ -74,7 +74,7 @@ import {
   type ScanRecord,
 } from './db.js';
 import { diffSnapshots } from './snapshot-diff.js';
-import { getRuleKnowledge, isSafeSampleDirName } from './knowledge.js';
+import { getRuleKnowledge, isSafeSampleDirName, listRuleMessages } from './knowledge.js';
 import { parseRuleYaml } from './rule-yaml.js';
 import {
   builtinRulesDir,
@@ -1473,7 +1473,9 @@ app.get('/api/scans/:scanId/report', asyncHandler(async (req, res) => {
   if (format === 'html') {
     const includeSnippets = req.query.detail !== 'summary';
     const lang = parseProductLang(req.query.lang);
-    const html = renderReportHtml(data, issues, { includeSnippets }, lang);
+    // 中文语境附规则说明映射（明细一句话 + 附录），英文直接用引擎原文
+    const messages = lang === 'en' ? undefined : listRuleMessages(lang);
+    const html = renderReportHtml(data, issues, { includeSnippets }, lang, messages);
     const prefix = lang === 'zh-Hant' ? '測試報告' : lang === 'en' ? 'test-report' : '测试报告';
     const fileName = `${prefix}-${project.name}-${scan.id}.html`;
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
