@@ -348,14 +348,18 @@ const noConfigScan = await api('POST', `/api/projects/${pid}/scans`, {});
 assert(noConfigScan.status === 201, '未绑定配置时自动绑定默认配置并扫描', JSON.stringify(noConfigScan.json));
 assert((noConfigScan.json.rulepacks ?? []).length >= 1, '默认配置解析到可用规则包', JSON.stringify(noConfigScan.json.rulepacks));
 const rebound = ((await api('GET', '/api/projects')).json ?? []).find((p) => p.id === pid);
-assert(rebound?.configId === noConfigScan.json.rules, '项目已自动绑定默认配置', JSON.stringify(rebound));
+// 扫描记录的 rules 落配置名而非 cfg- 内部 id（routes/scans.ts 的 rulesLabel），项目绑定的是 id：
+// 经配置列表把 configId 换算回名字再比对，验证「扫的就是项目被自动绑定的那份默认配置」
+const reboundConfig = ((await api('GET', '/api/configs')).json ?? []).find((c) => c.id === rebound?.configId);
+assert(reboundConfig?.name === noConfigScan.json.rules, '项目已自动绑定默认配置', JSON.stringify(rebound));
 const s0 = await pollScan(noConfigScan.json.id);
 assert(s0.status === 'completed', '一键扫描完成', JSON.stringify(s0));
 await api('PATCH', `/api/projects/${pid}`, { configId: fullConfig.id });
 
 const scan1 = await api('POST', `/api/projects/${pid}/scans`, {});
 assert(scan1.status === 201 && scan1.json.status === 'scanning', '扫描已提交');
-assert(scan1.json.rules === fullConfig.id, '扫描使用绑定的配置', JSON.stringify(scan1.json));
+// rules 与配置名比对（同上）：E2E 前缀资源开场已清场，一轮内配置名唯一，名字比对即可锚定绑定关系
+assert(scan1.json.rules === fullConfig.name, '扫描使用绑定的配置', JSON.stringify(scan1.json));
 const s1 = await pollScan(scan1.json.id);
 assert(s1.status === 'completed', 'v1 扫描完成', JSON.stringify(s1));
 assert(s1.issueCount > 0, `v1 发现 ${s1.issueCount} 个问题`);
