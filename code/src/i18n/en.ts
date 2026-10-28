@@ -801,6 +801,37 @@ const en: typeof zh = {
       labUpgradeBusy: 'An engine upgrade is in progress — wait for it to finish before running the lab.',
       ruleFileInvalid: 'Invalid rule file {{name}}',
     },
+    git: {
+      badUrl: 'Invalid repository URL — enter a Git URL starting with https://',
+      schemeUnsupported: 'Only http(s):// Git repository URLs are supported',
+      badRef: 'Branch/tag names may only contain letters, digits, and . _ / - characters, and cannot start with a dot',
+      authRequired:
+        'Clone failed: this repository requires authentication. Use a public repo, or upload a ZIP for private ones.',
+      cloneFailed: 'Clone failed: {{reason}}',
+    },
+    sarif: {
+      invalidJson: 'The SARIF file is not valid JSON: {{reason}}',
+      notObject: 'The SARIF file top level must be a JSON object',
+      versionUnsupported: 'Only SARIF 2.x is supported (current version: {{version}})',
+      runsMissing: 'The SARIF file is missing the runs array',
+      tooManyResults: 'SARIF result count exceeds the limit of {{limit}}',
+    },
+    pack: {
+      manifestInvalid: 'Failed to parse pack.yaml: {{reason}}',
+      manifestNotObject: 'pack.yaml top level must be a key-value mapping',
+      nameMissing: 'pack.yaml is missing the name field',
+      nameTooLong: 'pack.yaml name cannot exceed 60 characters',
+      versionMissing: 'pack.yaml is missing the version field',
+      versionTooLong: 'pack.yaml version cannot exceed 30 characters',
+    },
+    scan: {
+      snapshotMissing: 'The scan source snapshot cannot be found',
+      noRuleFiles: 'No usable rule files',
+      timedOut: 'The scan was aborted after {{minutes}} minutes — narrow the source scope and retry.',
+      outputTruncated:
+        'Engine output exceeded the 64MB limit and was truncated; narrow the source scope or reduce rules and retry.',
+      engineFailed: 'Engine execution failed (exit={{code}}){{detail}}',
+    },
   },
   format: {
     durationSeconds: '{{count}}s',

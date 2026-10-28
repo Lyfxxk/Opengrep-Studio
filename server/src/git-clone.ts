@@ -14,10 +14,12 @@ function parseRepoUrl(raw: string): URL {
   try {
     parsed = new URL(raw);
   } catch {
-    throw new HttpError(400, '仓库地址格式不正确，请输入 https:// 开头的 Git 仓库 URL');
+    throw new HttpError(400, '仓库地址格式不正确，请输入 https:// 开头的 Git 仓库 URL', {
+      code: 'git.badUrl',
+    });
   }
   if (!ALLOWED_PROTOCOLS.has(parsed.protocol) || !parsed.hostname) {
-    throw new HttpError(400, '仅支持 http(s):// 形式的 Git 仓库地址');
+    throw new HttpError(400, '仅支持 http(s):// 形式的 Git 仓库地址', { code: 'git.schemeUnsupported' });
   }
   return parsed;
 }
@@ -26,7 +28,9 @@ function parseRepoUrl(raw: string): URL {
 function validateGitRef(ref: string): string {
   if (!ref) return '';
   if (!/^[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(ref) || ref.includes('..')) {
-    throw new HttpError(400, '分支/Tag 名称只允许字母、数字与 . _ / - 字符，且不能以点开头');
+    throw new HttpError(400, '分支/Tag 名称只允许字母、数字与 . _ / - 字符，且不能以点开头', {
+      code: 'git.badRef',
+    });
   }
   return ref;
 }
@@ -77,9 +81,13 @@ function redactSecrets(text: string, parsed: URL): string {
 
 function gitFail(detail: string): HttpError {
   if (detail.includes('could not read Username') || detail.includes('Authentication failed')) {
-    return new HttpError(400, '克隆失败：该仓库需要认证。请使用公开仓库，私有仓库请改用 ZIP 上传');
+    return new HttpError(
+      400,
+      '克隆失败：该仓库需要认证。请使用公开仓库，私有仓库请改用 ZIP 上传',
+      { code: 'git.authRequired' },
+    );
   }
-  return new HttpError(400, `克隆失败：${detail}`);
+  return new HttpError(400, `克隆失败：${detail}`, { code: 'git.cloneFailed', params: { reason: detail } });
 }
 
 /**

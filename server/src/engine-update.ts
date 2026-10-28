@@ -143,7 +143,9 @@ export function engineUpgradeRunning(): boolean {
  * 全过程失败都不动现有引擎，状态通过 /api/engine/upgrade 轮询。
  */
 export async function startEngineUpgrade(): Promise<EngineUpgradeState> {
-  if (upgradePending) throw new HttpError(409, '引擎升级正在进行中，请稍候');
+  if (upgradePending) {
+    throw new HttpError(409, '引擎升级正在进行中，请稍候', { code: 'srv.upgradePending' });
+  }
 
   // 先同步占住互斥位再走网络检查：检查要等 GitHub 往返（可达数秒），期间扫描/实验室
   // 若照常发起，随后替换二进制就会撞上运行中的引擎，升级与扫描两边一起失败
@@ -157,7 +159,9 @@ export async function startEngineUpgrade(): Promise<EngineUpgradeState> {
       );
     }
     if (!info.canUpgrade || !info.latestTag || !info.assetName || !info.assetSha256) {
-      throw new HttpError(409, info.reason ?? '当前没有可升级的版本');
+      throw new HttpError(409, info.reason ?? '当前没有可升级的版本', {
+        code: 'srv.noUpgradeTarget',
+      });
     }
 
     const from = info.current;
