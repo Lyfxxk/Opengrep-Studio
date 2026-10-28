@@ -18,6 +18,14 @@ export const SEVERITY_BAR_CLASS: Record<IIssue['severity'], string> = {
   low: 'bg-muted-foreground/40',
 };
 
+/** 严重度左侧色条（报告页明细分组标题、文件头共用） */
+export const SEVERITY_BORDER_CLASS: Record<IIssue['severity'], string> = {
+  critical: 'border-destructive',
+  high: 'border-warning',
+  medium: 'border-primary',
+  low: 'border-muted-foreground/40',
+};
+
 /** 严重度文字色（报告页统计与标注共用） */
 export const SEVERITY_TEXT_CLASS: Record<IIssue['severity'], string> = {
   critical: 'text-destructive',

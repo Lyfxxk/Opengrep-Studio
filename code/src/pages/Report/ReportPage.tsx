@@ -1,14 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import {
-  ArrowLeft,
-  CircleAlert,
-  Download,
-  Loader2,
-  Printer,
-} from 'lucide-react';
+import { ArrowLeft, Download, Loader2, Printer } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -24,44 +18,44 @@ import { REVIEW_BADGE_CLASS, type IIssue } from '@/data/issues';
 import { COMPARISON_VISUALS } from '@/data/constants';
 import { formatDateTime, formatDuration } from '@/lib/format';
 import { api } from '@/lib/api';
-import { type IReportData, type IReportMeta } from '@/data/reports';
+import { type IReportData } from '@/data/reports';
 import { lookupRuleMessage, useRuleMessageMap } from '@/lib/ruleMessages';
 import {
   SEVERITY_BADGE_CLASS,
   SEVERITY_BAR_CLASS,
+  SEVERITY_BORDER_CLASS,
   SEVERITY_ORDER,
   SEVERITY_TEXT_CLASS,
 } from '@/lib/severity';
 import { cn } from '@/lib/utils';
 
-/** 在线明细表每组最多渲染的行数（超出的部分引导下载完整 HTML 报告） */
-const GROUP_DISPLAY_LIMIT = 200;
+type Severity = IIssue['severity'];
 
-const COMPARISON_STATS: Array<{
-  status: IIssue['comparisonStatus'];
-  icon: typeof CircleAlert;
-  tone: string;
-  bg: string;
-}> = [
-  { status: 'new', ...COMPARISON_VISUALS.new },
-  { status: 'remaining', ...COMPARISON_VISUALS.remaining },
-  { status: 'fixed', ...COMPARISON_VISUALS.fixed },
-];
+/** 明细条目的一句话说明：取中文说明/引擎消息首句，与离线 HTML 报告同口径 */
+function firstSentence(value: string): string {
+  const cut = value.trim().split(/(?<=[。！？])/)[0] || value;
+  return cut.length > 64 ? `${cut.slice(0, 64)}…` : cut;
+}
 
+/** 路径拆「目录 + 文件名」：目录允许断行，文件名不折断，避免按字符断词 */
+function splitPath(path: string) {
+  const cut = path.lastIndexOf('/') + 1;
+  return { dir: path.slice(0, cut), name: path.slice(cut) };
+}
 
-function MetaRow({ label, children }: { label: string; children: React.ReactNode }) {
+function PathLabel({ path, className }: { path: string; className?: string }) {
+  const { dir, name } = splitPath(path);
   return (
-    <div className="flex items-baseline justify-between gap-4 border-b border-dashed py-2 text-sm last:border-b-0">
-      <span className="shrink-0 text-muted-foreground">{label}</span>
-      <span className="min-w-0 text-right font-medium">{children}</span>
-    </div>
+    <span className={cn('min-w-0 text-xs', className)}>
+      <span className="break-all text-muted-foreground">{dir}</span>
+      <span className="whitespace-nowrap">{name}</span>
+    </span>
   );
 }
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="mb-3 flex items-center gap-2 text-base font-semibold print:break-after-avoid">
-      <span className="h-4 w-1 rounded-full bg-primary" />
+    <h2 className="mb-3 border-b pb-1.5 text-base font-semibold print:break-after-avoid">
       {children}
     </h2>
   );
@@ -72,202 +66,160 @@ function DistBar({
   count,
   max,
   barClass,
-  mono = false,
+  total,
 }: {
   label: string;
   count: number;
   max: number;
   barClass: string;
-  mono?: boolean;
+  total: number;
 }) {
   return (
     <div className="flex items-center gap-3">
-      <span
-        className={cn(
-          'w-44 shrink-0 truncate text-xs',
-          mono && 'font-mono',
-          'text-muted-foreground',
-        )}
-        title={label}
-      >
+      <span className="flex w-16 shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
+        <span className={cn('size-2 rounded-full', barClass)} />
         {label}
       </span>
-      <span className="h-3.5 min-w-0 flex-1 overflow-hidden rounded-full bg-muted">
+      <span className="h-2.5 min-w-0 flex-1 overflow-hidden rounded-full border border-border/60 bg-muted">
         <span
           className={cn('block h-full rounded-full', barClass)}
-          style={{ width: `${max > 0 ? (count / max) * 100 : 0}%` }}
+          style={{ width: `${total > 0 ? (count / total) * 100 : 0}%` }}
         />
       </span>
-      <span className="w-10 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
+      <span className="w-16 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
         {count}
+        <em className="ml-1 not-italic opacity-70">{total > 0 ? Math.round((count / total) * 100) : 0}%</em>
       </span>
     </div>
   );
 }
 
-function IssueGroupTable({
-  title,
-  dotClass,
-  issues,
+interface FileAgg {
+  path: string;
+  count: number;
+  bySev: Record<Severity, number>;
+  maxSev: Severity;
+  topRule: string;
+}
+
+interface RuleAgg {
+  id: string;
+  count: number;
+  files: number;
+  maxSev: Severity;
+}
+
+/** 明细条目：位置行（行号 + 规则）+ 一句话说明 + 状态标签 */
+function IssueEntry({
+  issue,
   messageMap,
 }: {
-  title: string;
-  dotClass: string;
-  issues: IIssue[];
+  issue: IIssue;
   messageMap: Record<string, string>;
 }) {
-  const { t } = useTranslation();
-  const visible = issues.slice(0, GROUP_DISPLAY_LIMIT);
+  const { t, i18n } = useTranslation();
+  const lineRange =
+    issue.endLine && issue.endLine !== issue.startLine
+      ? `${issue.startLine}\u2013${issue.endLine}`
+      : `${issue.startLine}`;
+  // 中文语境优先规则说明（未命中回落引擎原文首句），英文直接引擎原文
+  const note = lookupRuleMessage(messageMap, issue.ruleId, firstSentence(issue.message));
   return (
-    <div className="mb-6">
-      <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold print:break-after-avoid">
-        <span className={cn('size-2.5 rounded-full', dotClass)} />
-        {title}
-        <span className="text-xs font-normal text-muted-foreground">
-          {t('report.groupItems', { count: issues.length })}
+    <div className="border-b py-1.5 print:break-inside-avoid">
+      <div className="flex items-baseline gap-2.5">
+        <span className="w-14 shrink-0 font-mono text-[11px] leading-5 text-muted-foreground">
+          :{lineRange}
         </span>
-      </h3>
-      <div className="overflow-x-auto rounded-lg border print:overflow-visible">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted/50">
-              <TableHead className="w-10 text-center">#</TableHead>
-              <TableHead className="min-w-[220px]">{t('compare.thLocation')}</TableHead>
-              <TableHead className="min-w-[140px]">{t('compare.thRule')}</TableHead>
-              <TableHead className="min-w-[220px]">{t('compare.thDescription')}</TableHead>
-              <TableHead className="w-16">{t('report.thStatus')}</TableHead>
-              <TableHead className="w-24">{t('report.thReview')}</TableHead>
-              <TableHead className="min-w-[120px]">{t('scans.colRulePacks')}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {visible.map((issue, index) => (
-              <TableRow key={issue.id}>
-                <TableCell className="text-center text-xs tabular-nums text-muted-foreground">
-                  {index + 1}
-                </TableCell>
-                <TableCell className="break-all font-mono text-xs">
-                  {issue.filePath}:{issue.startLine}
-                </TableCell>
-                <TableCell className="font-mono text-xs">{issue.ruleId}</TableCell>
-                <TableCell className="text-xs">
-                  {lookupRuleMessage(messageMap, issue.ruleId, issue.message)}
-                </TableCell>
-                <TableCell>
-                  <Badge
-                    className={cn(
-                      'px-1.5 text-xs font-normal',
-                      COMPARISON_VISUALS[issue.comparisonStatus].badge,
-                    )}
-                  >
-                    {t(`comparison.${issue.comparisonStatus}`)}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  {issue.review ? (
-                    <Badge
-                      className={cn('px-1.5 text-xs font-normal', REVIEW_BADGE_CLASS[issue.review.status])}
-                      title={issue.review.reason}
-                    >
-                      {t(`reviewStatus.${issue.review.status}`)}
-                    </Badge>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">{t('reviewStatus.pending')}</span>
-                  )}
-                </TableCell>
-                <TableCell className="text-xs text-muted-foreground">
-                  {issue.rulepackName ?? '—'}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <span className="min-w-0 truncate font-mono text-[11px] leading-5">{issue.ruleId}</span>
       </div>
-      {issues.length > visible.length && (
-        <p className="mt-1.5 text-xs text-muted-foreground">
-          {t('report.groupTruncated', {
-            shown: GROUP_DISPLAY_LIMIT,
-            rest: issues.length - visible.length,
-          })}
-        </p>
+      <p className="ml-[66px] text-[13px] leading-5 text-foreground/80">{note}</p>
+      {(issue.comparisonStatus !== 'remaining' || issue.review) && (
+        <div className="ml-[66px] mt-1 flex gap-1.5">
+          {issue.comparisonStatus !== 'remaining' && (
+            <Badge
+              className={cn(
+                'px-1.5 text-[10px] font-normal',
+                COMPARISON_VISUALS[issue.comparisonStatus].badge,
+              )}
+            >
+              {t(`comparison.${issue.comparisonStatus}`)}
+            </Badge>
+          )}
+          {issue.review && (
+            <Badge
+              className={cn('px-1.5 text-[10px] font-normal', REVIEW_BADGE_CLASS[issue.review.status])}
+              title={issue.review.reason}
+            >
+              {t(`reviewStatus.${issue.review.status}`)}
+            </Badge>
+          )}
+        </div>
       )}
     </div>
   );
 }
 
-function MetaSummary({ meta }: { meta: IReportMeta }) {
-  const { t } = useTranslation();
+/** 明细组：按严重度（或"已修复"）一组，组内按文件归并，同一文件的 N 条只写一次路径 */
+function DetailGroup({
+  title,
+  sub,
+  hint,
+  borderClass,
+  issues,
+  messageMap,
+}: {
+  title: string;
+  sub: string;
+  hint?: string;
+  borderClass: string;
+  issues: IIssue[];
+  messageMap: Record<string, string>;
+}) {
+  const byFile = useMemo(() => {
+    const map = new Map<string, IIssue[]>();
+    for (const issue of issues) {
+      const bucket = map.get(issue.filePath);
+      if (bucket) bucket.push(issue);
+      else map.set(issue.filePath, [issue]);
+    }
+    return map;
+  }, [issues]);
+
   return (
-    <div className="grid grid-cols-1 gap-x-10 md:grid-cols-2">
-      <div>
-        <MetaRow label={t('report.metaProjectName')}>{meta.projectName}</MetaRow>
-        {meta.projectDescription && (
-          <MetaRow label={t('report.metaProjectDesc')}>{meta.projectDescription}</MetaRow>
+    <div className="mb-6">
+      <h3
+        className={cn(
+          'mb-1 flex flex-wrap items-baseline gap-2 border-b border-l-4 pb-1 pl-2 text-sm font-semibold print:break-after-avoid',
+          borderClass,
         )}
-        {meta.language && <MetaRow label={t('report.metaLanguage')}>{meta.language}</MetaRow>}
-        <MetaRow label={t('scans.colScanId')}>
-          <span className="font-mono text-xs">{meta.scanId}</span>
-        </MetaRow>
-        <MetaRow label={t('scans.colTime')}>
-          {formatDateTime(meta.scannedAt, { withSeconds: true })}
-        </MetaRow>
-        <MetaRow label={t('scanResult.dtDuration')}>{formatDuration(meta.durationSeconds)}</MetaRow>
-      </div>
-      <div>
-        <MetaRow label={t('report.metaFileCount')}>
-          {meta.fileCount ? t('scanResult.filesCount', { count: meta.fileCount }) : '—'}
-        </MetaRow>
-        <MetaRow label={t('report.metaBaseline')}>
-          {meta.baselineScanId ? (
-            <span className="font-mono text-xs">{meta.baselineScanId}</span>
-          ) : (
-            t('scanResult.baselineNotSet')
-          )}
-        </MetaRow>
-        <MetaRow label={t('report.metaEngine')}>
-          {meta.engineVersion ? `opengrep v${meta.engineVersion}` : '—'}
-        </MetaRow>
-        <MetaRow label={t('report.metaPacks')}>
-          <span className="inline-flex max-w-full flex-wrap justify-end gap-1">
-            {meta.rulepacks?.length ? (
-              meta.rulepacks.map((pack) => (
-                <Badge
-                  key={pack.id}
-                  variant="outline"
-                  className="max-w-[180px] truncate px-1.5 text-xs font-normal"
-                  title={pack.name}
-                >
-                  {pack.name}
-                </Badge>
-              ))
-            ) : (
-              <span className="font-mono text-xs">{meta.rules ?? '—'}</span>
-            )}
-          </span>
-        </MetaRow>
-        <MetaRow label={t('report.metaManifest')}>
-          {meta.sourceHash ? (
-            <a
-              href={api.scanManifestUrl(meta.scanId)}
-              className="font-mono text-xs text-primary hover:underline"
-              title={t('report.metaManifestTitle')}
-            >
-              {t('report.metaManifestLink', { hash: meta.sourceHash.slice(0, 12) })}
-            </a>
-          ) : (
-            <span className="text-muted-foreground">{t('report.metaManifestMissing')}</span>
-          )}
-        </MetaRow>
-        <MetaRow label={t('report.metaGenerated')}>
-          {formatDateTime(meta.generatedAt, { withSeconds: true })}
-        </MetaRow>
-      </div>
+      >
+        {title}
+        <span className="text-xs font-normal text-muted-foreground">{sub}</span>
+      </h3>
+      {hint && <p className="mb-1.5 text-xs text-muted-foreground">{hint}</p>}
+      {[...byFile.entries()].map(([filePath, list]) => (
+        <div key={filePath}>
+          <div className="mt-2.5 flex items-baseline justify-between gap-2 rounded-r-md border-l-[3px] border-primary bg-muted/60 px-2 py-0.5 print:break-after-avoid">
+            <PathLabel path={filePath} className="min-w-0 text-xs font-semibold" />
+            <span className="shrink-0 text-[11px] text-muted-foreground">
+              {list.length}
+            </span>
+          </div>
+          {list.map((issue) => (
+            <IssueEntry key={issue.id} issue={issue} messageMap={messageMap} />
+          ))}
+        </div>
+      ))}
     </div>
   );
 }
 
+/** 打印下让表格在纸宽内折行：覆盖 TableCell/TableHead 的 nowrap 与内层滚动容器 */
+const PRINT_TABLE_FIX =
+  '[&_[data-slot=table-container]]:print:overflow-visible [&_td]:print:whitespace-normal [&_th]:print:whitespace-normal [&_table]:print:table-fixed [&_td]:print:break-words';
+
 export default function ReportPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { id, scanId } = useParams();
   const [report, setReport] = useState<IReportData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -302,6 +254,53 @@ export default function ReportPage() {
     };
   }, [scanId, t]);
 
+  /** 文件级聚合（行动清单）与规则级聚合（附录），口径与离线 HTML 报告一致 */
+  const { fileList, ruleList } = useMemo(() => {
+    if (!report) return { fileList: [] as FileAgg[], ruleList: [] as RuleAgg[] };
+    const rank: Record<Severity, number> = { critical: 0, high: 1, medium: 2, low: 3 };
+    const files = new Map<
+      string,
+      FileAgg & { ruleCounts: Map<string, number> }
+    >();
+    const rules = new Map<string, RuleAgg & { fileSet: Set<string> }>();
+    for (const issue of report.issues) {
+      if (issue.comparisonStatus === 'fixed') continue;
+      let file = files.get(issue.filePath);
+      if (!file) {
+        file = {
+          path: issue.filePath,
+          count: 0,
+          bySev: { critical: 0, high: 0, medium: 0, low: 0 },
+          maxSev: issue.severity,
+          topRule: '',
+          ruleCounts: new Map(),
+        };
+        files.set(issue.filePath, file);
+      }
+      file.count += 1;
+      file.bySev[issue.severity] += 1;
+      file.ruleCounts.set(issue.ruleId, (file.ruleCounts.get(issue.ruleId) ?? 0) + 1);
+      if (rank[issue.severity] < rank[file.maxSev]) file.maxSev = issue.severity;
+
+      let rule = rules.get(issue.ruleId);
+      if (!rule) {
+        rule = { id: issue.ruleId, count: 0, files: 0, maxSev: issue.severity, fileSet: new Set() };
+        rules.set(issue.ruleId, rule);
+      }
+      rule.count += 1;
+      rule.fileSet.add(issue.filePath);
+      if (rank[issue.severity] < rank[rule.maxSev]) rule.maxSev = issue.severity;
+    }
+    const files2 = [...files.values()].map(({ ruleCounts, ...rest }) => {
+      const [topRule] = [...ruleCounts.entries()].sort((a, b) => b[1] - a[1]);
+      return { ...rest, topRule: topRule?.[0] ?? '' };
+    });
+    files2.sort((a, b) => rank[a.maxSev] - rank[b.maxSev] || b.count - a.count);
+    const rules2 = [...rules.values()].map(({ fileSet, ...rest }) => ({ ...rest, files: fileSet.size }));
+    rules2.sort((a, b) => rank[a.maxSev] - rank[b.maxSev] || b.count - a.count);
+    return { fileList: files2, ruleList: rules2 };
+  }, [report]);
+
   if (loading) {
     return (
       <Card>
@@ -332,7 +331,7 @@ export default function ReportPage() {
     );
   }
 
-  const { meta, totals, conclusion, conclusionCode, topRules, topFiles, topDirs, issues, reviewStats } = report;
+  const { meta, totals, conclusion, conclusionCode, topFiles, issues, reviewStats } = report;
   // 结论按语言重拼；载荷缺失（演示模式/旧缓存）回落服务端原文
   const conclusionText = conclusionCode
     ? t(`reportConclusion.${conclusionCode.code}`, {
@@ -343,10 +342,16 @@ export default function ReportPage() {
   const current = issues.filter((issue) => issue.comparisonStatus !== 'fixed');
   const fixed = issues.filter((issue) => issue.comparisonStatus === 'fixed');
   const severityMax = Math.max(1, ...Object.values(totals.bySeverity));
-  const dirMax = Math.max(1, ...topDirs.map((row) => row.count));
+  const groupHint: Record<Severity, string> = {
+    critical: t('report.groupHintCritical'),
+    high: t('report.groupHintHigh'),
+    medium: t('report.groupHintMedium'),
+    low: t('report.groupHintLow'),
+  };
+  const isZh = i18n.language?.startsWith('zh');
 
   return (
-    <div className="mx-auto flex w-full max-w-[920px] flex-col gap-4">
+    <div className="mx-auto flex w-full max-w-[860px] flex-col gap-4">
       {/* 动作条不随报告打印 */}
       <div className="no-print flex flex-wrap items-center gap-2 print:hidden">
         <Button variant="outline" asChild>
@@ -377,115 +382,56 @@ export default function ReportPage() {
 
       {/* 报告正文（纸张样式，打印时铺满页面） */}
       <article className="report-paper rounded-xl border bg-card px-6 py-8 shadow-sm sm:px-10 print:max-w-none print:rounded-none print:border-0 print:p-0 print:shadow-none">
-        <header className="mb-8 border-b-2 border-primary pb-5">
-          <div className="text-xs uppercase tracking-widest text-muted-foreground">
-            {t('report.headerTagline')}
-          </div>
-          <h1 className="mt-2 text-2xl font-bold">{t('report.docTitle')}</h1>
-          <div className="mt-1 flex flex-wrap items-baseline gap-3 text-muted-foreground">
-            <span className="text-base font-medium text-foreground">{meta.projectName}</span>
-            <span className="font-mono text-xs">{meta.scanId}</span>
-          </div>
-        </header>
-
+        {/* P1 结论：决策者 30 秒看完的一页 */}
         <section className="mb-8">
-          <SectionTitle>{t('report.sectionSummary')}</SectionTitle>
-          <MetaSummary meta={meta} />
-        </section>
+          <header className="mb-5 flex flex-wrap items-start justify-between gap-3 border-b-2 pb-4">
+            <div className="min-w-0">
+              <div className="text-xs uppercase tracking-widest text-muted-foreground">
+                {t('report.headerTagline')}
+              </div>
+              <h1 className="mt-1.5 text-2xl font-bold">{t('report.docTitle')}</h1>
+              <div className="mt-1 text-sm text-muted-foreground">
+                {meta.projectName}
+                {meta.projectDescription ? ` · ${meta.projectDescription}` : ''}
+              </div>
+            </div>
+            <div className="text-right text-xs leading-6 text-muted-foreground">
+              <div className="font-mono">{meta.scanId}</div>
+              <div>
+                {meta.finishedAt
+                  ? formatDateTime(meta.finishedAt, { withSeconds: true })
+                  : formatDateTime(meta.scannedAt, { withSeconds: true })}
+              </div>
+              <div>
+                {meta.engineVersion ? `opengrep v${meta.engineVersion}` : '—'}
+                {meta.rules ? ` · ${meta.rules}` : ''}
+              </div>
+            </div>
+          </header>
 
-        <section className="mb-8">
-          <SectionTitle>{t('report.sectionConclusion')}</SectionTitle>
-          <p className="mb-4 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-sm leading-6">
+          <p className="mb-4 rounded-r-md border-l-[3px] border-primary bg-muted/50 px-4 py-3 text-sm leading-6">
             {conclusionText}
           </p>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-            {SEVERITY_ORDER.map((sev) => (
-              <Card key={sev} className="py-4 print:break-inside-avoid">
-                <CardContent className="px-4">
-                  <div className={cn('text-2xl font-bold tabular-nums', SEVERITY_TEXT_CLASS[sev])}>
-                    {totals.bySeverity[sev]}
-                  </div>
-                  <div className="mt-1 text-xs text-muted-foreground">{t(`severity.${sev}`)}</div>
-                </CardContent>
-              </Card>
-            ))}
-            <Card className="py-4 print:break-inside-avoid">
-              <CardContent className="px-4">
-                <div className="text-2xl font-bold tabular-nums">{totals.total}</div>
-                <div className="mt-1 text-xs text-muted-foreground">{t('dashboard.statsIssues')}</div>
-              </CardContent>
-            </Card>
-          </div>
-          {meta.baselineScanId && (
-            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
-              {COMPARISON_STATS.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Card key={item.status} className="py-4 print:break-inside-avoid">
-                    <CardContent className="flex items-center gap-3 px-4">
-                      <span
-                        className={cn(
-                          'flex size-9 shrink-0 items-center justify-center rounded-full',
-                          item.bg,
-                        )}
-                      >
-                        <Icon className={cn('size-4.5', item.tone)} />
-                      </span>
-                      <div>
-                        <div className={cn('text-xl font-bold tabular-nums', item.tone)}>
-                          {totals.byComparison[item.status]}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {t(`comparison.${item.status}`)} · {t('report.vsBaseline')}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
-          {reviewStats && (
-            <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <Card className="py-4 print:break-inside-avoid">
-                <CardContent className="px-4">
-                  <div className="text-xl font-bold tabular-nums text-primary">
-                    {reviewStats.reviewed}
-                  </div>
-                  <div className="text-xs text-muted-foreground">{t('report.reviewedCount')}</div>
-                </CardContent>
-              </Card>
-              <Card className="py-4 print:break-inside-avoid">
-                <CardContent className="px-4">
-                  <div className="text-xl font-bold tabular-nums text-destructive">
-                    {reviewStats.confirmed}
-                  </div>
-                  <div className="text-xs text-muted-foreground">{t('report.confirmedCount')}</div>
-                </CardContent>
-              </Card>
-              <Card className="py-4 print:break-inside-avoid">
-                <CardContent className="px-4">
-                  <div className="text-xl font-bold tabular-nums text-success">
-                    {reviewStats.falsePositives}
-                  </div>
-                  <div className="text-xs text-muted-foreground">{t('report.falsePositiveCount')}</div>
-                </CardContent>
-              </Card>
-              <Card className="py-4 print:break-inside-avoid">
-                <CardContent className="px-4">
-                  <div className="text-xl font-bold tabular-nums text-warning">
-                    {reviewStats.accepted}
-                  </div>
-                  <div className="text-xs text-muted-foreground">{t('report.acceptedCount')}</div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-        </section>
 
-        <section className="mb-8">
-          <SectionTitle>{t('report.sectionDist')}</SectionTitle>
-          <h3 className="mb-2 text-sm font-semibold text-muted-foreground">{t('report.bySeverity')}</h3>
+          <div className="mb-5 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+            {(
+              [
+                [t('report.metricTotal'), totals.total, ''],
+                [t('severity.critical'), totals.bySeverity.critical, SEVERITY_TEXT_CLASS.critical],
+                [t('severity.high'), totals.bySeverity.high, SEVERITY_TEXT_CLASS.high],
+                [t('report.metricFiles'), fileList.length, ''],
+              ] as const
+            ).map(([label, value, tone]) => (
+              <div key={label} className="rounded-lg border bg-muted/30 px-3 py-2 print:break-inside-avoid">
+                <div className="text-xs text-muted-foreground">{label}</div>
+                <div className={cn('text-2xl font-semibold tabular-nums leading-8', tone)}>
+                  {value}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <SectionTitle>{t('report.distTitle')}</SectionTitle>
           <div className="mb-5 space-y-2">
             {SEVERITY_ORDER.map((sev) => (
               <DistBar
@@ -493,108 +439,147 @@ export default function ReportPage() {
                 label={t(`severity.${sev}`)}
                 count={totals.bySeverity[sev]}
                 max={severityMax}
+                total={totals.total}
                 barClass={SEVERITY_BAR_CLASS[sev]}
               />
             ))}
           </div>
 
-          <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
-            {t('report.topRulesTitle', { count: topRules.length })}
-          </h3>
-          <div className="mb-5 overflow-x-auto rounded-lg border print:overflow-visible">
+          <h3 className="mb-1 text-sm font-semibold">{t('report.top5Title')}</h3>
+          <p className="mb-2 text-xs text-muted-foreground">{t('report.top5Hint')}</p>
+          <div className={cn('mb-5 rounded-lg border', PRINT_TABLE_FIX)}>
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
-                  <TableHead className="min-w-[160px]">{t('compare.thRule')}</TableHead>
-                  <TableHead className="w-24">{t('report.thHighestSeverity')}</TableHead>
-                  <TableHead className="w-16 text-right">{t('report.thHits')}</TableHead>
-                  <TableHead className="min-w-[140px]">{t('scans.colRulePacks')}</TableHead>
+                  <TableHead>{t('report.thFile')}</TableHead>
+                  <TableHead className="w-14 text-right">{t('report.thCount')}</TableHead>
+                  {SEVERITY_ORDER.filter((sev) => sev !== 'low' && totals.bySeverity[sev] > 0).map(
+                    (sev) => (
+                      <TableHead key={sev} className="w-14 text-right">
+                        {t(`severity.${sev}`)}
+                      </TableHead>
+                    ),
+                  )}
+                  <TableHead className="w-20">{t('report.thMaxSeverity')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {topRules.map((row) => (
-                  <TableRow key={row.ruleId}>
-                    <TableCell className="font-mono text-xs">{row.ruleId}</TableCell>
-                    <TableCell>
-                      <Badge
-                        className={cn(
-                          'px-1.5 text-xs font-normal',
-                          SEVERITY_BADGE_CLASS[row.severity],
-                        )}
-                      >
-                        {t(`severity.${row.severity}`)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right text-xs tabular-nums">
-                      {row.count}
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {row.rulepackName ?? '—'}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {[...fileList]
+                  .sort((a, b) => b.count - a.count)
+                  .slice(0, 5)
+                  .map((file) => (
+                    <TableRow key={file.path}>
+                      <TableCell>
+                        <PathLabel path={file.path} />
+                      </TableCell>
+                      <TableCell className="text-right text-xs font-semibold tabular-nums">
+                        {file.count}
+                      </TableCell>
+                      {SEVERITY_ORDER.filter((sev) => sev !== 'low' && totals.bySeverity[sev] > 0).map(
+                        (sev) => (
+                          <TableCell
+                            key={sev}
+                            className="text-right text-xs tabular-nums text-muted-foreground"
+                          >
+                            {file.bySev[sev] || '—'}
+                          </TableCell>
+                        ),
+                      )}
+                      <TableCell>
+                        <Badge
+                          className={cn(
+                            'px-1.5 text-xs font-normal',
+                            SEVERITY_BADGE_CLASS[file.maxSev],
+                          )}
+                        >
+                          {t(`severity.${file.maxSev}`)}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
               </TableBody>
             </Table>
           </div>
 
-          <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
-            {t('report.topFilesTitle', { count: topFiles.length })}
-          </h3>
-          <div className="mb-5 overflow-x-auto rounded-lg border print:overflow-visible">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/50">
-                  <TableHead className="min-w-[240px]">{t('compare.thFile')}</TableHead>
-                  <TableHead className="w-24">{t('report.thHighestSeverity')}</TableHead>
-                  <TableHead className="w-16 text-right">{t('report.thHits')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {topFiles.map((row) => (
-                  <TableRow key={row.filePath}>
-                    <TableCell className="break-all font-mono text-xs">
-                      {row.filePath}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        className={cn(
-                          'px-1.5 text-xs font-normal',
-                          SEVERITY_BADGE_CLASS[row.maxSeverity],
-                        )}
-                      >
-                        {t(`severity.${row.maxSeverity}`)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right text-xs tabular-nums">
-                      {row.count}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          <dl className="grid grid-cols-[96px_1fr] gap-x-3 gap-y-1 text-xs">
+            <dt className="text-muted-foreground">{t('report.scopeLabel')}</dt>
+            <dd className="min-w-0">
+              {meta.fileCount ? t('scanResult.filesCount', { count: meta.fileCount }) : '—'}
+              {meta.language ? ` · ${meta.language}` : ''}
+            </dd>
+            <dt className="text-muted-foreground">{t('report.baselineLabel')}</dt>
+            <dd className="min-w-0 break-all">
+              {meta.baselineScanId
+                ? t('report.baselineSentence', {
+                    id: meta.baselineScanId,
+                    added: totals.byComparison.new,
+                    remaining: totals.byComparison.remaining,
+                    fixed: totals.byComparison.fixed,
+                  })
+                : t('report.firstScanNoBaseline')}
+            </dd>
+            <dt className="text-muted-foreground">{t('report.distLabel')}</dt>
+            <dd className="min-w-0">
+              {t('report.distSentence', {
+                total: totals.total,
+                files: fileList.length,
+                rules: ruleList.length,
+              })}
+            </dd>
+          </dl>
 
-          {topDirs.length > 0 && (
-            <>
-              <h3 className="mb-2 text-sm font-semibold text-muted-foreground">{t('report.topDirsTitle')}</h3>
-              <div className="space-y-2">
-                {topDirs.map((row) => (
-                  <DistBar
-                    key={row.dir}
-                    label={row.dir}
-                    count={row.count}
-                    max={dirMax}
-                    barClass="bg-primary"
-                    mono
-                  />
-                ))}
-              </div>
-            </>
-          )}
         </section>
 
-        <section className="mb-4">
-          <SectionTitle>{t('report.sectionIssues')}</SectionTitle>
+        {/* P2 行动清单：按文件归并，研发负责人自上而下安排修复 */}
+        <section className="mb-8 print:break-before-page">
+          <SectionTitle>{t('report.sectionActions')}</SectionTitle>
+          <p className="mb-2 text-xs text-muted-foreground">
+            {t('report.actionsHint', { files: fileList.length })}
+          </p>
+          <div className={cn('overflow-x-auto rounded-lg border print:overflow-visible', PRINT_TABLE_FIX)}>
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50">
+                  <TableHead>{t('report.thFileMainIssue')}</TableHead>
+                  <TableHead className="w-14 text-right">{t('report.thCount')}</TableHead>
+                  <TableHead className="w-14 text-right">{t('severity.high')}</TableHead>
+                  <TableHead className="w-14 text-right">{t('severity.medium')}</TableHead>
+                  <TableHead className="w-14 text-right">{t('severity.low')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {fileList.map((file) => (
+                  <TableRow key={file.path}>
+                    <TableCell className="min-w-0">
+                      <PathLabel path={file.path} />
+                      {file.topRule && (
+                        <div className="font-mono text-[11px] text-muted-foreground/70">
+                          {file.topRule}
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right text-xs font-semibold tabular-nums">
+                      {file.count}
+                    </TableCell>
+                    <TableCell className="text-right text-xs tabular-nums text-warning">
+                      {file.bySev.high || '—'}
+                    </TableCell>
+                    <TableCell className="text-right text-xs tabular-nums text-primary">
+                      {file.bySev.medium || '—'}
+                    </TableCell>
+                    <TableCell className="text-right text-xs tabular-nums text-muted-foreground">
+                      {file.bySev.low || '—'}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </section>
+
+        {/* P3 明细：按严重度分组、组内按文件归并的条目式；附录规则说明紧随其后不分页 */}
+        <section className="mb-8 print:break-before-page">
+          <SectionTitle>{t('report.sectionDetails')}</SectionTitle>
           {current.length === 0 ? (
             <p className="rounded-lg border border-success/30 bg-success/5 px-4 py-3 text-sm text-success">
               {t('report.noIssues')}
@@ -603,11 +588,14 @@ export default function ReportPage() {
             SEVERITY_ORDER.map((sev) => {
               const list = current.filter((issue) => issue.severity === sev);
               if (list.length === 0) return null;
+              const fileCount = new Set(list.map((issue) => issue.filePath)).size;
               return (
-                <IssueGroupTable
+                <DetailGroup
                   key={sev}
-                  title={t('report.groupTitle', { label: t(`severity.${sev}`) })}
-                  dotClass={SEVERITY_BAR_CLASS[sev]}
+                  title={t(`severity.${sev}`)}
+                  sub={t('report.groupCount', { count: list.length, files: fileCount })}
+                  hint={groupHint[sev]}
+                  borderClass={SEVERITY_BORDER_CLASS[sev]}
                   issues={list}
                   messageMap={messageMap}
                 />
@@ -615,14 +603,147 @@ export default function ReportPage() {
             })
           )}
           {fixed.length > 0 && (
-            <IssueGroupTable
+            <DetailGroup
               title={t('report.fixedGroupTitle')}
-              dotClass="bg-success"
+              sub=""
+              borderClass="border-success"
               issues={fixed}
               messageMap={messageMap}
             />
           )}
           <p className="text-xs leading-5 text-muted-foreground">{t('report.disclaimer')}</p>
+
+          <h2 className="mb-3 mt-8 border-b pb-1.5 text-base font-semibold print:break-after-avoid">
+            {t('report.sectionRulesAppendix')}
+          </h2>
+          <p className="mb-2 text-xs text-muted-foreground">
+            {t('report.appendixHint', { rules: ruleList.length })}
+          </p>
+          <div>
+            {ruleList.map((rule, index) => {
+              const note = lookupRuleMessage(messageMap, rule.id, '');
+              return (
+                <div key={rule.id} className="border-b py-2 print:break-inside-avoid">
+                  <div className="flex items-baseline gap-2">
+                    <span className="shrink-0 text-[11px] text-muted-foreground">
+                      {String(index + 1).padStart(2, '0')}
+                    </span>
+                    <span className="min-w-0 break-all font-mono text-xs font-semibold">
+                      {rule.id}
+                    </span>
+                    <span className="ml-auto shrink-0 text-[11px] text-muted-foreground">
+                      {t('report.ruleStat', { count: rule.count, files: rule.files })}
+                      <span
+                        className={cn(
+                          'mx-1.5 inline-block size-2 rounded-full align-baseline',
+                          SEVERITY_BAR_CLASS[rule.maxSev],
+                        )}
+                      />
+                      {t(`severity.${rule.maxSev}`)}
+                    </span>
+                  </div>
+                  {note ? (
+                    <p className="ml-6 mt-0.5 text-xs leading-5 text-foreground/80">{note}</p>
+                  ) : isZh ? (
+                    <p className="ml-6 mt-0.5 text-xs text-muted-foreground">
+                      {t('report.noMessage')}
+                    </p>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* P4 方法与证据 */}
+        <section className="mb-4 print:break-before-page">
+          <SectionTitle>{t('report.sectionMethod')}</SectionTitle>
+
+          <h3 className="mb-1.5 text-sm font-semibold text-foreground/80">
+            {t('report.methodSubPacks')}
+          </h3>
+          <div className={cn('mb-4 overflow-x-auto rounded-lg border print:overflow-visible', PRINT_TABLE_FIX)}>
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50">
+                  <TableHead>{t('report.packThName')}</TableHead>
+                  <TableHead className="w-40">{t('report.packThId')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {meta.rulepacks?.length ? (
+                  meta.rulepacks.map((pack) => (
+                    <TableRow key={pack.id}>
+                      <TableCell className="text-xs">{pack.name}</TableCell>
+                      <TableCell className="font-mono text-xs text-muted-foreground">
+                        {pack.id}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={2} className="text-xs text-muted-foreground">
+                      {meta.rules ?? t('report.noPacks')}
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          <h3 className="mb-1.5 text-sm font-semibold text-foreground/80">
+            {t('report.methodSubRepro')}
+          </h3>
+          <dl className="mb-3 grid grid-cols-[96px_1fr] gap-x-3 gap-y-1 text-xs sm:grid-cols-[110px_1fr]">
+            <dt className="text-muted-foreground">opengrep</dt>
+            <dd className="min-w-0">
+              v{meta.engineVersion ?? '—'}
+              {meta.durationSeconds !== undefined
+                ? ` · ${formatDuration(meta.durationSeconds)}`
+                : ''}
+            </dd>
+            <dt className="text-muted-foreground">{t('report.metaManifest')}</dt>
+            <dd className="min-w-0 break-all font-mono">
+              {meta.sourceHash ? (
+                <a
+                  href={api.scanManifestUrl(meta.scanId)}
+                  className="text-primary hover:underline"
+                  title={t('report.metaManifestTitle')}
+                >
+                  {t('report.metaManifestLink', { hash: meta.sourceHash.slice(0, 12) })}
+                </a>
+              ) : (
+                <span className="text-muted-foreground">{t('report.metaManifestMissing')}</span>
+              )}
+            </dd>
+            <dt className="text-muted-foreground">{t('report.metaGenerated')}</dt>
+            <dd className="min-w-0">{formatDateTime(meta.generatedAt, { withSeconds: true })}</dd>
+          </dl>
+
+          <h3 className="mb-1.5 text-sm font-semibold text-foreground/80">
+            {t('report.methodSubReview')}
+          </h3>
+          <dl className="grid grid-cols-[96px_1fr] gap-x-3 gap-y-1 text-xs sm:grid-cols-[110px_1fr]">
+            <dt className="text-muted-foreground">{t('report.reviewLabel')}</dt>
+            <dd className="min-w-0">
+              {reviewStats
+                ? t('report.reviewLine', {
+                    reviewed: reviewStats.reviewed,
+                    confirmed: reviewStats.confirmed,
+                    falsePositives: reviewStats.falsePositives,
+                    accepted: reviewStats.accepted,
+                  })
+                : t('report.reviewNone')}
+            </dd>
+            <dt className="text-muted-foreground">{t('report.filesChecked')}</dt>
+            <dd className="min-w-0">
+              {meta.fileCount ? t('scanResult.filesCount', { count: meta.fileCount }) : '—'}
+            </dd>
+            <dt className="text-muted-foreground">{t('report.methodSubExclusions')}</dt>
+            <dd className="min-w-0">{t('report.exclusions')}</dd>
+            <dt className="text-muted-foreground">{t('report.methodSubBoundaries')}</dt>
+            <dd className="min-w-0">{t('report.notCovered')}</dd>
+          </dl>
         </section>
 
         <footer className="mt-8 border-t pt-3 text-xs text-muted-foreground">
