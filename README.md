@@ -177,7 +177,7 @@ Want to see it before touching your own code? `npm run seed` seeds three demo pr
 | Capability | `opengrep scan` straight | Opengrep Studio |
 | :--- | :--- | :--- |
 | Result form | terminal JSON / text | interactive triage: code highlights, taint chains, filtering & search |
-| Localization | English-only messages | all 812 rule messages in Chinese + Chinese CWE knowledge base |
+| Localization | English-only messages | all 812 rule messages in Chinese (simplified + traditional) + Chinese CWE knowledge base |
 | Baseline management | none | auto new / fixed / remaining classification; verdicts persist across scans |
 | Version diffing | none | dual-snapshot compare (issue level + file level, cross-project) |
 | Report delivery | hand-assembled | one-click paper-styled report (print / offline HTML) + reproducibility manifest |
@@ -248,7 +248,7 @@ Honest disclosure — please read:
 - [x] Rule Lab & portable rule packs with sample regression
 - [x] Docker image & one-click launch on 3 platforms
 - [x] Engine check-update & one-click upgrade (multi-channel download fallback)
-- [x] UI i18n (English)
+- [x] UI i18n (English / Simplified Chinese / Traditional Chinese)
 - [ ] Scan queue & parallel scheduling
 - [ ] Rule-pack import from URL & community index
 - [ ] GitHub Action workflow template (scan in CI, upload SARIF back)
