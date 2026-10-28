@@ -1,4 +1,5 @@
 import { format } from 'date-fns';
+import i18n from '@/i18n';
 
 /** 短日期时间（列表 / 卡片通用）：`2026-10-24 18:30`；无效或缺失返回占位符 */
 export function formatDateTime(iso?: string | null, options?: { withSeconds?: boolean }): string {
@@ -13,5 +14,9 @@ export function formatDuration(seconds?: number | null): string {
   if (seconds === undefined || seconds === null || !Number.isFinite(seconds) || seconds < 0) {
     return '—';
   }
-  return seconds < 60 ? `${seconds} 秒` : `${Math.floor(seconds / 60)} 分 ${seconds % 60} 秒`;
+  if (seconds < 60) return i18n.t('format.durationSeconds', { count: seconds });
+  return i18n.t('format.durationMinutes', {
+    min: Math.floor(seconds / 60),
+    sec: seconds % 60,
+  });
 }
