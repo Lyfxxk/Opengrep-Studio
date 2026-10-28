@@ -136,16 +136,23 @@ export function parseSarifImport(text: string): SarifImportResult {
   try {
     doc = JSON.parse(text) as SarifLog;
   } catch (error) {
-    throw new HttpError(400, `SARIF 文件不是合法 JSON：${error instanceof Error ? error.message : String(error)}`);
+    throw new HttpError(
+      400,
+      `SARIF 文件不是合法 JSON：${error instanceof Error ? error.message : String(error)}`,
+      { code: 'sarif.invalidJson', params: { reason: error instanceof Error ? error.message : String(error) } },
+    );
   }
   if (typeof doc !== 'object' || doc === null || Array.isArray(doc)) {
-    throw new HttpError(400, 'SARIF 文件顶层必须是 JSON 对象');
+    throw new HttpError(400, 'SARIF 文件顶层必须是 JSON 对象', { code: 'sarif.notObject' });
   }
   if (typeof doc.version !== 'string' || !doc.version.startsWith('2.')) {
-    throw new HttpError(400, `仅支持 SARIF 2.x（当前 version: ${doc.version ?? '缺失'}）`);
+    throw new HttpError(400, `仅支持 SARIF 2.x（当前 version: ${doc.version ?? '缺失'}）`, {
+      code: 'sarif.versionUnsupported',
+      params: { version: String(doc.version ?? '缺失') },
+    });
   }
   if (!Array.isArray(doc.runs)) {
-    throw new HttpError(400, 'SARIF 文件缺少 runs 数组');
+    throw new HttpError(400, 'SARIF 文件缺少 runs 数组', { code: 'sarif.runsMissing' });
   }
 
   const issues: IssueRow[] = [];
@@ -162,7 +169,10 @@ export function parseSarifImport(text: string): SarifImportResult {
     for (const result of run?.results ?? []) {
       totalResults += 1;
       if (totalResults > config.maxImportEntries) {
-        throw new HttpError(400, `SARIF 结果数超过 ${config.maxImportEntries} 上限`);
+        throw new HttpError(400, `SARIF 结果数超过 ${config.maxImportEntries} 上限`, {
+          code: 'sarif.tooManyResults',
+          params: { limit: config.maxImportEntries },
+        });
       }
       const rule =
         (typeof result.ruleIndex === 'number' ? rules[result.ruleIndex] : undefined) ?? undefined;

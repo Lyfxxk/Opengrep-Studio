@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { load as yamlLoad, dump as yamlDump } from 'js-yaml';
 import { config } from './config.js';
+import { HttpError } from './errors.js';
 import { engineInstallHint, runEngine } from './engine.js';
 import { relativizeToRoot, stripRuleIdPrefix } from './engine-output.js';
 import { parseRuleYaml } from './rule-yaml.js';
@@ -147,7 +148,7 @@ export async function runPackCheck(packDir: string): Promise<PackCheckResult> {
   const startedAt = Date.now();
   const ruleFiles = collectRuleFiles(path.join(packDir, 'rules'));
   if (ruleFiles.length === 0) {
-    throw new Error('包内 rules/ 目录没有任何 YAML 规则文件');
+    throw new HttpError(400, '包内 rules/ 目录没有任何 YAML 规则文件', { code: 'srv.noRulesInZip' });
   }
 
   const items: PackCheckItem[] = [];

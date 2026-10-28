@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { load as yamlLoad, dump as yamlDump } from 'js-yaml';
+import { HttpError } from './errors.js';
 
 /**
  * 可移植规则包格式（目录约定 + 清单，与 opengrep/semgrep 生态保持互操作）：
@@ -42,18 +43,26 @@ export function parsePackManifest(text: string): PackManifest {
   try {
     doc = yamlLoad(text);
   } catch (error) {
-    throw new Error(`pack.yaml 解析失败：${error instanceof Error ? error.message : String(error)}`);
+    throw new HttpError(
+      400,
+      `pack.yaml 解析失败：${error instanceof Error ? error.message : String(error)}`,
+      { code: 'pack.manifestInvalid', params: { reason: error instanceof Error ? error.message : String(error) } },
+    );
   }
   if (typeof doc !== 'object' || doc === null || Array.isArray(doc)) {
-    throw new Error('pack.yaml 顶层必须是键值映射');
+    throw new HttpError(400, 'pack.yaml 顶层必须是键值映射', { code: 'pack.manifestNotObject' });
   }
   const raw = doc as Record<string, unknown>;
   const name = String(raw.name ?? '').trim();
-  if (!name) throw new Error('pack.yaml 缺少 name 字段');
-  if (name.length > 60) throw new Error('pack.yaml 的 name 不能超过 60 个字符');
+  if (!name) throw new HttpError(400, 'pack.yaml 缺少 name 字段', { code: 'pack.nameMissing' });
+  if (name.length > 60) {
+    throw new HttpError(400, 'pack.yaml 的 name 不能超过 60 个字符', { code: 'pack.nameTooLong' });
+  }
   const version = String(raw.version ?? '').trim();
-  if (!version) throw new Error('pack.yaml 缺少 version 字段');
-  if (version.length > 30) throw new Error('pack.yaml 的 version 不能超过 30 个字符');
+  if (!version) throw new HttpError(400, 'pack.yaml 缺少 version 字段', { code: 'pack.versionMissing' });
+  if (version.length > 30) {
+    throw new HttpError(400, 'pack.yaml 的 version 不能超过 30 个字符', { code: 'pack.versionTooLong' });
+  }
   const manifest: PackManifest = {
     name,
     version,

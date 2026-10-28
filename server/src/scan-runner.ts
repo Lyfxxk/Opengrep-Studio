@@ -6,6 +6,21 @@ import {
   scanSourceDir,
 } from './config.js';
 import { engineInstallHint, getEngineVersion, runEngine } from './engine.js';
+import { HttpError } from './errors.js';
+
+/**
+ * 扫描失败错误：message 落库（scan.message，前端失败态展示），code 供前端按语言翻译。
+ * message 是落库数据而非响应体，语言切换后旧记录仍为原文，属可接受折衷。
+ */
+export class ScanError extends Error {
+  constructor(
+    public code: string,
+    message: string,
+    public params?: Record<string, unknown>,
+  ) {
+    super(message);
+  }
+}
 import { relativizeToRoot, stripRuleIdPrefix } from './engine-output.js';
 import { extractTaintFlow, relativizeTaintFlow } from './taint.js';
 import {
@@ -245,8 +260,8 @@ async function runScan(scanId: string, plan: ScanPlan): Promise<void> {
 
   const srcDir = scanSourceDir(scan.projectId, scanId);
   try {
-    if (!fs.existsSync(srcDir)) throw new Error('找不到扫描源码快照');
-    if (plan.configFiles.length === 0) throw new Error('没有可用的规则文件');
+    if (!fs.existsSync(srcDir)) throw new ScanError('scan.snapshotMissing', '找不到扫描源码快照');
+    if (plan.configFiles.length === 0) throw new ScanError('scan.noRuleFiles', '没有可用的规则文件');
     if (!fs.existsSync(config.opengrepBin)) throw new Error(engineInstallHint());
     const fileCount = await countFiles(srcDir);
 
@@ -276,10 +291,17 @@ async function runScan(scanId: string, plan: ScanPlan): Promise<void> {
     });
 
     if (timedOut) {
-      throw new Error(`扫描超过 ${Math.round(config.scanTimeoutMs / 60000)} 分钟被终止，请缩小源码范围后重试`);
+      throw new ScanError(
+        'scan.timedOut',
+        `扫描超过 ${Math.round(config.scanTimeoutMs / 60000)} 分钟被终止，请缩小源码范围后重试`,
+        { minutes: Math.round(config.scanTimeoutMs / 60000) },
+      );
     }
     if (stdoutTruncated) {
-      throw new Error('引擎输出超过 64MB 上限被截断，无法解析结果；请缩小源码范围或减少规则后重试');
+      throw new ScanError(
+        'scan.outputTruncated',
+        '引擎输出超过 64MB 上限被截断，无法解析结果；请缩小源码范围或减少规则后重试',
+      );
     }
 
     let output: OpengrepOutput;
@@ -293,7 +315,11 @@ async function runScan(scanId: string, plan: ScanPlan): Promise<void> {
 
     if (code !== 0) {
       const detail = output.errors?.[0]?.message ?? stderr.slice(0, 300) ?? '';
-      throw new Error(`引擎执行失败（exit=${code}）${detail ? `：${detail.slice(0, 500)}` : ''}`.trim());
+      throw new ScanError(
+        'scan.engineFailed',
+        `引擎执行失败（exit=${code}）${detail ? `：${detail.slice(0, 500)}` : ''}`.trim(),
+        { code, detail: detail ? detail.slice(0, 500) : '' },
+      );
     }
 
     const ruleIdsByFile = collectRuleIdsByFile(plan.configFiles);
