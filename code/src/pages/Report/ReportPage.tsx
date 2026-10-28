@@ -332,7 +332,14 @@ export default function ReportPage() {
     );
   }
 
-  const { meta, totals, conclusion, topRules, topFiles, topDirs, issues, reviewStats } = report;
+  const { meta, totals, conclusion, conclusionCode, topRules, topFiles, topDirs, issues, reviewStats } = report;
+  // 结论按语言重拼；载荷缺失（演示模式/旧缓存）回落服务端原文
+  const conclusionText = conclusionCode
+    ? t(`reportConclusion.${conclusionCode.code}`, {
+        ...conclusionCode.params,
+        defaultValue: conclusion,
+      })
+    : conclusion;
   const current = issues.filter((issue) => issue.comparisonStatus !== 'fixed');
   const fixed = issues.filter((issue) => issue.comparisonStatus === 'fixed');
   const severityMax = Math.max(1, ...Object.values(totals.bySeverity));
@@ -389,7 +396,7 @@ export default function ReportPage() {
         <section className="mb-8">
           <SectionTitle>{t('report.sectionConclusion')}</SectionTitle>
           <p className="mb-4 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-sm leading-6">
-            {conclusion}
+            {conclusionText}
           </p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
             {SEVERITY_ORDER.map((sev) => (

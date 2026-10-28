@@ -591,6 +591,11 @@ const en: typeof zh = {
     actionManifest: 'manifest',
     actionManifestTitle: 'Reproducible manifest: source SHA-256 + engine command line + rule hashes',
   },
+  reportConclusion: {
+    noIssues: 'This scan checked {{files}} source files, matched no enabled rules, and found no risk issues.',
+    summary:
+      'This scan checked {{files}} source files and found {{total}} risk issues: {{critical}} critical, {{high}} high, {{medium}} medium, and {{low}} low. Compared with baseline scan {{baseline}}: {{baselineNew}} new, {{baselineRemaining}} remaining, and {{baselineFixed}} fixed. Prioritize the critical and high issues ({{urgent}} in total), then rescan after fixing to verify.',
+  },
   report: {
     loadFailedToast: 'Failed to load the test report: {{error}}',
     loading: 'Generating test report…',
