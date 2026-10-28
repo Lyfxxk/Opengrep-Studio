@@ -501,6 +501,12 @@ rulepackRoutes.post(
         } catch (error) {
           throw new HttpError(400, error instanceof Error ? error.message : String(error));
         }
+        // 缺 rules/ 目录时 readdirSync 会抛 ENOENT 落成 500，先显式拦成 400（collectRuleFiles 还有导出等调用点，不在其内部兜底）
+        if (!fs.existsSync(path.join(root, 'rules'))) {
+          throw new HttpError(400, '包内缺少 rules/ 目录：请按 pack.yaml + rules/ + samples/ 结构打包', {
+            code: 'srv.noRulesDir',
+          });
+        }
         const ruleFiles = collectRuleFiles(path.join(root, 'rules'));
         if (ruleFiles.length === 0) {
           throw new HttpError(400, '包内 rules/ 目录没有任何 YAML 规则文件', {

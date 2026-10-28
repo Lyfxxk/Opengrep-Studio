@@ -627,8 +627,9 @@ const en: typeof zh = {
     tooLong: 'A single path cannot exceed {{limit}} characters',
     tooMany: 'Up to {{limit}} entries',
     duplicate: 'This path already exists',
+    globSeparator: 'Do not join paths with 、 or commas — they are invalid in globs; press Enter to add one at a time',
     removeAria: 'Remove {{item}}',
-    hint: 'Press Enter to add, up to {{limit}} entries',
+    hint: 'Globs supported (* / **); press Enter to add one at a time, relative to the project root, up to {{limit}} entries',
   },
   rulesCenter: {
     subtitle:
@@ -863,6 +864,7 @@ const en: typeof zh = {
       builtinNotDeletable: 'Built-in packs cannot be deleted — uncheck or disable them in configs instead.',
       builtinNotExportable: 'Built-in packs cannot be exported — get them from the official opengrep-rules repository.',
       packDirMissing: 'The rule pack directory is missing',
+      noRulesDir: 'The pack is missing a rules/ directory — package it as pack.yaml + rules/ + samples/',
       noRulesInZip: 'No YAML rule files found in the rules/ directory',
       tooManyRuleFiles: 'More than 50 rule files — split the rule pack.',
       noYamlInZip: 'No YAML rule files found in the archive',

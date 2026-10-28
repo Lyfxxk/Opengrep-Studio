@@ -40,7 +40,8 @@ interface ConfigFormDialogProps {
   onSubmit: (values: ConfigFormValues, configId?: string) => void | Promise<void>;
 }
 
-const EXCLUDE_PLACEHOLDER = 'node_modules/**、dist/**、**/*.min.js';
+// 占位符只放单个示例：多例塞一框会被整串照抄入库，顿号串到引擎侧静默匹配不到任何文件
+const EXCLUDE_PLACEHOLDER = 'dist/**';
 
 function bytesToMb(bytes: number): string {
   return String(Math.round((bytes / 1000000) * 10) / 10);
