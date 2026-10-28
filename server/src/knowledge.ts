@@ -18,9 +18,9 @@ export function isSafeSampleDirName(ruleId: string): boolean {
 }
 
 /**
- * 中文规则知识库：按规则 ID 聚合
- *   规则包 YAML 元数据（severity/CWE/OWASP/上游溯源） + messages-zh 中文说明
- *   + CWE 中文解释与通用修复建议（server/rules/cwe-zh.json） + 命中统计
+ * 规则知识库：按规则 ID 聚合
+ *   规则包 YAML 元数据（severity/CWE/OWASP/上游溯源） + messages-zh[-Hant] 说明
+ *   + CWE 解释与通用修复建议（server/rules/cwe-zh[-Hant].json） + 命中统计
  *   + 可移植规则包自带的正反例样本（如有）
  */
 
@@ -109,30 +109,33 @@ function normalizeCweId(raw: string): string {
   return match ? `CWE-${match[1]}` : raw.trim();
 }
 
-let cweZhCache: Record<string, { name: string; fix: string }> | null = null;
-function loadCweZh(): Record<string, { name: string; fix: string }> {
-  cweZhCache ??= (() => {
-    try {
-      return JSON.parse(
-        fs.readFileSync(path.join(rulesDir, 'cwe-zh.json'), 'utf8'),
-      ) as Record<string, { name: string; fix: string }>;
-    } catch {
-      return {};
-    }
-  })();
-  return cweZhCache;
+export type KnowledgeLang = 'zh' | 'zh-Hant';
+
+interface KnowledgeResources {
+  messages: Record<string, string>;
+  cwe: Record<string, { name: string; fix: string }>;
 }
 
-let zhMessageCache: Record<string, string> | null = null;
-function loadZhMessages(): Record<string, string> {
-  zhMessageCache ??= (() => {
+// 按语言缓存：简繁各一份；文件缺失时回空表，前端自然回落规则原文
+const resourcesCache = new Map<KnowledgeLang, KnowledgeResources>();
+
+function loadResources(lang: KnowledgeLang): KnowledgeResources {
+  const cached = resourcesCache.get(lang);
+  if (cached) return cached;
+  const suffix = lang === 'zh-Hant' ? '-Hant' : '';
+  const read = <T,>(fileName: string, fallback: T): T => {
     try {
-      return JSON.parse(fs.readFileSync(path.join(rulesDir, 'messages-zh.json'), 'utf8')) as Record<string, string>;
+      return JSON.parse(fs.readFileSync(path.join(rulesDir, fileName), 'utf8')) as T;
     } catch {
-      return {};
+      return fallback;
     }
-  })();
-  return zhMessageCache;
+  };
+  const resources: KnowledgeResources = {
+    messages: read(`messages-zh${suffix}.json`, {}),
+    cwe: read(`cwe-zh${suffix}.json`, {}),
+  };
+  resourcesCache.set(lang, resources);
+  return resources;
 }
 
 function readSample(dir: string, filter: string): KnowledgeSample[] {
@@ -197,11 +200,11 @@ function hitStats(ruleId: string): RuleKnowledge['stats'] {
   }
 }
 
-/** 聚合一条规则的知识条目；规则不在任何包中时 found=false，仍返回中文说明与命中统计 */
-export function getRuleKnowledge(ruleId: string): RuleKnowledge {
+/** 聚合一条规则的知识条目；规则不在任何包中时 found=false，仍返回当前语言的说明与命中统计 */
+export function getRuleKnowledge(ruleId: string, lang: KnowledgeLang = 'zh'): RuleKnowledge {
   const found = findRule(ruleId);
-  const zhMessages = loadZhMessages();
-  const zhMessage = matchZhMessage(zhMessages, ruleId, found?.matchedRuleId);
+  const { messages, cwe: cweMap } = loadResources(lang);
+  const zhMessage = matchZhMessage(messages, ruleId, found?.matchedRuleId);
 
   const result: RuleKnowledge = {
     ruleId,
@@ -224,9 +227,8 @@ export function getRuleKnowledge(ruleId: string): RuleKnowledge {
     result.securitySeverity = securitySeverity;
   }
 
-  const cweZh = loadCweZh();
   // cwe-zh.json 的键是裸编号（"310"）；兼容 "CWE-310" 全称键
-  const cweZhById = (id: string) => cweZh[id] ?? cweZh[id.replace(/^CWE-/i, '')];
+  const cweZhById = (id: string) => cweMap[id] ?? cweMap[id.replace(/^CWE-/i, '')];
   const cweIds = [...new Set(asStringArray(metadata.cwe).map(normalizeCweId))].slice(0, 8);
   result.cwe = cweIds.map((id) => ({
     id,

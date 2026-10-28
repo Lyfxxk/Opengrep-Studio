@@ -47,9 +47,11 @@ function SampleBlock({ title, samples }: { title: string; samples: IKnowledgeSam
 
 /** 规则知识抽屉：中文说明 + CWE/OWASP 中文解释 + 修复建议 + 命中统计 + 上游溯源 + 样本 */
 export default function KnowledgeSheet({ ruleId, onClose }: KnowledgeSheetProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [knowledge, setKnowledge] = useState<IRuleKnowledge | null>(null);
   const [loading, setLoading] = useState(false);
+  // 知识库只有简繁两份：繁体走 zh-Hant，其余统一用简体
+  const lang = (i18n.resolvedLanguage ?? i18n.language).startsWith('zh-Hant') ? 'zh-Hant' : 'zh';
 
   useEffect(() => {
     if (!ruleId) {
@@ -59,7 +61,7 @@ export default function KnowledgeSheet({ ruleId, onClose }: KnowledgeSheetProps)
     let mounted = true;
     setLoading(true);
     api
-      .getRuleKnowledge(ruleId)
+      .getRuleKnowledge(ruleId, lang)
       .then((data) => {
         if (mounted) setKnowledge(data);
       })
@@ -75,7 +77,7 @@ export default function KnowledgeSheet({ ruleId, onClose }: KnowledgeSheetProps)
     return () => {
       mounted = false;
     };
-  }, [ruleId]);
+  }, [ruleId, lang]);
 
   return (
     <Sheet open={ruleId !== null} onOpenChange={(open) => (!open ? onClose() : undefined)}>

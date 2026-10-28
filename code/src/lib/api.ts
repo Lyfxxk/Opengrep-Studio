@@ -954,8 +954,8 @@ export const api = {
     return request(`/api/scans/${scanId}/diff?${params.toString()}`);
   },
 
-  /** 中文规则知识库条目 */
-  getRuleKnowledge(ruleId: string): Promise<IRuleKnowledge> {
+  /** 规则知识库条目：服务端按 lang 返回简体或繁体说明 */
+  getRuleKnowledge(ruleId: string, lang: string): Promise<IRuleKnowledge> {
     if (USE_MOCK) {
       const hits = MOCK_ISSUES.filter((issue) => issue.ruleId === ruleId);
       return Promise.resolve({
@@ -966,7 +966,9 @@ export const api = {
         stats: { total: hits.length, projects: hits.length > 0 ? 1 : 0 },
       });
     }
-    return request(`/api/rules/knowledge/${encodeURIComponent(ruleId)}`);
+    return request(
+      `/api/rules/knowledge/${encodeURIComponent(ruleId)}?lang=${encodeURIComponent(lang)}`,
+    );
   },
 
   /** SARIF 2.1.0 导出下载地址（GitHub Code Scanning / DefectDojo 等工具链可消费） */
