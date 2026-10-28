@@ -411,13 +411,15 @@ export function deleteProject(id: string): void {
   }
 }
 
-/** 删除单条扫描及其问题明细；把别人指向它的基线引用一并置空（对比入口按 404 兜底） */
-// 删除跨 issues / scans 两张表，包事务保证中途失败可整体回滚，不留孤儿 issues 或悬空基线
+/** 删除单条扫描及其问题明细；scans 与 projects 里指向它的基线引用一并置空 */
+// 删除跨 issues / scans / projects 三张表，包事务保证中途失败可整体回滚，不留孤儿 issues 或悬空基线
 export function deleteScan(id: string): void {
   db.exec('BEGIN');
   try {
     db.prepare('DELETE FROM issues WHERE scan_id = ?').run(id);
     db.prepare('UPDATE scans SET baseline_scan_id = NULL WHERE baseline_scan_id = ?').run(id);
+    // 项目级基线引用不清的话，前端发扫描会恒带这个死 ID 被 400 卡死，且界面无解除入口
+    db.prepare('UPDATE projects SET baseline_scan_id = NULL WHERE baseline_scan_id = ?').run(id);
     db.prepare('DELETE FROM scans WHERE id = ?').run(id);
     db.exec('COMMIT');
   } catch (error) {

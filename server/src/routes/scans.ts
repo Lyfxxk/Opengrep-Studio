@@ -179,7 +179,15 @@ scanRoutes.post('/api/projects/:id/scans', asyncHandler(async (req, res) => {
   if (baselineParam !== undefined && baselineParam !== null && baselineParam !== '') {
     baselineScanId = requireValidBaseline(project.id, baselineParam);
   } else if (project.baselineScanId) {
-    baselineScanId = project.baselineScanId;
+    // 项目级基线兜底走与 requireValidBaseline 同口径的自愈校验：旧数据里 projects.baseline_scan_id
+    // 可能指向已删扫描（修复前 deleteScan 只清过 scans 表），失效就清掉引用并不带基线继续扫描，
+    // 而不是静默把死 ID 落进新扫描、让项目被 400 永久卡死
+    const fallback = getScan(project.baselineScanId);
+    if (fallback && fallback.projectId === project.id && fallback.status === 'completed') {
+      baselineScanId = project.baselineScanId;
+    } else {
+      updateProject(project.id, { baselineScanId: null });
+    }
   }
 
   const scan: ScanRecord = {
