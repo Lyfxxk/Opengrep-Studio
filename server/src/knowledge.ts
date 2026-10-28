@@ -138,6 +138,11 @@ function loadResources(lang: KnowledgeLang): KnowledgeResources {
   return resources;
 }
 
+/** 报告/离线 HTML 用的整表读取：键为完整规则 ID，值为当前语言说明；英文无表（走引擎原文） */
+export function listRuleMessages(lang: KnowledgeLang): Record<string, string> {
+  return loadResources(lang).messages;
+}
+
 function readSample(dir: string, filter: string): KnowledgeSample[] {
   const out: KnowledgeSample[] = [];
   let entries: fs.Dirent[];
