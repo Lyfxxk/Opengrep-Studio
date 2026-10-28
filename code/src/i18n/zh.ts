@@ -543,6 +543,15 @@ const zh = {
     removeAria: '删除 {{item}}',
     hint: '输入后回车添加，最多 {{limit}} 条',
   },
+  rulesCenter: {
+    subtitle: '管理规则包（内置 / 自建 / 导入导出 / 质量检查），或在规则实验室在线验证规则正反例',
+    tabPacks: '规则包',
+    tabLab: '规则实验室',
+  },
+  rulePackCell: {
+    multiSuffix: '{{firstName}} 等 {{count}} 个',
+    legacyRulesetTitle: '旧式规则集目录扫描',
+  },
   login: {
     title: '登录 · Opengrep Studio',
     introPanel: '产品介绍',
