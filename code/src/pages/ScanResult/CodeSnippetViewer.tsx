@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { BookOpen, FileCode2, Loader2, MousePointerClick, ShieldCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
 import type { IIssue } from '@/data/issues';
-import { REVIEW_BADGE_CLASS, REVIEW_STATUS_LABELS, SEVERITY_LABELS } from '@/data/issues';
+import { REVIEW_BADGE_CLASS } from '@/data/issues';
 import type { ICodeSnippet } from '@/data/codesnippets';
 import { api } from '@/lib/api';
 import { lookupRuleMessage, useRuleMessageMap } from '@/lib/ruleMessages';
@@ -25,6 +26,7 @@ export default function CodeSnippetViewer({
   onOpenReview,
   onOpenKnowledge,
 }: CodeSnippetViewerProps) {
+  const { t } = useTranslation();
   const [snippet, setSnippet] = useState<ICodeSnippet | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -63,7 +65,7 @@ export default function CodeSnippetViewer({
       <Card className="flex h-full min-h-[320px] items-center justify-center">
         <div className="flex flex-col items-center gap-3 text-center text-muted-foreground">
           <MousePointerClick className="size-8" />
-          <p className="text-sm">从左侧选择一个问题，查看对应代码片段</p>
+          <p className="text-sm">{t('snippet.pickHint')}</p>
         </div>
       </Card>
     );
@@ -84,11 +86,11 @@ export default function CodeSnippetViewer({
               SEVERITY_BADGE_CLASS[issue.severity],
             )}
           >
-            {SEVERITY_LABELS[issue.severity]}
+            {t(`severity.${issue.severity}`)}
           </Badge>
           {issue.review && (
             <Badge className={cn('shrink-0 text-xs font-normal', REVIEW_BADGE_CLASS[issue.review.status])}>
-              {REVIEW_STATUS_LABELS[issue.review.status]}
+              {t(`reviewStatus.${issue.review.status}`)}
               {issue.review.reviewer ? ` · ${issue.review.reviewer}` : ''}
             </Badge>
           )}
@@ -101,13 +103,13 @@ export default function CodeSnippetViewer({
                 onClick={() => onOpenKnowledge(issue.ruleId)}
               >
                 <BookOpen className="size-3.5" />
-                规则知识
+                {t('snippet.knowledgeBtn')}
               </Button>
             )}
             {onOpenReview && issue.fingerprint && (
               <Button variant="outline" size="sm" className="h-7 gap-1 px-2 text-xs" onClick={() => onOpenReview(issue)}>
                 <ShieldCheck className="size-3.5" />
-                {issue.review ? '重新复核' : '人工复核'}
+                {issue.review ? t('snippet.reReview') : t('snippet.review')}
               </Button>
             )}
           </span>
@@ -122,26 +124,30 @@ export default function CodeSnippetViewer({
         </CardDescription>
         {issue.review?.reason && (
           <CardDescription className="rounded-md border border-warning/30 bg-warning/5 px-2.5 py-1.5 text-xs leading-5">
-            复核结论：{REVIEW_STATUS_LABELS[issue.review.status]}
-            {issue.review.reviewer ? `（${issue.review.reviewer}）` : ''} — {issue.review.reason}
+            {t('snippet.reviewConclusion', { status: t(`reviewStatus.${issue.review.status}`) })}
+            {issue.review.reviewer ? t('snippet.reviewerSuffix', { reviewer: issue.review.reviewer }) : ''}
+            {' — '}
+            {issue.review.reason}
           </CardDescription>
         )}
       </CardHeader>
       <CardContent className="flex min-h-0 flex-1 flex-col gap-3">
         {issue.taintFlow && issue.taintFlow.length > 0 && (
           <div className="shrink-0 rounded-lg border border-warning/30 bg-warning/5 p-3">
-            <h4 className="mb-2 text-xs font-semibold text-muted-foreground">污点传播链</h4>
+            <h4 className="mb-2 text-xs font-semibold text-muted-foreground">
+              {t('snippet.taintFlowTitle')}
+            </h4>
             <TaintFlow steps={issue.taintFlow} />
           </div>
         )}
         {loading ? (
           <div className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-dashed p-8 text-sm text-muted-foreground">
             <Loader2 className="size-4 animate-spin" />
-            正在读取代码片段…
+            {t('snippet.snippetLoading')}
           </div>
         ) : error ? (
           <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-            代码片段加载失败：{error}
+            {t('snippet.snippetFailed', { error })}
           </div>
         ) : snippet ? (
           <div className="min-h-0 flex-1 overflow-auto rounded-lg border border-border bg-muted/40">
@@ -177,7 +183,7 @@ export default function CodeSnippetViewer({
           </div>
         ) : (
           <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-            该问题暂无代码片段数据
+            {t('snippet.noSnippet')}
           </div>
         )}
       </CardContent>

@@ -66,12 +66,6 @@ export const REVIEW_BADGE_CLASS: Record<ReviewStatus, string> = {
   accepted: 'border-warning/40 bg-warning/10 text-warning',
 };
 
-export const TAINT_ROLE_LABELS: Record<TaintRole, string> = {
-  source: '污点源',
-  intermediate: '传播',
-  sink: '汇聚点',
-};
-
 export const MOCK_ISSUES: IIssue[] = [
   {
     id: '1',
