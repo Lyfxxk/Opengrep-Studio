@@ -256,3 +256,12 @@
     inset: -1px;
   }
 }
+
+/* 繁体界面优先 TC 字形：按 :lang 作用域覆盖，简体与英文保持原字体栈 */
+:root:lang(zh-Hant) {
+  --font-sans:
+    '-apple-system', 'BlinkMacSystemFont', 'Helvetica Neue', 'Tahoma',
+    'PingFang TC', 'PingFang SC', 'Microsoft JhengHei', 'Microsoft Yahei', 'Arial', 'Hiragino Sans GB',
+    'sans-serif', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+    'Noto Color Emoji';
+}
