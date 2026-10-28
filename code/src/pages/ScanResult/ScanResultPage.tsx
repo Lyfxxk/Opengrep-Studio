@@ -279,7 +279,8 @@ export default function ScanResultPage() {
                     {t('scanResult.dtRuleset')}
                   </dt>
                   <dd className="min-w-0 truncate font-medium">
-                    {scan.rules || '—'}
+                    {/* 旧扫描曾把配置内部 ID（cfg-xxx）当规则集落库：内部标识对用户无意义，按无信息占位 */}
+                    {scan.rules && !scan.rules.startsWith('cfg-') ? scan.rules : '—'}
                   </dd>
                 </div>
                 <div className="flex items-start justify-between gap-3 border-b py-2.5">

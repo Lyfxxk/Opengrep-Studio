@@ -78,7 +78,9 @@ function buildConfigPlan(project: Project): ScanPlan {
     });
   }
   return {
-    rulesLabel: scanConfig.id,
+    // rules 字段会作为「规则集」展示在扫描概要与报告里：落配置名（创建时限 50 字符）而非
+    // cfg-xxx 内部 ID，用户才看得懂；可复现性由 configSnapshot.ruleFiles 的 sha256 保证
+    rulesLabel: scanConfig.name,
     configFiles,
     rulepacks,
     filePacks,
