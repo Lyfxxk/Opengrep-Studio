@@ -164,6 +164,7 @@ const zhHant: typeof zh = {
   },
   scanStatus: {
     scanning: '掃描中',
+    queued: '排隊中',
     failed: '失敗',
     completed: '已完成',
   },
@@ -319,6 +320,12 @@ const zhHant: typeof zh = {
     failedTitle: '本次掃描執行失敗',
     failedHint: '原始碼快照仍在，返回專案詳情頁可直接重新發起掃描，無需重新上傳',
     scanningHint: '掃描進行中，完成後此處將展示問題列表',
+    // 並行池排隊中（第 3 路及以後）的提示：與 scanningHint 區分，避免排隊掃描被誤讀為卡死
+    queuedHint: '排隊等待中，其他掃描完成後自動開始',
+    // 心跳進度：原始碼快照檔案數在引擎啟動前落庫，掃描中即可見
+    scannedFiles: '已掃描 {{count}} 個檔案',
+    cancelBtn: '取消掃描',
+    cancelRequestedToast: '已請求取消掃描',
     summaryTitle: '掃描概要',
     zeroIssues: '0 問題',
     dtFiles: '檢查檔案',
@@ -378,7 +385,7 @@ const zhHant: typeof zh = {
     cloneSuccessToast: '儲存庫克隆成功，共 {{count}} 個檔案，可以開始掃描',
     // 克隆失敗只清臨時目錄，既有原始碼不受影響；toast 附帶說明，避免使用者誤以為要重新上傳
     cloneFailedSourceKept: '（原已上傳的原始碼保持不變）',
-    scanSubmittedToast: '掃描任務已提交，引擎依序執行中…',
+    scanSubmittedToast: '掃描任務已提交，最多 2 路並行，超出自動排入佇列…',
     baselineSetToast: '已設為基線掃描，後續掃描將自動對比',
     baselineUnsetToast: '已取消基線，後續掃描不再自動對比',
     sarifImportedBase: 'SARIF 匯入成功：{{count}} 個問題，可在掃描歷史檢視',
@@ -854,6 +861,7 @@ const zhHant: typeof zh = {
       engineMissing:
         '未找到 opengrep 引擎，無法發起掃描：請在儲存庫根目錄執行 npm run setup:engine 安裝引擎，或設定環境變數 OPENGREP_BIN 指向引擎可執行檔',
       scanBusy: '掃描進行中，請等掃描完成或失敗後再刪除',
+      scanNotRunning: '掃描已結束，無需取消',
       snippetParamsInvalid: '需要 path、start、end 查詢參數（start ≥ 1 且 end ≥ start）',
       snippetPathInvalid: '非法的檔案路徑',
       snippetNotFound: '原始碼檔案不存在且沒有可用的片段快取',

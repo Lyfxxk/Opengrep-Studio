@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import type { ChildProcess } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import {
@@ -56,12 +57,13 @@ const MAX_CONCURRENT_SCANS = 2;
 let activeScans = 0;
 const scanWaitQueue: Array<() => void> = [];
 
-function acquireScanSlot(): Promise<void> {
+/** 占用扫描槽位；无空闲槽位时返回 queued=true，调用方需先给扫描打"排队中"标记，轮到时再清除 */
+function acquireScanSlot(): { queued: boolean; ready: Promise<void> } {
   if (activeScans < MAX_CONCURRENT_SCANS) {
     activeScans += 1;
-    return Promise.resolve();
+    return { queued: false, ready: Promise.resolve() };
   }
-  return new Promise((resolve) => scanWaitQueue.push(resolve));
+  return { queued: true, ready: new Promise((resolve) => scanWaitQueue.push(resolve)) };
 }
 
 function releaseScanSlot(): void {
@@ -70,13 +72,44 @@ function releaseScanSlot(): void {
   else activeScans -= 1;
 }
 
+/** 运行中扫描的引擎子进程登记（scanId → child）：取消接口据此终止引擎 */
+const runningEngines = new Map<string, ChildProcess>();
+
+/** 已请求取消且引擎正在运行的扫描：runEngine 返回后据此落"已被手动取消"，而不是引擎原始退出码 */
+const cancelRequested = new Set<string>();
+
+/**
+ * 取消扫描：引擎运行中则终止进程（复用 runEngine 既有 kill 链：温和终止 → 5s SIGKILL → 15s 兜底），
+ * runScan 收尾按"已被手动取消"落库；返回 false 表示引擎尚未启动（排队中/快照准备阶段），
+ * 此时由调用方直接落库失败（槽位轮到时 runScan 复查状态会自动退出，不会覆盖取消结果）。
+ */
+export function requestScanCancel(scanId: string): boolean {
+  const child = runningEngines.get(scanId);
+  if (!child) return false;
+  cancelRequested.add(scanId);
+  child.kill();
+  return true;
+}
+
 export function enqueueScan(scanId: string, plan: ScanPlan): void {
-  void acquireScanSlot()
-    .then(() => runScan(scanId, plan))
+  const slot = acquireScanSlot();
+  if (slot.queued) {
+    // 排队标记立刻落库（status 仍 scanning）：列表/结果页据此区分"排队中"与"扫描中"
+    updateScan(scanId, { queuedAt: new Date().toISOString() });
+  }
+  void slot.ready
+    .then(() => {
+      // 轮到本扫描开跑：清掉排队标记，前端从"排队中"切回"扫描中"
+      if (slot.queued) updateScan(scanId, { queuedAt: null });
+      return runScan(scanId, plan);
+    })
     .catch((error) => {
       console.error(`[scan-runner] 扫描 ${scanId} 执行异常:`, error);
     })
-    .finally(() => releaseScanSlot());
+    .finally(() => {
+      cancelRequested.delete(scanId);
+      releaseScanSlot();
+    });
 }
 
 
@@ -287,6 +320,9 @@ async function runScan(scanId: string, plan: ScanPlan): Promise<void> {
     const engineVersion = await getEngineVersion();
     if (!engineVersion) throw new Error(engineNotRunnableHint());
     const fileCount = await countFiles(srcDir);
+    // 心跳进度：文件数尽早落库，结果页扫描中即可展示"已扫 N 文件"而不是纯转圈
+    //（完成时同值还会再落一次，无副作用；写库频率只有这一次，远低于 1 秒一次的共享连接约束）
+    updateScan(scanId, { fileCount });
 
     const args = [
       'scan',
@@ -308,10 +344,21 @@ async function runScan(scanId: string, plan: ScanPlan): Promise<void> {
     ];
     console.log(`[scan-runner] 扫描 ${scanId} 使用规则: ${plan.rulesLabel}（${plan.configFiles.length} 个规则文件）`);
     await buildReproducibilityRecord(scanId, srcDir, plan, args, engineVersion);
+    // 引擎启动前复查：排队或快照准备阶段被取消的扫描已被取消接口落库失败，
+    // 这里直接退出，避免取消之后仍把引擎拉起来或用最终结果覆盖取消记录
+    if (getScan(scanId)?.status !== 'scanning') return;
     const { code, stdout, stderr, timedOut, stdoutTruncated } = await runEngine(args, srcDir, {
       timeoutMs: config.scanTimeoutMs,
       logLabel: 'scan-runner',
+      // 登记本次引擎子进程：取消接口按 scanId 找到它并终止（复用 runEngine 的 kill 链）
+      onSpawn: (child) => runningEngines.set(scanId, child),
     });
+    // runEngine resolve 即引擎已退出（close/error 任一路径都会 resolve）：从登记表移除，取消接口不再对其生效
+    runningEngines.delete(scanId);
+    // 引擎被手动取消：按取消语义落库，而不是把 kill 后的空输出/非零退出码报成引擎故障
+    if (cancelRequested.has(scanId)) {
+      throw new ScanError('scan.cancelled', '已被手动取消');
+    }
 
     if (timedOut) {
       throw new ScanError(

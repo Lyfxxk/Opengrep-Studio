@@ -163,6 +163,7 @@ const zh = {
   },
   scanStatus: {
     scanning: '扫描中',
+    queued: '排队中',
     failed: '失败',
     completed: '已完成',
   },
@@ -318,6 +319,12 @@ const zh = {
     failedTitle: '本次扫描执行失败',
     failedHint: '源码快照仍在，返回项目详情页可直接重新发起扫描，无需重新上传',
     scanningHint: '扫描进行中，完成后此处将展示问题列表',
+    // 并发池排队中（第 3 路及以后）的提示：与 scanningHint 区分，避免排队扫描被误读为卡死
+    queuedHint: '排队等待中，其他扫描完成后自动开始',
+    // 心跳进度：源码快照文件数在引擎启动前落库，扫描中即可见
+    scannedFiles: '已扫描 {{count}} 个文件',
+    cancelBtn: '取消扫描',
+    cancelRequestedToast: '已请求取消扫描',
     summaryTitle: '扫描概要',
     zeroIssues: '0 问题',
     dtFiles: '检查文件',
@@ -377,7 +384,7 @@ const zh = {
     cloneSuccessToast: '仓库克隆成功，共 {{count}} 个文件，可以开始扫描',
     // 克隆失败只清临时目录，既有源码不受影响；toast 附带说明，避免用户误以为要重新上传
     cloneFailedSourceKept: '（原已上传的源码保持不变）',
-    scanSubmittedToast: '扫描任务已提交，引擎单并发执行中…',
+    scanSubmittedToast: '扫描任务已提交，最多 2 路并发，超出自动排队…',
     baselineSetToast: '已设为基线扫描，后续扫描将自动对比',
     baselineUnsetToast: '已取消基线，后续扫描不再自动对比',
     sarifImportedBase: 'SARIF 导入成功：{{count}} 个问题，可在扫描历史查看',
@@ -852,6 +859,7 @@ const zh = {
       noSourceToScan: '请先上传源码或克隆仓库再发起扫描',
       engineMissing: '未找到 opengrep 引擎，无法发起扫描：请在仓库根目录运行 npm run setup:engine 安装引擎，或设置环境变量 OPENGREP_BIN 指向引擎可执行文件',
       scanBusy: '扫描进行中，请等扫描完成或失败后再删除',
+      scanNotRunning: '扫描已结束，无需取消',
       snippetParamsInvalid: '需要 path、start、end 查询参数（start ≥ 1 且 end ≥ start）',
       snippetPathInvalid: '非法的文件路径',
       snippetNotFound: '源码文件不存在且没有可用的片段缓存',

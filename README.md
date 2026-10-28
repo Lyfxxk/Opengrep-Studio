@@ -197,7 +197,7 @@ flowchart LR
 - Single-process deployment: the backend also serves the built frontend (in production, port 8787 is all you need); binds `127.0.0.1` only, by default
 - Every scan runs against an **immutable source snapshot**; the snapshot hash and the full command line are archived, so every report is reproducible
 - SQLite stores projects / scans / findings / reviews / configs — no external service dependencies; all data lives in `server/data/`
-- Scans run globally serialized (to protect local resources); the Rule Lab and scans are mutually exclusive
+- Up to 2 scans run concurrently (extra ones are queued automatically) to make use of local resources; the Rule Lab and scans are mutually exclusive
 
 ## Security Model
 
@@ -249,7 +249,7 @@ Honest disclosure — please read:
 - [x] Docker image & one-click launch on 3 platforms
 - [x] Engine check-update & one-click upgrade (multi-channel download fallback)
 - [x] UI i18n (English / Simplified Chinese / Traditional Chinese)
-- [ ] Scan queue & parallel scheduling
+- [x] Scan queue & parallel scheduling
 - [ ] Rule-pack import from URL & community index
 - [ ] GitHub Action workflow template (scan in CI, upload SARIF back)
 - [ ] Customizable report templates (branding / header & footer)

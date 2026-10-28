@@ -122,7 +122,7 @@ export interface EngineRunResult {
 export function runEngine(
   args: string[],
   cwd: string,
-  options: { timeoutMs: number; logLabel: string },
+  options: { timeoutMs: number; logLabel: string; onSpawn?: (child: ChildProcess) => void },
 ): Promise<EngineRunResult> {
   return new Promise((resolve) => {
     console.error(
@@ -142,6 +142,9 @@ export function runEngine(
       return;
     }
     trackChildProcess(child);
+    // spawn 成功即回调：取消扫描需要拿到这次运行的子进程句柄（scan-runner 按 scanId 登记），
+    // 全局 trackedChildren 只有 Set 没有归属信息，定位不到单个扫描的引擎
+    options.onSpawn?.(child);
     let stdout = '';
     let stderr = '';
     let timedOut = false;

@@ -89,6 +89,8 @@ export interface ScanRecord {
   configSnapshot?: ScanConfigSnapshot;
   /** 发起扫描时的引擎版本（升级引擎后旧记录仍保留当日版本，报告与可复现清单不失真） */
   engineVersion?: string;
+  /** 排队等待并发槽位的标记（status 仍 scanning 且有值 = 排队中；开跑时经 updateScan 传 null 清除），供前端区分"排队中/扫描中" */
+  queuedAt?: string | null;
 }
 
 /** 扫描发起时的规则与引擎参数快照（manifest.json 的组成部分） */
@@ -163,6 +165,7 @@ CREATE TABLE IF NOT EXISTS scans (
   id TEXT PRIMARY KEY,
   project_id TEXT NOT NULL,
   status TEXT NOT NULL,
+  queued_at TEXT,
   issue_count INTEGER NOT NULL DEFAULT 0,
   scanned_at TEXT NOT NULL,
   finished_at TEXT,
@@ -243,6 +246,8 @@ for (const sql of [
   'ALTER TABLE scans ADD COLUMN command_line TEXT',
   'ALTER TABLE scans ADD COLUMN config_snapshot TEXT',
   'ALTER TABLE scans ADD COLUMN engine_version TEXT',
+  // 扫描排队标记（并发池 2 路后排队可区分）：CREATE TABLE IF NOT EXISTS 不给旧库加列，走 ALTER 兜底
+  'ALTER TABLE scans ADD COLUMN queued_at TEXT',
   // 污点路径可视化（P1-6）：taint 命中的 source→sink 传播链快照
   'ALTER TABLE issues ADD COLUMN dataflow_trace TEXT',
 ]) {
@@ -322,6 +327,7 @@ function rowToScan(row: SqlRow): ScanRecord {
     commandLine: str(row.command_line as string | null),
     configSnapshot: snapshotRaw ? (snapshotRaw as unknown as ScanConfigSnapshot) : undefined,
     engineVersion: str(row.engine_version as string | null),
+    queuedAt: str(row.queued_at as string | null),
   };
 }
 
@@ -482,6 +488,7 @@ export function updateScan(id: string, patch: Partial<Omit<ScanRecord, 'id' | 'p
   if (patch.srcHash !== undefined) { sets.push('src_hash = ?'); values.push(patch.srcHash ?? null); }
   if (patch.commandLine !== undefined) { sets.push('command_line = ?'); values.push(patch.commandLine ?? null); }
   if (patch.engineVersion !== undefined) { sets.push('engine_version = ?'); values.push(patch.engineVersion ?? null); }
+  if (patch.queuedAt !== undefined) { sets.push('queued_at = ?'); values.push(patch.queuedAt ?? null); }
   if (patch.configSnapshot !== undefined) {
     sets.push('config_snapshot = ?');
     values.push(patch.configSnapshot ? JSON.stringify(patch.configSnapshot) : null);

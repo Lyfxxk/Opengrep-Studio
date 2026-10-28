@@ -70,7 +70,7 @@ export default function ScanHistoryTable({
               >
                 <TableCell className="font-mono text-xs">{scan.id}</TableCell>
                 <TableCell>
-                  <ScanStatusBadge status={scan.status} />
+                  <ScanStatusBadge status={scan.status} queued={Boolean(scan.queuedAt)} />
                 </TableCell>
                 <TableCell className="tabular-nums">
                   {scan.status === 'completed' ? scan.issueCount : '—'}
