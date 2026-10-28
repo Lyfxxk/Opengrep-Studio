@@ -297,3 +297,8 @@ Two third-party license notes:
 
 - **The scan engine**: opengrep is released under LGPL-2.1; this repo contains no engine binary — `npm run setup:engine` downloads it from the official Releases and verifies it by SHA-256
 - **Built-in rules**: curated from opengrep-rules (LGPL 2.1 + Commons Clause) — free to use and redistribute with attribution kept, but the rules themselves must not be sold as a paid product
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=Lyfxxk/Opengrep-Studio&type=Date)](https://star-history.com/#Lyfxxk/Opengrep-Studio)
+
