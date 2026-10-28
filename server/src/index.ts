@@ -1711,14 +1711,16 @@ app.get('/api/scans/:scanId/diff', asyncHandler(async (req, res) => {
   });
 }));
 
-// ---------- 中文规则知识库（P1-5） ----------
+// ---------- 规则知识库（P1-5） ----------
 
 app.get('/api/rules/knowledge/:ruleId', asyncHandler(async (req, res) => {
   const ruleId = String(req.params.ruleId ?? '').trim();
   if (!ruleId || ruleId.length > 200) {
     throw new HttpError(400, '需要 ruleId 路径参数', { code: 'srv.ruleIdInvalid' });
   }
-  res.json(getRuleKnowledge(ruleId));
+  // 只认已支持的两种语言：非法值回落简体，避免任意 query 改变读取路径
+  const lang = req.query.lang === 'zh-Hant' ? 'zh-Hant' : 'zh';
+  res.json(getRuleKnowledge(ruleId, lang));
 }));
 
 app.post('/api/rulelab/run', asyncHandler(async (req, res) => {
