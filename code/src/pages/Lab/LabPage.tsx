@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import {
   AlertTriangle,
@@ -90,10 +91,10 @@ const DEFAULT_DRAFT: LabDraft = {
 };
 
 /** 内置示例：覆盖 pattern 与 taint 两种写法，方便新手上手 */
-const LAB_EXAMPLES: Array<{ name: string; draft: LabDraft }> = [
-  { name: 'JS：eval 检测', draft: DEFAULT_DRAFT },
+const LAB_EXAMPLES: Array<{ nameKey: 'lab.exampleEval' | 'lab.exampleWeakHash' | 'lab.exampleTaint'; draft: LabDraft }> = [
+  { nameKey: 'lab.exampleEval', draft: DEFAULT_DRAFT },
   {
-    name: 'Python：弱哈希 MD5',
+    nameKey: 'lab.exampleWeakHash',
     draft: {
       yaml: `rules:
   - id: py-weak-hash-md5
@@ -118,7 +119,7 @@ def digest(token):
     },
   },
   {
-    name: 'JS：Taint 污点分析',
+    nameKey: 'lab.exampleTaint',
     draft: {
       yaml: `rules:
   - id: js-taint-eval
@@ -200,6 +201,7 @@ function SampleEditor({
 }
 
 function MatchList({ matches, accent }: { matches: RuleLabMatch[]; accent: 'success' | 'warning' }) {
+  const { t } = useTranslation();
   if (matches.length === 0) return null;
   return (
     <ul className="space-y-2">
@@ -212,8 +214,9 @@ function MatchList({ matches, accent }: { matches: RuleLabMatch[]; accent: 'succ
         >
           <div className="flex flex-wrap items-center gap-2 text-xs">
             <Badge variant="outline" className="font-normal">
-              第 {match.startLine}
-              {match.endLine !== match.startLine ? `–${match.endLine}` : ''} 行
+              {match.endLine !== match.startLine
+                ? t('lab.lineRangeBadge', { from: match.startLine, to: match.endLine })
+                : t('lab.lineBadge', { line: match.startLine })}
             </Badge>
             <span className="text-muted-foreground">{match.ruleId}</span>
             <span className="text-muted-foreground/70">·</span>
@@ -226,7 +229,9 @@ function MatchList({ matches, accent }: { matches: RuleLabMatch[]; accent: 'succ
           )}
           {match.taintFlow && match.taintFlow.length > 0 && (
             <div className="mt-2 border-t border-border/60 pt-2">
-              <h5 className="mb-1.5 text-[11px] font-semibold text-muted-foreground">污点传播链</h5>
+              <h5 className="mb-1.5 text-[11px] font-semibold text-muted-foreground">
+                {t('snippet.taintFlowTitle')}
+              </h5>
               <TaintFlow steps={match.taintFlow} />
             </div>
           )}
@@ -268,6 +273,7 @@ function engineLangToPackLabel(engineLang: string): string | undefined {
 }
 
 export default function LabPage() {
+  const { t } = useTranslation();
   const [draft, setDraft] = useState<LabDraft>(loadDraft);
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<RuleLabRunResult | null>(null);
@@ -329,18 +335,18 @@ export default function LabPage() {
       });
       setResult(res);
       if (res.verdict === 'pass') {
-        toast.success(`实验通过：正例命中 ${res.positive.matches.length} 处，反例无误报`);
+        toast.success(t('lab.runPassToast', { count: res.positive.matches.length }));
       } else if (res.verdict === 'fail') {
-        toast.warning(`实验未通过：${res.failReasons.join('；')}`);
+        toast.warning(t('lab.runFailToast', { reasons: res.failReasons.join('；') }));
       } else {
-        toast.error(`实验出错：${res.error ?? '引擎执行失败'}`);
+        toast.error(t('lab.runErrorToast', { error: res.error ?? t('lab.engineFailedFallback') }));
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : String(error));
     } finally {
       setRunning(false);
     }
-  }, [draft, running]);
+  }, [draft, running, t]);
 
   // Ctrl/Cmd + Enter 运行
   useEffect(() => {
@@ -394,7 +400,7 @@ export default function LabPage() {
       if (saveDialog.mode === 'create') {
         const name = saveName.trim();
         if (!name) {
-          saveErrorRef.current = '请输入规则包名称';
+          saveErrorRef.current = t('rulePacks.nameRequired');
           return;
         }
         const pack = await api.createRulePack(
@@ -407,13 +413,17 @@ export default function LabPage() {
         );
         toast.success(
           attachSamples && hasSamples
-            ? `规则包「${pack.name}」已创建（${pack.ruleCount} 条规则、${pack.sampleCount ?? 0} 个样本）`
-            : `规则包「${pack.name}」已创建，解析到 ${pack.ruleCount} 条规则`,
+            ? t('lab.createdWithSamplesToast', {
+                name: pack.name,
+                rules: pack.ruleCount,
+                samples: pack.sampleCount ?? 0,
+              })
+            : t('rulePacks.createdToast', { name: pack.name, count: pack.ruleCount }),
         );
         setSaveDialog(null);
       } else {
         await api.updateRulePackContent(saveDialog.pack.id, draft.yaml);
-        toast.success(`已覆盖保存到规则包「${saveDialog.pack.name}」`);
+        toast.success(t('lab.overwriteSavedToast', { name: saveDialog.pack.name }));
         setSaveDialog(null);
       }
     } catch (error) {
@@ -427,12 +437,13 @@ export default function LabPage() {
     }
   };
 
+
   const verdictView = () => {
     if (running) {
       return (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="size-4 animate-spin" />
-          引擎运行中，正在对样本做匹配…
+          {t('lab.engineRunning')}
         </div>
       );
     }
@@ -440,7 +451,7 @@ export default function LabPage() {
       return (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <FlaskConical className="size-4" />
-          点击「运行实验」或按 Ctrl+Enter，查看规则能否正确命中
+          {t('lab.idleHint')}
         </div>
       );
     }
@@ -449,12 +460,16 @@ export default function LabPage() {
         <div className="flex items-start gap-3 rounded-lg border border-success/30 bg-success/10 p-4">
           <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-success" />
           <div className="min-w-0 text-sm">
-            <div className="font-medium text-success">通过</div>
+            <div className="font-medium text-success">{t('rulePacks.verdictPass')}</div>
             <div className="mt-0.5 text-xs text-muted-foreground">
-              {result.positive.provided && `正例命中 ${result.positive.matches.length} 处`}
+              {result.positive.provided && t('lab.passPositives', { count: result.positive.matches.length })}
               {result.positive.provided && result.negative.provided && ' · '}
-              {result.negative.provided && `反例 ${result.negative.matches.length} 处误报`}
-              {' · '}规则 {result.ruleIds.length} 条 · 引擎耗时 {(result.durationMs / 1000).toFixed(1)}s
+              {result.negative.provided && t('lab.passNegatives', { count: result.negative.matches.length })}
+              {' · '}
+              {t('lab.passMeta', {
+                count: result.ruleIds.length,
+                duration: (result.durationMs / 1000).toFixed(1),
+              })}
             </div>
           </div>
         </div>
@@ -465,7 +480,7 @@ export default function LabPage() {
         <div className="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning/10 p-4">
           <AlertTriangle className="mt-0.5 size-5 shrink-0 text-warning" />
           <div className="min-w-0 text-sm">
-            <div className="font-medium text-warning">未通过</div>
+            <div className="font-medium text-warning">{t('rulePacks.verdictFail')}</div>
             <ul className="mt-1 list-inside list-disc space-y-0.5 text-xs text-muted-foreground">
               {result.failReasons.map((reason) => (
                 <li key={reason}>{reason}</li>
@@ -479,7 +494,7 @@ export default function LabPage() {
       <div className="flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/10 p-4">
         <XCircle className="mt-0.5 size-5 shrink-0 text-destructive" />
         <div className="min-w-0 text-sm">
-          <div className="font-medium text-destructive">规则错误</div>
+          <div className="font-medium text-destructive">{t('lab.ruleError')}</div>
           {result.error && (
             <p className="mt-1 whitespace-pre-wrap font-mono text-xs text-foreground/90">{result.error}</p>
           )}
@@ -501,24 +516,24 @@ export default function LabPage() {
           {result.positive.provided && (
             <div className="space-y-2">
               <div className="text-xs font-medium text-muted-foreground">
-                正例命中（{result.positive.matches.length} 处）
+                {t('lab.positiveHits', { count: result.positive.matches.length })}
               </div>
               {result.positive.matches.length > 0 ? (
                 <MatchList matches={result.positive.matches} accent="success" />
               ) : (
-                <p className="text-xs text-muted-foreground/70">没有命中，检查 pattern 是否写对</p>
+                <p className="text-xs text-muted-foreground/70">{t('lab.positiveNoHit')}</p>
               )}
             </div>
           )}
           {result.negative.provided && (
             <div className="space-y-2">
               <div className="text-xs font-medium text-muted-foreground">
-                反例命中（{result.negative.matches.length} 处）
+                {t('lab.negativeHits', { count: result.negative.matches.length })}
               </div>
               {result.negative.matches.length > 0 ? (
                 <MatchList matches={result.negative.matches} accent="warning" />
               ) : (
-                <p className="text-xs text-muted-foreground/70">无误报</p>
+                <p className="text-xs text-muted-foreground/70">{t('lab.negativeClean')}</p>
               )}
             </div>
           )}
@@ -534,10 +549,8 @@ export default function LabPage() {
         <div className="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning/10 p-4">
           <ShieldAlert className="mt-0.5 size-5 shrink-0 text-warning" />
           <div className="min-w-0 text-sm">
-            <div className="font-medium text-warning">扫描引擎未就绪</div>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              未找到 opengrep 引擎，无法运行实验。请在仓库根目录执行 npm run setup:engine 安装后刷新页面。
-            </p>
+            <div className="font-medium text-warning">{t('lab.engineMissingTitle')}</div>
+            <p className="mt-0.5 text-xs text-muted-foreground">{t('lab.engineMissingHint')}</p>
           </div>
         </div>
       )}
@@ -545,7 +558,7 @@ export default function LabPage() {
       <div className="flex flex-wrap items-center justify-end gap-2">
         {language && (
           <Badge variant="outline" className="font-normal">
-            语言：{language}
+            {t('lab.langBadge', { language })}
           </Badge>
         )}
           <DropdownMenu
@@ -556,19 +569,21 @@ export default function LabPage() {
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="gap-1" disabled={!draft.yaml.trim()}>
                 <Save className="size-4" />
-                保存到规则包
+                {t('lab.saveToPack')}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuItem onSelect={() => openSaveDialog()}>
-                另存为新规则包…
+                {t('lab.saveAsNew')}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuLabel>覆盖到已有规则包</DropdownMenuLabel>
+              <DropdownMenuLabel>{t('lab.overwriteLabel')}</DropdownMenuLabel>
               {customPacks === null ? (
-                <div className="px-2 py-1.5 text-xs text-muted-foreground">加载中…</div>
+                <div className="px-2 py-1.5 text-xs text-muted-foreground">{t('common.loading')}</div>
               ) : customPacks.filter((pack) => !pack.isDir).length === 0 ? (
-                <div className="px-2 py-1.5 text-xs text-muted-foreground">暂无可覆盖的单文件规则包</div>
+                <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                  {t('lab.noOverwriteCandidates')}
+                </div>
               ) : (
                 customPacks
                   .filter((pack) => !pack.isDir)
@@ -579,7 +594,7 @@ export default function LabPage() {
                     >
                       <span className="truncate">{pack.name}</span>
                       <span className="ml-auto shrink-0 text-xs text-muted-foreground">
-                        {pack.ruleCount} 条
+                        {t('lab.packRulesShort', { count: pack.ruleCount })}
                       </span>
                     </DropdownMenuItem>
                   ))
@@ -589,11 +604,11 @@ export default function LabPage() {
           <Button
             className="gap-1"
             disabled={running || !canRun}
-            title={canRun ? undefined : '请填写规则 YAML 和至少一个测试样本'}
+            title={canRun ? undefined : t('lab.runDisabledTitle')}
             onClick={() => void run()}
           >
             {running ? <Loader2 className="size-4 animate-spin" /> : <Play className="size-4" />}
-            {running ? '运行中…' : '运行实验'}
+            {running ? t('lab.runningBtn') : t('lab.runBtn')}
           </Button>
       </div>
 
@@ -601,7 +616,7 @@ export default function LabPage() {
       <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">规则 YAML</CardTitle>
+            <CardTitle className="text-base">{t('lab.yamlTitle')}</CardTitle>
           </CardHeader>
           <CardContent>
             <CodeMirror
@@ -616,20 +631,20 @@ export default function LabPage() {
 
         <Card>
           <CardHeader className="flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-base">测试样本</CardTitle>
+            <CardTitle className="text-base">{t('lab.samplesTitle')}</CardTitle>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="h-8 gap-1 text-xs">
-                  载入示例
+                  {t('lab.loadExample')}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 {LAB_EXAMPLES.map((example) => (
                   <DropdownMenuItem
-                    key={example.name}
+                    key={example.nameKey}
                     onSelect={() => pickExample(example.draft)}
                   >
-                    {example.name}
+                    {t(example.nameKey)}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
@@ -638,8 +653,8 @@ export default function LabPage() {
           <CardContent>
             <Tabs defaultValue="positive">
               <TabsList className="mb-2">
-                <TabsTrigger value="positive">正例（期望命中）</TabsTrigger>
-                <TabsTrigger value="negative">反例（期望无误报）</TabsTrigger>
+                <TabsTrigger value="positive">{t('lab.tabPositive')}</TabsTrigger>
+                <TabsTrigger value="negative">{t('lab.tabNegative')}</TabsTrigger>
               </TabsList>
               <TabsContent value="positive">
                 <SampleEditor
@@ -661,7 +676,7 @@ export default function LabPage() {
 
         <Card className="lg:col-span-2 xl:col-span-1">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">实验结果</CardTitle>
+            <CardTitle className="text-base">{t('lab.resultTitle')}</CardTitle>
           </CardHeader>
           <CardContent className="max-h-[52vh] overflow-y-auto">
             {resultBody()}
@@ -679,8 +694,8 @@ export default function LabPage() {
           <DialogHeader>
             <DialogTitle>
               {saveDialog?.mode === 'overwrite'
-                ? `覆盖规则包「${saveDialog.pack.name}」`
-                : '另存为新规则包'}
+                ? t('lab.saveDialogTitleOverwrite', { name: saveDialog.pack.name })
+                : t('lab.saveDialogTitleCreate')}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
@@ -688,17 +703,17 @@ export default function LabPage() {
               <>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="lab-save-name">规则包名称</Label>
+                    <Label htmlFor="lab-save-name">{t('rulePacks.uploadNameLabel')}</Label>
                     <Input
                       id="lab-save-name"
                       value={saveName}
                       maxLength={50}
-                      placeholder="例如：实验规则包"
+                      placeholder={t('lab.saveNamePlaceholder')}
                       onChange={(event) => setSaveName(event.target.value)}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>适用语言</Label>
+                    <Label>{t('rulePacks.uploadLangLabel')}</Label>
                     <Select value={saveLanguage} onValueChange={setSaveLanguage}>
                       <SelectTrigger className="w-full">
                         <SelectValue />
@@ -721,24 +736,20 @@ export default function LabPage() {
                     onCheckedChange={(checked) => setAttachSamples(checked === true)}
                   />
                   <span className="min-w-0">
-                    <span className="font-medium">附带测试样本</span>
+                    <span className="font-medium">{t('lab.attachSamplesTitle')}</span>
                     <span className="mt-0.5 block text-xs text-muted-foreground">
-                      {hasSamples
-                        ? '正/反例随包保存为可移植规则包，之后可在规则包页一键质量检查回归'
-                        : '当前没有填写测试样本，将创建普通单文件规则包'}
+                      {hasSamples ? t('lab.attachSamplesOn') : t('lab.attachSamplesOff')}
                     </span>
                   </span>
                 </label>
               </>
             ) : (
-              <p className="text-sm text-muted-foreground">
-                将用当前编辑器中的 YAML 替换该规则包的全部内容，且不可撤销。内置规则包不可覆盖。
-              </p>
+              <p className="text-sm text-muted-foreground">{t('lab.overwriteWarning')}</p>
             )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setSaveDialog(null)}>
-              取消
+              {t('common.cancel')}
             </Button>
             <Button
               className="gap-1"
@@ -746,7 +757,7 @@ export default function LabPage() {
               onClick={() => void handleSave()}
             >
               {saveSubmitting ? <Loader2 className="size-4 animate-spin" /> : null}
-              {saveSubmitting ? '保存中…' : '确认保存'}
+              {saveSubmitting ? t('rulePacks.saving') : t('lab.confirmSave')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -761,19 +772,17 @@ export default function LabPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>载入示例将覆盖当前内容</AlertDialogTitle>
-            <AlertDialogDescription>
-              当前规则 YAML 与所有内置示例都不同，载入示例会替换规则和测试样本，且不可撤销。
-            </AlertDialogDescription>
+            <AlertDialogTitle>{t('lab.confirmExampleTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('lab.confirmExampleDesc')}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (confirmExample) applyExample(confirmExample);
               }}
             >
-              继续载入
+              {t('lab.confirmContinue')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
