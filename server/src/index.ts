@@ -126,7 +126,7 @@ app.use((req, res, next) => {
     }
   }
   if (!hostOk) {
-    next(new HttpError(403, '拒绝访问：Host 头不是本机地址（防 DNS 重绑定）'));
+    next(new HttpError(403, '拒绝访问：Host 头不是本机地址（防 DNS 重绑定）', { code: 'srv.hostNotAllowed' }));
     return;
   }
   const origin = req.headers.origin;
@@ -140,7 +140,7 @@ app.use((req, res, next) => {
       }
     }
     if (!originOk) {
-      next(new HttpError(403, '拒绝跨站请求：Origin 不是本机地址'));
+      next(new HttpError(403, '拒绝跨站请求：Origin 不是本机地址', { code: 'srv.originNotAllowed' }));
       return;
     }
   }
@@ -152,7 +152,12 @@ function limit400(limited: import('express').RequestHandler, limitBytes: number)
   return (req, res, next) => {
     limited(req, res, (error) => {
       if (error instanceof multer.MulterError && error.code === 'LIMIT_FILE_SIZE') {
-        next(new HttpError(400, `文件超过 ${Math.round(limitBytes / 1024 / 1024)}MB 上传上限`));
+        next(
+          new HttpError(400, `文件超过 ${Math.round(limitBytes / 1024 / 1024)}MB 上传上限`, {
+            code: 'srv.uploadTooLarge',
+            params: { mb: Math.round(limitBytes / 1024 / 1024) },
+          }),
+        );
         return;
       }
       next(error);
@@ -179,7 +184,7 @@ const uploadYaml = multer({
   limits: { fileSize: MAX_RULE_YAML_BYTES },
   fileFilter: (_req, file, cb) => {
     if (!/\.ya?ml$/i.test(file.originalname)) {
-      cb(new HttpError(400, '仅支持 .yaml / .yml 规则包文件'));
+      cb(new HttpError(400, '仅支持 .yaml / .yml 规则包文件', { code: 'srv.yamlOnly' }));
       return;
     }
     cb(null, true);
@@ -259,11 +264,15 @@ function pruneStaleBuiltinPacks(): void {
 
 function buildConfigPlan(project: Project): ScanPlan {
   if (!project.configId) {
-    throw new HttpError(400, '项目未绑定扫描配置，请先在配置管理创建配置并在项目详情页绑定');
+    throw new HttpError(400, '项目未绑定扫描配置，请先在配置管理创建配置并在项目详情页绑定', {
+      code: 'srv.configNotBound',
+    });
   }
   const scanConfig = getConfig(project.configId);
   if (!scanConfig) {
-    throw new HttpError(400, '项目绑定的扫描配置已不存在，请重新绑定');
+    throw new HttpError(400, '项目绑定的扫描配置已不存在，请重新绑定', {
+      code: 'srv.configGone',
+    });
   }
   const configFiles: string[] = [];
   const rulepacks: Array<{ id: string; name: string }> = [];
@@ -282,7 +291,9 @@ function buildConfigPlan(project: Project): ScanPlan {
     }
   }
   if (configFiles.length === 0) {
-    throw new HttpError(400, '配置未勾选任何可用且启用的规则包，请检查配置管理');
+    throw new HttpError(400, '配置未勾选任何可用且启用的规则包，请检查配置管理', {
+      code: 'srv.configNoPacks',
+    });
   }
   return {
     rulesLabel: scanConfig.id,
@@ -339,13 +350,13 @@ function newId(prefix: string): string {
 
 function requireProject(id: string): Project {
   const project = getProject(id);
-  if (!project) throw new HttpError(404, '项目不存在或已被删除');
+  if (!project) throw new HttpError(404, '项目不存在或已被删除', { code: 'srv.projectNotFound' });
   return project;
 }
 
 function requireScan(id: string): ScanRecord {
   const scan = getScan(id);
-  if (!scan) throw new HttpError(404, '扫描记录不存在或已被删除');
+  if (!scan) throw new HttpError(404, '扫描记录不存在或已被删除', { code: 'srv.scanNotFound' });
   return scan;
 }
 
@@ -380,10 +391,14 @@ app.get('/api/engine/upgrade', (_req, res) => {
 
 app.post('/api/engine/upgrade', asyncHandler(async (_req, res) => {
   if (hasRunningScan()) {
-    throw new HttpError(409, '有扫描任务正在运行，请等扫描结束后再升级引擎');
+    throw new HttpError(409, '有扫描任务正在运行，请等扫描结束后再升级引擎', {
+      code: 'srv.upgradeScanBusy',
+    });
   }
   if (engineJobBusy) {
-    throw new HttpError(409, '规则实验室或规则包质量检查正在运行，请稍后再升级引擎');
+    throw new HttpError(409, '规则实验室或规则包质量检查正在运行，请稍后再升级引擎', {
+      code: 'srv.upgradeJobBusy',
+    });
   }
   res.status(202).json(await startEngineUpgrade());
 }));
@@ -398,31 +413,36 @@ app.get('/api/messages-zh', (_req, res) => {
 
 function requireValidConfigValues(body: Record<string, unknown>, existingId?: string) {
   const name = String(body?.name ?? '').trim();
-  if (!name) throw new HttpError(400, '配置名称不能为空');
-  if (name.length > 50) throw new HttpError(400, '配置名称不能超过 50 个字符');
+  if (!name) throw new HttpError(400, '配置名称不能为空', { code: 'srv.configNameRequired' });
+  if (name.length > 50) throw new HttpError(400, '配置名称不能超过 50 个字符', { code: 'srv.configNameTooLong' });
   const duplicated = listConfigs().some(
     (item) => item.name === name && item.id !== existingId,
   );
-  if (duplicated) throw new HttpError(400, '配置名称已存在');
+  if (duplicated) throw new HttpError(400, '配置名称已存在', { code: 'srv.configNameExists' });
 
   const rulePackIds = Array.isArray(body?.rulePackIds) ? body.rulePackIds.map(String) : [];
-  if (rulePackIds.length === 0) throw new HttpError(400, '请至少勾选 1 个规则包');
+  if (rulePackIds.length === 0) throw new HttpError(400, '请至少勾选 1 个规则包', { code: 'srv.packsRequired' });
   for (const packId of rulePackIds) {
-    if (!getRulePack(packId)) throw new HttpError(400, `规则包 ${packId} 不存在`);
+    if (!getRulePack(packId)) {
+      throw new HttpError(400, `规则包 ${packId} 不存在`, {
+        code: 'srv.packNotFoundById',
+        params: { id: packId },
+      });
+    }
   }
   const asStringArray = (value: unknown) =>
     Array.isArray(value) ? value.map((item) => String(item).trim()).filter(Boolean) : [];
   const timeoutSeconds = Number(body?.timeoutSeconds);
   if (!Number.isInteger(timeoutSeconds) || timeoutSeconds < 1 || timeoutSeconds > 600) {
-    throw new HttpError(400, '单文件超时须为 1–600 的整数');
+    throw new HttpError(400, '单文件超时须为 1–600 的整数', { code: 'srv.timeoutInvalid' });
   }
   const jobs = Number(body?.jobs);
   if (!Number.isInteger(jobs) || jobs < 1 || jobs > 16) {
-    throw new HttpError(400, '并发数须为 1–16 的整数');
+    throw new HttpError(400, '并发数须为 1–16 的整数', { code: 'srv.jobsInvalid' });
   }
   const maxTargetBytes = Number(body?.maxTargetBytes);
   if (!Number.isFinite(maxTargetBytes) || maxTargetBytes < 100_000 || maxTargetBytes > 100_000_000) {
-    throw new HttpError(400, '文件体积上限须在 0.1–100 MB 之间');
+    throw new HttpError(400, '文件体积上限须在 0.1–100 MB 之间', { code: 'srv.sizeInvalid' });
   }
   return {
     name,
@@ -440,7 +460,7 @@ function requireValidConfigValues(body: Record<string, unknown>, existingId?: st
 function requireValidBaseline(projectId: string, baselineParam: unknown): string {
   const scan = getScan(String(baselineParam));
   if (!scan || scan.projectId !== projectId || scan.status !== 'completed') {
-    throw new HttpError(400, '基线必须是本项目下已完成的扫描');
+    throw new HttpError(400, '基线必须是本项目下已完成的扫描', { code: 'srv.baselineInvalid' });
   }
   return scan.id;
 }
@@ -448,8 +468,10 @@ function requireValidBaseline(projectId: string, baselineParam: unknown): string
 /** 规则包名称校验（创建 / 上传 / 导入三条入口共用） */
 function requireValidPackName(raw: unknown): string {
   const name = String(raw ?? '').trim();
-  if (!name) throw new HttpError(400, '请输入规则包名称');
-  if (name.length > 50) throw new HttpError(400, '规则包名称不能超过 50 个字符');
+  if (!name) throw new HttpError(400, '请输入规则包名称', { code: 'srv.packNameRequired' });
+  if (name.length > 50) {
+    throw new HttpError(400, '规则包名称不能超过 50 个字符', { code: 'srv.packNameTooLong' });
+  }
   return name;
 }
 
@@ -470,7 +492,9 @@ app.post('/api/configs', asyncHandler(async (req, res) => {
 
 app.put('/api/configs/:id', asyncHandler(async (req, res) => {
   const existing = getConfig(req.params.id);
-  if (!existing) throw new HttpError(404, '扫描配置不存在或已被删除');
+  if (!existing) {
+    throw new HttpError(404, '扫描配置不存在或已被删除', { code: 'srv.configNotFound' });
+  }
   const values = requireValidConfigValues(req.body ?? {}, existing.id);
   updateConfig(existing.id, values);
   res.json(getConfig(existing.id));
@@ -478,7 +502,9 @@ app.put('/api/configs/:id', asyncHandler(async (req, res) => {
 
 app.delete('/api/configs/:id', asyncHandler(async (req, res) => {
   const existing = getConfig(req.params.id);
-  if (!existing) throw new HttpError(404, '扫描配置不存在或已被删除');
+  if (!existing) {
+    throw new HttpError(404, '扫描配置不存在或已被删除', { code: 'srv.configNotFound' });
+  }
   deleteConfig(existing.id);
   res.status(204).end();
 }));
@@ -585,13 +611,19 @@ app.post('/api/rulepacks', asyncHandler(async (req, res) => {
   const name = requireValidPackName(req.body?.name);
   const language = String(req.body?.language ?? '').trim() || 'Java';
   const content = String(req.body?.content ?? '');
-  if (!content.trim()) throw new HttpError(400, '请输入规则包 YAML 内容');
+  if (!content.trim()) {
+    throw new HttpError(400, '请输入规则包 YAML 内容', { code: 'srv.packContentRequired' });
+  }
   const samples = {
     positive: String(req.body?.samples?.positive ?? ''),
     negative: String(req.body?.samples?.negative ?? ''),
   };
   if (samples.positive.length > MAX_SAMPLE_BYTES || samples.negative.length > MAX_SAMPLE_BYTES) {
-    throw new HttpError(400, `单个测试样本超过 ${MAX_SAMPLE_BYTES / 1024}KB 上限`);
+    throw new HttpError(
+      400,
+      `单个测试样本超过 ${MAX_SAMPLE_BYTES / 1024}KB 上限`,
+      { code: 'srv.sampleTooLarge', params: { kb: MAX_SAMPLE_BYTES / 1024 } },
+    );
   }
   const hasSamples = Boolean(samples.positive.trim() || samples.negative.trim());
   try {
@@ -606,9 +638,11 @@ app.post('/api/rulepacks', asyncHandler(async (req, res) => {
 
 app.patch('/api/rulepacks/:id', asyncHandler(async (req, res) => {
   const pack = getRulePack(req.params.id);
-  if (!pack) throw new HttpError(404, '规则包不存在或已被删除');
+  if (!pack) throw new HttpError(404, '规则包不存在或已被删除', { code: 'srv.packNotFound' });
   const enabled = req.body?.enabled;
-  if (typeof enabled !== 'boolean') throw new HttpError(400, '需要 enabled 布尔字段');
+  if (typeof enabled !== 'boolean') {
+    throw new HttpError(400, '需要 enabled 布尔字段', { code: 'srv.enabledRequired' });
+  }
   updateRulePack(pack.id, { enabled });
   res.json({ ...pack, enabled });
 }));
@@ -617,7 +651,9 @@ app.post(
   '/api/rulepacks/upload',
   limit400(uploadYaml.single('file'), MAX_RULE_YAML_BYTES),
   asyncHandler(async (req, res) => {
-    if (!req.file) throw new HttpError(400, '请通过 multipart 表单上传 file 字段');
+    if (!req.file) {
+      throw new HttpError(400, '请通过 multipart 表单上传 file 字段', { code: 'srv.fileRequired' });
+    }
     const name = requireValidPackName(req.body?.name);
     const language = String(req.body?.language ?? '').trim() || 'Java';
     const content = req.file.buffer.toString('utf8');
@@ -631,24 +667,38 @@ app.post(
 
 app.get('/api/rulepacks/:id/content', asyncHandler(async (req, res) => {
   const pack = getRulePack(req.params.id);
-  if (!pack) throw new HttpError(404, '规则包不存在或已被删除');
+  if (!pack) throw new HttpError(404, '规则包不存在或已被删除', { code: 'srv.packNotFound' });
   if (pack.isDir) {
-    throw new HttpError(400, '目录式规则包含多个规则文件与样本，暂不支持在线查看/编辑');
+    throw new HttpError(400, '目录式规则包含多个规则文件与样本，暂不支持在线查看/编辑', {
+      code: 'srv.dirPackNotViewable',
+    });
   }
   const filePath = packFilePath(pack);
-  if (!fs.existsSync(filePath)) throw new HttpError(404, '规则包文件已丢失');
+  if (!fs.existsSync(filePath)) {
+    throw new HttpError(404, '规则包文件已丢失', { code: 'srv.packFileMissing' });
+  }
   res.json({ id: pack.id, name: pack.name, language: pack.language, content: fs.readFileSync(filePath, 'utf8') });
 }));
 
 app.put('/api/rulepacks/:id/content', asyncHandler(async (req, res) => {
   const pack = getRulePack(req.params.id);
-  if (!pack) throw new HttpError(404, '规则包不存在或已被删除');
-  if (pack.builtin) throw new HttpError(403, '内置规则包不可在线编辑，请通过 server/scripts/curate-rules.py 更新');
+  if (!pack) throw new HttpError(404, '规则包不存在或已被删除', { code: 'srv.packNotFound' });
+  if (pack.builtin) {
+    throw new HttpError(403, '内置规则包不可在线编辑，请通过 server/scripts/curate-rules.py 更新', {
+      code: 'srv.builtinNotEditable',
+    });
+  }
   if (pack.isDir) {
-    throw new HttpError(400, '目录式规则包含多个规则文件与样本，暂不支持在线编辑；可在规则实验室调试后重新导出');
+    throw new HttpError(
+      400,
+      '目录式规则包含多个规则文件与样本，暂不支持在线编辑；可在规则实验室调试后重新导出',
+      { code: 'srv.dirPackNotEditable' },
+    );
   }
   const content = String(req.body?.content ?? '');
-  if (!content.trim()) throw new HttpError(400, '请输入规则包 YAML 内容');
+  if (!content.trim()) {
+    throw new HttpError(400, '请输入规则包 YAML 内容', { code: 'srv.packContentRequired' });
+  }
   let ruleCount: number;
   try {
     ruleCount = parseRuleYaml(content).ruleCount;
@@ -662,8 +712,12 @@ app.put('/api/rulepacks/:id/content', asyncHandler(async (req, res) => {
 
 app.delete('/api/rulepacks/:id', asyncHandler(async (req, res) => {
   const pack = getRulePack(req.params.id);
-  if (!pack) throw new HttpError(404, '规则包不存在或已被删除');
-  if (pack.builtin) throw new HttpError(403, '内置规则包不可删除，如不需要可在配置中取消勾选或停用');
+  if (!pack) throw new HttpError(404, '规则包不存在或已被删除', { code: 'srv.packNotFound' });
+  if (pack.builtin) {
+    throw new HttpError(403, '内置规则包不可删除，如不需要可在配置中取消勾选或停用', {
+      code: 'srv.builtinNotDeletable',
+    });
+  }
   deleteRulePack(pack.id);
   fs.rmSync(customPackPath(pack.id), { force: true });
   fs.rmSync(customPackDir(pack.id), { recursive: true, force: true });
@@ -729,13 +783,17 @@ function buildExportReadme(pack: RulePack, packDir?: string): string {
 /** 导出可移植规则包 zip：目录包原样打包；单文件包自动生成 pack.yaml 清单（basic 档）；缺 README 时注入贡献规范版 */
 app.get('/api/rulepacks/:id/export', asyncHandler(async (req, res) => {
   const pack = getRulePack(req.params.id);
-  if (!pack) throw new HttpError(404, '规则包不存在或已被删除');
-  if (pack.builtin) throw new HttpError(403, '内置规则包不可导出，请从官方 opengrep-rules 仓库获取');
+  if (!pack) throw new HttpError(404, '规则包不存在或已被删除', { code: 'srv.packNotFound' });
+  if (pack.builtin) {
+    throw new HttpError(403, '内置规则包不可导出，请从官方 opengrep-rules 仓库获取', {
+      code: 'srv.builtinNotExportable',
+    });
+  }
   const zip = new AdmZip();
   let fileName: string;
   if (pack.isDir) {
     const dir = customPackDir(pack.id);
-    if (!fs.existsSync(dir)) throw new HttpError(404, '规则包目录已丢失');
+    if (!fs.existsSync(dir)) throw new HttpError(404, '规则包目录已丢失', { code: 'srv.packDirMissing' });
     const folder = safePackFolderName(pack.name);
     zip.addLocalFolder(dir, folder);
     if (!fs.existsSync(path.join(dir, 'README.md'))) {
@@ -744,7 +802,7 @@ app.get('/api/rulepacks/:id/export', asyncHandler(async (req, res) => {
     fileName = `${safePackFolderName(pack.name)}-v${pack.version ?? '0.1.0'}.zip`;
   } else {
     const file = customPackPath(pack.id);
-    if (!fs.existsSync(file)) throw new HttpError(404, '规则包文件已丢失');
+    if (!fs.existsSync(file)) throw new HttpError(404, '规则包文件已丢失', { code: 'srv.packFileMissing' });
     zip.addFile('pack.yaml', Buffer.from(buildLegacyManifestYaml(pack), 'utf8'));
     zip.addFile(`rules/${safePackFolderName(pack.name)}.yaml`, fs.readFileSync(file));
     zip.addFile('README.md', Buffer.from(buildExportReadme(pack), 'utf8'));
@@ -763,7 +821,7 @@ const importPackUpload = multer({
   limits: { fileSize: MAX_PACK_ZIP_BYTES },
   fileFilter: (_req, file, cb) => {
     if (!/\.zip$/i.test(file.originalname)) {
-      cb(new HttpError(400, '仅支持 .zip 规则包压缩包'));
+      cb(new HttpError(400, '仅支持 .zip 规则包压缩包', { code: 'srv.zipOnly' }));
       return;
     }
     cb(null, true);
@@ -795,7 +853,11 @@ app.post(
   '/api/rulepacks/import',
   limit400(importPackUpload.single('file'), MAX_PACK_ZIP_BYTES),
   asyncHandler(async (req, res) => {
-    if (!req.file) throw new HttpError(400, '请通过 multipart 表单上传 file 字段（.zip）');
+    if (!req.file) {
+      throw new HttpError(400, '请通过 multipart 表单上传 file 字段（.zip）', {
+        code: 'srv.fileRequired',
+      });
+    }
     const zipName = req.file.originalname.replace(/\.zip$/i, '');
     const tmpDir = path.join(os.tmpdir(), `ogpack-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
     fs.rmSync(tmpDir, { recursive: true, force: true });
@@ -814,10 +876,14 @@ app.post(
         }
         const ruleFiles = collectRuleFiles(path.join(root, 'rules'));
         if (ruleFiles.length === 0) {
-          throw new HttpError(400, '包内 rules/ 目录没有任何 YAML 规则文件');
+          throw new HttpError(400, '包内 rules/ 目录没有任何 YAML 规则文件', {
+            code: 'srv.noRulesInZip',
+          });
         }
         if (ruleFiles.length > 50) {
-          throw new HttpError(400, '规则文件数超过 50 上限，请拆分规则包');
+          throw new HttpError(400, '规则文件数超过 50 上限，请拆分规则包', {
+            code: 'srv.tooManyRuleFiles',
+          });
         }
         const ids = new Set<string>();
         let ruleCount = 0;
@@ -877,7 +943,7 @@ app.post(
         .readdirSync(looseRoot, { withFileTypes: true })
         .filter((entry) => entry.isFile() && /\.ya?ml$/i.test(entry.name));
       if (looseFiles.length === 0) {
-        throw new HttpError(400, '压缩包中没有找到 YAML 规则文件');
+        throw new HttpError(400, '压缩包中没有找到 YAML 规则文件', { code: 'srv.noYamlInZip' });
       }
       if (looseFiles.length > 1) {
         throw new HttpError(
@@ -892,9 +958,11 @@ app.post(
         // 坏 YAML 在这里就拦下（否则 saveNewRulePack 内部抛普通 Error 会变成 500）
         language = language || parseRuleYaml(content).firstLanguage;
       } catch (error) {
-        throw new HttpError(400, `规则文件 ${looseFiles[0].name} 不合法：${
-          error instanceof Error ? error.message : String(error)
-        }`);
+        throw new HttpError(
+          400,
+          `规则文件 ${looseFiles[0].name} 不合法：${error instanceof Error ? error.message : String(error)}`,
+          { code: 'srv.ruleFileInvalid', params: { name: looseFiles[0].name } },
+        );
       }
       const pack = saveNewRulePack(name, language || 'Other', content, req.file.originalname);
       res.status(201).json({ ...pack, message: '导入成功（单文件包，无样本，basic 档）' });
@@ -907,13 +975,23 @@ app.post(
 /** 规则包质量检查：逐规则跑自己的正反例样本（复用实验室 runner），结果存为 lastCheck */
 app.post('/api/rulepacks/:id/check', asyncHandler(async (req, res) => {
   const pack = getRulePack(req.params.id);
-  if (!pack) throw new HttpError(404, '规则包不存在或已被删除');
-  if (pack.builtin) throw new HttpError(403, '内置规则包暂无样本，不支持质量检查');
-  if (!pack.isDir || !fs.existsSync(customPackDir(pack.id))) {
-    throw new HttpError(400, '旧式单文件规则包没有样本可检查，请以可移植格式重新导入');
+  if (!pack) throw new HttpError(404, '规则包不存在或已被删除', { code: 'srv.packNotFound' });
+  if (pack.builtin) {
+    throw new HttpError(403, '内置规则包暂无样本，不支持质量检查', { code: 'srv.builtinNoSamples' });
   }
-  if (engineUpgradeRunning()) throw new HttpError(409, '引擎升级进行中，请升级完成后再做质量检查');
-  if (engineJobBusy) throw new HttpError(409, '上一次引擎任务（实验室/质量检查）还在运行，请稍候再试');
+  if (!pack.isDir || !fs.existsSync(customPackDir(pack.id))) {
+    throw new HttpError(400, '旧式单文件规则包没有样本可检查，请以可移植格式重新导入', {
+      code: 'srv.noSamplesToCheck',
+    });
+  }
+  if (engineUpgradeRunning()) {
+    throw new HttpError(409, '引擎升级进行中，请升级完成后再做质量检查', {
+      code: 'srv.checkUpgradeBusy',
+    });
+  }
+  if (engineJobBusy) {
+    throw new HttpError(409, '上一次引擎任务（实验室/质量检查）还在运行，请稍候再试', { code: 'srv.engineJobBusy' });
+  }
   engineJobBusy = true;
   try {
     const result = await runPackCheck(customPackDir(pack.id));
@@ -939,8 +1017,10 @@ app.get('/api/projects', (_req, res) => {
 
 app.post('/api/projects', asyncHandler(async (req, res) => {
   const name = String(req.body?.name ?? '').trim();
-  if (!name) throw new HttpError(400, '项目名称不能为空');
-  if (name.length > 50) throw new HttpError(400, '项目名称不能超过 50 个字符');
+  if (!name) throw new HttpError(400, '项目名称不能为空', { code: 'srv.projectNameRequired' });
+  if (name.length > 50) {
+    throw new HttpError(400, '项目名称不能超过 50 个字符', { code: 'srv.projectNameTooLong' });
+  }
   const project: Project = {
     id: newId('p'),
     name,
@@ -957,7 +1037,7 @@ app.patch('/api/projects/:id', asyncHandler(async (req, res) => {
   const patch: Parameters<typeof updateProject>[1] = {};
   if (req.body?.name !== undefined) {
     const name = String(req.body.name).trim();
-    if (!name) throw new HttpError(400, '项目名称不能为空');
+    if (!name) throw new HttpError(400, '项目名称不能为空', { code: 'srv.projectNameRequired' });
     patch.name = name;
   }
   if (req.body?.description !== undefined) {
@@ -990,7 +1070,9 @@ app.delete('/api/projects/:id', asyncHandler(async (req, res) => {
   // 进行中/排队中的扫描还在用项目工作区与 DB 行：放行删除会让引擎把 issue 写回已删的扫描，
   // Windows 上还会撞上被占用的目录（rmSync 抛 EPERM 但 DB 已删，留下自相矛盾的状态）
   if (listScans(project.id).some((scan) => scan.status === 'scanning')) {
-    throw new HttpError(409, '项目有进行中的扫描，请等扫描完成后再删除');
+    throw new HttpError(409, '项目有进行中的扫描，请等扫描完成后再删除', {
+      code: 'srv.projectScanBusy',
+    });
   }
   // 级联删除（扫描/问题/复核）在 db 层 deleteProject 内完成，路由不再重复调用
   deleteProject(project.id);
@@ -1032,7 +1114,9 @@ app.post(
   asyncHandler(async (req, res) => {
     const project = requireProject(req.params.id);
     if (importingProjects.has(project.id)) {
-      throw new HttpError(409, '该项目正在导入源码（上传/克隆）中，请等待完成后再试');
+      throw new HttpError(409, '该项目正在导入源码（上传/克隆）中，请等待完成后再试', {
+        code: 'srv.projectImportBusy',
+      });
     }
     importingProjects.add(project.id);
     try {
@@ -1046,7 +1130,11 @@ app.post(
       // 形态一：单个压缩包（ZIP / 7Z / RAR / TAR / TAR.GZ），按扩展名分发解压
       if (archive) {
         if (!isArchiveFileName(archive.originalname)) {
-          throw new HttpError(400, '仅支持 ZIP / 7Z / RAR / TAR / TAR.GZ 压缩包，或直接拖入文件夹上传');
+          throw new HttpError(
+            400,
+            '仅支持 ZIP / 7Z / RAR / TAR / TAR.GZ 压缩包，或直接拖入文件夹上传',
+            { code: 'srv.archiveTypeUnsupported' },
+          );
         }
         const extracted = await extractArchive(archive.buffer, destDir, archive.originalname);
         const { fileCount, ignoredCount } = applyIgnoreFilter(destDir, extracted, respectGitignore);
@@ -1073,10 +1161,13 @@ app.post(
             ? [String(pathsRaw)]
             : [];
         if (relPaths.length !== looseFiles.length) {
-          throw new HttpError(400, '文件列表与路径参数数量不匹配');
+          throw new HttpError(400, '文件列表与路径参数数量不匹配', { code: 'srv.filesMismatch' });
         }
         if (looseFiles.length > config.maxImportEntries) {
-          throw new HttpError(400, `文件数超过 ${config.maxImportEntries} 上限`);
+          throw new HttpError(400, `文件数超过 ${config.maxImportEntries} 上限`, {
+            code: 'srv.tooManyFiles',
+            params: { limit: config.maxImportEntries },
+          });
         }
         let totalBytes = 0;
         fs.rmSync(destDir, { recursive: true, force: true });
@@ -1084,14 +1175,21 @@ app.post(
         try {
           looseFiles.forEach((file, index) => {
             const rel = safeRelativePath(relPaths[index] || file.originalname);
-            if (!rel) throw new HttpError(400, '文件路径不能为空');
+            if (!rel) throw new HttpError(400, '文件路径不能为空', { code: 'srv.pathRequired' });
             const target = path.join(destDir, rel);
             if (!isPathWithin(destDir, target)) {
-              throw new HttpError(400, `文件路径不安全：${relPaths[index]}`);
+              throw new HttpError(400, `文件路径不安全：${relPaths[index]}`, {
+                code: 'srv.unsafeFilePath',
+                params: { path: relPaths[index] },
+              });
             }
             totalBytes += file.size;
             if (totalBytes > config.maxExtractedBytes) {
-              throw new HttpError(400, `总体积超过 ${config.maxExtractedBytes / 1024 ** 3}GB 上限`);
+              throw new HttpError(
+                400,
+                `总体积超过 ${config.maxExtractedBytes / 1024 ** 3}GB 上限`,
+                { code: 'srv.totalTooLarge', params: { gb: config.maxExtractedBytes / 1024 ** 3 } },
+              );
             }
             fs.mkdirSync(path.dirname(target), { recursive: true });
             fs.writeFileSync(target, file.buffer);
@@ -1123,7 +1221,9 @@ app.post(
         return;
       }
 
-      throw new HttpError(400, '请通过 multipart 表单上传 file 或 files 字段');
+      throw new HttpError(400, '请通过 multipart 表单上传 file 或 files 字段', {
+        code: 'srv.fileRequired',
+      });
     } finally {
       importingProjects.delete(project.id);
     }
@@ -1133,10 +1233,12 @@ app.post(
 app.post('/api/projects/:id/clone', asyncHandler(async (req, res) => {
   const project = requireProject(req.params.id);
   const url = String(req.body?.url ?? '').trim();
-  if (!url) throw new HttpError(400, '请提供 Git 仓库地址');
+  if (!url) throw new HttpError(400, '请提供 Git 仓库地址', { code: 'srv.gitUrlRequired' });
   const ref = String(req.body?.ref ?? '').trim();
   if (importingProjects.has(project.id)) {
-    throw new HttpError(409, '该项目正在导入源码（上传/克隆）中，请等待完成后再试');
+    throw new HttpError(409, '该项目正在导入源码（上传/克隆）中，请等待完成后再试', {
+      code: 'srv.projectImportBusy',
+    });
   }
   importingProjects.add(project.id);
   try {
@@ -1158,12 +1260,14 @@ app.post('/api/projects/:id/clone', asyncHandler(async (req, res) => {
 
 app.post('/api/projects/:id/scans', asyncHandler(async (req, res) => {
   if (engineUpgradeRunning()) {
-    throw new HttpError(409, '引擎升级进行中，请升级完成后再发起扫描');
+    throw new HttpError(409, '引擎升级进行中，请升级完成后再发起扫描', {
+      code: 'srv.scanUpgradeBusy',
+    });
   }
   const project = requireProject(req.params.id);
   const pendingDir = pendingSourceDir(project.id);
   if (!fs.existsSync(pendingDir)) {
-    throw new HttpError(400, '请先上传源码或克隆仓库再发起扫描');
+    throw new HttpError(400, '请先上传源码或克隆仓库再发起扫描', { code: 'srv.noSourceToScan' });
   }
 
   // 一键路径：未绑配置时自动创建/复用「默认扫描配置」并绑定，免去先建配置再回来绑定的往返
@@ -1230,7 +1334,7 @@ app.delete('/api/scans/:scanId', asyncHandler(async (req, res) => {
   const scan = requireScan(req.params.scanId);
   // 进行中的扫描还被引擎写入、快照目录被占用（Windows 上删目录会 EPERM，留下 DB 已删的矛盾状态）
   if (scan.status === 'scanning') {
-    throw new HttpError(409, '扫描进行中，请等扫描完成或失败后再删除');
+    throw new HttpError(409, '扫描进行中，请等扫描完成或失败后再删除', { code: 'srv.scanBusy' });
   }
   deleteScan(scan.id);
   fs.rmSync(scanSourceDir(scan.projectId, scan.id), { recursive: true, force: true });
@@ -1282,14 +1386,16 @@ app.get('/api/scans/:scanId/snippet', asyncHandler(async (req, res) => {
     startLine < 1 ||
     endLine < startLine
   ) {
-    throw new HttpError(400, '需要 path、start、end 查询参数（start ≥ 1 且 end ≥ start）');
+    throw new HttpError(400, '需要 path、start、end 查询参数（start ≥ 1 且 end ≥ start）', {
+      code: 'srv.snippetParamsInvalid',
+    });
   }
 
   const context = config.snippetContextLines;
   const srcRoot = path.resolve(scanSourceDir(scan.projectId, scan.id));
   const full = path.resolve(srcRoot, filePath);
   if (full !== srcRoot && !isPathWithin(srcRoot, full)) {
-    throw new HttpError(400, '非法的文件路径');
+    throw new HttpError(400, '非法的文件路径', { code: 'srv.snippetPathInvalid' });
   }
 
   let content: string | undefined;
@@ -1310,7 +1416,9 @@ app.get('/api/scans/:scanId/snippet', asyncHandler(async (req, res) => {
   if (content === undefined) {
     const issue: IssueRow | undefined = issueId ? getIssue(issueId) : undefined;
     if (!issue || issue.scanId !== scan.id || issue.matchedLines === undefined) {
-      throw new HttpError(404, '源码文件不存在且没有可用的片段缓存');
+      throw new HttpError(404, '源码文件不存在且没有可用的片段缓存', {
+        code: 'srv.snippetNotFound',
+      });
     }
     content = issue.matchedLines;
     from = issue.startLine;
@@ -1337,10 +1445,12 @@ app.get('/api/scans/:scanId/snippet', asyncHandler(async (req, res) => {
 app.get('/api/scans/:scanId/report', asyncHandler(async (req, res) => {
   const scan = requireScan(req.params.scanId);
   if (scan.status !== 'completed') {
-    throw new HttpError(400, '仅已完成的扫描可生成测试报告');
+    throw new HttpError(400, '仅已完成的扫描可生成测试报告', { code: 'srv.scanNotCompleted' });
   }
   const project = getProject(scan.projectId);
-  if (!project) throw new HttpError(404, '扫描所属项目不存在或已被删除');
+  if (!project) {
+    throw new HttpError(404, '扫描所属项目不存在或已被删除', { code: 'srv.projectNotFound' });
+  }
   const issues = listIssues(scan.id);
   const engineVersion = scan.engineVersion ?? (await getEngineVersion());
   const data = buildReportData(scan, project, issues, engineVersion, listReviews(scan.projectId));
@@ -1365,7 +1475,7 @@ app.get('/api/scans/:scanId/report', asyncHandler(async (req, res) => {
 app.get('/api/scans/:scanId/sarif', asyncHandler(async (req, res) => {
   const scan = requireScan(req.params.scanId);
   if (scan.status !== 'completed') {
-    throw new HttpError(400, '仅已完成的扫描可导出 SARIF');
+    throw new HttpError(400, '仅已完成的扫描可导出 SARIF', { code: 'srv.sarifNotCompleted' });
   }
   const issues = listIssues(scan.id);
   const engineVersion = scan.engineVersion ?? (await getEngineVersion());
@@ -1382,7 +1492,7 @@ const importSarifUpload = multer({
   limits: { fileSize: MAX_SARIF_BYTES },
   fileFilter: (_req, file, cb) => {
     if (!/\.(sarif|json)$/i.test(file.originalname)) {
-      cb(new HttpError(400, '仅支持 .sarif / .json 文件'));
+      cb(new HttpError(400, '仅支持 .sarif / .json 文件', { code: 'srv.sarifOnly' }));
       return;
     }
     cb(null, true);
@@ -1399,7 +1509,11 @@ app.post(
   limit400(importSarifUpload.single('file'), MAX_SARIF_BYTES),
   asyncHandler(async (req, res) => {
     const project = requireProject(req.params.id);
-    if (!req.file) throw new HttpError(400, '请通过 multipart 表单上传 file 字段（.sarif / .json）');
+    if (!req.file) {
+      throw new HttpError(400, '请通过 multipart 表单上传 file 字段（.sarif / .json）', {
+        code: 'srv.fileRequired',
+      });
+    }
 
     let baselineScanId: string | undefined;
     const baselineParam = req.body?.baselineScanId;
@@ -1475,16 +1589,26 @@ app.put('/api/projects/:id/reviews', asyncHandler(async (req, res) => {
   const project = requireProject(req.params.id);
   const fingerprint = String(req.body?.fingerprint ?? '').trim();
   if (!fingerprint || fingerprint.length > 512) {
-    throw new HttpError(400, '需要 fingerprint（问题指纹，512 字符以内）');
+    throw new HttpError(400, '需要 fingerprint（问题指纹，512 字符以内）', {
+      code: 'srv.fingerprintInvalid',
+    });
   }
   const status = String(req.body?.status ?? '');
   if (!REVIEW_STATUSES.includes(status as (typeof REVIEW_STATUSES)[number])) {
-    throw new HttpError(400, `status 仅支持：${REVIEW_STATUSES.join(' / ')}（重置请用 DELETE）`);
+    throw new HttpError(
+      400,
+      `status 仅支持：${REVIEW_STATUSES.join(' / ')}（重置请用 DELETE）`,
+      { code: 'srv.reviewStatusInvalid', params: { statuses: REVIEW_STATUSES.join(' / ') } },
+    );
   }
   const reason = String(req.body?.reason ?? '').trim();
-  if (reason.length > 500) throw new HttpError(400, '复核理由不能超过 500 字符');
+  if (reason.length > 500) {
+    throw new HttpError(400, '复核理由不能超过 500 字符', { code: 'srv.reasonTooLong' });
+  }
   const reviewer = String(req.body?.reviewer ?? '').trim() || 'admin';
-  if (reviewer.length > 100) throw new HttpError(400, '复核人不能超过 100 字符');
+  if (reviewer.length > 100) {
+    throw new HttpError(400, '复核人不能超过 100 字符', { code: 'srv.reviewerTooLong' });
+  }
   const review: Review = {
     projectId: project.id,
     fingerprint,
@@ -1508,20 +1632,26 @@ app.delete('/api/projects/:id/reviews/:fingerprint', asyncHandler(async (req, re
 app.get('/api/scans/:scanId/diff', asyncHandler(async (req, res) => {
   const scan = requireScan(req.params.scanId);
   if (scan.status !== 'completed') {
-    throw new HttpError(400, '仅已完成的扫描可参与对比');
+    throw new HttpError(400, '仅已完成的扫描可参与对比', { code: 'srv.diffNotCompleted' });
   }
   const againstId = String(req.query.against ?? '');
   if (!againstId || againstId === scan.id) {
-    throw new HttpError(400, '请提供要对比的另一次扫描（against 参数，且不能是自身）');
+    throw new HttpError(400, '请提供要对比的另一次扫描（against 参数，且不能是自身）', {
+      code: 'srv.againstInvalid',
+    });
   }
   const against = getScan(againstId);
   if (!against || against.status !== 'completed') {
-    throw new HttpError(404, '对比目标扫描不存在或未完成');
+    throw new HttpError(404, '对比目标扫描不存在或未完成', { code: 'srv.againstNotFound' });
   }
   const srcDir = scanSourceDir(scan.projectId, scan.id);
   const againstDir = scanSourceDir(against.projectId, against.id);
   if (!fs.existsSync(srcDir) || !fs.existsSync(againstDir)) {
-    throw new HttpError(400, '对比所需的源码快照已被清理，无法做文件级对比（问题级对比不受影响）');
+    throw new HttpError(
+      400,
+      '对比所需的源码快照已被清理，无法做文件级对比（问题级对比不受影响）',
+      { code: 'srv.snapshotMissing' },
+    );
   }
   const againstProject = getProject(against.projectId);
   const fileDiff = await diffSnapshots(srcDir, againstDir);
@@ -1579,26 +1709,39 @@ app.get('/api/scans/:scanId/diff', asyncHandler(async (req, res) => {
 
 app.get('/api/rules/knowledge/:ruleId', asyncHandler(async (req, res) => {
   const ruleId = String(req.params.ruleId ?? '').trim();
-  if (!ruleId || ruleId.length > 200) throw new HttpError(400, '需要 ruleId 路径参数');
+  if (!ruleId || ruleId.length > 200) {
+    throw new HttpError(400, '需要 ruleId 路径参数', { code: 'srv.ruleIdInvalid' });
+  }
   res.json(getRuleKnowledge(ruleId));
 }));
 
 app.post('/api/rulelab/run', asyncHandler(async (req, res) => {
   const yaml = String(req.body?.yaml ?? '');
-  if (!yaml.trim()) throw new HttpError(400, '请输入规则 YAML');
+  if (!yaml.trim()) throw new HttpError(400, '请输入规则 YAML', { code: 'srv.ruleYamlRequired' });
   if (yaml.length > MAX_RULE_YAML_BYTES) {
-    throw new HttpError(400, `规则 YAML 超过 ${MAX_RULE_YAML_BYTES / 1024 / 1024}MB 上限`);
+    throw new HttpError(
+      400,
+      `规则 YAML 超过 ${MAX_RULE_YAML_BYTES / 1024 / 1024}MB 上限`,
+      { code: 'srv.ruleYamlTooLarge', params: { mb: MAX_RULE_YAML_BYTES / 1024 / 1024 } },
+    );
   }
   const samples = {
     positive: String(req.body?.samples?.positive ?? ''),
     negative: String(req.body?.samples?.negative ?? ''),
   };
   if (samples.positive.length > MAX_SAMPLE_BYTES || samples.negative.length > MAX_SAMPLE_BYTES) {
-    throw new HttpError(400, `单个测试样本超过 ${MAX_SAMPLE_BYTES / 1024}KB 上限`);
+    throw new HttpError(400, `单个测试样本超过 ${MAX_SAMPLE_BYTES / 1024}KB 上限`, {
+      code: 'srv.sampleTooLarge',
+      params: { kb: MAX_SAMPLE_BYTES / 1024 },
+    });
   }
   const language = String(req.body?.language ?? '').trim() || undefined;
-  if (engineUpgradeRunning()) throw new HttpError(409, '引擎升级进行中，请升级完成后再运行实验室');
-  if (engineJobBusy) throw new HttpError(409, '上一次引擎任务（实验室/质量检查）还在运行，请稍候再试');
+  if (engineUpgradeRunning()) {
+    throw new HttpError(409, '引擎升级进行中，请升级完成后再运行实验室', { code: 'srv.labUpgradeBusy' });
+  }
+  if (engineJobBusy) {
+    throw new HttpError(409, '上一次引擎任务（实验室/质量检查）还在运行，请稍候再试', { code: 'srv.engineJobBusy' });
+  }
   engineJobBusy = true;
   try {
     res.json(await runRuleLab(yaml, samples, language));
