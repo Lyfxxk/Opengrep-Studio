@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronDown, Folder, FolderOpen } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -52,6 +53,7 @@ export default function ConfigFormDialog({
   existingConfigs,
   onSubmit,
 }: ConfigFormDialogProps) {
+  const { t } = useTranslation();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [selectedPacks, setSelectedPacks] = useState<string[]>([]);
@@ -122,8 +124,8 @@ export default function ConfigFormDialog({
         </Badge>
       </Label>
       <span className="shrink-0 text-xs text-muted-foreground">
-        {pack.ruleCount} 条规则
-        {!pack.enabled && <span className="text-destructive"> · 已停用</span>}
+        {t('configs.ruleCount', { count: pack.ruleCount })}
+        {!pack.enabled && <span className="text-destructive">{t('configs.disabledSuffix')}</span>}
       </span>
     </div>
   );
@@ -144,33 +146,33 @@ export default function ConfigFormDialog({
     const nextErrors: Record<string, string> = {};
     const trimmedName = name.trim();
     if (!trimmedName) {
-      nextErrors.name = '请输入配置名称';
+      nextErrors.name = t('configs.nameRequired');
     } else if (trimmedName.length > 50) {
-      nextErrors.name = '配置名称不超过 50 字';
+      nextErrors.name = t('configs.nameTooLong');
     } else if (
       existingConfigs.some(
         (config) => config.name === trimmedName && config.id !== target?.id,
       )
     ) {
-      nextErrors.name = '配置名称已存在';
+      nextErrors.name = t('configs.nameExists');
     }
     if (description.trim().length > 200) {
-      nextErrors.description = '描述不超过 200 字';
+      nextErrors.description = t('configs.descTooLong');
     }
     if (selectedPacks.length === 0) {
-      nextErrors.rulePacks = '请至少勾选 1 个规则包';
+      nextErrors.rulePacks = t('configs.packsRequired');
     }
     const timeout = Number(timeoutSeconds);
     if (!Number.isInteger(timeout) || timeout < 1 || timeout > 600) {
-      nextErrors.timeout = '请输入 1–600 的整数';
+      nextErrors.timeout = t('configs.timeoutError');
     }
     const jobsValue = Number(jobs);
     if (!Number.isInteger(jobsValue) || jobsValue < 1 || jobsValue > 16) {
-      nextErrors.jobs = '请输入 1–16 的整数';
+      nextErrors.jobs = t('configs.jobsError');
     }
     const size = Number(maxSizeMb);
     if (Number.isNaN(size) || size < 0.1 || size > 100) {
-      nextErrors.size = '请输入 0.1–100 之间的数值';
+      nextErrors.size = t('configs.sizeError');
     }
     setErrors(nextErrors);
     if (Object.values(nextErrors).some(Boolean) || submitting) {
@@ -201,17 +203,17 @@ export default function ConfigFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>{isEditing ? '编辑配置' : '新建配置'}</DialogTitle>
+          <DialogTitle>{isEditing ? t('configs.editTitle') : t('configs.createTitle')}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="config-name">配置名称</Label>
+            <Label htmlFor="config-name">{t('configs.nameLabel')}</Label>
             <Input
               id="config-name"
               value={name}
               maxLength={50}
-              placeholder="如：上线前严格审计"
+              placeholder={t('configs.namePlaceholder')}
               onChange={(event) => {
                 setName(event.target.value);
                 setErrors((prev) => ({ ...prev, name: '' }));
@@ -221,13 +223,13 @@ export default function ConfigFormDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="config-description">描述</Label>
+            <Label htmlFor="config-description">{t('configs.descLabel')}</Label>
             <Textarea
               id="config-description"
               value={description}
               maxLength={200}
               rows={2}
-              placeholder="配置用途说明（可选，不超过 200 字）"
+              placeholder={t('configs.descPlaceholder')}
               onChange={(event) => {
                 setDescription(event.target.value);
                 setErrors((prev) => ({ ...prev, description: '' }));
@@ -240,10 +242,10 @@ export default function ConfigFormDialog({
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>规则包</Label>
+              <Label>{t('configs.packsLabel')}</Label>
               <div className="flex items-center gap-3">
                 <span className="text-xs text-muted-foreground">
-                  已选 {selectedPacks.length}/{rulePacks.length}
+                  {t('configs.packsSelected', { selected: selectedPacks.length, total: rulePacks.length })}
                 </span>
                 <div className="flex items-center gap-1.5">
                   <Checkbox
@@ -255,7 +257,7 @@ export default function ConfigFormDialog({
                     htmlFor="pack-select-all"
                     className="cursor-pointer text-sm font-normal"
                   >
-                    全选
+                    {t('configs.selectAll')}
                   </Label>
                 </div>
               </div>
@@ -265,7 +267,7 @@ export default function ConfigFormDialog({
                 customPacks.map(renderPackRow)
               ) : (
                 <p className="px-2 py-1.5 text-xs text-muted-foreground">
-                  暂无自定义规则包，可在「规则包」标签页创建或上传
+                  t('configs.noCustomPacks')
                 </p>
               )}
 
@@ -281,16 +283,16 @@ export default function ConfigFormDialog({
                 ) : (
                   <Folder className="size-4 shrink-0 text-muted-foreground" />
                 )}
-                <span className="shrink-0">内置规则包</span>
+                <span className="shrink-0">{t('configs.builtinPacksTitle')}</span>
                 <Badge
                   variant="secondary"
                   className="shrink-0 px-1.5 text-[10px] font-normal"
                 >
-                  {builtinPacks.length} 个
+                  {t('configs.builtinCount', { count: builtinPacks.length })}
                 </Badge>
                 {selectedBuiltinCount > 0 && (
                   <span className="shrink-0 text-xs text-muted-foreground">
-                    已选 {selectedBuiltinCount}
+                    {t('configs.builtinSelected', { count: selectedBuiltinCount })}
                   </span>
                 )}
                 <ChevronDown
@@ -312,7 +314,7 @@ export default function ConfigFormDialog({
           </div>
 
           <div className="space-y-2">
-            <Label>排除路径</Label>
+            <Label>{t('configs.excludesLabel')}</Label>
             <TagPathInput
               value={excludes}
               onChange={(next) => setExcludes(next)}
@@ -321,23 +323,23 @@ export default function ConfigFormDialog({
           </div>
 
           <div className="space-y-2">
-            <Label>包含路径</Label>
+            <Label>{t('configs.includesLabel')}</Label>
             <TagPathInput
               value={includes}
               onChange={(next) => setIncludes(next)}
-              placeholder="仅扫描这些路径（可选，如 src/**）"
+              placeholder={t('configs.includesPlaceholder')}
             />
           </div>
 
           <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
             <CollapsibleTrigger className="group flex w-full items-center gap-1 text-sm font-medium">
               <ChevronDown className="size-4 transition-transform group-data-[state=open]:rotate-180" />
-              高级参数
+              {t('configs.advancedTitle')}
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-4 pt-3">
               <div className="grid gap-4 sm:grid-cols-3">
                 <div className="space-y-2">
-                  <Label htmlFor="config-timeout">单文件超时</Label>
+                  <Label htmlFor="config-timeout">{t('configs.timeoutLabel')}</Label>
                   <div className="relative">
                     <Input
                       id="config-timeout"
@@ -352,7 +354,7 @@ export default function ConfigFormDialog({
                       }}
                     />
                     <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                      秒
+                      {t('configs.unitSeconds')}
                     </span>
                   </div>
                   {errors.timeout && (
@@ -360,7 +362,7 @@ export default function ConfigFormDialog({
                   )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="config-jobs">并发数</Label>
+                  <Label htmlFor="config-jobs">{t('configs.jobsLabel')}</Label>
                   <Input
                     id="config-jobs"
                     type="number"
@@ -377,7 +379,7 @@ export default function ConfigFormDialog({
                   )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="config-size">文件体积上限</Label>
+                  <Label htmlFor="config-size">{t('configs.sizeLabel')}</Label>
                   <div className="relative">
                     <Input
                       id="config-size"
@@ -407,10 +409,10 @@ export default function ConfigFormDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            取消
+            {t('common.cancel')}
           </Button>
           <Button onClick={() => void handleSubmit()} disabled={submitting}>
-            {isEditing ? '保存修改' : '创建配置'}
+            {isEditing ? t('configs.save') : t('configs.createSubmit')}
           </Button>
         </DialogFooter>
       </DialogContent>
