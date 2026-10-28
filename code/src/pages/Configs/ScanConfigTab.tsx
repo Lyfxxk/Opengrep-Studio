@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { formatDateTime } from '@/lib/format';
 import { MoreHorizontal, Package, Pencil, Plus, SlidersHorizontal, Trash2 } from 'lucide-react';
@@ -62,6 +63,7 @@ function toFormValues(config: IConfig): ConfigFormValues {
 }
 
 export default function ScanConfigTab() {
+  const { t } = useTranslation();
   const [configs, setConfigs] = useState<IConfig[]>([]);
   const [projects, setProjects] = useState<IProject[]>([]);
   const [rulePacks, setRulePacks] = useState<IRulePack[]>([]);
@@ -84,11 +86,11 @@ export default function ScanConfigTab() {
       setProjects(projectList);
       setRulePacks(packList);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : '加载配置列表失败，请刷新重试');
+      toast.error(error instanceof Error ? error.message : t('configs.loadFailed'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void loadAll();
@@ -123,7 +125,7 @@ export default function ScanConfigTab() {
 
   const handleCopy = (config: IConfig) => {
     setTarget({
-      values: { ...toFormValues(config), name: `${config.name} 副本` },
+      values: { ...toFormValues(config), name: `${config.name}${t('configs.copySuffix')}` },
     });
     setDialogOpen(true);
   };
@@ -135,12 +137,12 @@ export default function ScanConfigTab() {
       } else {
         await api.createConfig(values);
       }
-      toast.success('配置已保存');
+      toast.success(t('configs.savedToast'));
       setDialogOpen(false);
       setTarget(null);
       await loadAll();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : '保存配置失败，请重试');
+      toast.error(error instanceof Error ? error.message : t('configs.saveFailed'));
     }
   };
 
@@ -155,13 +157,13 @@ export default function ScanConfigTab() {
       await api.deleteConfig(deleteTarget.id);
       toast.success(
         deleteBoundCount > 0
-          ? `配置已删除，${deleteBoundCount} 个项目的绑定已解除`
-          : '配置已删除',
+          ? t('configs.deletedUnboundToast', { count: deleteBoundCount })
+          : t('configs.deletedToast'),
       );
       setDeleteTarget(null);
       await loadAll();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : '删除配置失败，请重试');
+      toast.error(error instanceof Error ? error.message : t('configs.deleteFailed'));
     }
   };
 
@@ -184,19 +186,17 @@ export default function ScanConfigTab() {
     setBatchDeleting(false);
     selection.clear();
     await loadAll();
-    if (failed === 0) toast.success(`已删除 ${ids.length} 个配置`);
-    else toast.warning(`已删除 ${ids.length - failed} 个配置，${failed} 个失败`);
+    if (failed === 0) toast.success(t('configs.batchDeleted', { count: ids.length }));
+    else toast.warning(t('configs.batchPartial', { count: ids.length - failed, failed }));
   };
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4">
-        <p className="text-sm text-muted-foreground">
-          扫描配置决定规则包选择、排除路径与引擎参数，可绑定到具体项目
-        </p>
+        <p className="text-sm text-muted-foreground">{t('configs.tabSubtitle')}</p>
         <Button className="gap-1" onClick={handleCreate}>
           <Plus className="size-4" />
-          新建配置
+          {t('configs.newConfig')}
         </Button>
       </div>
 
@@ -219,12 +219,10 @@ export default function ScanConfigTab() {
           ) : configs.length === 0 ? (
             <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">
               <SlidersHorizontal className="size-8 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">
-                暂无扫描配置，点击「新建配置」创建第一个配置
-              </p>
+              <p className="text-sm text-muted-foreground">{t('configs.empty')}</p>
               <Button className="gap-1" onClick={handleCreate}>
                 <Plus className="size-4" />
-                新建配置
+                {t('configs.newConfig')}
               </Button>
             </div>
           ) : (
@@ -236,16 +234,16 @@ export default function ScanConfigTab() {
                       <Checkbox
                         checked={selection.allSelected ? true : selection.someSelected ? 'indeterminate' : false}
                         onCheckedChange={() => selection.toggleAll()}
-                        aria-label="全选配置"
+                        aria-label={t('configs.selectAllAria')}
                       />
                     </TableHead>
-                    <TableHead className="whitespace-nowrap">配置名称</TableHead>
-                    <TableHead className="whitespace-nowrap">规则包</TableHead>
-                    <TableHead className="whitespace-nowrap">排除路径</TableHead>
-                    <TableHead className="whitespace-nowrap">参数摘要</TableHead>
-                    <TableHead className="whitespace-nowrap">绑定项目数</TableHead>
-                    <TableHead className="whitespace-nowrap">创建时间</TableHead>
-                    <TableHead className="whitespace-nowrap text-right">操作</TableHead>
+                    <TableHead className="whitespace-nowrap">{t('configs.colName')}</TableHead>
+                    <TableHead className="whitespace-nowrap">{t('configs.colRulePacks')}</TableHead>
+                    <TableHead className="whitespace-nowrap">{t('configs.colExcludes')}</TableHead>
+                    <TableHead className="whitespace-nowrap">{t('configs.colParams')}</TableHead>
+                    <TableHead className="whitespace-nowrap">{t('configs.colBoundProjects')}</TableHead>
+                    <TableHead className="whitespace-nowrap">{t('configs.colCreatedAt')}</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">{t('common.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -255,7 +253,7 @@ export default function ScanConfigTab() {
                         <Checkbox
                           checked={selection.selected.has(config.id)}
                           onCheckedChange={() => selection.toggle(config.id)}
-                          aria-label={`选择配置 ${config.name}`}
+                          aria-label={t('configs.rowSelectAria', { name: config.name })}
                         />
                       </TableCell>
                       <TableCell>
@@ -303,10 +301,10 @@ export default function ScanConfigTab() {
                         </div>
                       </TableCell>
                       <TableCell className="whitespace-nowrap tabular-nums">
-                        {config.excludes.length} 条
+                        {t('configs.excludesCount', { count: config.excludes.length })}
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-muted-foreground">
-                        超时 {config.timeoutSeconds}s · 并发 {config.jobs}
+                        {t('configs.paramsSummary', { timeout: config.timeoutSeconds, jobs: config.jobs })}
                       </TableCell>
                       <TableCell className="whitespace-nowrap tabular-nums">
                         {boundCountOf(config.id)}
@@ -324,18 +322,18 @@ export default function ScanConfigTab() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onSelect={() => handleEdit(config)}>
                               <Pencil className="size-4" />
-                              编辑
+                              {t('common.edit')}
                             </DropdownMenuItem>
                             <DropdownMenuItem onSelect={() => handleCopy(config)}>
                               <Plus className="size-4" />
-                              复制
+                              {t('configs.copy')}
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               className="text-destructive focus:text-destructive"
                               onSelect={() => setDeleteTarget(config)}
                             >
                               <Trash2 className="size-4" />
-                              删除
+                              {t('common.delete')}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -371,17 +369,17 @@ export default function ScanConfigTab() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>确认删除配置</AlertDialogTitle>
+            <AlertDialogTitle>{t('configs.deleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              确定删除配置「{deleteTarget?.name}」？
+              {t('configs.deleteDesc', { name: deleteTarget?.name ?? '' })}
               {deleteBoundCount > 0
-                ? `${deleteBoundCount} 个项目正在使用此配置，删除后这些项目将变为未绑定状态，需重新绑定后才能扫描。`
-                : '删除后不可恢复。'}
+                ? t('configs.deleteBoundSuffix', { count: deleteBoundCount })
+                : t('configs.deletePlainSuffix')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>确认删除</AlertDialogAction>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>{t('common.confirmDelete')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -389,7 +387,7 @@ export default function ScanConfigTab() {
         open={batchConfirmOpen}
         entity="config"
         count={selection.count}
-        extra="正在使用中的配置删除后，对应项目将自动解除绑定。"
+        extra={t('configs.batchExtra')}
         onOpenChange={setBatchConfirmOpen}
         onConfirm={handleBatchDelete}
       />
