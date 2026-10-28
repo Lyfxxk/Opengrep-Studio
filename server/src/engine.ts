@@ -63,6 +63,9 @@ export function resetEngineVersionCache(): void {
 /** 引擎单次输出上限：超限即停止拼接（异常巨量输出会先打爆内存再打爆 JSON.parse） */
 const MAX_ENGINE_OUTPUT_BYTES = 64 * 1024 * 1024;
 
+/** stderr 单独用更小的上限：它只用于错误信息展示，1MB 足够排障，超限不算失败 */
+const MAX_ENGINE_STDERR_BYTES = 1024 * 1024;
+
 /** 运行中的引擎/git 子进程登记表：服务退出时统一终止，避免孤儿进程占着引擎文件（Windows 上锁死升级） */
 const trackedChildren = new Set<ChildProcess>();
 
@@ -114,6 +117,7 @@ export function runEngine(
     let timedOut = false;
     let stdoutTruncated = false;
     let stdoutBytes = 0;
+    let stderrBytes = 0;
     // 引擎若无视终止信号，Promise 永不 resolve，会把扫描串行链整体卡死并锁死引擎升级：
     // 温和终止无效则 5 秒后 SIGKILL（Windows 等价 TerminateProcess），再不行兜底强制返回
     const killTimers: NodeJS.Timeout[] = [];
@@ -141,7 +145,12 @@ export function runEngine(
       }
       stdout += String(chunk);
     });
-    child.stderr.on('data', (chunk) => { stderr += String(chunk); });
+    child.stderr.on('data', (chunk: Buffer) => {
+      // 超限即停止拼接：stderr 只用于错误信息展示，防异常引擎刷屏打爆内存，不按失败处理
+      stderrBytes += chunk.length;
+      if (stderrBytes > MAX_ENGINE_STDERR_BYTES) return;
+      stderr += String(chunk);
+    });
     child.on('error', (error) => {
       stopKillTimers();
       resolve({ code: -1, stdout, stderr: `${stderr}\n${String(error)}`, timedOut, stdoutTruncated });
