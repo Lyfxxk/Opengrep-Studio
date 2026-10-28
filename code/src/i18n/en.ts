@@ -805,6 +805,8 @@ const en: typeof zh = {
       ruleIdInvalid: 'The ruleId path parameter is required',
       labUpgradeBusy: 'An engine upgrade is in progress — wait for it to finish before running the lab.',
       ruleFileInvalid: 'Invalid rule file {{name}}',
+      upgradePending: 'An engine upgrade is already in progress — please wait.',
+      noUpgradeTarget: 'No upgradable version right now',
     },
     git: {
       badUrl: 'Invalid repository URL — enter a Git URL starting with https://',
