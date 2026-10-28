@@ -1,7 +1,7 @@
 import { Fragment } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Check, Languages, LogOut } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { NAV_ITEMS } from '@/components/AppSidebar';
-import { changeAppLanguage } from '@/i18n';
+import LanguageMenu from '@/components/LanguageMenu';
 import { getCurrentUsername, logout } from '@/lib/auth';
 import avatarUrl from '@/assets/images/avatar.jpg';
 
@@ -33,8 +33,7 @@ interface Crumb {
 export default function Header() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const { t, i18n } = useTranslation();
-  const isZh = i18n.language.startsWith('zh');
+  const { t } = useTranslation();
 
   const segments = pathname.split('/').filter(Boolean);
   // 一级面包屑标签与侧栏导航同源（label 为 i18n 键）；实验室挂在规则中心下，路由名与导航项不同名
@@ -97,29 +96,7 @@ export default function Header() {
       </Breadcrumb>
 
       <div className="ml-auto flex items-center gap-2">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              aria-label={t('header.language')}
-              title={t('header.language')}
-              className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <Languages className="size-4" />
-              <span className="hidden sm:inline">{isZh ? t('lang.zh') : t('lang.en')}</span>
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onSelect={() => changeAppLanguage('zh')}>
-              {isZh && <Check className="size-4" />}
-              {t('lang.zh')}
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => changeAppLanguage('en')}>
-              {!isZh && <Check className="size-4" />}
-              {t('lang.en')}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <LanguageMenu className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

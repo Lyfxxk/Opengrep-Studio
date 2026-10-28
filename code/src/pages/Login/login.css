@@ -283,6 +283,7 @@
 
 /* ─── 右侧：登录表单 ─── */
 .login-shell .form-panel {
+  position: relative; /* 语言切换按钮的定位锚点 */
   display: flex;
   align-items: center;
   align-items: safe center; /* 内容超高时改为顶部对齐，配合 overflow-y 保证可滚动到顶 */
@@ -293,6 +294,29 @@
   border-left: 1px solid var(--border);
 }
 .login-shell .form-col { width: min(410px, 100%); }
+
+/* 右上角语言切换：未登录用户唯一可见的切语言入口 */
+.login-shell .lang-switch {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 10;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12.5px;
+  transition: color 0.15s, border-color 0.15s;
+}
+.login-shell .lang-switch:hover {
+  color: var(--fg);
+  border-color: var(--border-strong);
+}
+.login-shell .lang-switch svg { width: 14px; height: 14px; }
 
 .login-shell .form-brand {
   display: flex;
