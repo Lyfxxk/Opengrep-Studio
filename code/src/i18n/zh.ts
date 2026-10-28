@@ -610,7 +610,8 @@ const zh = {
   },
   reportConclusion: {
     noIssues: '本次扫描共检查 {{files}} 个源码文件，未命中任何已启用规则，未发现风险问题。',
-    summary: '本次扫描共检查 {{files}} 个源码文件，发现 {{total}} 个风险问题：严重 {{critical}} 项、高危 {{high}} 项、中危 {{medium}} 项、低危 {{low}} 项。与基线扫描 {{baseline}} 相比：新增 {{baselineNew}} 项、遗留 {{baselineRemaining}} 项、已修复 {{baselineFixed}} 项。建议优先处理严重与高危问题（共 {{urgent}} 项），修复后重新扫描回归验证。',
+    summary: '本次扫描共检查 {{files}} 个源码文件，发现 {{total}} 个风险问题：严重 {{critical}} 项、高危 {{high}} 项、中危 {{medium}} 项、低危 {{low}} 项。建议优先处理严重与高危问题（共 {{urgent}} 项），修复后重新扫描回归验证。',
+    summaryBaseline: '本次扫描共检查 {{files}} 个源码文件，发现 {{total}} 个风险问题：严重 {{critical}} 项、高危 {{high}} 项、中危 {{medium}} 项、低危 {{low}} 项。与基线扫描 {{baseline}} 相比：新增 {{baselineNew}} 项、遗留 {{baselineRemaining}} 项、已修复 {{baselineFixed}} 项。建议优先处理严重与高危问题（共 {{urgent}} 项），修复后重新扫描回归验证。',
   },
   report: {
     loadFailedToast: '加载测试报告失败：{{error}}',

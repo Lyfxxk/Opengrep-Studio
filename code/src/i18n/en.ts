@@ -632,6 +632,8 @@ const en: typeof zh = {
   reportConclusion: {
     noIssues: 'This scan checked {{files}} source files, matched no enabled rules, and found no risk issues.',
     summary:
+      'This scan checked {{files}} source files and found {{total}} risk issues: {{critical}} critical, {{high}} high, {{medium}} medium, and {{low}} low. Prioritize the critical and high issues ({{urgent}} in total), then rescan after fixing to verify.',
+    summaryBaseline:
       'This scan checked {{files}} source files and found {{total}} risk issues: {{critical}} critical, {{high}} high, {{medium}} medium, and {{low}} low. Compared with baseline scan {{baseline}}: {{baselineNew}} new, {{baselineRemaining}} remaining, and {{baselineFixed}} fixed. Prioritize the critical and high issues ({{urgent}} in total), then rescan after fixing to verify.',
   },
   report: {
