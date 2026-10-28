@@ -774,6 +774,8 @@ const zh = {
       ruleIdInvalid: '需要 ruleId 路径参数',
       labUpgradeBusy: '引擎升级进行中，请升级完成后再运行实验室',
       ruleFileInvalid: '规则文件 {{name}} 不合法',
+      upgradePending: '引擎升级正在进行中，请稍候',
+      noUpgradeTarget: '当前没有可升级的版本',
     },
     git: {
       badUrl: '仓库地址格式不正确，请输入 https:// 开头的 Git 仓库 URL',
