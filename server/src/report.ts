@@ -387,35 +387,34 @@ const REPORT_TEXT: Record<ReportLang, ReportText> = {
   en: REPORT_TEXT_EN,
 };
 
-/** 按 conclusionCode 的参数重拼结论句，避免繁体报告里夹一段简体 */
+/**
+ * 按当前统计值重拼结论句：不依赖 conclusionCode 载荷，旧扫描也能拿到对应语言的结论，
+ * 避免繁体/英文报告里夹一段简体原文。
+ */
 function localizedConclusion(data: ReportData, text: ReportText): string {
-  const payload = data.conclusionCode;
-  const params = payload?.params ?? {};
-  const num = (key: string) => Number(params[key] ?? 0);
-  const files = params.files === undefined || params.files === 0 ? '—' : String(params.files);
+  const { meta, totals } = data;
+  const files = meta.fileCount ? String(meta.fileCount) : '—';
   let base: string;
-  if (!payload) {
-    // 旧扫描缺少结构化载荷，只能沿用中文结论原文
-    base = data.conclusion;
-  } else if (payload.code === 'summary') {
-    const sevText = SEVERITY_ORDER.filter((sev) => num(sev) > 0)
-      .map((sev) => text.severityPhrase(text.severity[sev], num(sev)))
+  if (totals.total === 0) {
+    base = text.conclusionNoIssues(files);
+  } else {
+    const sevText = SEVERITY_ORDER.filter((sev) => totals.bySeverity[sev] > 0)
+      .map((sev) => text.severityPhrase(text.severity[sev], totals.bySeverity[sev]))
       .join(text.listSeparator);
-    const parts = [text.conclusionSummary(files, num('total'), sevText)];
-    if (params.baseline) {
+    const parts = [text.conclusionSummary(files, totals.total, sevText)];
+    if (meta.baselineScanId) {
       parts.push(
         text.comparisonSentence(
-          String(params.baseline),
-          num('baselineNew'),
-          num('baselineRemaining'),
-          num('baselineFixed'),
+          meta.baselineScanId,
+          totals.byComparison.new,
+          totals.byComparison.remaining,
+          totals.byComparison.fixed,
         ),
       );
     }
-    if (num('urgent') > 0) parts.push(text.urgentHint(num('urgent')));
+    const urgent = totals.bySeverity.critical + totals.bySeverity.high;
+    if (urgent > 0) parts.push(text.urgentHint(urgent));
     base = parts.join(text.sentenceSeparator);
-  } else {
-    base = text.conclusionNoIssues(files);
   }
   const review = data.reviewStats;
   return review && review.reviewed > 0 ? `${base}${text.summaryReview(review)}` : base;
