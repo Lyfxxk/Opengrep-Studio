@@ -297,3 +297,7 @@ CI（`.github/workflows/ci.yml`）包含三个任务：后端类型检查 + 单�
 
 - **扫描引擎**：opengrep 以 LGPL-2.1 发布，本仓库不含引擎二进制，`npm run setup:engine` 从官方 Releases 下载并做 SHA-256 校验
 - **内置规则**：精选自 opengrep-rules（LGPL 2.1 + Commons Clause），可自由使用与再分发（保留署名），但不得将规则本身作为付费产品出售
+
+## 星标历史
+
+[![Star History Chart](https://api.star-history.com/svg?repos=Lyfxxk/Opengrep-Studio&type=Date)](https://star-history.com/#Lyfxxk/Opengrep-Studio)
