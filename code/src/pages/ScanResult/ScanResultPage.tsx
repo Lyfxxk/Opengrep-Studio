@@ -374,10 +374,12 @@ export default function ScanResultPage() {
           <div className="grid flex-1 grid-cols-1 gap-6 lg:min-h-0 lg:grid-cols-3 lg:grid-rows-[minmax(0,1fr)]">
             <div className="lg:min-h-0">
               <IssueFilterList
+                projectId={project.id}
                 issues={issues}
                 selectedIssueId={selectedIssue?.id ?? null}
                 onSelect={setSelectedIssueId}
                 onOpenKnowledge={setKnowledgeRuleId}
+                onReviewed={() => void load()}
               />
             </div>
             <div className="lg:min-h-0 lg:col-span-2">
