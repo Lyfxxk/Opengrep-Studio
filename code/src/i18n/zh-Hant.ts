@@ -701,9 +701,13 @@ const zhHant: typeof zh = {
       extractFailed: '壓縮檔解壓失敗：{{reason}}',
     },
     srv: {
+      routeNotFound: '介面不存在',
+      internalError: '伺服器內部錯誤',
       hostNotAllowed: '拒絕存取：Host 標頭不是本機位址（防 DNS 重綁定）',
       originNotAllowed: '拒絕跨站請求：Origin 不是本機位址',
       uploadTooLarge: '檔案超過 {{mb}}MB 上傳上限',
+      uploadFailed: '上傳失敗：{{reason}}',
+      uploadEndpointMismatch: '檔案上傳請使用 /api/rulepacks/upload',
       yamlOnly: '僅支援 .yaml / .yml 規則包檔案',
       zipOnly: '僅支援 .zip 規則包壓縮檔',
       sarifOnly: '僅支援 .sarif / .json 檔案',

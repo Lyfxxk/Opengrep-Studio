@@ -728,9 +728,13 @@ const en: typeof zh = {
       extractFailed: 'Failed to extract archive: {{reason}}',
     },
     srv: {
+      routeNotFound: 'Endpoint not found',
+      internalError: 'Internal server error',
       hostNotAllowed: 'Access denied: Host header is not a local address (DNS-rebinding protection)',
       originNotAllowed: 'Cross-site request rejected: Origin is not a local address',
       uploadTooLarge: 'The file exceeds the {{mb}}MB upload limit',
+      uploadFailed: 'Upload failed: {{reason}}',
+      uploadEndpointMismatch: 'Use /api/rulepacks/upload for file uploads',
       yamlOnly: 'Only .yaml / .yml rule pack files are supported',
       zipOnly: 'Only .zip rule pack archives are supported',
       sarifOnly: 'Only .sarif / .json files are supported',
