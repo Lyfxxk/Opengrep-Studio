@@ -170,6 +170,10 @@ export default function ScanConfigTab() {
   const packNameOf = (packId: string) =>
     rulePacks.find((pack) => pack.id === packId)?.name;
 
+  // 停用包在扫描时会被静默跳过：徽章必须标出来，避免「规则包 N」造成已全覆盖的错觉
+  const packDisabledOf = (packId: string) =>
+    rulePacks.find((pack) => pack.id === packId)?.enabled === false;
+
   // 逐个调用单删接口：某一项失败不影响其余项，最后汇总报数
   const handleBatchDelete = async () => {
     const ids = [...selection.selected];
@@ -274,6 +278,11 @@ export default function ScanConfigTab() {
                               className="font-normal"
                             >
                               {packNameOf(packId) ?? packId}
+                              {packDisabledOf(packId) && (
+                                <span className="text-destructive">
+                                  {t('configs.disabledSuffix')}
+                                </span>
+                              )}
                             </Badge>
                           ))}
                           {config.rulePackIds.length > 2 && (
@@ -292,6 +301,11 @@ export default function ScanConfigTab() {
                                     >
                                       <Package className="size-3 shrink-0 opacity-70" />
                                       {packNameOf(packId) ?? packId}
+                                      {packDisabledOf(packId) && (
+                                        <span className="text-destructive">
+                                          {t('configs.disabledSuffix')}
+                                        </span>
+                                      )}
                                     </span>
                                   ))}
                                 </div>
