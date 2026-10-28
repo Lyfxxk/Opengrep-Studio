@@ -564,6 +564,16 @@ const en: typeof zh = {
     removeAria: 'Remove {{item}}',
     hint: 'Press Enter to add, up to {{limit}} entries',
   },
+  rulesCenter: {
+    subtitle:
+      'Manage rule packs (built-in / custom / import-export / quality checks), or verify rule positives and negatives online in the Lab.',
+    tabPacks: 'Rule packs',
+    tabLab: 'Rule Lab',
+  },
+  rulePackCell: {
+    multiSuffix: '{{firstName}} + {{count}} more',
+    legacyRulesetTitle: 'Legacy ruleset directory scan',
+  },
   login: {
     title: 'Sign in · Opengrep Studio',
     introPanel: 'Product introduction',

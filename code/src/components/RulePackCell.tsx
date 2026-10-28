@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import type { IScanResult } from '@/data/scanresults';
 
 /**
@@ -11,6 +12,7 @@ export default function RulePackCell({
   scan: IScanResult;
   className?: string;
 }) {
+  const { t } = useTranslation();
   if (scan.rulepacks?.length) {
     return (
       <span
@@ -19,13 +21,19 @@ export default function RulePackCell({
       >
         {scan.rulepacks.length === 1
           ? scan.rulepacks[0].name
-          : `${scan.rulepacks[0].name} 等 ${scan.rulepacks.length} 个`}
+          : t('rulePackCell.multiSuffix', {
+              firstName: scan.rulepacks[0].name,
+              count: scan.rulepacks.length,
+            })}
       </span>
     );
   }
   if (scan.rules) {
     return (
-      <span className={`block truncate font-mono text-xs text-muted-foreground ${className}`} title="旧式规则集目录扫描">
+      <span
+        className={`block truncate font-mono text-xs text-muted-foreground ${className}`}
+        title={t('rulePackCell.legacyRulesetTitle')}
+      >
         {scan.rules}
       </span>
     );
