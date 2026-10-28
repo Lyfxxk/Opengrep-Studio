@@ -335,8 +335,12 @@ export default function ReportPage() {
 
   const { meta, totals, conclusion, conclusionCode, topFiles, issues, reviewStats } = report;
   // 结论按语言重拼；载荷缺失（演示模式/旧缓存）回落服务端原文
+  const conclusionKey =
+    conclusionCode?.code === 'summary' && conclusionCode.params.baseline
+      ? 'summaryBaseline'
+      : conclusionCode?.code;
   const conclusionText = conclusionCode
-    ? t(`reportConclusion.${conclusionCode.code}`, {
+    ? t(`reportConclusion.${conclusionKey}`, {
         ...conclusionCode.params,
         defaultValue: conclusion,
       })

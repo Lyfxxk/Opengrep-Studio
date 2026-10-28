@@ -611,7 +611,8 @@ const zhHant: typeof zh = {
   },
   reportConclusion: {
     noIssues: '本次掃描共檢查 {{files}} 個原始碼檔案，未命中任何已啟用規則，未發現風險問題。',
-    summary: '本次掃描共檢查 {{files}} 個原始碼檔案，發現 {{total}} 個風險問題：嚴重 {{critical}} 項、高危 {{high}} 項、中危 {{medium}} 項、低危 {{low}} 項。與基線掃描 {{baseline}} 相比：新增 {{baselineNew}} 項、遺留 {{baselineRemaining}} 項、已修復 {{baselineFixed}} 項。建議優先處理嚴重與高危問題（共 {{urgent}} 項），修復後重新掃描回歸驗證。',
+    summary: '本次掃描共檢查 {{files}} 個原始碼檔案，發現 {{total}} 個風險問題：嚴重 {{critical}} 項、高危 {{high}} 項、中危 {{medium}} 項、低危 {{low}} 項。建議優先處理嚴重與高危問題（共 {{urgent}} 項），修復後重新掃描回歸驗證。',
+    summaryBaseline: '本次掃描共檢查 {{files}} 個原始碼檔案，發現 {{total}} 個風險問題：嚴重 {{critical}} 項、高危 {{high}} 項、中危 {{medium}} 項、低危 {{low}} 項。與基線掃描 {{baseline}} 相比：新增 {{baselineNew}} 項、遺留 {{baselineRemaining}} 項、已修復 {{baselineFixed}} 項。建議優先處理嚴重與高危問題（共 {{urgent}} 項），修復後重新掃描回歸驗證。',
   },
   report: {
     loadFailedToast: '載入測試報告失敗：{{error}}',
