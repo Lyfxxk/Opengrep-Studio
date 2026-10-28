@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { formatDateTime, formatDuration } from '@/lib/format';
+import { usePackDisplayName } from '@/lib/packName';
 import {
   CheckCircle2,
   FileDown,
@@ -47,6 +48,9 @@ export default function ScanResultPage() {
   const [reviewTarget, setReviewTarget] = useState<IIssue | null>(null);
   const [compareOpen, setCompareOpen] = useState(false);
   const [knowledgeRuleId, setKnowledgeRuleId] = useState<string | null>(null);
+  /** 规则包悬浮面板的展开态（悬浮开合，点击面板内链接跳转规则中心） */
+  const [packsOpen, setPacksOpen] = useState(false);
+  const packDisplayName = usePackDisplayName();
   // 轮询期间后端瞬断只弹一次错误；序号守卫丢弃切换扫描后晚到的旧响应
   const pollErrorShownRef = useRef(false);
   const requestSeqRef = useRef(0);
@@ -183,22 +187,45 @@ export default function ScanResultPage() {
         )}
       </div>
 
-      {/* 本次扫描实际使用的规则包快照（配置后来怎么改都不影响这里） */}
-      {(scan.rulepacks?.length || scan.rules) && scan.status !== 'failed' && (
-        <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-          <ListChecks className="size-3.5 shrink-0" />
+      {/* 本次扫描规则包：收纳为一个悬浮按钮（不再占两行高度），悬浮展开面板列出各包，
+          点击跳转规则中心；无规则包快照的旧扫描回落为纯文本说明 */}
+      {scan.status !== 'failed' && (scan.rulepacks?.length || scan.rules) && (
+        <div
+          className="relative"
+          onMouseEnter={() => setPacksOpen(true)}
+          onMouseLeave={() => setPacksOpen(false)}
+        >
           {scan.rulepacks?.length ? (
-            <>
-              <span className="mr-1">{t('scanResult.usedPacksPrefix')}</span>
-              {scan.rulepacks.map((pack) => (
-                // 不截断包名：这行是自由换行的元信息，截断会让「JavaScript / TypeScript」这类长包名看不全
-                <Badge key={pack.id} variant="outline" className="px-1.5 font-normal" title={pack.name}>
-                  {pack.name}
-                </Badge>
-              ))}
-            </>
+            <Button
+              variant="outline"
+              className="h-8 gap-1.5 px-2.5 text-xs font-normal"
+              onClick={() => setPacksOpen((open) => !open)}
+            >
+              <ListChecks className="size-3.5" />
+              {t('scanResult.packsBtn')}
+              <Badge className="h-4 rounded-sm px-1 font-normal tabular-nums">
+                {scan.rulepacks?.length}
+                {t('scanResult.packsUnit')}
+              </Badge>
+            </Button>
           ) : (
-            <span>{t('scanResult.rulesetDir', { rules: scan.rules })}</span>
+            <span className="text-xs text-muted-foreground">
+              {t('scanResult.rulesetDir', { rules: scan.rules })}
+            </span>
+          )}
+          {packsOpen && (scan.rulepacks?.length ?? 0) > 0 && (
+            <div className="absolute left-0 top-full z-50 mt-1 w-80 rounded-lg border bg-popover p-1.5 shadow-md">
+              {scan.rulepacks?.map((pack) => (
+                <Link
+                  key={pack.id}
+                  to="/rules?tab=packs"
+                  className="flex items-center justify-between gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-accent"
+                >
+                  <span className="min-w-0 truncate">{packDisplayName(pack.name, pack.id)}</span>
+                  <span className="shrink-0 font-mono text-muted-foreground">{pack.id}</span>
+                </Link>
+              ))}
+            </div>
           )}
         </div>
       )}
@@ -262,8 +289,8 @@ export default function ScanResultPage() {
                   </dt>
                   <dd className="min-w-0 text-right text-xs leading-5">
                     {scan.rulepacks?.length ? (
-                      <span title={scan.rulepacks.map((pack) => pack.name).join('、')}>
-                        {scan.rulepacks.map((pack) => pack.name).join('、')}
+                      <span title={scan.rulepacks.map((pack) => packDisplayName(pack.name, pack.id)).join('、')}>
+                        {scan.rulepacks.map((pack) => packDisplayName(pack.name, pack.id)).join('、')}
                       </span>
                     ) : (
                       <span className="text-muted-foreground">—</span>

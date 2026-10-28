@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { FileCode2, FileText, ListOrdered, RefreshCw } from 'lucide-react';
+import { FileCode2, FileText, ListOrdered } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import Pagination from '@/components/Pagination';
 import {
   Table,
   TableBody,
@@ -21,7 +22,7 @@ import { api } from '@/lib/api';
 export default function ReportsCenterPage() {
   const { t } = useTranslation();
   const [rows, setRows] = useState<ScanWithProject[] | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
+  const [page, setPage] = useState(1);
 
   const load = useCallback(async () => {
     try {
@@ -42,6 +43,15 @@ export default function ReportsCenterPage() {
     void load();
   }, [load]);
 
+  // 页码夹取：删除 / 新增行后不落在空页上
+  const pageSize = 20;
+  const pageCount = Math.max(1, Math.ceil((rows?.length ?? 0) / pageSize));
+  const safePage = Math.min(page, pageCount);
+  useEffect(() => {
+    setPage(safePage);
+  }, [safePage]);
+  const pagedRows = (rows ?? []).slice((safePage - 1) * pageSize, safePage * pageSize);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -49,19 +59,6 @@ export default function ReportsCenterPage() {
           <h1 className="text-xl font-semibold">{t('nav.reports')}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{t('reports.subtitle')}</p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-1"
-          disabled={refreshing}
-          onClick={() => {
-            setRefreshing(true);
-            void load().finally(() => setRefreshing(false));
-          }}
-        >
-          <RefreshCw className={refreshing ? 'size-3.5 animate-spin' : 'size-3.5'} />
-          {t('reports.refresh')}
-        </Button>
       </div>
 
       {rows === null ? (
@@ -90,7 +87,7 @@ export default function ReportsCenterPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.map((scan) => (
+              {pagedRows.map((scan) => (
                 <TableRow key={scan.id}>
                   <TableCell className="max-w-[180px]">
                     <span className="block truncate" title={scan.projectName}>
@@ -144,6 +141,10 @@ export default function ReportsCenterPage() {
             </TableBody>
           </Table>
         </div>
+      )}
+
+      {(rows?.length ?? 0) > pageSize && (
+        <Pagination page={safePage} pageCount={pageCount} onPage={setPage} />
       )}
     </div>
   );
