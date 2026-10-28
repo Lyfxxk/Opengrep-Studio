@@ -3,6 +3,10 @@
 @import "tw-animate-css";
 @import "./tailwind-theme.css";
 
+/* Tailwind v4 的 dark: 默认跟随系统偏好；这里收紧为 .dark 类策略，
+   与 ThemeProvider（attribute="class"）保持一致，否则「跟随系统」之外的两个模式会失效 */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* shadcn v4 基座：默认边框/描边色与 body 底色跟随主题变量 */
 @layer base {
   * {
@@ -23,6 +27,28 @@
   }
   body {
     background: #fff !important;
+  }
+  /* 深色主题下 print-color-adjust: exact 会把深底浅字照印出来，
+     这里把令牌拉回浅色语义，保证报告纸面始终是白底黑字 */
+  :root,
+  :root.dark {
+    --background: #fff;
+    --foreground: hsl(220 16% 16%);
+    --card: #fff;
+    --card-foreground: hsl(220 16% 16%);
+    --popover: #fff;
+    --popover-foreground: hsl(220 16% 16%);
+    --secondary: hsl(210 16% 94%);
+    --secondary-foreground: hsl(220 16% 24%);
+    --muted: hsl(220 14% 95%);
+    --muted-foreground: hsl(215 12% 46%);
+    --accent: hsl(210 40% 94%);
+    --accent-foreground: hsl(210 80% 40%);
+    --border: hsl(220 13% 89%);
+    --input: hsl(220 13% 85%);
+    --success: hsl(142 60% 38%);
+    --warning: hsl(36 90% 48%);
+    --destructive: hsl(0 72% 56%);
   }
   [data-slot='sidebar'],
   [data-slot='sidebar-inset'] > header,

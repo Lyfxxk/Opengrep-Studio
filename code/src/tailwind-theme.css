@@ -48,12 +48,12 @@
   --sidebar-border: hsl(213 22% 32%);
   --sidebar-ring: hsl(210 100% 62%);
 
-  /* Computed borders using hsl relative color syntax */
-  --primary-border: hsl(from hsl(210 100% 56%) h s calc(l + var(--opaque-button-border-intensity)));
-  --secondary-border: hsl(from hsl(210 16% 94%) h s calc(l + var(--opaque-button-border-intensity)));
-  --destructive-border: hsl(from hsl(0 72% 56%) h s calc(l + var(--opaque-button-border-intensity)));
-  --accent-border: hsl(from hsl(210 16% 94%) h s calc(l + var(--opaque-button-border-intensity)));
-  --muted-border: hsl(from hsl(220 14% 95%) h s calc(l + var(--opaque-button-border-intensity)));
+  /* Computed borders using hsl relative color syntax。
+     用 var(--x) 而不是字面量：深色主题覆盖 --primary 等值后，这里会自动重算，
+     否则按钮描边会残留浅色主题的色相 */
+  --primary-border: hsl(from var(--primary) h s calc(l + var(--opaque-button-border-intensity)));
+  --secondary-border: hsl(from var(--secondary) h s calc(l + var(--opaque-button-border-intensity)));
+  --destructive-border: hsl(from var(--destructive) h s calc(l + var(--opaque-button-border-intensity)));
   --font-sans:
     '-apple-system', 'BlinkMacSystemFont', 'Helvetica Neue', 'Tahoma',
     'PingFang SC', 'Microsoft Yahei', 'Arial', 'Hiragino Sans GB',
@@ -85,6 +85,83 @@
   --shadow-2xl: 0px 2px 12px 0px hsl(0 0% 0% / 0.05);
   --tracking-normal: 0em;
   --spacing: 0.25rem;
+}
+
+/**
+ * 深色主题：只覆盖颜色与阴影令牌，组件里全部走语义类，无需逐个改类名。
+ * 类名挂在 <html>（:root）上——--primary-border 等派生变量声明在 :root，
+ * 依赖同一元素上的 --primary 重算，挂到 body 上会拿不到新的色值。
+ */
+:root.dark {
+  /* 让滚动条、表单原生控件跟随深色 */
+  color-scheme: dark;
+
+  --button-outline: rgba(255, 255, 255, .14);
+  --badge-outline: rgba(255, 255, 255, .10);
+
+  /* 深色下描边要靠提亮才看得见，与浅色的压暗方向相反 */
+  --opaque-button-border-intensity: 8;
+
+  /* 叠加层同理：浅色用黑、深色用白 */
+  --elevate-1: rgba(255, 255, 255, .06);
+  --elevate-2: rgba(255, 255, 255, .12);
+
+  --background: hsl(220 18% 11%);
+  --foreground: hsl(220 13% 91%);
+  --card: hsl(220 15% 14%);
+  --card-foreground: hsl(220 13% 91%);
+  --popover: hsl(220 15% 15%);
+  --popover-foreground: hsl(220 13% 91%);
+  /* 主色提亮以保证深底上的文字/图标对比度；实心按钮改用深色前景 */
+  --primary: hsl(210 100% 62%);
+  --primary-foreground: hsl(220 45% 9%);
+  --secondary: hsl(220 12% 19%);
+  --secondary-foreground: hsl(220 12% 88%);
+  --muted: hsl(220 14% 17%);
+  --muted-foreground: hsl(220 9% 64%);
+  --accent: hsl(212 22% 22%);
+  --accent-foreground: hsl(210 95% 76%);
+  --info: hsl(210 100% 62%);
+  --info-foreground: hsl(220 45% 9%);
+  --destructive: hsl(0 78% 66%);
+  --destructive-foreground: hsl(0 50% 10%);
+  --success: hsl(142 55% 54%);
+  --success-foreground: hsl(150 45% 8%);
+  --warning: hsl(36 92% 58%);
+  --warning-foreground: hsl(30 60% 10%);
+  --border: hsl(220 12% 23%);
+  --input: hsl(220 12% 27%);
+  --ring: hsl(210 100% 64%);
+  --chart-1: hsl(210 100% 64%);
+  --chart-2: hsl(160 55% 52%);
+  --chart-3: hsl(36 92% 60%);
+  --chart-4: hsl(262 70% 70%);
+  --chart-5: hsl(340 70% 66%);
+  /* 侧栏在浅色主题下本就是深色，这里压得比正文更沉，靠边框区分层次 */
+  --sidebar: hsl(221 26% 9%);
+  --sidebar-foreground: hsl(220 13% 82%);
+  --sidebar-primary: hsl(210 100% 68%);
+  --sidebar-primary-foreground: hsl(220 45% 9%);
+  --sidebar-accent: hsl(220 18% 17%);
+  --sidebar-accent-foreground: hsl(210 95% 76%);
+  --sidebar-border: hsl(220 14% 20%);
+  --sidebar-ring: hsl(210 100% 68%);
+
+  /* 浅色主题的 2% 阴影在深底上等于不可见，加深后才撑得起卡片层级 */
+  --shadow-color: #000000;
+  --shadow-2xs: 0px 2px 12px 0px hsl(0 0% 0% / 0.24);
+  --shadow-xs: 0px 2px 12px 0px hsl(0 0% 0% / 0.24);
+  --shadow-sm:
+    0px 2px 12px 0px hsl(0 0% 0% / 0.3), 0px 1px 2px -1px hsl(0 0% 0% / 0.3);
+  --shadow:
+    0px 2px 12px 0px hsl(0 0% 0% / 0.3), 0px 1px 2px -1px hsl(0 0% 0% / 0.3);
+  --shadow-md:
+    0px 2px 12px 0px hsl(0 0% 0% / 0.3), 0px 2px 4px -1px hsl(0 0% 0% / 0.3);
+  --shadow-lg:
+    0px 2px 12px 0px hsl(0 0% 0% / 0.3), 0px 4px 6px -1px hsl(0 0% 0% / 0.3);
+  --shadow-xl:
+    0px 2px 12px 0px hsl(0 0% 0% / 0.3), 0px 8px 10px -1px hsl(0 0% 0% / 0.3);
+  --shadow-2xl: 0px 2px 12px 0px hsl(0 0% 0% / 0.5);
 }
 
 @theme inline {
