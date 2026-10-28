@@ -1,4 +1,5 @@
 import { useState, type ChangeEvent, type KeyboardEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -17,6 +18,7 @@ export default function TagPathInput({
   onChange,
   placeholder,
 }: TagPathInputProps) {
+  const { t } = useTranslation();
   const [draft, setDraft] = useState('');
   const [error, setError] = useState('');
 
@@ -27,15 +29,15 @@ export default function TagPathInput({
       return;
     }
     if (trimmed.length > MAX_TAG_LENGTH) {
-      setError(`单条路径不超过 ${MAX_TAG_LENGTH} 字符`);
+      setError(t('tagPath.tooLong', { limit: MAX_TAG_LENGTH }));
       return;
     }
     if (value.length >= MAX_TAGS) {
-      setError(`最多添加 ${MAX_TAGS} 条`);
+      setError(t('tagPath.tooMany', { limit: MAX_TAGS }));
       return;
     }
     if (value.includes(trimmed)) {
-      setError('该路径已存在');
+      setError(t('tagPath.duplicate'));
       return;
     }
     onChange([...value, trimmed]);
@@ -73,7 +75,7 @@ export default function TagPathInput({
               <span className="font-mono text-xs">{item}</span>
               <button
                 type="button"
-                aria-label={`删除 ${item}`}
+                aria-label={t('tagPath.removeAria', { item })}
                 className="rounded-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 onClick={() => onChange(value.filter((tag) => tag !== item))}
               >
@@ -84,7 +86,7 @@ export default function TagPathInput({
         </div>
       )}
       <p className="text-xs text-muted-foreground">
-        输入后回车添加，最多 {MAX_TAGS} 条
+        {t('tagPath.hint', { limit: MAX_TAGS })}
       </p>
     </div>
   );

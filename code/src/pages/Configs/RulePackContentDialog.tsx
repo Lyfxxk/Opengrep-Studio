@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Loader2, Pencil, Save } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -27,6 +28,7 @@ export default function RulePackContentDialog({
   pack,
   onSaved,
 }: RulePackContentDialogProps) {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -61,7 +63,7 @@ export default function RulePackContentDialog({
     setSaving(true);
     try {
       await api.updateRulePackContent(pack.id, content);
-      toast.success(`规则包「${pack.name}」已保存`);
+      toast.success(t('rulePacks.savedToast', { name: pack.name }));
       setEditing(false);
       onSaved();
       onOpenChange(false);
@@ -79,11 +81,11 @@ export default function RulePackContentDialog({
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            {readOnly ? '内置规则包（只读）' : '规则包内容'}
+            {readOnly ? t('rulePacks.builtinReadOnlyTitle') : t('rulePacks.contentTitle')}
             {pack && <Badge variant="secondary" className="font-normal">{pack.language}</Badge>}
             {pack && (
               <span className="font-mono text-xs font-normal text-muted-foreground">
-                {pack.ruleCount} 条规则
+                {t('configs.ruleCount', { count: pack.ruleCount })}
               </span>
             )}
           </DialogTitle>
@@ -92,7 +94,7 @@ export default function RulePackContentDialog({
         {loading ? (
           <div className="flex items-center justify-center gap-2 rounded-lg border border-dashed p-10 text-sm text-muted-foreground">
             <Loader2 className="size-4 animate-spin" />
-            正在读取规则内容…
+            {t('rulePacks.contentLoading')}
           </div>
         ) : editing ? (
           <Textarea
@@ -104,35 +106,35 @@ export default function RulePackContentDialog({
           />
         ) : (
           <pre className="max-h-[50vh] overflow-auto rounded-lg border border-border bg-muted/40 p-4 font-mono text-xs leading-5">
-            {content || '（空）'}
+            {content || t('rulePacks.emptyContent')}
           </pre>
         )}
 
         <DialogFooter className="items-center">
           {readOnly && (
             <span className="mr-auto text-xs text-muted-foreground">
-              内置规则包随项目分发，仅供查看与启停；如需更新请通过 server/scripts 维护
+              {t('rulePacks.builtinContentHint')}
             </span>
           )}
           {editing ? (
             <>
               <Button variant="outline" onClick={() => setEditing(false)}>
-                取消
+                {t('common.cancel')}
               </Button>
               <Button className="gap-1" disabled={saving} onClick={() => void handleSave()}>
                 {saving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-                {saving ? '保存中…' : '保存修改'}
+                {saving ? t('rulePacks.saving') : t('configs.save')}
               </Button>
             </>
           ) : (
             <>
               <Button variant="outline" onClick={() => onOpenChange(false)}>
-                关闭
+                {t('common.close')}
               </Button>
               {!readOnly && (
                 <Button className="gap-1" onClick={() => setEditing(true)}>
                   <Pencil className="size-4" />
-                  编辑
+                  {t('common.edit')}
                 </Button>
               )}
             </>

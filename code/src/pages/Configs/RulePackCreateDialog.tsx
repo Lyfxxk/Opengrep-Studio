@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -41,6 +42,7 @@ export default function RulePackCreateDialog({
   onOpenChange,
   onCreated,
 }: RulePackCreateDialogProps) {
+  const { t } = useTranslation();
   const [name, setName] = useState('');
   const [language, setLanguage] = useState('Java');
   const [content, setContent] = useState(YAML_TEMPLATE);
@@ -59,17 +61,17 @@ export default function RulePackCreateDialog({
   const handleSubmit = async () => {
     const trimmed = name.trim();
     if (!trimmed) {
-      setError('请输入规则包名称');
+      setError(t('rulePacks.nameRequired'));
       return;
     }
     if (!content.trim()) {
-      setError('请输入规则包 YAML 内容');
+      setError(t('rulePacks.contentRequired'));
       return;
     }
     setSubmitting(true);
     try {
       const pack = await api.createRulePack(trimmed, language, content);
-      toast.success(`规则包「${pack.name}」已创建，解析到 ${pack.ruleCount} 条规则`);
+      toast.success(t('rulePacks.createdToast', { name: pack.name, count: pack.ruleCount }));
       onOpenChange(false);
       onCreated();
     } catch (error) {
@@ -83,17 +85,17 @@ export default function RulePackCreateDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>新建规则包</DialogTitle>
+          <DialogTitle>{t('rulePacks.createBtn')}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="rulepack-create-name">规则包名称</Label>
+              <Label htmlFor="rulepack-create-name">{t('rulePacks.uploadNameLabel')}</Label>
               <Input
                 id="rulepack-create-name"
                 value={name}
                 maxLength={50}
-                placeholder="例如：Java 安全规范"
+                placeholder={t('rulePacks.createNamePlaceholder')}
                 onChange={(event) => {
                   setName(event.target.value);
                   setError('');
@@ -101,7 +103,7 @@ export default function RulePackCreateDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label>适用语言</Label>
+              <Label>{t('rulePacks.uploadLangLabel')}</Label>
               <Select value={language} onValueChange={setLanguage}>
                 <SelectTrigger className="w-full">
                   <SelectValue />
@@ -117,7 +119,7 @@ export default function RulePackCreateDialog({
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="rulepack-create-content">规则 YAML 内容</Label>
+            <Label htmlFor="rulepack-create-content">{t('rulePacks.contentLabel')}</Label>
             <Textarea
               id="rulepack-create-content"
               value={content}
@@ -136,11 +138,11 @@ export default function RulePackCreateDialog({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            取消
+            {t('common.cancel')}
           </Button>
           <Button className="gap-1" disabled={submitting} onClick={() => void handleSubmit()}>
             {submitting ? <Loader2 className="size-4 animate-spin" /> : null}
-            {submitting ? '创建中…' : '创建规则包'}
+            {submitting ? t('rulePacks.creating') : t('rulePacks.createSubmit')}
           </Button>
         </DialogFooter>
       </DialogContent>
