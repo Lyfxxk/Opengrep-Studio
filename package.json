@@ -9,6 +9,7 @@
     "seed": "node server/scripts/seed-demo.mjs",
     "test": "npm --prefix server test",
     "test-packs": "npm --prefix server run test-packs",
+    "i18n:check": "npm --prefix server run i18n:check",
     "version": "node server/scripts/sync-version.mjs",
     "predev": "node server/scripts/preflight.mjs",
     "dev": "node server/scripts/dev.mjs",
