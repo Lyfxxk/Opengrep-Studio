@@ -348,6 +348,21 @@ function newId(prefix: string): string {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+/** 扫描编号带项目与时间信息（如 scan-mobsf-20261027-2301-x7k2）：记录一多也能一眼看出归属与日期 */
+function newScanId(projectName: string): string {
+  const slug =
+    projectName
+      .toLowerCase()
+      .replace(/[^a-z0-9一-鿿]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 24)
+      .replace(/-+$/g, '') || 'proj';
+  const now = new Date();
+  const pad = (value: number) => String(value).padStart(2, '0');
+  const time = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}`;
+  return `scan-${slug}-${time}-${Math.random().toString(36).slice(2, 6)}`;
+}
+
 function requireProject(id: string): Project {
   const project = getProject(id);
   if (!project) throw new HttpError(404, '项目不存在或已被删除', { code: 'srv.projectNotFound' });
@@ -1308,7 +1323,7 @@ app.post('/api/projects/:id/scans', asyncHandler(async (req, res) => {
   }
 
   const scan: ScanRecord = {
-    id: newId('scan'),
+    id: newScanId(project.name),
     projectId: project.id,
     status: 'scanning',
     issueCount: 0,
@@ -1542,7 +1557,7 @@ app.post(
     const { toolName, issues } = parseSarifImport(req.file.buffer.toString('utf8'));
 
     const scan: ScanRecord = {
-      id: newId('scan'),
+      id: newScanId(project.name),
       projectId: project.id,
       status: 'completed',
       issueCount: 0,
