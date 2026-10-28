@@ -20,6 +20,8 @@ jobs:
         run: npm --prefix server run typecheck
       - name: 单元测试
         run: npm --prefix server test
+      - name: i18n 资源一致性（三份 UI 语言包 + 简繁规则说明）
+        run: npm --prefix server run i18n:check
       - name: 规则包回归（结构校验 + 随包样本回归）
         run: npm run test-packs
 
