@@ -26,10 +26,18 @@ export function safeRelativePath(raw: string): string {
   const normalized = raw.replace(/\\/g, '/');
   const parts = normalized.split('/');
   if (normalized.startsWith('/') || /^[a-zA-Z]:/.test(normalized) || parts.includes('..')) {
-    throw new HttpError(400, `压缩包或文件列表中含不安全的路径条目：${raw}`);
+    throw new HttpError(
+      400,
+      `压缩包或文件列表中含不安全的路径条目：${raw}`,
+      { code: 'archive.unsafePath', params: { raw } },
+    );
   }
   if (ILLEGAL_PATH_CHARS.test(normalized)) {
-    throw new HttpError(400, `路径含当前平台不允许的文件名字符：${raw}`);
+    throw new HttpError(
+      400,
+      `路径含当前平台不允许的文件名字符：${raw}`,
+      { code: 'archive.illegalChars', params: { raw } },
+    );
   }
   return parts.filter((part) => part && part !== '.').join('/');
 }
@@ -57,22 +65,36 @@ export async function copyDirectory(src: string, dest: string): Promise<void> {
   }
 }
 
-function removeAndThrow(dir: string, message: string): never {
+function removeAndThrow(dir: string, code: string, message: string): never {
   fs.rmSync(dir, { recursive: true, force: true });
-  throw new HttpError(400, message);
+  throw new HttpError(400, message, { code });
 }
 
-/** 解压后统一限额校验（文件数 / 总体积），返回实际文件数 */
-function enforceExtractLimits(dir: string, label: string): number {
+/** 解压后统一限额校验（文件数 / 总体积），返回实际文件数；kind 决定错误码前缀 */
+function enforceExtractLimits(dir: string, kind: 'tar' | 'archive'): number {
   const { files, bytes } = walkAndStripSymlinks(dir);
+  const label = kind === 'tar' ? 'TAR 压缩包' : '压缩包';
+  const codePrefix = kind === 'tar' ? 'archive.tarExtract' : 'archive.extract';
   if (files > config.maxImportEntries) {
-    removeAndThrow(dir, `${label}解压后文件数超过 ${config.maxImportEntries} 上限`);
+    removeAndThrow(
+      dir,
+      `${codePrefix}TooManyFiles`,
+      `${label}解压后文件数超过 ${config.maxImportEntries} 上限`,
+    );
   }
   if (bytes > config.maxExtractedBytes) {
-    removeAndThrow(dir, `${label}解压后总体积超过 ${config.maxExtractedBytes / 1024 ** 3}GB 上限`);
+    removeAndThrow(
+      dir,
+      `${codePrefix}TooLarge`,
+      `${label}解压后总体积超过 ${config.maxExtractedBytes / 1024 ** 3}GB 上限`,
+    );
   }
   if (files === 0) {
-    removeAndThrow(dir, `${label}中没有文件（压缩包可能已损坏或格式不受支持）`);
+    removeAndThrow(
+      dir,
+      `${codePrefix}Empty`,
+      `${label}中没有文件（压缩包可能已损坏或格式不受支持）`,
+    );
   }
   return files;
 }
@@ -81,9 +103,13 @@ function enforceExtractLimits(dir: string, label: string): number {
 export function extractZipSafely(buffer: Buffer, destDir: string): number {
   const zip = new AdmZip(buffer);
   const fileEntries = zip.getEntries().filter((entry) => !entry.isDirectory);
-  if (fileEntries.length === 0) throw new HttpError(400, 'ZIP 包内没有文件');
+  if (fileEntries.length === 0) throw new HttpError(400, 'ZIP 包内没有文件', { code: 'archive.zipEmpty' });
   if (fileEntries.length > config.maxImportEntries) {
-    throw new HttpError(400, `ZIP 包内文件数超过 ${config.maxImportEntries} 上限`);
+    throw new HttpError(
+      400,
+      `ZIP 包内文件数超过 ${config.maxImportEntries} 上限`,
+      { code: 'archive.zipTooManyFiles', params: { limit: config.maxImportEntries } },
+    );
   }
 
   let totalBytes = 0;
@@ -91,13 +117,27 @@ export function extractZipSafely(buffer: Buffer, destDir: string): number {
     const name = safeRelativePath(entry.entryName);
     // 声明体积为 0 却带压缩数据 = 骗过预检的炸弹条目：adm-zip 对声明 0 的条目解压不设上限
     if (entry.header.size === 0 && entry.header.compressedSize > 0) {
-      throw new HttpError(400, `ZIP 包内含伪造体积的条目：${entry.entryName}`);
+      throw new HttpError(
+        400,
+        `ZIP 包内含伪造体积的条目：${entry.entryName}`,
+        { code: 'archive.zipFakeSize', params: { entry: entry.entryName } },
+      );
     }
     totalBytes += entry.header.size;
     if (totalBytes > config.maxExtractedBytes) {
-      throw new HttpError(400, `ZIP 解压后总体积超过 ${config.maxExtractedBytes / 1024 ** 3}GB 上限`);
+      throw new HttpError(
+        400,
+        `ZIP 解压后总体积超过 ${config.maxExtractedBytes / 1024 ** 3}GB 上限`,
+        { code: 'archive.zipTooLarge', params: { gb: config.maxExtractedBytes / 1024 ** 3 } },
+      );
     }
-    if (!name) throw new HttpError(400, `ZIP 包内含不安全的路径条目：${entry.entryName}`);
+    if (!name) {
+      throw new HttpError(
+        400,
+        `ZIP 包内含不安全的路径条目：${entry.entryName}`,
+        { code: 'archive.zipUnsafePath', params: { entry: entry.entryName } },
+      );
+    }
   }
 
   fs.rmSync(destDir, { recursive: true, force: true });
@@ -105,13 +145,21 @@ export function extractZipSafely(buffer: Buffer, destDir: string): number {
   for (const entry of fileEntries) {
     const target = path.join(destDir, safeRelativePath(entry.entryName));
     if (!isPathWithin(destDir, target)) {
-      throw new HttpError(400, `ZIP 包内含不安全的路径条目：${entry.entryName}`);
+      throw new HttpError(
+        400,
+        `ZIP 包内含不安全的路径条目：${entry.entryName}`,
+        { code: 'archive.zipUnsafePath', params: { entry: entry.entryName } },
+      );
     }
     const data = entry.getData();
     // 实际字节数复核：中央目录的声明可伪造，只有解出来的数据可信
     extractedBytes += data.length;
     if (extractedBytes > config.maxExtractedBytes) {
-      throw new HttpError(400, `ZIP 解压后总体积超过 ${config.maxExtractedBytes / 1024 ** 3}GB 上限`);
+      throw new HttpError(
+        400,
+        `ZIP 解压后总体积超过 ${config.maxExtractedBytes / 1024 ** 3}GB 上限`,
+        { code: 'archive.zipTooLarge', params: { gb: config.maxExtractedBytes / 1024 ** 3 } },
+      );
     }
     fs.mkdirSync(path.dirname(target), { recursive: true });
     fs.writeFileSync(target, data);
@@ -142,10 +190,18 @@ function extractTarArchive(buffer: Buffer, destDir: string, fileName: string): v
         entries += 1;
         bytes += Number(stat.size);
         if (entries > config.maxImportEntries) {
-          throw new HttpError(400, `TAR 压缩包文件数超过 ${config.maxImportEntries} 上限`);
+          throw new HttpError(
+            400,
+            `TAR 压缩包文件数超过 ${config.maxImportEntries} 上限`,
+            { code: 'archive.tarTooManyFiles', params: { limit: config.maxImportEntries } },
+          );
         }
         if (bytes > config.maxExtractedBytes) {
-          throw new HttpError(400, `TAR 压缩包解压后总体积超过 ${config.maxExtractedBytes / 1024 ** 3}GB 上限`);
+          throw new HttpError(
+            400,
+            `TAR 压缩包解压后总体积超过 ${config.maxExtractedBytes / 1024 ** 3}GB 上限`,
+            { code: 'archive.tarTooLarge', params: { gb: config.maxExtractedBytes / 1024 ** 3 } },
+          );
         }
         return true;
       },
@@ -153,7 +209,11 @@ function extractTarArchive(buffer: Buffer, destDir: string, fileName: string): v
   } catch (error) {
     fs.rmSync(destDir, { recursive: true, force: true });
     if (error instanceof HttpError) throw error;
-    throw new HttpError(400, `TAR 压缩包解压失败：${error instanceof Error ? error.message : String(error)}`);
+    throw new HttpError(
+      400,
+      `TAR 压缩包解压失败：${error instanceof Error ? error.message : String(error)}`,
+      { code: 'archive.tarFailed', params: { reason: error instanceof Error ? error.message : String(error) } },
+    );
   } finally {
     fs.rmSync(tmpFile, { force: true });
   }
@@ -252,6 +312,7 @@ async function directoryBytes(dir: string): Promise<number> {
 async function extractSevenZ(buffer: Buffer, destDir: string, fileName: string): Promise<void> {
   const ext = path.extname(fileName).toLowerCase() || '.7z';
   let abortReason: string | null = null;
+  let abortCode: string | null = null;
   const worker = new Worker(path.join(import.meta.dirname, 'seven-z-worker.mjs'));
   // worker 侧以 parentPort.on('message') 为入口：先建 Worker 再投递任务（加载期的消息会被缓存）
   worker.postMessage({ buffer, ext, destDir });
@@ -259,12 +320,14 @@ async function extractSevenZ(buffer: Buffer, destDir: string, fileName: string):
     const result = await new Promise<{ ok: boolean; message?: string }>((resolve) => {
       const timer = setTimeout(() => {
         abortReason = `压缩包解压超过 ${Math.round(config.sevenZipTimeoutMs / 1000)} 秒被终止`;
+        abortCode = 'archive.sevenZTimeout';
         void worker.terminate();
       }, config.sevenZipTimeoutMs);
       const watch = setInterval(() => {
         void directoryBytes(destDir).then((bytes) => {
           if (abortReason || bytes <= config.maxExtractedBytes) return;
           abortReason = `压缩包解压后总体积超过 ${config.maxExtractedBytes / 1024 ** 3}GB 上限`;
+          abortCode = 'archive.sevenZTooLarge';
           void worker.terminate();
         });
       }, 1000);
@@ -282,7 +345,10 @@ async function extractSevenZ(buffer: Buffer, destDir: string, fileName: string):
       });
     });
     if (!result.ok) {
-      throw new HttpError(400, `压缩包解压失败：${result.message ?? '未知原因'}`);
+      throw new HttpError(400, `压缩包解压失败：${result.message ?? '未知原因'}`, {
+        code: abortCode ?? 'archive.sevenZFailed',
+        params: { reason: result.message ?? '未知原因' },
+      });
     }
   } finally {
     await worker.terminate();
@@ -302,10 +368,10 @@ export async function extractArchive(
     }
     if (TAR_RE.test(lower)) {
       extractTarArchive(buffer, destDir, fileName);
-      return enforceExtractLimits(destDir, 'TAR 压缩包');
+      return enforceExtractLimits(destDir, 'tar');
     }
     await extractSevenZ(buffer, destDir, fileName);
-    return enforceExtractLimits(destDir, '压缩包');
+    return enforceExtractLimits(destDir, 'archive');
   } catch (error) {
     fs.rmSync(destDir, { recursive: true, force: true });
     if (error instanceof HttpError) throw error;
@@ -313,6 +379,7 @@ export async function extractArchive(
     throw new HttpError(
       400,
       `压缩包解压失败：${error instanceof Error ? error.message : String(error)}`,
+      { code: 'archive.extractFailed', params: { reason: error instanceof Error ? error.message : String(error) } },
     );
   }
 }
