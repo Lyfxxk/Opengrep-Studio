@@ -34,10 +34,12 @@ function productLang(): string {
   return 'zh';
 }
 
-// 演示模式开关：只认显式的 'true' / '1'，避免 VITE_USE_MOCK=false 被 Boolean('false') 误判为开
-export const USE_MOCK = ['true', '1'].includes(
-  (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_USE_MOCK ?? '',
-);
+// 演示模式开关：只认显式的 'true' / '1'，避免 VITE_USE_MOCK=false 被 Boolean('false') 误判为开。
+// 刻意写成对 import.meta.env.VITE_USE_MOCK 的直接比较（不用 env?. 兜底取值）：构建期 Vite 会把
+// 该成员访问替换为字面量，压缩器随之把整个开关折叠成常量，所有 if (USE_MOCK) 分支连同 mock
+// 数据一起被摇树剔除；未设变量时运行期判定结果与原先的 includes 写法完全一致。
+export const USE_MOCK =
+  import.meta.env.VITE_USE_MOCK === 'true' || import.meta.env.VITE_USE_MOCK === '1';
 
 interface ApiErrorShape {
   error?: { message?: string; code?: string; params?: Record<string, unknown> };
@@ -228,10 +230,12 @@ export interface IEngineUpgradeState {
 /** mock 扫描从发起到完成的时长；读取时按 scannedAt 惰性收敛，刷新页面/丢失定时器也不会永久卡在 scanning */
 const MOCK_SCAN_DURATION_MS = 3000;
 
-/** mock 扫描完成时的问题数：与 listIssues 的回退样本口径一致（不含已修复项） */
-const MOCK_SCAN_ISSUE_COUNT = MOCK_ISSUES.filter(
-  (issue) => issue.scanId === '2' && issue.comparisonStatus !== 'fixed',
-).length;
+/** mock 扫描完成时的问题数：与 listIssues 的回退样本口径一致（不含已修复项）；按需计算，模块加载时不扫样本 */
+function mockScanIssueCount(): number {
+  return MOCK_ISSUES.filter(
+    (issue) => issue.scanId === '2' && issue.comparisonStatus !== 'fixed',
+  ).length;
+}
 
 function materializeMockScans(): IScanResult[] {
   const scans = loadScans();
@@ -244,7 +248,7 @@ function materializeMockScans(): IScanResult[] {
     return {
       ...scan,
       status: 'completed' as const,
-      issueCount: MOCK_SCAN_ISSUE_COUNT,
+      issueCount: mockScanIssueCount(),
       finishedAt: new Date().toISOString(),
     };
   });
