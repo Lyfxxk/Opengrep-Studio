@@ -669,6 +669,10 @@ const zh = {
     confirmExampleDesc: '当前规则 YAML 与所有内置示例都不同，载入示例会替换规则和测试样本，且不可撤销。',
     confirmContinue: '继续载入',
   },
+  format: {
+    durationSeconds: '{{count}} 秒',
+    durationMinutes: '{{min}} 分 {{sec}} 秒',
+  },
   notFound: {
     text: '页面不存在',
   },

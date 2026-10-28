@@ -697,6 +697,10 @@ const en: typeof zh = {
       'The current rule YAML differs from every built-in example; loading one replaces the rule and test samples, and cannot be undone.',
     confirmContinue: 'Load anyway',
   },
+  format: {
+    durationSeconds: '{{count}}s',
+    durationMinutes: '{{min}}m {{sec}}s',
+  },
   notFound: {
     text: 'Page not found',
   },
