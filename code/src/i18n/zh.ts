@@ -699,9 +699,13 @@ const zh = {
       extractFailed: '压缩包解压失败：{{reason}}',
     },
     srv: {
+      routeNotFound: '接口不存在',
+      internalError: '服务器内部错误',
       hostNotAllowed: '拒绝访问：Host 头不是本机地址（防 DNS 重绑定）',
       originNotAllowed: '拒绝跨站请求：Origin 不是本机地址',
       uploadTooLarge: '文件超过 {{mb}}MB 上传上限',
+      uploadFailed: '上传失败：{{reason}}',
+      uploadEndpointMismatch: '文件上传请使用 /api/rulepacks/upload',
       yamlOnly: '仅支持 .yaml / .yml 规则包文件',
       zipOnly: '仅支持 .zip 规则包压缩包',
       sarifOnly: '仅支持 .sarif / .json 文件',

@@ -611,7 +611,9 @@ const MAX_SAMPLE_BYTES = 200 * 1024;
 
 app.post('/api/rulepacks', asyncHandler(async (req, res) => {
   if (req.is('multipart/form-data')) {
-    res.status(400).json({ error: { message: '文件上传请使用 /api/rulepacks/upload' } });
+    res.status(400).json({
+      error: { message: '文件上传请使用 /api/rulepacks/upload', code: 'srv.uploadEndpointMismatch' },
+    });
     return;
   }
   const name = requireValidPackName(req.body?.name);
@@ -1772,7 +1774,7 @@ app.post('/api/rulelab/run', asyncHandler(async (req, res) => {
 }));
 
 app.use('/api', (_req, res) => {
-  res.status(404).json({ error: { message: '接口不存在' } });
+  res.status(404).json({ error: { message: '接口不存在', code: 'srv.routeNotFound' } });
 });
 
 const distDir = path.join(import.meta.dirname, '..', '..', 'code', 'dist');
@@ -1794,15 +1796,24 @@ app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
     return;
   }
   if (error instanceof multer.MulterError) {
-    const message =
-      error.code === 'LIMIT_FILE_SIZE'
-        ? `文件超过 ${Math.round(config.maxUploadBytes / 1024 / 1024)}MB 上传上限`
-        : `上传失败：${error.message}`;
-    res.status(400).json({ error: { message } });
+    const mb = Math.round(config.maxUploadBytes / 1024 / 1024);
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      res.status(400).json({
+        error: { message: `文件超过 ${mb}MB 上传上限`, code: 'srv.uploadTooLarge', params: { mb } },
+      });
+      return;
+    }
+    res.status(400).json({
+      error: {
+        message: `上传失败：${error.message}`,
+        code: 'srv.uploadFailed',
+        params: { reason: error.message },
+      },
+    });
     return;
   }
   console.error('[server] 未处理异常:', error);
-  res.status(500).json({ error: { message: '服务器内部错误' } });
+  res.status(500).json({ error: { message: '服务器内部错误', code: 'srv.internalError' } });
 });
 
 const server = app.listen(config.port, config.host, () => {
