@@ -375,6 +375,8 @@ const zh = {
     uploadOkIgnored: '源码上传成功，已按 .gitignore 忽略 {{count}} 个文件，可以开始扫描',
     uploadOkBoth: '源码上传成功，共 {{files}} 个文件，已按 .gitignore 忽略 {{ignored}} 个文件，可以开始扫描',
     cloneSuccessToast: '仓库克隆成功，共 {{count}} 个文件，可以开始扫描',
+    // 克隆失败只清临时目录，既有源码不受影响；toast 附带说明，避免用户误以为要重新上传
+    cloneFailedSourceKept: '（原已上传的源码保持不变）',
     scanSubmittedToast: '扫描任务已提交，引擎单并发执行中…',
     baselineSetToast: '已设为基线扫描，后续扫描将自动对比',
     baselineUnsetToast: '已取消基线，后续扫描不再自动对比',

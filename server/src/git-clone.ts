@@ -91,8 +91,11 @@ function gitFail(detail: string): HttpError {
 }
 
 /**
- * 浅克隆仓库到目标目录（替换已有内容）。
- * 克隆完成后剥离 .git 并做文件数/体积限额校验，与 ZIP 上传保持同一套约束。
+ * 浅克隆仓库到目标目录（成功后整体替换已有内容）。
+ * 克隆先落到 destDir 的兄弟临时目录，全部校验通过后才替换 destDir：
+ * 失败路径（私有仓库/地址写错/超时/没装 git/超限）只清临时目录，
+ * 用户此前上传的源码（destDir）原样保留。克隆完成后在临时目录上剥离 .git
+ * 并做文件数/体积限额校验，与 ZIP 上传保持同一套约束。
  */
 export async function cloneRepo(
   url: string,
@@ -101,19 +104,26 @@ export async function cloneRepo(
 ): Promise<{ fileCount: number }> {
   const parsed = parseRepoUrl(url);
   validateGitRef(ref);
-  fs.rmSync(destDir, { recursive: true, force: true });
+  // 临时目录与 destDir 同在 workspace/<projectId>/pending/ 下（同盘保证 rename 原子）；
+  // 固定临时名即可——importingProjects 互斥保证同项目不会并发克隆，入口先清一次还能
+  // 顺带回收上次进程崩溃留下的残骸。临时目录是 pending/src 的兄弟而非子目录，
+  // 不会被后续扫描快照（只复制 pending/src）带进去
+  const tmpDir = `${destDir}.cloning`;
+  fs.mkdirSync(path.dirname(destDir), { recursive: true });
+  fs.rmSync(tmpDir, { recursive: true, force: true });
 
   const args = [
     '-c', 'credential.helper=',
     'clone', '--depth', '1', '--single-branch', '--no-tags',
   ];
   if (ref) args.push('--branch', ref);
-  args.push(parsed.toString(), destDir);
+  args.push(parsed.toString(), tmpDir);
 
   console.log(`[git-clone] git ${redactSecrets(args.map((a) => JSON.stringify(a)).join(' '), parsed)}`);
   const { code, stderr, timedOut, spawnError } = await runGit(args, config.cloneTimeoutMs);
+  // 所有失败路径只清临时目录：删 destDir 会把用户已上传的源码一起丢掉
   const fail = (message: string): never => {
-    fs.rmSync(destDir, { recursive: true, force: true });
+    fs.rmSync(tmpDir, { recursive: true, force: true });
     throw new HttpError(400, message);
   };
 
@@ -125,13 +135,14 @@ export async function cloneRepo(
   }
   if (code !== 0) {
     const detail = stderr.trim().split('\n').filter(Boolean).pop() ?? `git exit ${code}`;
-    fs.rmSync(destDir, { recursive: true, force: true });
+    fs.rmSync(tmpDir, { recursive: true, force: true });
     // git 的报错行会原样带上带凭据的 URL，回传前必须脱敏
     throw gitFail(redactSecrets(detail, parsed));
   }
 
-  fs.rmSync(path.join(destDir, '.git'), { recursive: true, force: true });
-  const { files, bytes } = walkAndStripSymlinks(destDir);
+  // .git 剥离与限额校验都在临时目录上进行，保证 destDir 里出现的永远是校验通过的完整源码
+  fs.rmSync(path.join(tmpDir, '.git'), { recursive: true, force: true });
+  const { files, bytes } = walkAndStripSymlinks(tmpDir);
   if (files === 0) {
     fail('仓库没有任何文件（可能是空仓库，或默认分支不含源码），请确认后重试');
   }
@@ -141,5 +152,11 @@ export async function cloneRepo(
   if (bytes > config.maxExtractedBytes) {
     fail(`仓库源码总体积超过 ${config.maxExtractedBytes / 1024 ** 3}GB 上限，请改用 ZIP 上传部分源码`);
   }
+
+  // Windows 上 rename 目标已存在会 EPERM，只能先删旧再换新；两步之间进程崩溃会留下
+  // 「已删旧、未换新」的窗口——与旧实现「入口先删 destDir」同损，可接受，
+  // 残留的临时目录由下次克隆入口清理
+  fs.rmSync(destDir, { recursive: true, force: true });
+  fs.renameSync(tmpDir, destDir);
   return { fileCount: files };
 }

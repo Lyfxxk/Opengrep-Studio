@@ -376,6 +376,8 @@ const zhHant: typeof zh = {
     uploadOkIgnored: '原始碼上傳成功，已按 .gitignore 忽略 {{count}} 個檔案，可以開始掃描',
     uploadOkBoth: '原始碼上傳成功，共 {{files}} 個檔案，已按 .gitignore 忽略 {{ignored}} 個檔案，可以開始掃描',
     cloneSuccessToast: '儲存庫克隆成功，共 {{count}} 個檔案，可以開始掃描',
+    // 克隆失敗只清臨時目錄，既有原始碼不受影響；toast 附帶說明，避免使用者誤以為要重新上傳
+    cloneFailedSourceKept: '（原已上傳的原始碼保持不變）',
     scanSubmittedToast: '掃描任務已提交，引擎依序執行中…',
     baselineSetToast: '已設為基線掃描，後續掃描將自動對比',
     baselineUnsetToast: '已取消基線，後續掃描不再自動對比',
