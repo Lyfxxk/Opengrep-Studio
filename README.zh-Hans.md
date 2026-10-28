@@ -3,7 +3,7 @@
 <h1>Opengrep Studio · 码审工作台</h1>
 <p><strong>让隐患，先于攻击者现形。</strong></p>
 <p>本地优先的 <a href="https://github.com/opengrep/opengrep">Opengrep</a> 静态代码审计工作台——上传源码、规则扫描、逐条审阅、基线对比、交付报告，<strong>代码不出本机</strong>。</p>
-<p><a href="./README.md">English</a> · <a href="#快速开始">快速开始</a> · <a href="#功能亮点">功能亮点</a> · <a href="#安全模型">安全模型</a> · <a href="#常见问题">常见问题</a></p>
+<p><a href="./README.md">English</a> · <a href="./README.zh-Hant.md">繁體中文</a> · <a href="#快速开始">快速开始</a> · <a href="#功能亮点">功能亮点</a> · <a href="#安全模型">安全模型</a> · <a href="#常见问题">常见问题</a></p>
 <p>
 <a href="https://github.com/Lyfxxk/Opengrep-Studio/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/Lyfxxk/Opengrep-Studio/ci.yml?branch=main&label=CI&style=flat-square" alt="CI"/></a>
 <a href="#license"><img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="License: MIT"/></a>
@@ -248,7 +248,7 @@ flowchart LR
 - [x] 规则实验室与便携规则包（含样本回归）
 - [x] Docker 镜像与三平台一键启动
 - [x] 引擎更新检查与一键升级（下载三通道兜底）
-- [ ] 界面英文 i18n
+- [x] 界面英文 i18n
 - [ ] 扫描队列与并行调度
 - [ ] 规则包在线 URL 导入与社区规则包索引
 - [ ] GitHub Action 工作流模板（CI 中跑扫描并回传 SARIF）
