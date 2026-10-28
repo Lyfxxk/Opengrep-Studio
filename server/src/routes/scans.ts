@@ -517,8 +517,18 @@ scanRoutes.get('/api/scans/:scanId/diff', asyncHandler(async (req, res) => {
   const againstProject = getProject(against.projectId);
   const fileDiff = await diffSnapshots(srcDir, againstDir);
 
-  const currentMap = new Map(listIssues(scan.id).map((issue) => [issue.fingerprint, issue]));
-  const againstMap = new Map(listIssues(against.id).map((issue) => [issue.fingerprint, issue]));
+  // 基线扫描会把已修复问题以 comparisonStatus='fixed' 追加落库（见 applyBaselineComparison），
+  // 这里与结果页三分类同口径把它排除，否则 fixed 副本会被当作"当前存在/当前独有"，数字互相矛盾
+  const currentMap = new Map(
+    listIssues(scan.id)
+      .filter((issue) => issue.comparisonStatus !== 'fixed')
+      .map((issue) => [issue.fingerprint, issue]),
+  );
+  const againstMap = new Map(
+    listIssues(against.id)
+      .filter((issue) => issue.comparisonStatus !== 'fixed')
+      .map((issue) => [issue.fingerprint, issue]),
+  );
   const ISSUE_LIST_CAP = 200;
   const toSummary = (issue: IssueRow) => ({
     ruleId: issue.ruleId,
