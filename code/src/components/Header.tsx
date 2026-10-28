@@ -21,6 +21,7 @@ import {
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { NAV_ITEMS } from '@/components/AppSidebar';
 import LanguageMenu from '@/components/LanguageMenu';
+import ThemeMenu from '@/components/ThemeMenu';
 import { getCurrentUsername, logout } from '@/lib/auth';
 import avatarUrl from '@/assets/images/avatar.jpg';
 
@@ -29,6 +30,10 @@ interface Crumb {
   label: string;
   to?: string;
 }
+
+/** 顶栏图标按钮统一样式：语言与主题两个下拉共用，避免样式各写一遍 */
+const ICON_BUTTON_CLASS =
+  'flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
 export default function Header() {
   const navigate = useNavigate();
@@ -96,7 +101,8 @@ export default function Header() {
       </Breadcrumb>
 
       <div className="ml-auto flex items-center gap-2">
-        <LanguageMenu className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+        <ThemeMenu className={ICON_BUTTON_CLASS} />
+        <LanguageMenu className={ICON_BUTTON_CLASS} />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

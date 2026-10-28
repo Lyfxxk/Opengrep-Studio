@@ -5,6 +5,19 @@
     <link rel="icon" type="image/png" href="/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Opengrep Studio | 码审工作台</title>
+    <script>
+      // 主题类必须在首屏绘制前落到 <html>，否则深色用户会看到一瞬白底。
+      // 键名与 ThemeProvider 的 storageKey 一致；无存储值时按 defaultTheme=light 处理。
+      try {
+        var mode = localStorage.getItem('__global_opengrep_theme');
+        var dark =
+          mode === 'dark' ||
+          (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (dark) document.documentElement.classList.add('dark');
+      } catch (e) {
+        // 隐私模式下 localStorage 不可用：保持默认浅色即可
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
