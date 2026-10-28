@@ -39,26 +39,6 @@ export interface IIssue {
   rulepackName?: string;
 }
 
-export const SEVERITY_LABELS: Record<IIssue['severity'], string> = {
-  critical: '严重',
-  high: '高危',
-  medium: '中危',
-  low: '低危',
-};
-
-export const COMPARISON_LABELS: Record<IIssue['comparisonStatus'], string> = {
-  new: '新增',
-  fixed: '已修复',
-  remaining: '遗留',
-};
-
-export const REVIEW_STATUS_LABELS: Record<ReviewStatus, string> = {
-  pending: '待复核',
-  confirmed: '已确认',
-  false_positive: '误报',
-  accepted: '已接受',
-};
-
 export const REVIEW_BADGE_CLASS: Record<ReviewStatus, string> = {
   pending: 'border-border bg-muted text-muted-foreground',
   confirmed: 'border-destructive/40 bg-destructive/10 text-destructive',
