@@ -1,4 +1,4 @@
-import { spawn, type ChildProcess } from 'node:child_process';
+import { spawn, type ChildProcess, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { config, engineSource, type EngineSource } from './config.js';
@@ -42,6 +42,25 @@ export function engineAvailable(): boolean {
   return fs.existsSync(config.opengrepBin);
 }
 
+/**
+ * 引擎文件存在但无法执行时的统一修复指引（--version 探测不到版本）。
+ * 常见于下载损坏、文件不完整或被杀毒软件隔离；与 engineInstallHint 区分口径，避免误导用户去"安装"一个已存在的引擎。
+ */
+export function engineNotRunnableHint(binPath: string = config.opengrepBin): string {
+  const lines = [
+    `引擎文件存在但无法运行：${binPath}`,
+    '可能是文件损坏、不完整，或被杀毒软件隔离/拦截。',
+    '请在仓库根目录运行 npm run setup:engine --force 重新下载并校验引擎，',
+    '或设置环境变量 OPENGREP_BIN 指向可正常运行的引擎可执行文件。',
+  ];
+  if (process.platform === 'darwin') {
+    lines.push(
+      'macOS 提示：执行 xattr -d com.apple.quarantine <引擎路径> 清除 Gatekeeper 隔离标记后重试。',
+    );
+  }
+  return lines.join('\n');
+}
+
 /** 供 /api/health 与启动日志展示的解析后路径 */
 export function engineDisplayPath(): string {
   return path.resolve(config.opengrepBin);
@@ -49,9 +68,12 @@ export function engineDisplayPath(): string {
 
 let engineVersionPromise: Promise<string | undefined> | null = null;
 
-/** 惰性探测引擎版本（只 spawn 一次，失败不缓存重试）；与 runEngine 同一套 spawn 策略 */
+/** 惰性探测引擎版本：成功才缓存；失败（引擎损坏/不可执行）不缓存，下次调用重探——修复引擎后无需重启即可自愈 */
 export function getEngineVersion(): Promise<string | undefined> {
-  engineVersionPromise ??= probeVersion(config.opengrepBin);
+  engineVersionPromise ??= probeVersion(config.opengrepBin).then((version) => {
+    if (version === undefined) engineVersionPromise = null;
+    return version;
+  });
   return engineVersionPromise;
 }
 
@@ -106,11 +128,19 @@ export function runEngine(
     console.error(
       `[${options.logLabel}] opengrep ${args.map((arg) => JSON.stringify(arg)).join(' ')}`,
     );
-    const child = spawn(config.opengrepBin, args, {
-      cwd,
-      windowsHide: true,
-      env: { ...process.env, OPENGREP_ENABLE_VERSION_CHECK: '0' },
-    });
+    let child: ChildProcessWithoutNullStreams;
+    try {
+      child = spawn(config.opengrepBin, args, {
+        cwd,
+        windowsHide: true,
+        env: { ...process.env, OPENGREP_ENABLE_VERSION_CHECK: '0' },
+      });
+    } catch (error) {
+      // Windows 对非可执行文件在 spawn 内部同步抛 spawn EFTYPE，error 事件监听器挂不上：
+      // 与下方 error 事件分支同口径转成失败结果（此刻尚未创建 kill 定时器，无需 stopKillTimers）
+      resolve({ code: -1, stdout: '', stderr: String(error), timedOut: false, stdoutTruncated: false });
+      return;
+    }
     trackChildProcess(child);
     let stdout = '';
     let stderr = '';
