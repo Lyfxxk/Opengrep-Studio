@@ -1,6 +1,7 @@
 import { mockIssuesForScan, type IIssue } from '@/data/issues';
 import type { IReportReviewStats } from '@/data/diffs';
 import type { IScanResult } from '@/data/scanresults';
+import i18n from '@/i18n';
 import { SEVERITY_ORDER } from '@/lib/severity';
 
 export interface IReportMeta {
@@ -114,7 +115,7 @@ export function buildMockReport(scan: IScanResult, projectName: string): IReport
   const dirAgg = new Map<string, number>();
   for (const issue of current) {
     const sep = issue.filePath.indexOf('/');
-    const dir = sep > 0 ? issue.filePath.slice(0, sep) : '（根目录）';
+    const dir = sep > 0 ? issue.filePath.slice(0, sep) : i18n.t('api.demoRootDir');
     dirAgg.set(dir, (dirAgg.get(dir) ?? 0) + 1);
   }
 
@@ -130,8 +131,14 @@ export function buildMockReport(scan: IScanResult, projectName: string): IReport
 
   const conclusion =
     current.length === 0
-      ? '本次扫描未命中任何已启用规则，未发现风险问题。'
-      : `本次扫描发现 ${current.length} 个风险问题，其中严重 ${bySeverity.critical} 项、高危 ${bySeverity.high} 项、中危 ${bySeverity.medium} 项、低危 ${bySeverity.low} 项。`;
+      ? i18n.t('api.demoNoRiskConclusion')
+      : i18n.t('api.demoConclusion', {
+          total: current.length,
+          critical: bySeverity.critical,
+          high: bySeverity.high,
+          medium: bySeverity.medium,
+          low: bySeverity.low,
+        });
 
   return {
     meta: {

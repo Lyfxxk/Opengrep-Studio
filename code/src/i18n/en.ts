@@ -724,6 +724,10 @@ const en: typeof zh = {
     demoEngineHint: 'Demo mode: backend and engine not connected — everything shown is local demo data.',
     demoUpdateReason: 'Demo mode does not check engine updates online',
     demoUpgradeUnsupported: 'Demo mode does not support engine upgrades',
+    demoNoRiskConclusion: 'This scan matched no enabled rules — no risk issues found.',
+    demoConclusion:
+      'This scan found {{total}} risk issues: {{critical}} critical, {{high}} high, {{medium}} medium, and {{low}} low.',
+    demoRootDir: '(root)',
   },
   notFound: {
     text: 'Page not found',
