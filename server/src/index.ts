@@ -1464,8 +1464,10 @@ app.get('/api/scans/:scanId/report', asyncHandler(async (req, res) => {
   const format = String(req.query.format ?? 'json');
   if (format === 'html') {
     const includeSnippets = req.query.detail !== 'summary';
-    const html = renderReportHtml(data, issues, { includeSnippets });
-    const fileName = `测试报告-${project.name}-${scan.id}.html`;
+    // 与知识库同一口径：只认已支持的两种语言，其余回落简体
+    const lang = req.query.lang === 'zh-Hant' ? 'zh-Hant' : 'zh';
+    const html = renderReportHtml(data, issues, { includeSnippets }, lang);
+    const fileName = `${lang === 'zh-Hant' ? '測試報告' : '测试报告'}-${project.name}-${scan.id}.html`;
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader(
       'Content-Disposition',

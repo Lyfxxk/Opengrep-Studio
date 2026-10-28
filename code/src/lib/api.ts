@@ -487,9 +487,10 @@ export const api = {
     return request<IReportData>(`/api/scans/${scanId}/report`);
   },
 
-  /** 自包含 HTML 报告的下载地址（含严重/高危问题的代码片段） */
+  /** 自包含 HTML 报告的下载地址（含严重/高危问题的代码片段）：带上当前语言，报告正文与文件名同步本地化 */
   scanReportHtmlUrl(scanId: string): string {
-    return `/api/scans/${scanId}/report?format=html`;
+    const lang = (i18n.resolvedLanguage ?? i18n.language).startsWith('zh-Hant') ? 'zh-Hant' : 'zh';
+    return `/api/scans/${scanId}/report?format=html&lang=${lang}`;
   },
 
 
