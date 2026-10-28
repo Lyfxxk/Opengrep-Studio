@@ -858,7 +858,7 @@ export function renderReportHtml(
       (file) => `<tr>
         <td class="path">${pathHtml(file.path)}</td>
         <td class="num strong">${file.count}</td>
-        ${SEVERITY_ORDER.filter((sev) => sev !== 'low')
+        ${SEVERITY_ORDER.filter((sev) => sev !== 'low' && totals.bySeverity[sev] > 0)
           .map((sev) => `<td class="num">${file.bySev[sev] || '—'}</td>`)
           .join('')}
         <td><span class="sev-chip" style="color:#fff;background:${SEVERITY_COLOR[file.maxSev]}">${text.severity[file.maxSev]}</span></td>
