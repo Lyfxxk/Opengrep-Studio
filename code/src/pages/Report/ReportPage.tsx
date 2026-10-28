@@ -300,7 +300,7 @@ export default function ReportPage() {
     return () => {
       mounted = false;
     };
-  }, [scanId]);
+  }, [scanId, t]);
 
   if (loading) {
     return (
