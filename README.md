@@ -3,7 +3,7 @@
 <h1>Opengrep Studio · Code Audit Workbench</h1>
 <p><strong>Find weaknesses before attackers do.</strong></p>
 <p>A local-first static code-audit workbench on top of <a href="https://github.com/opengrep/opengrep">Opengrep</a> — import source, scan with rules, triage findings one by one, diff against baselines, deliver reports — <strong>your code never leaves your machine</strong>.</p>
-<p><a href="./README.zh-Hans.md">简体中文</a> · <a href="./README.zh-Hant.md">繁體中文</a> · <a href="#quick-start">Quick Start</a> · <a href="#highlights">Highlights</a> · <a href="#security-model">Security Model</a> · <a href="#faq">FAQ</a></p>
+<p><a href="./docs/README.zh-Hans.md">简体中文</a> · <a href="./docs/README.zh-Hant.md">繁體中文</a> · <a href="#quick-start">Quick Start</a> · <a href="#highlights">Highlights</a> · <a href="#security-model">Security Model</a> · <a href="#faq">FAQ</a></p>
 <p>
 <a href="https://github.com/Lyfxxk/Opengrep-Studio/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/Lyfxxk/Opengrep-Studio/ci.yml?branch=main&label=CI&style=flat-square" alt="CI"/></a>
 <a href="#license"><img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="License: MIT"/></a>

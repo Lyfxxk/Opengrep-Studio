@@ -1,9 +1,9 @@
 <div align="center">
-<img src="docs/images/banner.png" alt="Opengrep Studio Banner" width="880"/>
+<img src="images/banner.png" alt="Opengrep Studio Banner" width="880"/>
 <h1>Opengrep Studio · 碼審工作台</h1>
 <p><strong>讓隱患，先於攻擊者現形。</strong></p>
 <p>本地優先的 <a href="https://github.com/opengrep/opengrep">Opengrep</a> 靜態程式碼稽核工作台——上傳原始碼、規則掃描、逐條審閱、基線對比、交付報告，<strong>程式碼不出本機</strong>。</p>
-<p><a href="./README.md">English</a> · <a href="./README.zh-Hans.md">简体中文</a> · <a href="#快速開始">快速開始</a> · <a href="#功能亮點">功能亮點</a> · <a href="#安全模型">安全模型</a> · <a href="#常見問題">常見問題</a></p>
+<p><a href="../README.md">English</a> · <a href="./README.zh-Hans.md">简体中文</a> · <a href="#快速開始">快速開始</a> · <a href="#功能亮點">功能亮點</a> · <a href="#安全模型">安全模型</a> · <a href="#常見問題">常見問題</a></p>
 <p>
 <a href="https://github.com/Lyfxxk/Opengrep-Studio/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/Lyfxxk/Opengrep-Studio/ci.yml?branch=main&label=CI&style=flat-square" alt="CI"/></a>
 <a href="#license"><img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="License: MIT"/></a>
@@ -11,7 +11,7 @@
 <a href="#環境需求"><img src="https://img.shields.io/badge/node-%E2%89%A522.5-3c873a?style=flat-square&logo=nodedotjs&logoColor=white" alt="Node"/></a>
 <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-64748b?style=flat-square" alt="Platform"/>
 </p>
-<img src="docs/images/scanresult.png" alt="掃描結果審閱頁：基線對比、污點傳播鏈與程式碼高亮" width="880"/>
+<img src="images/scanresult.png" alt="掃描結果審閱頁：基線對比、污點傳播鏈與程式碼高亮" width="880"/>
 <p><sub>掃描結果審閱頁：基線三卡（新增 / 已修復 / 遺留）· 污點傳播鏈（源 → 傳播 → 匯聚點）· 命中程式碼高亮 · 人工複核標記</sub></p>
 </div>
 
@@ -56,13 +56,13 @@ Opengrep Studio 把這條流水線補齊：**拖進程式碼 → 點一下掃描
 
 拖曳整個資料夾、上傳 ZIP / 7Z / RAR / TAR.GZ 壓縮檔，或貼上 Git 儲存庫網址淺層複製匯入（預設遵循 `.gitignore` / `.opengrepignore` 口徑，也可關掉以深挖 `.env` 裡的硬編碼金鑰）。上傳後自動統計語言組成。
 
-<img src="docs/images/project.png" alt="專案詳情頁：匯入區與掃描歷史" width="880"/>
+<img src="images/project.png" alt="專案詳情頁：匯入區與掃描歷史" width="880"/>
 
 ### 📚 812 條內建規則，12 種語言，全量中文訊息
 
 精選自 [opengrep-rules](https://github.com/opengrep/opengrep-rules)（優先收錄帶 CWE / OWASP 中繼資料的規則，每條保留上游溯源連結），覆蓋 108 種 CWE；**812 條規則訊息 100% 提供中文翻譯**，另附 108 類 CWE 中文弱點說明與修復建議。自建規則包支援線上編輯、匯入匯出與品質檢查。
 
-<img src="docs/images/rules.png" alt="規則中心：內建與自建規則包" width="880"/>
+<img src="images/rules.png" alt="規則中心：內建與自建規則包" width="880"/>
 
 ### 🔍 逐條審閱：程式碼定位、污點鏈路、人工複核
 
@@ -72,19 +72,19 @@ Opengrep Studio 把這條流水線補齊：**拖進程式碼 → 點一下掃描
 
 設定基線掃描後，每次掃描自動給出 **新增 / 已修復 / 遺留** 三分類；掃描中心還支援任選兩次已完成掃描做雙快照對比（可跨專案）：問題級按指紋比對，檔案級按原始碼快照內容比對。
 
-<img src="docs/images/compare.png" alt="雙快照對比：問題差異與檔案差異" width="880"/>
+<img src="images/compare.png" alt="雙快照對比：問題差異與檔案差異" width="880"/>
 
 ### 📄 可列印的稽核報告 + 可重現清單
 
 一鍵生成紙感排版的《程式碼稽核測試報告》：總體結論、風險分布、高頻規則、熱點檔案、問題明細、複核統計，支援直接列印為 PDF 或下載單檔離線 HTML；每份報告附帶可重現清單（原始碼 SHA-256、完整引擎命令列、規則檔雜湊）。
 
-<img src="docs/images/report.png" alt="線上稽核報告" width="880"/>
+<img src="images/report.png" alt="線上稽核報告" width="880"/>
 
 ### 🧪 規則實驗室：先驗證，再入庫
 
 左側寫規則 YAML，右側貼正例與反例，一鍵執行真實引擎驗證「能不能命中、有沒有誤報」；調通的規則連同樣本儲存為可攜規則包，後續可一鍵回歸檢查。草稿自動儲存，Ctrl+Enter 執行。
 
-<img src="docs/images/lab-demo.gif" alt="規則實驗室示範：執行污點分析規則並得到通過判定" width="880"/>
+<img src="images/lab-demo.gif" alt="規則實驗室示範：執行污點分析規則並得到通過判定" width="880"/>
 
 ### 🔁 SARIF 雙向互通
 
@@ -107,8 +107,8 @@ Opengrep Studio 把這條流水線補齊：**拖進程式碼 → 點一下掃描
 <summary><b>介面一覽（登入頁與儀表板）</b></summary>
 <table>
 <tr>
-<td align="center"><img src="docs/images/login.png" alt="登入頁"/></td>
-<td align="center"><img src="docs/images/dashboard.png" alt="儀表看盤"/></td>
+<td align="center"><img src="images/login.png" alt="登入頁"/></td>
+<td align="center"><img src="images/dashboard.png" alt="儀表看盤"/></td>
 </tr>
 </table>
 </details>
@@ -291,7 +291,7 @@ CI（`.github/workflows/ci.yml`）包含三個任務：後端型別檢查 + 單�
 
 ## License
 
-本專案程式碼以 [MIT](./LICENSE) 發布。
+本專案程式碼以 [MIT](../LICENSE) 發布。
 
 需要注意的兩項第三方許可：
 
