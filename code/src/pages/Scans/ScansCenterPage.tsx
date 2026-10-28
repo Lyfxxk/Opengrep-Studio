@@ -1,11 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Eye, FileText, GitCompareArrows } from 'lucide-react';
+import { Eye, FileText, GitCompareArrows, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
 import Pagination from '@/components/Pagination';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -22,6 +30,7 @@ import CompareDialog from '@/pages/ScanResult/CompareDialog';
 import { useRowSelection } from '@/lib/useRowSelection';
 import { attachProjectNames, type ScanWithProject } from '@/lib/scans';
 import { formatDateTime } from '@/lib/format';
+import type { IProject } from '@/data/projects';
 import { api } from '@/lib/api';
 
 /** 扫描中心：全部项目的扫描总览，双快照对比的固定入口 */
@@ -29,6 +38,9 @@ export default function ScansCenterPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [scans, setScans] = useState<ScanWithProject[] | null>(null);
+  const [projects, setProjects] = useState<IProject[]>([]);
+  const [filterProjectId, setFilterProjectId] = useState('all');
+  const [keyword, setKeyword] = useState('');
   const [page, setPage] = useState(1);
   const [compareScanId, setCompareScanId] = useState<string | null>(null);
   const [batchConfirmOpen, setBatchConfirmOpen] = useState(false);
@@ -43,6 +55,7 @@ export default function ScansCenterPage() {
   const load = useCallback(async () => {
     try {
       const [allScans, projects] = await Promise.all([api.listAllScans(), api.listProjects()]);
+      setProjects(projects);
       setScans(attachProjectNames(allScans, projects));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : String(error));
@@ -56,15 +69,28 @@ export default function ScansCenterPage() {
 
   const hasScanning = useMemo(() => (scans ?? []).some((scan) => scan.status === 'scanning'), [scans]);
 
+  /** 筛选：项目下拉 + 关键字（匹配扫描编号 / 项目名） */
+  const filteredScans = useMemo(() => {
+    const trimmed = keyword.trim().toLowerCase();
+    return (scans ?? []).filter((scan) => {
+      if (filterProjectId !== 'all' && scan.projectId !== filterProjectId) return false;
+      if (trimmed === '') return true;
+      return (
+        scan.id.toLowerCase().includes(trimmed) ||
+        (scan.projectName ?? '').toLowerCase().includes(trimmed)
+      );
+    });
+  }, [scans, filterProjectId, keyword]);
+
   // 分页：扫描进行中的轮询会频繁重刷列表，页码夹取保证删行 / 新增后不落在空页上
   const pageSize = 20;
-  const scanCount = scans?.length ?? 0;
+  const scanCount = filteredScans.length;
   const pageCount = Math.max(1, Math.ceil(scanCount / pageSize));
   const safePage = Math.min(page, pageCount);
   useEffect(() => {
     setPage(safePage);
   }, [safePage]);
-  const pagedScans = (scans ?? []).slice((safePage - 1) * pageSize, safePage * pageSize);
+  const pagedScans = filteredScans.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   // 有扫描进行中时轮询刷新，全部落定后停止
   useEffect(() => {
@@ -112,11 +138,41 @@ export default function ScansCenterPage() {
         onClear={selection.clear}
       />
 
+      {(scans?.length ?? 0) > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <Select value={filterProjectId} onValueChange={setFilterProjectId}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder={t('scans.filterProjectPlaceholder')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('scans.filterProjectAll')}</SelectItem>
+              {projects.map((project) => (
+                <SelectItem key={project.id} value={project.id}>
+                  {project.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="relative min-w-[180px] flex-1 sm:max-w-[280px]">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={keyword}
+              onChange={(event) => setKeyword(event.target.value)}
+              placeholder={t('scans.filterKeywordPlaceholder')}
+              className="pl-9"
+            />
+          </div>
+          <span className="text-xs text-muted-foreground">
+            {t('scans.filterCount', { count: filteredScans.length })}
+          </span>
+        </div>
+      )}
+
       {scans === null ? (
         <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
           {t('common.loading')}
         </div>
-      ) : scans.length === 0 ? (
+      ) : filteredScans.length === 0 && scans.length === 0 ? (
         <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
           {t('scans.emptyPrefix')}
           <Link to="/projects" className="mx-1 text-primary hover:underline">
@@ -125,7 +181,12 @@ export default function ScansCenterPage() {
           {t('scans.emptySuffix')}
         </div>
       ) : (
-        <div className="w-full overflow-x-auto">
+        filteredScans.length === 0 ? (
+          <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
+            {t('scans.filterEmpty')}
+          </div>
+        ) : (
+          <div className="w-full overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -224,9 +285,10 @@ export default function ScansCenterPage() {
             </TableBody>
           </Table>
         </div>
+        )
       )}
 
-      {(scans?.length ?? 0) > pageSize && (
+      {filteredScans.length > pageSize && (
         <Pagination page={safePage} pageCount={pageCount} onPage={setPage} />
       )}
 

@@ -1,10 +1,18 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { FileCode2, FileText, ListOrdered } from 'lucide-react';
+import { FileCode2, FileText, ListOrdered, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import Pagination from '@/components/Pagination';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -16,17 +24,22 @@ import {
 import RulePackCell from '@/components/RulePackCell';
 import { attachProjectNames, type ScanWithProject } from '@/lib/scans';
 import { formatDateTime } from '@/lib/format';
+import type { IProject } from '@/data/projects';
 import { api } from '@/lib/api';
 
 /** 报告中心：全部已完成扫描的测试报告总览（在线报告 / 自包含 HTML / 可复现清单） */
 export default function ReportsCenterPage() {
   const { t } = useTranslation();
   const [rows, setRows] = useState<ScanWithProject[] | null>(null);
+  const [projects, setProjects] = useState<IProject[]>([]);
+  const [filterProjectId, setFilterProjectId] = useState('all');
+  const [keyword, setKeyword] = useState('');
   const [page, setPage] = useState(1);
 
   const load = useCallback(async () => {
     try {
       const [allScans, projects] = await Promise.all([api.listAllScans(), api.listProjects()]);
+      setProjects(projects);
       setRows(
         attachProjectNames(
           allScans.filter((scan) => scan.status === 'completed'),
@@ -43,14 +56,27 @@ export default function ReportsCenterPage() {
     void load();
   }, [load]);
 
+  /** 筛选：项目下拉 + 关键字（匹配扫描编号 / 项目名） */
+  const filteredRows = useMemo(() => {
+    const trimmed = keyword.trim().toLowerCase();
+    return (rows ?? []).filter((scan) => {
+      if (filterProjectId !== 'all' && scan.projectId !== filterProjectId) return false;
+      if (trimmed === '') return true;
+      return (
+        scan.id.toLowerCase().includes(trimmed) ||
+        (scan.projectName ?? '').toLowerCase().includes(trimmed)
+      );
+    });
+  }, [rows, filterProjectId, keyword]);
+
   // 页码夹取：删除 / 新增行后不落在空页上
   const pageSize = 20;
-  const pageCount = Math.max(1, Math.ceil((rows?.length ?? 0) / pageSize));
+  const pageCount = Math.max(1, Math.ceil(filteredRows.length / pageSize));
   const safePage = Math.min(page, pageCount);
   useEffect(() => {
     setPage(safePage);
   }, [safePage]);
-  const pagedRows = (rows ?? []).slice((safePage - 1) * pageSize, safePage * pageSize);
+  const pagedRows = filteredRows.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   return (
     <div className="space-y-6">
@@ -61,11 +87,41 @@ export default function ReportsCenterPage() {
         </div>
       </div>
 
+      {(rows?.length ?? 0) > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <Select value={filterProjectId} onValueChange={setFilterProjectId}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder={t('reports.filterProjectPlaceholder')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('reports.filterProjectAll')}</SelectItem>
+              {projects.map((project) => (
+                <SelectItem key={project.id} value={project.id}>
+                  {project.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="relative min-w-[180px] flex-1 sm:max-w-[280px]">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={keyword}
+              onChange={(event) => setKeyword(event.target.value)}
+              placeholder={t('reports.filterKeywordPlaceholder')}
+              className="pl-9"
+            />
+          </div>
+          <span className="text-xs text-muted-foreground">
+            {t('reports.filterCount', { count: filteredRows.length })}
+          </span>
+        </div>
+      )}
+
       {rows === null ? (
         <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
           {t('common.loading')}
         </div>
-      ) : rows.length === 0 ? (
+      ) : filteredRows.length === 0 && rows.length === 0 ? (
         <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
           {t('reports.emptyPrefix')}
           <Link to="/scans" className="mx-1 text-primary hover:underline">
@@ -74,7 +130,12 @@ export default function ReportsCenterPage() {
           {t('reports.emptySuffix')}
         </div>
       ) : (
-        <div className="w-full overflow-x-auto">
+        filteredRows.length === 0 ? (
+          <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
+            {t('reports.filterEmpty')}
+          </div>
+        ) : (
+          <div className="w-full overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -141,9 +202,10 @@ export default function ReportsCenterPage() {
             </TableBody>
           </Table>
         </div>
+        )
       )}
 
-      {(rows?.length ?? 0) > pageSize && (
+      {filteredRows.length > pageSize && (
         <Pagination page={safePage} pageCount={pageCount} onPage={setPage} />
       )}
     </div>
