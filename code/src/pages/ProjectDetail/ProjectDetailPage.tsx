@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/select';
 import { type IConfig } from '@/data/configs';
 import type { IProject } from '@/data/projects';
+import type { IRulePack } from '@/data/rulepacks';
 import type { IScanResult } from '@/data/scanresults';
 import { api, type UploadItem } from '@/lib/api';
 import ScanHistoryTable from './ScanHistoryTable';
@@ -33,6 +34,8 @@ export default function ProjectDetailPage() {
   const [loadFailed, setLoadFailed] = useState(false);
   const [scans, setScans] = useState<IScanResult[]>([]);
   const [configs, setConfigs] = useState<IConfig[]>([]);
+  // 规则包启用态：配置摘要需要区分「勾选了 N 个」和「实际生效 N 个」，停用包扫描时会被静默跳过
+  const [rulePacks, setRulePacks] = useState<IRulePack[]>([]);
   const [upload, setUpload] = useState<UploadZoneState>({ status: 'idle' });
   const pollTimerRef = useRef<number | null>(null);
   const prevScansRef = useRef<IScanResult[]>([]);
@@ -114,6 +117,13 @@ export default function ProjectDetailPage() {
       .catch(() => {
         setConfigs([]);
       });
+    // 启用态拉取失败按空表处理：摘要退回原计数，不因次要数据阻塞页面
+    api
+      .listRulePacks()
+      .then(setRulePacks)
+      .catch(() => {
+        setRulePacks([]);
+      });
   }, []);
 
   const handleConfigChange = async (configId: string) => {
@@ -130,6 +140,13 @@ export default function ProjectDetailPage() {
   const activeConfig = configs.find(
     (config) => config.id === project?.configId,
   );
+
+  // 已勾选但已停用的规则包数：这些包在扫描时会被静默跳过，摘要按原样报个数会让审阅者误信「已扫过」
+  const activeConfigDisabledPacks = activeConfig
+    ? activeConfig.rulePackIds.filter(
+        (packId) => rulePacks.find((pack) => pack.id === packId)?.enabled === false,
+      ).length
+    : 0;
 
   const isScanning = scans.some((scan) => scan.status === 'scanning');
 
@@ -344,10 +361,16 @@ export default function ProjectDetailPage() {
               </Select>
               {activeConfig && (
                 <span className="text-xs text-muted-foreground">
-                  {t('projectDetail.configSummary', {
-                    packs: activeConfig.rulePackIds.length,
-                    excludes: activeConfig.excludes.length,
-                  })}
+                  {activeConfigDisabledPacks > 0
+                    ? t('projectDetail.configSummaryWithDisabled', {
+                        packs: activeConfig.rulePackIds.length,
+                        disabled: activeConfigDisabledPacks,
+                        excludes: activeConfig.excludes.length,
+                      })
+                    : t('projectDetail.configSummary', {
+                        packs: activeConfig.rulePackIds.length,
+                        excludes: activeConfig.excludes.length,
+                      })}
                 </span>
               )}
               <Link to="/configs" className="text-xs text-primary hover:underline">

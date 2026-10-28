@@ -94,6 +94,9 @@ export default function RulePackTab() {
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState<IRulePack | null>(null);
   const [deleteRefCount, setDeleteRefCount] = useState(0);
+  // 停用确认：停用的包会被 buildConfigPlan 静默跳过（全部停用才报错），必须先让用户看到引用面
+  const [toggleTarget, setToggleTarget] = useState<IRulePack | null>(null);
+  const [toggleRefCount, setToggleRefCount] = useState(0);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploadName, setUploadName] = useState('');
   const [uploadLanguage, setUploadLanguage] = useState('Java');
@@ -126,7 +129,7 @@ export default function RulePackTab() {
     if (!open) setContentTarget(null);
   }, []);
 
-  const handleToggle = async (pack: IRulePack, enabled: boolean) => {
+  const performToggle = async (pack: IRulePack, enabled: boolean) => {
     try {
       await api.toggleRulePack(pack.id, enabled);
       toast.success(
@@ -138,6 +141,32 @@ export default function RulePackTab() {
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t('rulePacks.updateFailed'));
     }
+  };
+
+  const handleToggle = async (pack: IRulePack, enabled: boolean) => {
+    // 启用方向无需确认；停用方向先查被多少配置引用，有引用时弹确认说明漏报影响
+    if (enabled) {
+      await performToggle(pack, enabled);
+      return;
+    }
+    let refCount = 0;
+    try {
+      refCount = await api.countConfigsUsingRulePack(pack.id);
+    } catch {
+      refCount = 0;
+    }
+    if (refCount > 0) {
+      setToggleRefCount(refCount);
+      setToggleTarget(pack);
+      return;
+    }
+    await performToggle(pack, enabled);
+  };
+
+  const handleToggleConfirm = async () => {
+    const pack = toggleTarget;
+    setToggleTarget(null);
+    if (pack) await performToggle(pack, false);
   };
 
   const handleFileChange = (file: File | undefined) => {
@@ -749,6 +778,29 @@ export default function RulePackTab() {
           <AlertDialogFooter>
             <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete}>{t('common.confirmDelete')}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={toggleTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setToggleTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('rulePacks.disableDialogTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('rulePacks.disableDesc', { name: toggleTarget?.name ?? '' })}
+              {t('rulePacks.disableRefSuffix', { count: toggleRefCount })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={() => void handleToggleConfirm()}>
+              {t('common.confirm')}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

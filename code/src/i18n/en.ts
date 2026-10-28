@@ -399,6 +399,8 @@ const en: typeof zh = {
     configLabel: 'Scan config',
     configUnboundPlaceholder: 'Unbound (auto-created on one-click scan)',
     configSummary: '{{packs}} rule packs · {{excludes}} exclude paths',
+    configSummaryWithDisabled:
+      '{{packs}} rule packs ({{disabled}} disabled and skipped in scans) · {{excludes}} exclude paths',
     viewConfigs: 'View configs',
     unboundWarning:
       'No scan config bound: a one-click scan auto-creates a "Default scan config" (all enabled built-in rule packs) and binds it to this project.',
@@ -599,6 +601,10 @@ const en: typeof zh = {
     deleteDialogTitle: 'Delete rule pack',
     deleteDesc: 'Delete rule pack "{{name}}"?',
     deleteRefSuffix: '{{count}} configs reference this rule pack; after deletion it will be unchecked in them.',
+    disableDialogTitle: 'Disable rule pack',
+    disableDesc: 'Disable rule pack "{{name}}"?',
+    disableRefSuffix:
+      '{{count}} scan configs reference this rule pack; scans using them will skip it and may miss the issues it covers.',
     createNamePlaceholder: 'e.g. Java security baseline',
     contentLabel: 'Rule YAML content',
     contentRequired: 'Please enter the rule pack YAML content',
