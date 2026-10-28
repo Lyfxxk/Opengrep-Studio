@@ -26,7 +26,8 @@ const zh = {
     language: '切换语言',
   },
   lang: {
-    zh: '中文',
+    zh: '简体中文',
+    zhHant: '繁體中文',
     en: 'English',
   },
   common: {
