@@ -103,14 +103,15 @@ export default function EngineCard({ health, scanRunning, onUpgraded }: EngineCa
           )}
         </div>
       </CardHeader>
-      <CardContent className="flex min-h-0 flex-1 flex-col justify-center gap-2 overflow-y-auto text-sm">
+      <CardContent className="flex min-h-0 flex-1 flex-col justify-start gap-0 overflow-y-auto text-sm">
         {health === null ? (
           <p className="text-muted-foreground">{t('common.loading')}</p>
         ) : ready ? (
           <>
-            <div className="flex flex-wrap items-center gap-2">
+            {/* 行式版式（与扫描概要一致）：状态 / 来源 / 更新 各占一行，填满卡片高度不显空洞 */}
+            <div className="flex flex-wrap items-center gap-2 border-b py-3">
               <CheckCircle2 className="size-4 text-success" />
-              <span>{t('engine.ready')}</span>
+              <span className="font-medium">{t('engine.ready')}</span>
               {health.engineVersion && (
                 <Badge variant="secondary" className="font-normal">
                   v{health.engineVersion}
@@ -124,77 +125,82 @@ export default function EngineCard({ health, scanRunning, onUpgraded }: EngineCa
                   </span>
                 )}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="border-b py-3 text-xs text-muted-foreground">
               {t('engine.source', {
                 source: health.engineSourceLabel ?? health.engineSource ?? t('engine.sourceUnknown'),
               })}
             </p>
 
-            {!managed && (
-              <p className="text-xs text-muted-foreground">{t('engine.selfManaged')}</p>
-            )}
-
-            {managed && running && (
-              <div className="space-y-1">
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>
-                    {t(`engine.${upgrade?.phase ?? 'downloading'}`)}…
-                    {upgrade?.to ? t('engine.upgradeTarget', { version: upgrade.to }) : ''}
-                  </span>
-                  <span className="tabular-nums">{upgrade?.percent ?? 0}%</span>
-                </div>
-                <Progress value={upgrade?.percent ?? 0} />
-              </div>
-            )}
-
-            {managed && !running && upgrade?.state === 'error' && (
-              <p className="text-xs text-destructive">{upgrade.message}</p>
-            )}
-
-            {managed && !running && upgrade?.state === 'done' && (
-              <p className="text-xs text-success">{upgrade.message}</p>
-            )}
-
-            {managed && !running && update?.updateAvailable && (
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs text-warning">
-                  {t('engine.newVersion', { version: update.latest })}
-                </span>
-                <Button
-                  size="sm"
-                  className="h-7 gap-1 px-2 text-xs"
-                  disabled={!update.canUpgrade || scanRunning || running}
-                  onClick={() => void startUpgrade()}
-                  title={scanRunning ? t('engine.upgradeBlockedTitle') : undefined}
-                >
-                  <DownloadCloud className="size-3.5" />
-                  {t('engine.upgrade')}
-                </Button>
-                {scanRunning && update.canUpgrade && (
-                  <span className="text-xs text-muted-foreground">{t('engine.upgradeBlockedByScan')}</span>
-                )}
-                {!update.canUpgrade && update.reason && (
-                  <span className="text-xs text-muted-foreground">{update.reason}</span>
-                )}
-              </div>
-            )}
-
-            {managed &&
-              update &&
-              !update.updateAvailable &&
-              !update.error &&
-              upgrade?.state !== 'done' && (
-                <p className="text-xs text-muted-foreground">{update.reason ?? t('engine.upToDate')}</p>
+            <div className="space-y-2 py-3">
+              {!managed && (
+                <p className="text-xs text-muted-foreground">{t('engine.selfManaged')}</p>
               )}
 
-            {update?.error && (
-              <p className="break-words text-xs text-muted-foreground">
-                {t('engine.checkFailed', { error: update.error })}
-              </p>
-            )}
+              {managed && running && (
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>
+                      {t(`engine.${upgrade?.phase ?? 'downloading'}`)}…
+                      {upgrade?.to ? t('engine.upgradeTarget', { version: upgrade.to }) : ''}
+                    </span>
+                    <span className="tabular-nums">{upgrade?.percent ?? 0}%</span>
+                  </div>
+                  <Progress value={upgrade?.percent ?? 0} />
+                </div>
+              )}
+
+              {managed && !running && upgrade?.state === 'error' && (
+                <p className="text-xs text-destructive">{upgrade.message}</p>
+              )}
+
+              {managed && !running && upgrade?.state === 'done' && (
+                <p className="text-xs text-success">{upgrade.message}</p>
+              )}
+
+              {managed && !running && update?.updateAvailable && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-medium text-warning">
+                    {t('engine.newVersion', { version: update.latest })}
+                  </span>
+                  <Button
+                    size="sm"
+                    className="h-7 gap-1 px-2 text-xs"
+                    disabled={!update.canUpgrade || scanRunning || running}
+                    onClick={() => void startUpgrade()}
+                    title={scanRunning ? t('engine.upgradeBlockedTitle') : undefined}
+                  >
+                    <DownloadCloud className="size-3.5" />
+                    {t('engine.upgrade')}
+                  </Button>
+                  {scanRunning && update.canUpgrade && (
+                    <span className="text-xs text-muted-foreground">{t('engine.upgradeBlockedByScan')}</span>
+                  )}
+                  {!update.canUpgrade && update.reason && (
+                    <span className="text-xs text-muted-foreground">{update.reason}</span>
+                  )}
+                </div>
+              )}
+
+              {managed &&
+                update &&
+                !update.updateAvailable &&
+                !update.error &&
+                upgrade?.state !== 'done' && (
+                  <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <CheckCircle2 className="size-3.5 text-success" />
+                    {update.reason ?? t('engine.upToDate')}
+                  </p>
+                )}
+
+              {update?.error && (
+                <p className="break-words text-xs text-muted-foreground">
+                  {t('engine.checkFailed', { error: update.error })}
+                </p>
+              )}
+            </div>
           </>
         ) : (
-          <div className="space-y-1">
+          <div className="space-y-1 py-3">
             <div className="flex items-center gap-2">
               <XCircle className="size-4 text-destructive" />
               <span>{t('engine.unavailable')}</span>
