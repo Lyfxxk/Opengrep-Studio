@@ -46,8 +46,10 @@ export interface EngineUpgradeState {
   finishedAt?: string;
 }
 
-/** GitHub 匿名接口限额 60 次/小时，检查结果缓存 10 分钟，避免看板轮询把配额打光 */
-const CHECK_TTL_MS = 10 * 60_000;
+/** GitHub 匿名接口限额 60 次/小时，成功结果缓存 30 分钟，避免看板轮询把配额打光 */
+const CHECK_TTL_MS = 30 * 60_000;
+/** 失败结果（403 限流 / 网络错误）短缓存 5 分钟：不反复打上游，但也不会把旧错误卡太久 */
+const FAILURE_TTL_MS = 5 * 60_000;
 
 let cachedCheck: { at: number; info: EngineUpdateInfo } | undefined;
 
@@ -118,7 +120,8 @@ async function buildUpdateInfo(): Promise<EngineUpdateInfo> {
 
 /** 检查更新（force=true 跳过缓存，界面"检查更新"按钮用） */
 export async function checkEngineUpdate(force = false): Promise<EngineUpdateInfo> {
-  if (!force && cachedCheck && Date.now() - cachedCheck.at < CHECK_TTL_MS) {
+  const ttl = cachedCheck?.info.error ? FAILURE_TTL_MS : CHECK_TTL_MS;
+  if (!force && cachedCheck && Date.now() - cachedCheck.at < ttl) {
     return cachedCheck.info;
   }
   const info = await buildUpdateInfo();
