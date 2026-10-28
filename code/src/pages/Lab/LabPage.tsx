@@ -16,6 +16,7 @@ import { useTheme } from 'next-themes';
 import { yaml as yamlLanguage } from '@codemirror/lang-yaml';
 import { javascript as jsLanguage } from '@codemirror/lang-javascript';
 import { python as pythonLanguage } from '@codemirror/lang-python';
+import type { ViewUpdate } from '@codemirror/view';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -195,7 +196,9 @@ function SampleEditor({
   return (
     <CodeMirror
       value={value}
-      onChange={onChange}
+      onUpdate={(update: ViewUpdate) => {
+        if (update.docChanged) onChange(update.state.doc.toString());
+      }}
       extensions={extensions}
       theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
       height="26vh"
@@ -627,7 +630,9 @@ export default function LabPage() {
           <CardContent>
             <CodeMirror
               value={draft.yaml}
-              onChange={(value) => setDraft((prev) => ({ ...prev, yaml: value }))}
+              onUpdate={(update: ViewUpdate) => {
+                if (update.docChanged) setDraft((prev) => ({ ...prev, yaml: update.state.doc.toString() }));
+              }}
               extensions={[yamlLanguage()]}
               theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
               height="46vh"
