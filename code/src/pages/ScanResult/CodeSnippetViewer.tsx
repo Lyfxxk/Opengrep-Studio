@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BookOpen, FileCode2, Loader2, MousePointerClick, ShieldCheck } from 'lucide-react';
+import { BookOpen, FileCode2, Loader2, MousePointerClick, ShieldCheck, WrapText } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
@@ -32,6 +32,7 @@ export default function CodeSnippetViewer({
   const [snippet, setSnippet] = useState<ICodeSnippet | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [wrap, setWrap] = useState(false);
   const messageMap = useRuleMessageMap();
 
   useEffect(() => {
@@ -97,6 +98,15 @@ export default function CodeSnippetViewer({
             </Badge>
           )}
           <span className="ml-auto flex shrink-0 items-center gap-1.5">
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn('h-7 gap-1 px-2 text-xs', wrap && 'text-primary')}
+              onClick={() => setWrap((prev) => !prev)}
+              title={t(wrap ? 'snippet.wrapOff' : 'snippet.wrapOn')}
+            >
+              <WrapText className="size-3.5" />
+            </Button>
             {onOpenKnowledge && (
               <Button
                 variant="ghost"
@@ -175,7 +185,8 @@ export default function CodeSnippetViewer({
                     </span>
                     <code
                       className={cn(
-                        'whitespace-pre px-3',
+                        'min-w-0 px-3',
+                        wrap ? 'whitespace-pre-wrap break-all' : 'whitespace-pre',
                         highlighted && 'font-medium text-foreground',
                       )}
                     >
