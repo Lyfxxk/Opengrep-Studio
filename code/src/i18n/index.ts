@@ -36,8 +36,13 @@ function detectLanguage(tag: string): AppLanguage {
 }
 
 function resolveInitialLanguage(): AppLanguage {
-  const stored = localStorage.getItem(LANG_STORAGE_KEY);
-  if (isAppLanguage(stored)) return stored;
+  // 隐身模式/禁存储环境读取 localStorage 会抛异常，本函数在模块加载期被调用，未捕获会整站白屏
+  try {
+    const stored = localStorage.getItem(LANG_STORAGE_KEY);
+    if (isAppLanguage(stored)) return stored;
+  } catch (error) {
+    console.error('读取语言偏好失败:', String(error));
+  }
   // 手动切换入口落地前：中文环境用中文，其余默认英文（面向开源传播）
   return detectLanguage(navigator.language || '');
 }
