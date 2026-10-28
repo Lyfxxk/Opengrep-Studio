@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import net from 'node:net';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import process from 'node:process';
 
 const HOST = '127.0.0.1';
@@ -52,11 +52,29 @@ const concurrentBin = path.join(
   rootDir, 'node_modules', 'concurrently', concurrentPkg.bin.concurrently,
 );
 
+const isWin = process.platform === 'win32';
+
+/** 结束整棵子进程树：Windows 用 taskkill /T，POSIX 结束独立进程组 */
+function killTree(pid) {
+  if (!pid) return;
+  if (isWin) {
+    // 用绝对路径：部分受限环境（IDE/AI 终端）的 PATH 里没有 System32，直接 taskkill 会解析失败
+    const taskkill = path.join(process.env.SystemRoot ?? 'C:\\Windows', 'System32', 'taskkill.exe');
+    spawnSync(taskkill, ['/PID', String(pid), '/T', '/F'], { stdio: 'ignore' });
+    return;
+  }
+  try {
+    // POSIX 下父子同组：终端关闭时系统会把 SIGHUP 发给整组，这里只需补一刀给直接子进程
+    process.kill(pid, 'SIGTERM');
+  } catch {
+  }
+}
+
 const child = spawn(
   process.execPath,
   [
     concurrentBin,
-    '--kill-others', // 本组任一进程退出即结束另一半：关掉 bat 窗口仍然整组停止
+    '--kill-others', // 本组任一进程退出即结束另一半
     '-n', 'server,web',
     '-c', 'blue,green',
     'npm --prefix server run dev',
@@ -68,4 +86,37 @@ const child = spawn(
     env: { ...process.env, PORT: String(backendPort), API_TARGET: `http://${HOST}:${backendPort}` },
   },
 );
-child.on('exit', (code) => process.exit(code ?? 1));
+
+// 关窗口/被强杀时 dev.mjs 来不及执行收尾，Windows 会把孙进程留成孤儿。
+// 挂一个 detached 哨兵：父进程消失后由它按仓库路径清理整棵 dev 进程树。
+if (isWin) {
+  const reaper = spawn(
+    process.execPath,
+    [
+      path.join(rootDir, 'server', 'scripts', 'dev-reaper.mjs'),
+      String(process.pid),
+      rootDir,
+    ],
+    { detached: true, stdio: 'ignore', windowsHide: true },
+  );
+  reaper.unref();
+}
+
+let exiting = false;
+function shutdown(code) {
+  if (exiting) return;
+  exiting = true;
+  killTree(child.pid);
+  process.exit(code);
+}
+
+child.on('exit', (code) => shutdown(code ?? 1));
+
+// Ctrl+C / 关窗 / 系统注销：先收掉整棵树再退出，避免 tsx watch 继续重启子进程
+for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP', 'SIGBREAK']) {
+  try {
+    process.on(signal, () => shutdown(0));
+  } catch {
+    // 当前平台不支持该信号时忽略
+  }
+}
