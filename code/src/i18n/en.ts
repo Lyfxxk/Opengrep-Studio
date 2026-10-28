@@ -28,7 +28,8 @@ const en: typeof zh = {
     language: 'Switch language',
   },
   lang: {
-    zh: '中文',
+    zh: '简体中文',
+    zhHant: '繁體中文',
     en: 'English',
   },
   common: {
