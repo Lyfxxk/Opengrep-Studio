@@ -22,6 +22,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import BatchDeleteBar from '@/components/BatchDeleteBar';
 import BatchDeleteConfirm from '@/components/BatchDeleteConfirm';
 import { useRowSelection } from '@/lib/useRowSelection';
+import { usePagedList } from '@/lib/usePagedList';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -49,7 +50,6 @@ export default function ProjectsPage() {
   const [editingProject, setEditingProject] = useState<IProject | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<IProject | null>(null);
   const [keyword, setKeyword] = useState('');
-  const [page, setPage] = useState(1);
   const selection = useRowSelection(projects.map((project) => project.id));
   const [batchConfirmOpen, setBatchConfirmOpen] = useState(false);
   const [batchDeleting, setBatchDeleting] = useState(false);
@@ -66,12 +66,10 @@ export default function ProjectsPage() {
     );
   }, [projects, keyword]);
 
-  const pageCount = Math.max(1, Math.ceil(filteredProjects.length / pageSize));
-  const safePage = Math.min(page, pageCount);
-  useEffect(() => {
-    setPage(safePage);
-  }, [safePage]);
-  const pagedProjects = filteredProjects.slice((safePage - 1) * pageSize, safePage * pageSize);
+  const { page: safePage, setPage, pageCount, slice: pagedProjects } = usePagedList(
+    filteredProjects,
+    pageSize,
+  );
 
   const refresh = useCallback(async () => {
     try {

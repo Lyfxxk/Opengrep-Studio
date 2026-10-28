@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/table';
 import RulePackCell from '@/components/RulePackCell';
 import { attachProjectNames, type ScanWithProject } from '@/lib/scans';
+import { usePagedList } from '@/lib/usePagedList';
 import { formatDateTime } from '@/lib/format';
 import type { IProject } from '@/data/projects';
 import { api } from '@/lib/api';
@@ -34,7 +35,6 @@ export default function ReportsCenterPage() {
   const [projects, setProjects] = useState<IProject[]>([]);
   const [filterProjectId, setFilterProjectId] = useState('all');
   const [keyword, setKeyword] = useState('');
-  const [page, setPage] = useState(1);
 
   const load = useCallback(async () => {
     try {
@@ -71,12 +71,7 @@ export default function ReportsCenterPage() {
 
   // 页码夹取：删除 / 新增行后不落在空页上
   const pageSize = 20;
-  const pageCount = Math.max(1, Math.ceil(filteredRows.length / pageSize));
-  const safePage = Math.min(page, pageCount);
-  useEffect(() => {
-    setPage(safePage);
-  }, [safePage]);
-  const pagedRows = filteredRows.slice((safePage - 1) * pageSize, safePage * pageSize);
+  const { page: safePage, setPage, pageCount, slice: pagedRows } = usePagedList(filteredRows, pageSize);
 
   return (
     <div className="space-y-6">
