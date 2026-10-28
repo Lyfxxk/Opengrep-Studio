@@ -67,6 +67,8 @@ export default function DashboardPage() {
 
   // 序号守卫：interval 与 visibilitychange 可能并发触发 load，慢的旧响应后到不能覆盖新数据
   const loadSeqRef = useRef(0);
+  // 风险速览拉取键：记录上次重拉 issues 时的输入签名，键不变就跳过重拉
+  const riskKeyRef = useRef<string | null>(null);
 
   const load = useCallback(async () => {
     const seq = ++loadSeqRef.current;
@@ -80,7 +82,11 @@ export default function DashboardPage() {
     setLoadFailed([projectRes, scanRes, packRes].some((res) => res.status === 'rejected'));
     // 失败保持 null（未加载态）：渲染成空数组会把失败伪装成"零数据/尚未建档"
     setProjects(projectRes.status === 'fulfilled' ? projectRes.value : null);
-    setScans(scanRes.status === 'fulfilled' ? scanRes.value : null);
+    setScans((prev) => {
+      if (scanRes.status !== 'fulfilled') return null;
+      // 基础数据未变时保留旧引用：轮询每轮换新数组会连锁重算 latestByProject 等下游 memo 与渲染
+      return JSON.stringify(prev) === JSON.stringify(scanRes.value) ? prev : scanRes.value;
+    });
     setPacks(packRes.status === 'fulfilled' ? packRes.value : null);
     setHealth(healthRes.status === 'fulfilled' ? healthRes.value : null);
   }, []);
@@ -123,7 +129,18 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!projects) return;
-    let mounted = true;
+    // 拉取键 = 项目集合 + 项目名 + 各项目最新已完成扫描 id：速览条目的渲染输入只有这三样，
+    // issues 内容只随最新扫描 id 变化，键不变就跳过重拉（needMeta 思路，参照 ScanResultPage），
+    // 避免轮询带来的新数组引用让每个项目每轮都白发一次 listIssues
+    const key = JSON.stringify(
+      projects.map((project) => [
+        project.id,
+        project.name,
+        latestByProject.get(project.id)?.id ?? null,
+      ]),
+    );
+    if (key === riskKeyRef.current) return;
+    riskKeyRef.current = key;
     void (async () => {
       const entries = await Promise.all(
         projects.map(async (project) => {
@@ -136,11 +153,10 @@ export default function DashboardPage() {
           return { project, latestScan: latest, issues };
         }),
       );
-      if (mounted) setRisks(entries);
+      // 键守卫代替组件挂载标记：慢的旧响应后到时键已过期不能覆盖新数据（与 loadSeqRef 同型）；
+      // 同键的并发重跑产生等价结果，后到覆盖无害，因此不做"仅挂载期生效"的丢弃
+      if (riskKeyRef.current === key) setRisks(entries);
     })();
-    return () => {
-      mounted = false;
-    };
   }, [projects, latestByProject]);
 
   const completedScans = useMemo(
