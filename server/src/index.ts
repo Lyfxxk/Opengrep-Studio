@@ -95,7 +95,7 @@ import {
 } from './pack-format.js';
 import { buildSarifReport } from './sarif.js';
 import { parseSarifImport } from './sarif-import.js';
-import { buildReportData, renderReportHtml } from './report.js';
+import { buildReportData, renderReportHtml, type ReportLang } from './report.js';
 import {
   applyBaselineComparison,
   enqueueScan,
@@ -1464,10 +1464,10 @@ app.get('/api/scans/:scanId/report', asyncHandler(async (req, res) => {
   const format = String(req.query.format ?? 'json');
   if (format === 'html') {
     const includeSnippets = req.query.detail !== 'summary';
-    // 与知识库同一口径：只认已支持的两种语言，其余回落简体
-    const lang = req.query.lang === 'zh-Hant' ? 'zh-Hant' : 'zh';
+    const lang = parseProductLang(req.query.lang);
     const html = renderReportHtml(data, issues, { includeSnippets }, lang);
-    const fileName = `${lang === 'zh-Hant' ? '測試報告' : '测试报告'}-${project.name}-${scan.id}.html`;
+    const prefix = lang === 'zh-Hant' ? '測試報告' : lang === 'en' ? 'test-report' : '测试报告';
+    const fileName = `${prefix}-${project.name}-${scan.id}.html`;
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader(
       'Content-Disposition',
@@ -1556,12 +1556,17 @@ app.post(
   }),
 );
 
+/** 报告/清单共用的语言参数：只认 zh / zh-Hant / en，其余一律回落简体 */
+function parseProductLang(value: unknown): ReportLang {
+  return value === 'zh-Hant' ? 'zh-Hant' : value === 'en' ? 'en' : 'zh';
+}
+
 /** 扫描可复现清单：源码哈希 + 完整引擎命令行 + 规则文件哈希 + 引擎参数快照 */
 app.get('/api/scans/:scanId/manifest', asyncHandler(async (req, res) => {
   const scan = requireScan(req.params.scanId);
   const project = getProject(scan.projectId);
   const engineVersion = scan.engineVersion ?? (await getEngineVersion());
-  const lang = req.query.lang === 'zh-Hant' ? 'zh-Hant' : 'zh';
+  const lang = parseProductLang(req.query.lang);
   res.json({
     scanId: scan.id,
     projectId: scan.projectId,
@@ -1578,7 +1583,9 @@ app.get('/api/scans/:scanId/manifest', asyncHandler(async (req, res) => {
       algorithm:
         lang === 'zh-Hant'
           ? 'sha256（按相對路徑排序，對 路徑 + \\0 + 檔案內容 + \\0 序列計算）'
-          : 'sha256（按相对路径排序，对 路径 + \\0 + 文件内容 + \\0 序列计算）',
+          : lang === 'en'
+            ? 'sha256 (paths sorted, then hash the path + \\0 + file content + \\0 sequence)'
+            : 'sha256（按相对路径排序，对 路径 + \\0 + 文件内容 + \\0 序列计算）',
       sha256: scan.srcHash ?? null,
       fileCount: scan.fileCount,
     },
