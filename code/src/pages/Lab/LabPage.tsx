@@ -12,6 +12,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import CodeMirror from '@uiw/react-codemirror';
+import { useTheme } from 'next-themes';
 import { yaml as yamlLanguage } from '@codemirror/lang-yaml';
 import { javascript as jsLanguage } from '@codemirror/lang-javascript';
 import { python as pythonLanguage } from '@codemirror/lang-python';
@@ -183,6 +184,8 @@ function SampleEditor({
   onChange: (value: string) => void;
   language: string;
 }) {
+  // CodeMirror 不读 CSS 变量，必须显式给主题名，否则深色下是白底配浅色字（代码几乎看不见）
+  const { resolvedTheme } = useTheme();
   const ext = sampleLanguageExtension(language);
   const extensions = useMemo(() => {
     if (ext === 'python') return [pythonLanguage()];
@@ -194,6 +197,7 @@ function SampleEditor({
       value={value}
       onChange={onChange}
       extensions={extensions}
+      theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
       height="26vh"
       className="overflow-hidden rounded-md border text-xs [&_.cm-editor]:text-xs"
     />
@@ -274,6 +278,8 @@ function engineLangToPackLabel(engineLang: string): string | undefined {
 
 export default function LabPage() {
   const { t } = useTranslation();
+  // 规则 YAML 编辑器与样本编辑器同源取主题，避免两处各判一次深浅
+  const { resolvedTheme } = useTheme();
   const [draft, setDraft] = useState<LabDraft>(loadDraft);
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<RuleLabRunResult | null>(null);
@@ -623,6 +629,7 @@ export default function LabPage() {
               value={draft.yaml}
               onChange={(value) => setDraft((prev) => ({ ...prev, yaml: value }))}
               extensions={[yamlLanguage()]}
+              theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
               height="46vh"
               className="overflow-hidden rounded-md border text-xs [&_.cm-editor]:text-xs"
             />
