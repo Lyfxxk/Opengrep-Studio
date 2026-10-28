@@ -26,6 +26,11 @@ import {
   savePackContents,
 } from '@/lib/storage';
 
+/** 当前界面语言 → 服务端产物语言：服务端只提供简繁两份资源，其余语言统一回落简体 */
+function productLang(): string {
+  return (i18n.resolvedLanguage ?? i18n.language).startsWith('zh-Hant') ? 'zh-Hant' : 'zh';
+}
+
 // 演示模式开关：只认显式的 'true' / '1'，避免 VITE_USE_MOCK=false 被 Boolean('false') 误判为开
 export const USE_MOCK = ['true', '1'].includes(
   (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_USE_MOCK ?? '',
@@ -489,8 +494,7 @@ export const api = {
 
   /** 自包含 HTML 报告的下载地址（含严重/高危问题的代码片段）：带上当前语言，报告正文与文件名同步本地化 */
   scanReportHtmlUrl(scanId: string): string {
-    const lang = (i18n.resolvedLanguage ?? i18n.language).startsWith('zh-Hant') ? 'zh-Hant' : 'zh';
-    return `/api/scans/${scanId}/report?format=html&lang=${lang}`;
+    return `/api/scans/${scanId}/report?format=html&lang=${productLang()}`;
   },
 
 
@@ -990,6 +994,6 @@ export const api = {
 
   /** 扫描可复现清单（源码哈希 + 引擎命令行 + 规则哈希 + 参数快照） */
   scanManifestUrl(scanId: string): string {
-    return `/api/scans/${scanId}/manifest`;
+    return `/api/scans/${scanId}/manifest?lang=${productLang()}`;
   },
 };

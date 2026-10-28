@@ -1561,6 +1561,7 @@ app.get('/api/scans/:scanId/manifest', asyncHandler(async (req, res) => {
   const scan = requireScan(req.params.scanId);
   const project = getProject(scan.projectId);
   const engineVersion = scan.engineVersion ?? (await getEngineVersion());
+  const lang = req.query.lang === 'zh-Hant' ? 'zh-Hant' : 'zh';
   res.json({
     scanId: scan.id,
     projectId: scan.projectId,
@@ -1574,7 +1575,10 @@ app.get('/api/scans/:scanId/manifest', asyncHandler(async (req, res) => {
       binary: path.resolve(config.opengrepBin),
     },
     source: {
-      algorithm: 'sha256（按相对路径排序，对 路径 + \\0 + 文件内容 + \\0 序列计算）',
+      algorithm:
+        lang === 'zh-Hant'
+          ? 'sha256（按相對路徑排序，對 路徑 + \\0 + 檔案內容 + \\0 序列計算）'
+          : 'sha256（按相对路径排序，对 路径 + \\0 + 文件内容 + \\0 序列计算）',
       sha256: scan.srcHash ?? null,
       fileCount: scan.fileCount,
     },
