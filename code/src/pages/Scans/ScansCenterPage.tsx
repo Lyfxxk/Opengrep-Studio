@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Eye, FileText, GitCompareArrows, RefreshCw } from 'lucide-react';
+import { Eye, FileText, GitCompareArrows } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import Pagination from '@/components/Pagination';
 import {
   Table,
   TableBody,
@@ -28,7 +29,7 @@ export default function ScansCenterPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [scans, setScans] = useState<ScanWithProject[] | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
+  const [page, setPage] = useState(1);
   const [compareScanId, setCompareScanId] = useState<string | null>(null);
   const [batchConfirmOpen, setBatchConfirmOpen] = useState(false);
   const [batchDeleting, setBatchDeleting] = useState(false);
@@ -54,6 +55,16 @@ export default function ScansCenterPage() {
   }, [load]);
 
   const hasScanning = useMemo(() => (scans ?? []).some((scan) => scan.status === 'scanning'), [scans]);
+
+  // 分页：扫描进行中的轮询会频繁重刷列表，页码夹取保证删行 / 新增后不落在空页上
+  const pageSize = 20;
+  const scanCount = scans?.length ?? 0;
+  const pageCount = Math.max(1, Math.ceil(scanCount / pageSize));
+  const safePage = Math.min(page, pageCount);
+  useEffect(() => {
+    setPage(safePage);
+  }, [safePage]);
+  const pagedScans = (scans ?? []).slice((safePage - 1) * pageSize, safePage * pageSize);
 
   // 有扫描进行中时轮询刷新，全部落定后停止
   useEffect(() => {
@@ -91,19 +102,6 @@ export default function ScansCenterPage() {
           <h1 className="text-xl font-semibold">{t('nav.scans')}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{t('scans.subtitle')}</p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-1"
-          disabled={refreshing}
-          onClick={() => {
-            setRefreshing(true);
-            void load().finally(() => setRefreshing(false));
-          }}
-        >
-          <RefreshCw className={refreshing ? 'size-3.5 animate-spin' : 'size-3.5'} />
-          {t('scans.refresh')}
-        </Button>
       </div>
 
       <BatchDeleteBar
@@ -148,7 +146,7 @@ export default function ScansCenterPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {scans.map((scan) => {
+              {pagedScans.map((scan) => {
                 const done = scan.status === 'completed';
                 return (
                   <TableRow
@@ -226,6 +224,10 @@ export default function ScansCenterPage() {
             </TableBody>
           </Table>
         </div>
+      )}
+
+      {(scans?.length ?? 0) > pageSize && (
+        <Pagination page={safePage} pageCount={pageCount} onPage={setPage} />
       )}
 
       {compareScanId && (

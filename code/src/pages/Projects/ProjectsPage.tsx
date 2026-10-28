@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { formatDateTime } from '@/lib/format';
 import { FolderOpen, MoreHorizontal, Pencil, Plus, Trash2 } from 'lucide-react';
+import Pagination from '@/components/Pagination';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,9 +47,19 @@ export default function ProjectsPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<IProject | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<IProject | null>(null);
+  const [page, setPage] = useState(1);
   const selection = useRowSelection(projects.map((project) => project.id));
   const [batchConfirmOpen, setBatchConfirmOpen] = useState(false);
   const [batchDeleting, setBatchDeleting] = useState(false);
+
+  // 页码夹取：删除 / 新建后不落在空页上
+  const pageSize = 20;
+  const pageCount = Math.max(1, Math.ceil(projects.length / pageSize));
+  const safePage = Math.min(page, pageCount);
+  useEffect(() => {
+    setPage(safePage);
+  }, [safePage]);
+  const pagedProjects = projects.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   const refresh = useCallback(async () => {
     try {
@@ -181,7 +192,7 @@ export default function ProjectsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {projects.map((project) => (
+                  {pagedProjects.map((project) => (
                     <TableRow key={project.id}>
                       <TableCell className="w-10">
                         <Checkbox
@@ -236,6 +247,10 @@ export default function ProjectsPage() {
           )}
         </CardContent>
       </Card>
+
+      {projects.length > pageSize && (
+        <Pagination page={safePage} pageCount={pageCount} onPage={setPage} />
+      )}
 
       <NewProjectDialog
         open={createOpen}

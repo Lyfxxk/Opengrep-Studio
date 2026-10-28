@@ -8,6 +8,7 @@ import type { IIssue } from '@/data/issues';
 import { REVIEW_BADGE_CLASS } from '@/data/issues';
 import type { ICodeSnippet } from '@/data/codesnippets';
 import { api } from '@/lib/api';
+import { usePackDisplayName } from '@/lib/packName';
 import { lookupRuleMessage, useRuleMessageMap } from '@/lib/ruleMessages';
 import { SEVERITY_BADGE_CLASS } from '@/lib/severity';
 import { cn } from '@/lib/utils';
@@ -27,6 +28,7 @@ export default function CodeSnippetViewer({
   onOpenKnowledge,
 }: CodeSnippetViewerProps) {
   const { t } = useTranslation();
+  const packDisplayName = usePackDisplayName();
   const [snippet, setSnippet] = useState<ICodeSnippet | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -117,7 +119,10 @@ export default function CodeSnippetViewer({
         <CardDescription className="text-xs">
           <span className="font-mono">{issue.ruleId}</span>
           {issue.rulepackName && (
-            <span className="text-foreground/60"> · {issue.rulepackName}</span>
+            <span className="text-foreground/60">
+              {' · '}
+              {packDisplayName(issue.rulepackName, issue.rulepackId)}
+            </span>
           )}
           {' · '}
           {lookupRuleMessage(messageMap, issue.ruleId, issue.message)}

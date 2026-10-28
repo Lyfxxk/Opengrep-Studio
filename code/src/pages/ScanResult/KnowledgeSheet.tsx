@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/sheet';
 import type { IKnowledgeSample, IRuleKnowledge } from '@/data/diffs';
 import { type IIssue } from '@/data/issues';
+import { usePackDisplayName } from '@/lib/packName';
 import { api } from '@/lib/api';
 
 interface KnowledgeSheetProps {
@@ -48,6 +49,7 @@ function SampleBlock({ title, samples }: { title: string; samples: IKnowledgeSam
 /** 规则知识抽屉：中文说明 + CWE/OWASP 中文解释 + 修复建议 + 命中统计 + 上游溯源 + 样本 */
 export default function KnowledgeSheet({ ruleId, onClose }: KnowledgeSheetProps) {
   const { t, i18n } = useTranslation();
+  const packDisplayName = usePackDisplayName();
   const [knowledge, setKnowledge] = useState<IRuleKnowledge | null>(null);
   const [loading, setLoading] = useState(false);
   // 知识库只有简繁两份：繁体走 zh-Hant，其余统一用简体
@@ -128,7 +130,7 @@ export default function KnowledgeSheet({ ruleId, onClose }: KnowledgeSheetProps)
                 )}
                 {knowledge.pack && (
                   <Badge variant="secondary" className="font-normal">
-                    {t('knowledge.packSource', { name: knowledge.pack.name })}
+                    {t('knowledge.packSource', { name: packDisplayName(knowledge.pack.name, knowledge.pack.id) })}
                     {knowledge.pack.builtin ? t('knowledge.packBuiltinSuffix') : ''}
                   </Badge>
                 )}

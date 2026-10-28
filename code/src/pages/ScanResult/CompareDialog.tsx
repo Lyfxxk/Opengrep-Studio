@@ -15,7 +15,9 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
@@ -142,14 +144,24 @@ export default function CompareDialog({ scanId, onClose }: CompareDialogProps) {
               <SelectValue placeholder={t('compare.targetPlaceholder')} />
             </SelectTrigger>
             <SelectContent>
-              {(candidates ?? []).map((scan) => (
-                <SelectItem key={scan.id} value={scan.id}>
-                  {t('compare.targetItem', {
-                    project: scan.projectName,
-                    id: scan.id,
-                    time: formatDateTime(scan.scannedAt),
-                  })}
-                </SelectItem>
+              {Object.entries(
+                (candidates ?? []).reduce<Record<string, ScanWithProject[]>>((acc, scan) => {
+                  // 接口按时间倒序返回，这里保持遇到顺序即可：组按最近扫描排前，组内时间倒序
+                  (acc[scan.projectName ?? scan.projectId] ??= []).push(scan);
+                  return acc;
+                }, {}),
+              ).map(([project, groupScans]) => (
+                <SelectGroup key={project}>
+                  <SelectLabel>{project}</SelectLabel>
+                  {groupScans.map((scan) => (
+                    <SelectItem key={scan.id} value={scan.id}>
+                      {t('compare.targetItem', {
+                        id: scan.id,
+                        time: formatDateTime(scan.scannedAt),
+                      })}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
               ))}
             </SelectContent>
           </Select>

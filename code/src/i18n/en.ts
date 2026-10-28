@@ -50,6 +50,25 @@ const en: typeof zh = {
     all: 'All',
     close: 'Close',
   },
+  pagination: {
+    prev: 'Previous',
+    next: 'Next',
+    pageOf: 'Page {{page}} / {{total}}',
+  },
+  packNames: {
+    'builtin-bash': 'Bash built-in security pack',
+    'builtin-c': 'C built-in security pack',
+    'builtin-csharp': 'C# built-in security pack',
+    'builtin-dockerfile': 'Dockerfile built-in security pack',
+    'builtin-go': 'Go built-in security pack',
+    'builtin-java': 'Java built-in security pack',
+    'builtin-js-ts': 'JavaScript / TypeScript built-in security pack',
+    'builtin-kotlin': 'Kotlin built-in security pack',
+    'builtin-php': 'PHP built-in security pack',
+    'builtin-python': 'Python built-in security pack',
+    'builtin-rust': 'Rust built-in security pack',
+    'builtin-swift': 'Swift built-in security pack',
+  },
   review: {
     title: 'Manual review',
     verdictLabel: 'Verdict',
@@ -65,13 +84,15 @@ const en: typeof zh = {
     fingerprintMissing: 'This issue has no fingerprint (older scan record) and cannot be reviewed — rescan and try again.',
     reasonRequired: 'A reason is required for false positive / accepted verdicts, as audit evidence.',
     savedToast: 'Review verdict saved — future scans inherit it automatically.',
+    resetBtn: 'Reset review',
+    resetToast: 'Review verdict cleared; the issue is back to pending.',
   },
   compare: {
     title: 'Two-snapshot diff',
     subtitle:
       'Compare the current scan with any completed scan (even from another project): issues are matched by fingerprint, files by snapshot content.',
     targetPlaceholder: 'Pick a scan to compare against…',
-    targetItem: '{{project}} / {{id}} ({{time}})',
+    targetItem: '{{id}} ({{time}})',
     runBtn: 'Run diff',
     engineMismatch:
       'The two scans ran on different engine versions (v{{from}} → v{{to}}): new/fixed items may come from the engine upgrade rather than code changes.',
@@ -260,7 +281,6 @@ const en: typeof zh = {
   scans: {
     subtitle:
       'Overview of every project scan: jump straight to results and reports, and diff any two completed scans (even across projects).',
-    refresh: 'Refresh',
     emptyPrefix: 'No scan records yet. Head to ',
     emptySuffix: ' to create a project, upload source, and run your first scan.',
     selectAllAria: 'Select all scans',
@@ -294,7 +314,8 @@ const en: typeof zh = {
     exportSarif: 'Export SARIF',
     exportSarifTitle: 'SARIF 2.1.0 — importable into GitHub Code Scanning / DefectDojo and other toolchains',
     genReport: 'Generate test report',
-    usedPacksPrefix: 'Rule packs used in this scan: ',
+    packsBtn: 'Rule packs of this scan',
+    packsUnit: '',
     rulesetDir: 'Ruleset directory: {{rules}}',
     failedTitle: 'This scan failed',
     failedHint: 'Go back to the project detail page, re-upload source, and start a new scan.',
@@ -583,7 +604,6 @@ const en: typeof zh = {
   },
   reports: {
     subtitle: 'Test reports for every completed scan: view online, download a self-contained offline HTML, or export a reproducible manifest.',
-    refresh: 'Refresh',
     emptyPrefix: 'No scans to report on yet. Head to the ',
     emptySuffix: ' and finish a scan to generate a test report.',
     colProject: 'Project',

@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import Pagination from '@/components/Pagination';
 import {
   Select,
   SelectContent,
@@ -16,6 +17,7 @@ import { COMPARISON_VISUALS } from '@/data/constants';
 import { lookupRuleMessage, useRuleMessageMap } from '@/lib/ruleMessages';
 import { SEVERITY_BADGE_CLASS, SEVERITY_ORDER } from '@/lib/severity';
 import { cn } from '@/lib/utils';
+import { usePackDisplayName } from '@/lib/packName';
 import { KnowledgeLink } from './KnowledgeSheet';
 
 interface IssueFilterListProps {
@@ -36,6 +38,7 @@ export default function IssueFilterList({
   const [status, setStatus] = useState('all');
   const [keyword, setKeyword] = useState('');
   const messageMap = useRuleMessageMap();
+  const packDisplayName = usePackDisplayName();
 
   const filtered = useMemo(
     () =>
@@ -62,6 +65,16 @@ export default function IssueFilterList({
     setStatus('all');
     setKeyword('');
   };
+
+  // 筛选或数据变化后页码可能越界（如筛选后只剩一页），渲染前夹回有效范围
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
+  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const safePage = Math.min(page, pageCount);
+  useEffect(() => {
+    setPage(safePage);
+  }, [safePage]);
+  const paged = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   return (
     <div className="flex h-full flex-col gap-3">
@@ -98,7 +111,7 @@ export default function IssueFilterList({
         </div>
       </div>
       <div className="text-xs text-muted-foreground">{t('issueFilter.count', { count: filtered.length })}</div>
-      <div className="flex-1 space-y-2 overflow-y-auto pr-1">
+      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
         {filtered.length === 0 ? (
           <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
             {issues.length === 0 ? (
@@ -119,7 +132,7 @@ export default function IssueFilterList({
             )}
           </div>
         ) : (
-          filtered.map((issue) => (
+          paged.map((issue) => (
             <button
               key={issue.id}
               type="button"
@@ -152,10 +165,10 @@ export default function IssueFilterList({
                 {issue.rulepackName && (
                   <Badge
                     variant="outline"
-                    className="max-w-[110px] shrink-0 truncate px-1.5 text-xs font-normal text-muted-foreground"
+                    className="min-w-0 shrink-0 px-1.5 text-xs font-normal text-muted-foreground"
                     title={t('issueFilter.packSourceTitle', { name: issue.rulepackName })}
                   >
-                    {issue.rulepackName}
+                    {packDisplayName(issue.rulepackName, issue.rulepackId)}
                   </Badge>
                 )}
                 {issue.review && (
@@ -177,7 +190,8 @@ export default function IssueFilterList({
                   </span>
                 )}
               </div>
-              <p className="mt-2 line-clamp-2 text-sm font-medium">
+              {/* 不钳制描述行数：截断会让用户漏读风险说明，整段展示（列表内滚动 + 分页控制高度） */}
+              <p className="mt-2 text-sm font-medium">
                 {lookupRuleMessage(messageMap, issue.ruleId, issue.message)}
               </p>
               <p className="mt-1 truncate font-mono text-xs text-muted-foreground">
@@ -187,6 +201,12 @@ export default function IssueFilterList({
           ))
         )}
       </div>
+      <Pagination
+        page={safePage}
+        pageCount={pageCount}
+        onPage={setPage}
+        className="shrink-0 border-t pt-2"
+      />
     </div>
   );
 }
