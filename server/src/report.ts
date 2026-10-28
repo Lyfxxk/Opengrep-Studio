@@ -114,6 +114,214 @@ const REVIEW_COLOR: Record<ReviewStatus, string> = {
   accepted: '#e8930c',
 };
 
+export type ReportLang = 'zh' | 'zh-Hant';
+
+const HANT_SEVERITY: Record<Severity, string> = {
+  critical: '嚴重',
+  high: '高危',
+  medium: '中危',
+  low: '低危',
+};
+const HANT_COMPARISON: Record<ComparisonStatus, string> = {
+  new: '新增',
+  fixed: '已修復',
+  remaining: '遺留',
+};
+const HANT_REVIEW: Record<ReviewStatus, string> = {
+  pending: '待複核',
+  confirmed: '已確認',
+  false_positive: '誤報',
+  accepted: '已接受',
+};
+
+/** 自包含 HTML 报告的界面文案：简体为原文，繁体走台灣用語；结论句按 conclusionCode 参数重拼 */
+const REPORT_TEXT_ZH = {
+  htmlLang: 'zh-CN',
+  brand: 'Opengrep Studio · 码审工作台',
+  docTitle: '代码审计测试报告',
+  titleSuffix: '测试报告',
+  severity: SEVERITY_LABEL,
+  comparison: COMPARISON_LABEL,
+  review: REVIEW_LABEL,
+  sections: {
+    summary: '一、扫描概要',
+    conclusion: '二、总体结论',
+    distribution: '三、风险分布',
+    issues: '四、问题明细',
+  },
+  meta: {
+    projectName: '项目名称',
+    projectDescription: '项目描述',
+    language: '主要语言',
+    scanId: '扫描编号',
+    scannedAt: '扫描时间',
+    duration: '引擎耗时',
+    fileCount: '检查文件数',
+    baseline: '基线扫描',
+    engine: '扫描引擎',
+    sourceHash: '源码哈希',
+    commandLine: '引擎命令行',
+    rulepacks: '生效规则包',
+    generatedAt: '报告生成时间',
+  },
+  fileCountUnit: (n: number) => `${n} 个`,
+  durationSeconds: (s: number) => `${s} 秒`,
+  durationMinutes: (m: number, s: number) => `${m} 分 ${s} 秒`,
+  totalIssues: '问题总数',
+  reviewed: '已人工复核',
+  confirmed: '复核确认',
+  falsePositive: '判定误报',
+  accepted: '有条件接受',
+  vsBaseline: '（对比基线）',
+  bySeverity: '按严重度',
+  topRules: (n: number) => `高频规则 Top ${n}`,
+  topFiles: (n: number) => `热点文件 Top ${n}`,
+  dirDist: '目录分布',
+  thRule: '规则',
+  thSeverity: '描述最高严重度',
+  thHits: '命中',
+  thPack: '规则包',
+  thFile: '文件',
+  thMaxSeverity: '最高严重度',
+  noRules: '无命中规则',
+  noFiles: '无命中文件',
+  noData: '无数据',
+  issueTableHead: ['#', '位置', '规则', '描述', '状态', '人工复核', '规则包'],
+  reviewPending: '待复核',
+  reviewerLabel: '复核人',
+  severityHeading: (label: string, count: number) => `${label}问题（${count} 项）`,
+  fixedHeading: (count: number) => `已修复（对比基线，${count} 项）`,
+  snippetOverflow: (limit: number) =>
+    `代码片段超过上限，仅展示前 ${limit} 条，其余请结合扫描结果页查看。`,
+  noIssues: '本次扫描未发现风险问题。',
+  footer: (time: string) =>
+    `本报告由 Opengrep Studio 码审工作台自动生成 · 生成时间 ${time} · 规则命中与严重度由 opengrep 引擎产出，请结合业务上下文人工复核。`,
+  summaryReview: (s: ReportReviewSummary) =>
+    ` 人工复核已完成 ${s.reviewed} 项（确认 ${s.confirmed}、误报 ${s.falsePositives}、有条件接受 ${s.accepted}）。`,
+  severityPhrase: (label: string, count: number) => `${label} ${count} 项`,
+  conclusionNoIssues: (files: string) =>
+    `本次扫描共检查 ${files} 个源码文件，未命中任何已启用规则，未发现风险问题。`,
+  conclusionSummary: (files: string, total: number, sevText: string) =>
+    `本次扫描共检查 ${files} 个源码文件，发现 ${total} 个风险问题（${sevText}）。`,
+  comparisonSentence: (baseline: string, added: number, remaining: number, fixed: number) =>
+    `与基线扫描 ${baseline} 相比：新增 ${added} 项、遗留 ${remaining} 项、已修复 ${fixed} 项。`,
+  urgentHint: (urgent: number) => `建议优先处理严重与高危问题（共 ${urgent} 项），修复后重新扫描回归验证。`,
+};
+
+const REPORT_TEXT_HANT: typeof REPORT_TEXT_ZH = {
+  htmlLang: 'zh-Hant',
+  brand: 'Opengrep Studio · 碼審工作台',
+  docTitle: '程式碼稽核測試報告',
+  titleSuffix: '測試報告',
+  severity: HANT_SEVERITY,
+  comparison: HANT_COMPARISON,
+  review: HANT_REVIEW,
+  sections: {
+    summary: '一、掃描概要',
+    conclusion: '二、總體結論',
+    distribution: '三、風險分佈',
+    issues: '四、問題明細',
+  },
+  meta: {
+    projectName: '專案名稱',
+    projectDescription: '專案描述',
+    language: '主要語言',
+    scanId: '掃描編號',
+    scannedAt: '掃描時間',
+    duration: '引擎耗時',
+    fileCount: '檢查檔案數',
+    baseline: '基線掃描',
+    engine: '掃描引擎',
+    sourceHash: '原始碼雜湊',
+    commandLine: '引擎命令列',
+    rulepacks: '生效規則包',
+    generatedAt: '報告產生時間',
+  },
+  fileCountUnit: (n: number) => `${n} 個`,
+  durationSeconds: (s: number) => `${s} 秒`,
+  durationMinutes: (m: number, s: number) => `${m} 分 ${s} 秒`,
+  totalIssues: '問題總數',
+  reviewed: '已人工複核',
+  confirmed: '複核確認',
+  falsePositive: '判定誤報',
+  accepted: '有條件接受',
+  vsBaseline: '（對比基線）',
+  bySeverity: '按嚴重度',
+  topRules: (n: number) => `高頻規則 Top ${n}`,
+  topFiles: (n: number) => `熱點檔案 Top ${n}`,
+  dirDist: '目錄分佈',
+  thRule: '規則',
+  thSeverity: '最高嚴重度',
+  thHits: '命中',
+  thPack: '規則包',
+  thFile: '檔案',
+  thMaxSeverity: '最高嚴重度',
+  noRules: '無命中規則',
+  noFiles: '無命中檔案',
+  noData: '無資料',
+  issueTableHead: ['#', '位置', '規則', '描述', '狀態', '人工複核', '規則包'],
+  reviewPending: '待複核',
+  reviewerLabel: '複核人',
+  severityHeading: (label: string, count: number) => `${label}問題（${count} 項）`,
+  fixedHeading: (count: number) => `已修復（對比基線，${count} 項）`,
+  snippetOverflow: (limit: number) =>
+    `程式碼片段超過上限，僅展示前 ${limit} 條，其餘請結合掃描結果頁查看。`,
+  noIssues: '本次掃描未發現風險問題。',
+  footer: (time: string) =>
+    `本報告由 Opengrep Studio 碼審工作台自動產生 · 產生時間 ${time} · 規則命中與嚴重度由 opengrep 引擎產出，請結合業務上下文人工複核。`,
+  summaryReview: (s: ReportReviewSummary) =>
+    ` 人工複核已完成 ${s.reviewed} 項（確認 ${s.confirmed}、誤報 ${s.falsePositives}、有條件接受 ${s.accepted}）。`,
+  severityPhrase: (label: string, count: number) => `${label} ${count} 項`,
+  conclusionNoIssues: (files: string) =>
+    `本次掃描共檢查 ${files} 個原始碼檔案，未命中任何已啟用規則，未發現風險問題。`,
+  conclusionSummary: (files: string, total: number, sevText: string) =>
+    `本次掃描共檢查 ${files} 個原始碼檔案，發現 ${total} 個風險問題（${sevText}）。`,
+  comparisonSentence: (baseline: string, added: number, remaining: number, fixed: number) =>
+    `與基線掃描 ${baseline} 相比：新增 ${added} 項、遺留 ${remaining} 項、已修復 ${fixed} 項。`,
+  urgentHint: (urgent: number) => `建議優先處理嚴重與高危問題（共 ${urgent} 項），修復後重新掃描回歸驗證。`,
+};
+
+type ReportText = typeof REPORT_TEXT_ZH;
+
+const REPORT_TEXT: Record<ReportLang, ReportText> = {
+  zh: REPORT_TEXT_ZH,
+  'zh-Hant': REPORT_TEXT_HANT,
+};
+
+/** 按 conclusionCode 的参数重拼结论句，避免繁体报告里夹一段简体 */
+function localizedConclusion(data: ReportData, text: ReportText): string {
+  const payload = data.conclusionCode;
+  const params = payload?.params ?? {};
+  const num = (key: string) => Number(params[key] ?? 0);
+  const files = params.files === undefined || params.files === 0 ? '—' : String(params.files);
+  let base: string;
+  if (!payload) {
+    // 旧扫描缺少结构化载荷，只能沿用中文结论原文
+    base = data.conclusion;
+  } else if (payload.code === 'summary') {
+    const sevText = SEVERITY_ORDER.filter((sev) => num(sev) > 0)
+      .map((sev) => text.severityPhrase(text.severity[sev], num(sev)))
+      .join('、');
+    const parts = [text.conclusionSummary(files, num('total'), sevText)];
+    if (params.baseline) {
+      parts.push(
+        text.comparisonSentence(
+          String(params.baseline),
+          num('baselineNew'),
+          num('baselineRemaining'),
+          num('baselineFixed'),
+        ),
+      );
+    }
+    if (num('urgent') > 0) parts.push(text.urgentHint(num('urgent')));
+    base = parts.join('');
+  } else {
+    base = text.conclusionNoIssues(files);
+  }
+  const review = data.reviewStats;
+  return review && review.reviewed > 0 ? `${base}${text.summaryReview(review)}` : base;
+}
+
 const TOP_RULES_LIMIT = 10;
 const TOP_FILES_LIMIT = 10;
 const TOP_DIRS_LIMIT = 8;
@@ -341,9 +549,9 @@ function formatDateTime(iso: string): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 }
 
-function formatDuration(seconds: number): string {
-  if (seconds < 60) return `${seconds} 秒`;
-  return `${Math.floor(seconds / 60)} 分 ${seconds % 60} 秒`;
+function formatDuration(seconds: number, text: ReportText): string {
+  if (seconds < 60) return text.durationSeconds(seconds);
+  return text.durationMinutes(Math.floor(seconds / 60), seconds % 60);
 }
 
 const SEVERITY_COLOR: Record<Severity, string> = {
@@ -373,6 +581,7 @@ function issueTableHtml(
   issues: Array<Issue & { review?: ReportIssueReview }>,
   snippets: Map<string, string>,
   snippetBudget: { left: number },
+  text: ReportText,
 ): string {
   const rows = issues
     .map((issue, index) => {
@@ -388,14 +597,14 @@ function issueTableHtml(
         }
       }
       const reviewTag = issue.review
-        ? `<span class="tag" style="background:${REVIEW_COLOR[issue.review.status]}1a;color:${REVIEW_COLOR[issue.review.status]}" title="${escapeHtml([`复核人：${issue.review.reviewer ?? '—'}`, issue.review.reason].filter(Boolean).join('；'))}">${REVIEW_LABEL[issue.review.status]}</span>`
-        : '<span class="tag tag-pending">待复核</span>';
+        ? `<span class="tag" style="background:${REVIEW_COLOR[issue.review.status]}1a;color:${REVIEW_COLOR[issue.review.status]}" title="${escapeHtml([`${text.reviewerLabel}：${issue.review.reviewer ?? '—'}`, issue.review.reason].filter(Boolean).join('；'))}">${text.review[issue.review.status]}</span>`
+        : `<span class="tag tag-pending">${text.reviewPending}</span>`;
       return `<tr>
           <td class="cell-num">${index + 1}</td>
           <td class="cell-mono">${escapeHtml(issue.filePath)}:${issue.startLine}</td>
           <td class="cell-mono">${escapeHtml(issue.ruleId)}</td>
           <td>${escapeHtml(issue.message)}</td>
-          <td><span class="tag tag-${issue.comparisonStatus}">${COMPARISON_LABEL[issue.comparisonStatus]}</span></td>
+          <td><span class="tag tag-${issue.comparisonStatus}">${text.comparison[issue.comparisonStatus]}</span></td>
           <td>${reviewTag}</td>
           <td class="cell-sub">${escapeHtml(issue.rulepackName ?? '—')}</td>
         </tr>${snippetHtml}`;
@@ -404,7 +613,7 @@ function issueTableHtml(
   return `
     <table class="issue-table">
       <thead>
-        <tr><th>#</th><th>位置</th><th>规则</th><th>描述</th><th>状态</th><th>人工复核</th><th>规则包</th></tr>
+        <tr>${text.issueTableHead.map((th) => `<th>${th}</th>`).join('')}</tr>
       </thead>
       <tbody>${rows}</tbody>
     </table>`;
@@ -420,8 +629,10 @@ export function renderReportHtml(
   data: ReportData,
   issues: IssueRow[],
   options: HtmlRenderOptions,
+  lang: ReportLang = 'zh',
 ): string {
   const { meta, totals, topRules, topFiles, topDirs, reviewStats } = data;
+  const text = REPORT_TEXT[lang];
   const current = issues.filter(isActiveIssue);
   const fixed = issues.filter((issue) => issue.comparisonStatus === 'fixed');
 
@@ -434,47 +645,47 @@ export function renderReportHtml(
   const snippetBudget = { left: SNIPPET_LIMIT };
 
   const severityStats = SEVERITY_ORDER.map((sev) => ({
-    label: SEVERITY_LABEL[sev],
+    label: text.severity[sev],
     count: totals.bySeverity[sev],
     color: SEVERITY_COLOR[sev],
   }));
   const comparisonStats: Array<{ label: string; count: number; color: string }> = meta.baselineScanId
     ? [
-        { label: '新增', count: totals.byComparison.new, color: '#d92b2b' },
-        { label: '遗留', count: totals.byComparison.remaining, color: '#e8930c' },
-        { label: '已修复', count: totals.byComparison.fixed, color: '#1e9e6a' },
+        { label: text.comparison.new, count: totals.byComparison.new, color: '#d92b2b' },
+        { label: text.comparison.remaining, count: totals.byComparison.remaining, color: '#e8930c' },
+        { label: text.comparison.fixed, count: totals.byComparison.fixed, color: '#1e9e6a' },
       ]
     : [];
 
   const metaRows: Array<[string, string]> = [
-    ['项目名称', escapeHtml(meta.projectName)],
-    ...(meta.projectDescription ? ([['项目描述', escapeHtml(meta.projectDescription)]] as Array<[string, string]>) : []),
-    ...(meta.language ? ([['主要语言', escapeHtml(meta.language)]] as Array<[string, string]>) : []),
-    ['扫描编号', `<span class="cell-mono">${escapeHtml(meta.scanId)}</span>`],
-    ['扫描时间', formatDateTime(meta.scannedAt)],
+    [text.meta.projectName, escapeHtml(meta.projectName)],
+    ...(meta.projectDescription ? ([[text.meta.projectDescription, escapeHtml(meta.projectDescription)]] as Array<[string, string]>) : []),
+    ...(meta.language ? ([[text.meta.language, escapeHtml(meta.language)]] as Array<[string, string]>) : []),
+    [text.meta.scanId, `<span class="cell-mono">${escapeHtml(meta.scanId)}</span>`],
+    [text.meta.scannedAt, formatDateTime(meta.scannedAt)],
     ...(meta.durationSeconds !== undefined
-      ? ([['引擎耗时', formatDuration(meta.durationSeconds)]] as Array<[string, string]>)
+      ? ([[text.meta.duration, formatDuration(meta.durationSeconds, text)]] as Array<[string, string]>)
       : []),
-    ['检查文件数', meta.fileCount ? `${meta.fileCount} 个` : '—'],
+    [text.meta.fileCount, meta.fileCount ? text.fileCountUnit(meta.fileCount) : '—'],
     ...(meta.baselineScanId
-      ? ([['基线扫描', `<span class="cell-mono">${escapeHtml(meta.baselineScanId)}</span>`]] as Array<[string, string]>)
+      ? ([[text.meta.baseline, `<span class="cell-mono">${escapeHtml(meta.baselineScanId)}</span>`]] as Array<[string, string]>)
       : []),
-    ...(meta.engineVersion ? ([['扫描引擎', `opengrep v${escapeHtml(meta.engineVersion)}`]] as Array<[string, string]>) : []),
+    ...(meta.engineVersion ? ([[text.meta.engine, `opengrep v${escapeHtml(meta.engineVersion)}`]] as Array<[string, string]>) : []),
     ...(meta.sourceHash
-      ? ([['源码哈希', `<span class="cell-mono">${escapeHtml(meta.sourceHash)}</span>`]] as Array<[string, string]>)
+      ? ([[text.meta.sourceHash, `<span class="cell-mono">${escapeHtml(meta.sourceHash)}</span>`]] as Array<[string, string]>)
       : []),
     ...(meta.commandLine
-      ? ([['引擎命令行', `<span class="cell-mono" style="word-break:break-all">${escapeHtml(meta.commandLine)}</span>`]] as Array<[string, string]>)
+      ? ([[text.meta.commandLine, `<span class="cell-mono" style="word-break:break-all">${escapeHtml(meta.commandLine)}</span>`]] as Array<[string, string]>)
       : []),
     [
-      '生效规则包',
+      text.meta.rulepacks,
       meta.rulepacks?.length
         ? meta.rulepacks.map((pack) => escapeHtml(pack.name)).join('、')
         : meta.rules
           ? escapeHtml(meta.rules)
           : '—',
     ],
-    ['报告生成时间', formatDateTime(meta.generatedAt)],
+    [text.meta.generatedAt, formatDateTime(meta.generatedAt)],
   ];
 
   const detailSections = SEVERITY_ORDER.map((sev) => {
@@ -482,19 +693,19 @@ export function renderReportHtml(
     if (list.length === 0) return '';
     const urgent = sev === 'critical' || sev === 'high';
     return `
-      <h3><span class="sev-dot" style="background:${SEVERITY_COLOR[sev]}"></span>${SEVERITY_LABEL[sev]}问题（${list.length} 项）</h3>
-      ${issueTableHtml(list, snippets, snippetBudget)}
+      <h3><span class="sev-dot" style="background:${SEVERITY_COLOR[sev]}"></span>${text.severityHeading(text.severity[sev], list.length)}</h3>
+      ${issueTableHtml(list, snippets, snippetBudget, text)}
       ${urgent && options.includeSnippets && snippetBudget.left <= 0
-        ? '<p class="note">代码片段超过上限，仅展示前 ' + SNIPPET_LIMIT + ' 条，其余请结合扫描结果页查看。</p>'
+        ? `<p class="note">${text.snippetOverflow(SNIPPET_LIMIT)}</p>`
         : ''}`;
   }).join('');
 
   return `<!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="${text.htmlLang}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>测试报告 · ${escapeHtml(meta.projectName)} · ${escapeHtml(meta.scanId)}</title>
+<title>${text.titleSuffix} · ${escapeHtml(meta.projectName)} · ${escapeHtml(meta.scanId)}</title>
 <style>
   * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   body {
@@ -555,13 +766,13 @@ export function renderReportHtml(
 <body>
 <div class="doc">
   <header class="cover">
-    <div class="brand">Opengrep Studio · 码审工作台</div>
-    <h1>代码审计测试报告</h1>
+    <div class="brand">${text.brand}</div>
+    <h1>${text.docTitle}</h1>
     <div class="subtitle">${escapeHtml(meta.projectName)}<span class="cell-mono" style="margin-left:10px;font-size:13px;color:#6b7689">${escapeHtml(meta.scanId)}</span></div>
   </header>
 
   <section>
-    <h2>一、扫描概要</h2>
+    <h2>${text.sections.summary}</h2>
     <table class="meta-table">
       <tbody>
         ${metaRows.map(([label, value]) => `<tr><th>${label}</th><td>${value}</td></tr>`).join('')}
@@ -570,8 +781,8 @@ export function renderReportHtml(
   </section>
 
   <section>
-    <h2>二、总体结论</h2>
-    <p class="conclusion">${escapeHtml(data.conclusion)}</p>
+    <h2>${text.sections.conclusion}</h2>
+    <p class="conclusion">${escapeHtml(lang === 'zh' ? data.conclusion : localizedConclusion(data, text))}</p>
     <div class="stat-grid">
       ${severityStats
         .map(
@@ -579,14 +790,14 @@ export function renderReportHtml(
             `<div class="stat-card"><div class="num" style="color:${item.color}">${item.count}</div><div class="label">${item.label}</div></div>`,
         )
         .join('')}
-      <div class="stat-card"><div class="num">${totals.total}</div><div class="label">问题总数</div></div>
+      <div class="stat-card"><div class="num">${totals.total}</div><div class="label">${text.totalIssues}</div></div>
     </div>
     ${
       comparisonStats.length
         ? `<div class="stat-grid">${comparisonStats
             .map(
               (item) =>
-                `<div class="stat-card"><div class="num" style="color:${item.color}">${item.count}</div><div class="label">${item.label}（对比基线）</div></div>`,
+                `<div class="stat-card"><div class="num" style="color:${item.color}">${item.count}</div><div class="label">${item.label}${text.vsBaseline}</div></div>`,
             )
             .join('')}</div>`
         : ''
@@ -594,22 +805,22 @@ export function renderReportHtml(
     ${
       reviewStats
         ? `<div class="stat-grid">
-            <div class="stat-card"><div class="num" style="color:#1f7fe0">${reviewStats.reviewed}</div><div class="label">已人工复核</div></div>
-            <div class="stat-card"><div class="num" style="color:#d92b2b">${reviewStats.confirmed}</div><div class="label">复核确认</div></div>
-            <div class="stat-card"><div class="num" style="color:#1e9e6a">${reviewStats.falsePositives}</div><div class="label">判定误报</div></div>
-            <div class="stat-card"><div class="num" style="color:#e8930c">${reviewStats.accepted}</div><div class="label">有条件接受</div></div>
+            <div class="stat-card"><div class="num" style="color:#1f7fe0">${reviewStats.reviewed}</div><div class="label">${text.reviewed}</div></div>
+            <div class="stat-card"><div class="num" style="color:#d92b2b">${reviewStats.confirmed}</div><div class="label">${text.confirmed}</div></div>
+            <div class="stat-card"><div class="num" style="color:#1e9e6a">${reviewStats.falsePositives}</div><div class="label">${text.falsePositive}</div></div>
+            <div class="stat-card"><div class="num" style="color:#e8930c">${reviewStats.accepted}</div><div class="label">${text.accepted}</div></div>
           </div>`
         : ''
     }
   </section>
 
   <section>
-    <h2>三、风险分布</h2>
-    <h3>按严重度</h3>
+    <h2>${text.sections.distribution}</h2>
+    <h3>${text.bySeverity}</h3>
     ${barRows(severityStats)}
-    <h3>高频规则 Top ${topRules.length}</h3>
+    <h3>${text.topRules(topRules.length)}</h3>
     <table>
-      <thead><tr><th>规则</th><th>描述最高严重度</th><th>命中</th><th>规则包</th></tr></thead>
+      <thead><tr><th>${text.thRule}</th><th>${text.thSeverity}</th><th>${text.thHits}</th><th>${text.thPack}</th></tr></thead>
       <tbody>
         ${
           topRules.length
@@ -619,13 +830,13 @@ export function renderReportHtml(
                     `<tr><td class="cell-mono">${escapeHtml(row.ruleId)}</td><td><span style="color:${SEVERITY_COLOR[row.severity]};font-weight:600">${SEVERITY_LABEL[row.severity]}</span></td><td class="cell-num">${row.count}</td><td class="cell-sub">${escapeHtml(row.rulepackName ?? '—')}</td></tr>`,
                 )
                 .join('')
-            : '<tr><td colspan="4" class="note">无命中规则</td></tr>'
+            : '<tr><td colspan="4" class="note">${text.noRules}</td></tr>'
         }
       </tbody>
     </table>
-    <h3>热点文件 Top ${topFiles.length}</h3>
+    <h3>${text.topFiles(topFiles.length)}</h3>
     <table>
-      <thead><tr><th>文件</th><th>最高严重度</th><th>命中</th></tr></thead>
+      <thead><tr><th>${text.thFile}</th><th>${text.thMaxSeverity}</th><th>${text.thHits}</th></tr></thead>
       <tbody>
         ${
           topFiles.length
@@ -635,31 +846,30 @@ export function renderReportHtml(
                     `<tr><td class="cell-mono">${escapeHtml(row.filePath)}</td><td><span style="color:${SEVERITY_COLOR[row.maxSeverity]};font-weight:600">${SEVERITY_LABEL[row.maxSeverity]}</span></td><td class="cell-num">${row.count}</td></tr>`,
                 )
                 .join('')
-            : '<tr><td colspan="3" class="note">无命中文件</td></tr>'
+            : '<tr><td colspan="3" class="note">${text.noFiles}</td></tr>'
         }
       </tbody>
     </table>
-    <h3>目录分布</h3>
-    ${topDirs.length ? barRows(topDirs.map((row) => ({ label: row.dir, count: row.count, color: '#1f7fe0' }))) : '<p class="note">无数据</p>'}
+    <h3>${text.dirDist}</h3>
+    ${topDirs.length ? barRows(topDirs.map((row) => ({ label: row.dir, count: row.count, color: '#1f7fe0' }))) : '<p class="note">' + text.noData + '</p>'}
   </section>
 
   <section>
-    <h2>四、问题明细</h2>
+    <h2>${text.sections.issues}</h2>
     ${
       current.length === 0
-        ? '<p class="conclusion">本次扫描未发现风险问题。</p>'
+        ? '<p class="conclusion">' + text.noIssues + '</p>'
         : detailSections
     }
     ${
       fixed.length
-        ? `<h3>已修复（对比基线，${fixed.length} 项）</h3>${issueTableHtml(fixed, snippets, { left: 0 })}`
+        ? `<h3>${text.fixedHeading(fixed.length)}</h3>${issueTableHtml(fixed, snippets, { left: 0 }, text)}`
         : ''
     }
   </section>
 
   <footer>
-    本报告由 Opengrep Studio 码审工作台自动生成 · 生成时间 ${formatDateTime(meta.generatedAt)} ·
-    规则命中与严重度由 opengrep 引擎产出，请结合业务上下文人工复核。
+    ${text.footer(formatDateTime(meta.generatedAt))}
   </footer>
 </div>
 </body>
