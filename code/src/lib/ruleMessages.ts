@@ -6,9 +6,10 @@ type RuleMessageMap = Record<string, string>;
 
 const cache = new Map<string, Promise<RuleMessageMap>>();
 
-/** 规则说明只有简繁两份：繁体走繁体表，其余语言沿用中文表（与改造前行为一致） */
-function messagePath(language: string): string {
-  return language.startsWith('zh-Hant') ? '/api/messages-zh-Hant' : '/api/messages-zh';
+/** 中文语境才套用中文说明表：繁体走繁体表，英文直接用引擎原文，避免英文界面里冒出中文 */
+function messagePath(language: string): string | null {
+  if (language.startsWith('zh-Hant')) return '/api/messages-zh-Hant';
+  return language.startsWith('zh') ? '/api/messages-zh' : null;
 }
 
 function loadOnce(path: string): Promise<RuleMessageMap> {
@@ -43,9 +44,10 @@ export function useRuleMessageMap(): RuleMessageMap {
   const path = messagePath(i18n.resolvedLanguage ?? i18n.language);
   const [map, setMap] = useState<RuleMessageMap>({});
   useEffect(() => {
-    let mounted = true;
     // 切语言先清空，避免上一语言的消息表在新语言页面上残留
     setMap({});
+    if (!path) return;
+    let mounted = true;
     void loadOnce(path).then((loaded) => {
       if (mounted) setMap(loaded);
     });
