@@ -72,10 +72,19 @@ interface ReportIssueReview {
   updatedAt?: string;
 }
 
+/** 结论的结构化载荷：code 前端按 report.conclusion.<code> 翻译，message 是中文兜底 */
+export interface ConclusionPayload {
+  code: string;
+  params: Record<string, unknown>;
+  message: string;
+}
+
 export interface ReportData {
   meta: ReportMeta;
   totals: ReportTotals;
   conclusion: string;
+  /** 在线报告页按语言重拼结论用；旧扫描缓存或异常场景可能缺失（前端回落 conclusion 原文） */
+  conclusionCode?: ConclusionPayload | null;
   topRules: ReportRuleAgg[];
   topFiles: ReportFileAgg[];
   topDirs: ReportDirAgg[];
@@ -237,6 +246,7 @@ export function buildReportData(
     meta,
     totals: { total: current.length, bySeverity, byComparison },
     conclusion: `${conclusion}${reviewSentence}`,
+    conclusionCode: buildConclusionPayload(scan, current.length, bySeverity, byComparison),
     topRules,
     topFiles,
     topDirs,
@@ -273,6 +283,45 @@ function buildConclusion(
     parts.push('当前无严重/高危问题，建议按业务优先级安排中低危问题的修复。');
   }
   return parts.join('');
+}
+
+/**
+ * 结论的结构化载荷：code+params 供在线报告页按当前语言重拼；
+ * message（中文兜底）供自包含 HTML 报告与前后端版本错位场景直接使用。
+ * 复核句不在载荷内——它属于统计呈现，由前端 reviewStats 独立渲染。
+ */
+function buildConclusionPayload(
+  scan: ScanRecord,
+  total: number,
+  bySeverity: Record<Severity, number>,
+  byComparison: Record<ComparisonStatus, number>,
+): ConclusionPayload | null {
+  const fileCount = scan.fileCount ?? 0;
+  const urgent = bySeverity.critical + bySeverity.high;
+  if (total === 0) {
+    return {
+      code: 'noIssues',
+      params: { files: fileCount, baseline: scan.baselineScanId ?? '' },
+      message: `本次扫描共检查 ${fileCount || '—'} 个源码文件，未命中任何已启用规则，未发现风险问题。`,
+    };
+  }
+  return {
+    code: 'summary',
+    params: {
+      files: fileCount,
+      total,
+      critical: bySeverity.critical,
+      high: bySeverity.high,
+      medium: bySeverity.medium,
+      low: bySeverity.low,
+      baseline: scan.baselineScanId ?? '',
+      baselineNew: byComparison.new,
+      baselineRemaining: byComparison.remaining,
+      baselineFixed: byComparison.fixed,
+      urgent,
+    },
+    message: buildConclusion(scan, total, bySeverity, byComparison),
+  };
 }
 
 

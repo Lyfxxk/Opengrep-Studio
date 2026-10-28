@@ -49,10 +49,19 @@ interface IReportDirAgg {
   count: number;
 }
 
+/** 服务端结论的结构化载荷：code 对应 i18n 键 reportConclusion.<code>，message 为中文兜底 */
+export interface IReportConclusionCode {
+  code: string;
+  params: Record<string, unknown>;
+  message: string;
+}
+
 export interface IReportData {
   meta: IReportMeta;
   totals: IReportTotals;
   conclusion: string;
+  /** 服务端下发的结论载荷（演示模式与旧数据缺失，此时回落 conclusion 原文） */
+  conclusionCode?: IReportConclusionCode | null;
   topRules: IReportRuleAgg[];
   topFiles: IReportFileAgg[];
   topDirs: IReportDirAgg[];
