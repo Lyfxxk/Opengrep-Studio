@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import type { IScanResult } from '@/data/scanresults';
+import { usePackDisplayName } from '@/lib/packName';
 
 /**
  * 扫描表格的「规则包」单元格三态展示：
@@ -13,17 +14,19 @@ export default function RulePackCell({
   className?: string;
 }) {
   const { t } = useTranslation();
+  const packDisplayName = usePackDisplayName();
+  const names = scan.rulepacks?.map((pack) => packDisplayName(pack.name, pack.id)) ?? [];
   if (scan.rulepacks?.length) {
     return (
       <span
         className={`block truncate text-xs text-muted-foreground ${className}`}
-        title={scan.rulepacks.map((pack) => pack.name).join('、')}
+        title={names.join('、')}
       >
-        {scan.rulepacks.length === 1
-          ? scan.rulepacks[0].name
+        {names.length === 1
+          ? names[0]
           : t('rulePackCell.multiSuffix', {
-              firstName: scan.rulepacks[0].name,
-              count: scan.rulepacks.length,
+              firstName: names[0],
+              count: names.length,
             })}
       </span>
     );
