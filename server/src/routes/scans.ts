@@ -23,6 +23,7 @@ import {
   listScans,
   replaceIssues,
   updateProject,
+  updateScan,
   type IssueRow,
   type Project,
   type ScanConfig,
@@ -36,7 +37,7 @@ import { packRuleFiles } from '../rulepacks.js';
 import { buildSarifReport } from '../sarif.js';
 import { parseSarifImport } from '../sarif-import.js';
 import { buildReportData, renderReportHtml, type ReportLang } from '../report.js';
-import { applyBaselineComparison, enqueueScan, type ScanPlan } from '../scan-runner.js';
+import { applyBaselineComparison, enqueueScan, requestScanCancel, type ScanPlan } from '../scan-runner.js';
 import { asyncHandler, limit400, newId, requireProject, requireValidBaseline } from './shared.js';
 
 export const scanRoutes = Router();
@@ -244,6 +245,29 @@ scanRoutes.delete('/api/scans/:scanId', asyncHandler(async (req, res) => {
   deleteScan(scan.id);
   fs.rmSync(scanSourceDir(scan.projectId, scan.id), { recursive: true, force: true });
   res.status(204).end();
+}));
+
+/**
+ * 取消进行中的扫描（与 DELETE 语义区分：取消保留记录与快照，落 failed 供查看原因；DELETE 才清数据）。
+ * - 引擎运行中：终止引擎进程（走 runEngine 既有 kill 链），runScan 收尾按"已被手动取消"落库后记录才变 failed；
+ *   期间 hasRunningScan 仍为 true，升级闸保持关闭，确保 Windows 上不会替换运行中的引擎 exe
+ * - 排队中/引擎尚未启动：没有可杀的进程，直接落库失败，槽位轮到时 runScan 复查状态自动退出
+ */
+scanRoutes.post('/api/scans/:scanId/cancel', asyncHandler(async (req, res) => {
+  const scan = requireScan(req.params.scanId);
+  if (scan.status !== 'scanning') {
+    throw new HttpError(409, '扫描已结束，无需取消', { code: 'srv.scanNotRunning' });
+  }
+  if (requestScanCancel(scan.id)) {
+    res.json({ status: 'cancelling' });
+    return;
+  }
+  updateScan(scan.id, {
+    status: 'failed',
+    finishedAt: new Date().toISOString(),
+    message: '已被手动取消',
+  });
+  res.json({ status: 'failed' });
 }));
 
 scanRoutes.get('/api/scans/:scanId/issues', asyncHandler(async (req, res) => {

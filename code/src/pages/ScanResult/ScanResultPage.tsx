@@ -108,6 +108,24 @@ export default function ScanResultPage() {
     return () => window.clearInterval(timer);
   }, [isScanning, load]);
 
+  /** 取消请求进行中：按钮短暂禁用防连点（运行中的取消要等引擎退出才落 failed，期间仍可看到扫描中） */
+  const [cancelling, setCancelling] = useState(false);
+
+  const handleCancel = async () => {
+    if (!scanId) return;
+    setCancelling(true);
+    try {
+      await api.cancelScan(scanId);
+      toast.success(t('scanResult.cancelRequestedToast'));
+      // 排队中的取消后端已直接落 failed，刷新即见；运行中的会稍后在轮询里翻转为失败
+      await load();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : String(error));
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   const selectedIssue =
     issues.find((issue) => issue.id === selectedIssueId) ?? issues[0] ?? null;
 
@@ -150,7 +168,7 @@ export default function ScanResultPage() {
     <div className="flex flex-col gap-6 lg:h-full">
       <div className="flex flex-wrap items-center gap-2">
         <h1 className="text-xl font-semibold">{t('scanResult.title', { id: scan.id })}</h1>
-        <ScanStatusBadge status={scan.status} />
+        <ScanStatusBadge status={scan.status} queued={Boolean(scan.queuedAt)} />
         <span className="text-sm text-muted-foreground">
           {t('scanResult.scannedAt', { time: formatDateTime(scan.scannedAt) })}
         </span>
@@ -247,7 +265,30 @@ export default function ScanResultPage() {
         <Card>
           <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
             <Loader2 className="size-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">{t('scanResult.scanningHint')}</p>
+            {scan.queuedAt ? (
+              // 并发池排队中（第 3 路及以后）：与"扫描中"区分，开跑后后端会清掉排队标记
+              <p className="text-sm text-muted-foreground">{t('scanResult.queuedHint')}</p>
+            ) : (
+              <>
+                <p className="text-sm text-muted-foreground">{t('scanResult.scanningHint')}</p>
+                {/* 心跳进度：countFiles 落库后即可见；排队中恒为 0 不展示 */}
+                {scan.fileCount ? (
+                  <p className="text-xs text-muted-foreground">
+                    {t('scanResult.scannedFiles', { count: scan.fileCount })}
+                  </p>
+                ) : null}
+              </>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              disabled={cancelling}
+              onClick={() => void handleCancel()}
+            >
+              <XCircle className="size-4" />
+              {t('scanResult.cancelBtn')}
+            </Button>
           </CardContent>
         </Card>
       ) : issues.length === 0 ? (

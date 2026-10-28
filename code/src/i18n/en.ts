@@ -166,6 +166,7 @@ const en: typeof zh = {
   },
   scanStatus: {
     scanning: 'Scanning',
+    queued: 'Queued',
     failed: 'Failed',
     completed: 'Completed',
   },
@@ -330,6 +331,12 @@ const en: typeof zh = {
     failedHint:
       'The source snapshot is still available — go back to the project detail page and start a new scan directly, no re-upload needed.',
     scanningHint: 'Scan in progress — the issue list appears here once it finishes.',
+    // 并发池排队中（第 3 路及以后）的提示：与 scanningHint 区分，避免排队扫描被误读为卡死
+    queuedHint: 'Queued — waiting for a free slot; it starts automatically.',
+    // 心跳进度：源码快照文件数在引擎启动前落库，扫描中即可见
+    scannedFiles: '{{count}} files scanned',
+    cancelBtn: 'Cancel scan',
+    cancelRequestedToast: 'Cancellation requested',
     summaryTitle: 'Scan summary',
     zeroIssues: '0 issues',
     dtFiles: 'Files checked',
@@ -390,7 +397,7 @@ const en: typeof zh = {
     cloneSuccessToast: 'Repository cloned — {{count}} files — ready to scan',
     // 克隆失败只清临时目录，既有源码不受影响；前导空格用于与错误消息拼接
     cloneFailedSourceKept: ' (previously uploaded source remains unchanged)',
-    scanSubmittedToast: 'Scan submitted — the engine runs one scan at a time…',
+    scanSubmittedToast: 'Scan submitted — up to 2 scans run in parallel, extra ones are queued…',
     baselineSetToast: 'Baseline set — future scans will compare against it automatically',
     baselineUnsetToast: 'Baseline cleared — future scans will no longer compare automatically',
     sarifImportedBase: 'SARIF imported: {{count}} issues — see the scan history',
@@ -886,6 +893,7 @@ const en: typeof zh = {
       engineMissing:
         'OpenGrep engine not found — the scan cannot start. Run "npm run setup:engine" in the repo root to install it, or set the OPENGREP_BIN environment variable to the engine executable.',
       scanBusy: 'The scan is running — wait for it to complete or fail before deleting.',
+      scanNotRunning: 'The scan has finished — nothing to cancel.',
       snippetParamsInvalid: 'path, start, and end query parameters are required (start ≥ 1 and end ≥ start)',
       snippetPathInvalid: 'Invalid file path',
       snippetNotFound: 'The source file does not exist and no snippet cache is available',

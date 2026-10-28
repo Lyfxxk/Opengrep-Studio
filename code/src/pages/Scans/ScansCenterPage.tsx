@@ -228,7 +228,7 @@ export default function ScansCenterPage() {
                     </TableCell>
                     <TableCell className="font-mono text-xs">{scan.id}</TableCell>
                     <TableCell>
-                      <ScanStatusBadge status={scan.status} />
+                      <ScanStatusBadge status={scan.status} queued={Boolean(scan.queuedAt)} />
                     </TableCell>
                     <TableCell className="tabular-nums">{done ? scan.issueCount : '—'}</TableCell>
                     <TableCell className="max-w-[200px]">

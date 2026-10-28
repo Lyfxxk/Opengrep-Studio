@@ -870,6 +870,22 @@ export const api = {
     await request<void>(`/api/scans/${id}`, { method: 'DELETE' });
   },
 
+  /** 取消进行中的扫描（与删除区分：记录保留、落 failed 供查看原因；排队中的立即失败，运行中的先终止引擎） */
+  async cancelScan(id: string): Promise<void> {
+    if (USE_MOCK) {
+      // 演示模式扫描本就会在数秒后自动完成，这里同样只做状态收敛：落 failed 并保留记录
+      saveScans(
+        loadScans().map((scan) =>
+          scan.id === id && scan.status === 'scanning'
+            ? { ...scan, status: 'failed' as const, finishedAt: new Date().toISOString(), message: '已被手动取消' }
+            : scan,
+        ),
+      );
+      return;
+    }
+    await request<void>(`/api/scans/${id}/cancel`, { method: 'POST' });
+  },
+
   /** 健康检查（引擎版本与解析来源）；演示模式下无后端，直接标记引擎缺失 */
   getHealth(): Promise<HealthInfo> {
     if (USE_MOCK) {

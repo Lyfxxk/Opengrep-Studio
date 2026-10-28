@@ -13,6 +13,8 @@ export interface IScanResult {
   rulepacks?: Array<{ id: string; name: string }>
   /** 发起扫描时的引擎版本（升级引擎后旧记录仍是当日版本） */
   engineVersion?: string
+  /** 排队等待并发槽位的标记（status 为 scanning 且有值 = 排队中，开跑后清除），用于区分"排队中/扫描中" */
+  queuedAt?: string
   message?: string
 }
 
