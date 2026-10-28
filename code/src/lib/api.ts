@@ -2,6 +2,7 @@ import type { IIssue } from '@/data/issues';
 import { MOCK_ISSUES, mockIssuesForScan, mockIssueFingerprint } from '@/data/issues';
 import type { IConfig } from '@/data/configs';
 import type { IProject } from '@/data/projects';
+import i18n from '@/i18n';
 import type { ICodeSnippet } from '@/data/codesnippets';
 import { MOCK_CODE_SNIPPETS } from '@/data/codesnippets';
 import type { IRulePack } from '@/data/rulepacks';
@@ -45,7 +46,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
         : init?.headers,
   });
   if (!res.ok) {
-    let message = `请求失败（HTTP ${res.status}）`;
+    let message = i18n.t('api.requestFailed', { status: res.status });
     try {
       const body = (await res.json()) as ApiErrorShape;
       message = body.error?.message ?? message;
@@ -81,14 +82,14 @@ function uploadWithProgress(
         }
         return;
       }
-      let message = `上传失败（HTTP ${xhr.status}）`;
+      let message = i18n.t('api.uploadFailed', { status: xhr.status });
       try {
         message = (JSON.parse(xhr.responseText) as ApiErrorShape).error?.message ?? message;
       } catch {
       }
       reject(new Error(message));
     };
-    xhr.onerror = () => reject(new Error('网络错误，上传失败'));
+    xhr.onerror = () => reject(new Error(i18n.t('api.networkUploadFailed')));
     xhr.send(formData);
   });
 }
@@ -295,7 +296,7 @@ export const api = {
           : item,
       );
       const updated = next.find((item) => item.id === id);
-      if (!updated) throw new Error('项目不存在或已被删除');
+      if (!updated) throw new Error(i18n.t('api.projectNotFound'));
       saveProjects(next);
       return updated;
     }
@@ -330,7 +331,7 @@ export const api = {
     if (USE_MOCK) {
       const totalSize = items.reduce((sum, item) => sum + item.file.size, 0);
       const fileName =
-        items.length === 1 ? items[0].file.name : `${items.length} 个文件`;
+        items.length === 1 ? items[0].file.name : i18n.t('api.multiFileLabel', { count: items.length });
       return new Promise((resolve) => {
         let progress = 8;
         const timer = setInterval(() => {
@@ -412,7 +413,7 @@ export const api = {
     if (USE_MOCK) {
       const scan = materializeMockScans().find((item) => item.id === scanId);
       if (!scan) {
-        return Promise.reject(new Error('扫描记录不存在'));
+        return Promise.reject(new Error(i18n.t('api.scanNotFound')));
       }
       return Promise.resolve(scan);
     }
@@ -436,7 +437,7 @@ export const api = {
         filePath: issue.filePath,
         startLine: issue.startLine,
         endLine: issue.endLine,
-        content: '// 演示模式：暂无该问题的片段数据',
+        content: i18n.t('api.demoSnippetPlaceholder'),
         highlightedLines: [issue.startLine],
       };
     }
@@ -454,10 +455,10 @@ export const api = {
     if (USE_MOCK) {
       const scan = materializeMockScans().find((item) => item.id === scanId);
       if (!scan || scan.status !== 'completed') {
-        return Promise.reject(new Error('仅已完成的扫描可生成测试报告'));
+        return Promise.reject(new Error(i18n.t('api.scanNotCompleted')));
       }
       const project = loadProjects().find((item) => item.id === scan.projectId);
-      return Promise.resolve(buildMockReport(scan, project?.name ?? '演示项目'));
+      return Promise.resolve(buildMockReport(scan, project?.name ?? i18n.t('api.demoProjectName')));
     }
     return request<IReportData>(`/api/scans/${scanId}/report`);
   },
@@ -493,7 +494,7 @@ export const api = {
                     endLine: 2,
                     startCol: 10,
                     severity: 'WARNING',
-                    message: '演示命中：使用 eval 动态执行代码',
+                    message: i18n.t('api.demoHitMessage'),
                     matchedLines: input.positive.split(/\r?\n/)[1] ?? '',
                   }]
                 : [],
@@ -501,7 +502,7 @@ export const api = {
             negative: { provided: Boolean(input.negative.trim()), matches: [] },
             failReasons:
               input.positive.trim() && !hit
-                ? ['正例未命中：期望至少 1 处命中，实际 0 处']
+                ? [i18n.t('api.failPositiveMiss')]
                 : [],
             engineErrors: [],
           });
@@ -542,7 +543,7 @@ export const api = {
     if (USE_MOCK) {
       const configs = loadConfigs();
       const index = configs.findIndex((config) => config.id === id);
-      if (index === -1) throw new Error('扫描配置不存在或已被删除');
+      if (index === -1) throw new Error(i18n.t('api.configNotFound'));
       configs[index] = { ...configs[index], ...values };
       saveConfigs(configs);
       return;
@@ -570,7 +571,7 @@ export const api = {
     if (USE_MOCK) {
       const packs = loadRulePacks();
       const target = packs.find((pack) => pack.id === id);
-      if (!target) throw new Error('规则包不存在或已被删除');
+      if (!target) throw new Error(i18n.t('api.rulePackNotFound'));
       target.enabled = enabled;
       saveRulePacks(packs);
       return;
@@ -659,10 +660,10 @@ export const api = {
   ): Promise<{ id: string; name: string; language: string; content: string }> {
     if (USE_MOCK) {
       const pack = loadRulePacks().find((item) => item.id === id);
-      if (!pack) return Promise.reject(new Error('规则包不存在或已被删除'));
+      if (!pack) return Promise.reject(new Error(i18n.t('api.rulePackNotFound')));
       const content =
         loadPackContents()[id] ??
-        `# 演示模式：内置种子规则包无原文，以下是示意内容\nrules:\n  - id: ${pack.id}-rule-1\n    languages: [${pack.language.toLowerCase()}]\n    message: 示意规则\n    severity: WARNING\n    pattern: eval(...)\n`;
+        `${i18n.t('api.demoSarifHeader')}\nrules:\n  - id: ${pack.id}-rule-1\n    languages: [${pack.language.toLowerCase()}]\n    message: ${i18n.t('api.demoSarifRuleMessage')}\n    severity: WARNING\n    pattern: eval(...)\n`;
       return Promise.resolve({ id, name: pack.name, language: pack.language, content });
     }
     return request(`/api/rulepacks/${id}/content`);
@@ -672,8 +673,8 @@ export const api = {
     if (USE_MOCK) {
       const packs = loadRulePacks();
       const target = packs.find((pack) => pack.id === id);
-      if (!target) return Promise.reject(new Error('规则包不存在或已被删除'));
-      if (target.builtin) return Promise.reject(new Error('内置规则包不可在线编辑'));
+      if (!target) return Promise.reject(new Error(i18n.t('api.rulePackNotFound')));
+      if (target.builtin) return Promise.reject(new Error(i18n.t('api.builtinNotEditable')));
       target.ruleCount = countMockRules(content);
       saveRulePacks(packs);
       const contents = loadPackContents();
@@ -696,8 +697,8 @@ export const api = {
     if (USE_MOCK) {
       const packs = loadRulePacks();
       const target = packs.find((pack) => pack.id === id);
-      if (!target) throw new Error('规则包不存在或已被删除');
-      if (target.builtin) throw new Error('内置规则包不可删除');
+      if (!target) throw new Error(i18n.t('api.rulePackNotFound'));
+      if (target.builtin) throw new Error(i18n.t('api.builtinNotDeletable'));
       saveRulePacks(packs.filter((pack) => pack.id !== id));
       const contents = loadPackContents();
       delete contents[id];
@@ -723,7 +724,7 @@ export const api = {
         isDir: true,
         sampleCount: 0,
         manifest: { name, version: '0.1.0' },
-        message: '演示模式：已登记导入的规则包（未解析内容）',
+        message: i18n.t('api.importRegistered'),
       };
       saveRulePacks([pack, ...loadRulePacks()]);
       return new Promise((resolve) => setTimeout(() => resolve(pack), 800));
@@ -745,7 +746,7 @@ export const api = {
   checkRulePack(id: string): Promise<IRulePackCheckResult> {
     if (USE_MOCK) {
       const pack = loadRulePacks().find((item) => item.id === id);
-      if (!pack) return Promise.reject(new Error('规则包不存在或已被删除'));
+      if (!pack) return Promise.reject(new Error(i18n.t('api.rulePackNotFound')));
       const startedAt = Date.now();
       return new Promise((resolve) =>
         setTimeout(() => {
@@ -758,7 +759,7 @@ export const api = {
               positiveCount: 0,
               negativeCount: 0,
               verdict: 'unverified' as const,
-              detail: '演示模式不运行真实引擎，样本未验证',
+              detail: i18n.t('api.checkDemoDetail'),
             })),
             durationMs: Date.now() - startedAt,
             summary: {
@@ -839,7 +840,7 @@ export const api = {
       return Promise.resolve({
         ok: false,
         engine: 'MISSING',
-        engineHint: '演示模式：未连接后端与引擎，展示的均为本地演示数据。',
+        engineHint: i18n.t('api.demoEngineHint'),
       });
     }
     return request('/api/health');
@@ -852,7 +853,7 @@ export const api = {
         updateAvailable: false,
         canUpgrade: false,
         checkedAt: new Date().toISOString(),
-        reason: '演示模式不联网检查引擎更新',
+        reason: i18n.t('api.demoUpdateReason'),
       });
     }
     return request(`/api/engine/update${force ? '?refresh=1' : ''}`);
@@ -866,7 +867,7 @@ export const api = {
   /** 发起一键升级；失败（扫描中 / 已是最新 / 上游不可达）会抛出可读错误 */
   startEngineUpgrade(): Promise<IEngineUpgradeState> {
     if (USE_MOCK) {
-      return Promise.reject(new Error('演示模式不支持升级引擎'));
+      return Promise.reject(new Error(i18n.t('api.demoUpgradeUnsupported')));
     }
     return request('/api/engine/upgrade', { method: 'POST' });
   },
@@ -891,7 +892,7 @@ export const api = {
         against: {
           id: againstId,
           projectId: '',
-          projectName: '演示项目',
+          projectName: i18n.t('api.demoProjectName'),
           scannedAt: '',
         },
         issueDiff: {
