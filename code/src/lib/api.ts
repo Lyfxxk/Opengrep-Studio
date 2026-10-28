@@ -32,7 +32,22 @@ export const USE_MOCK = ['true', '1'].includes(
 );
 
 interface ApiErrorShape {
-  error?: { message?: string };
+  error?: { message?: string; code?: string; params?: Record<string, unknown> };
+}
+
+/**
+ * 后端错误码 → 当前语言文案：code 是前后端契约（键见 i18n 资源 apiErrors 组）。
+ * 键由后端契约动态决定、无法枚举进 t() 的类型系统，故对 t 做局部宽化；
+ * defaultValue 兜底保证前后端版本错位时退回后端原文而不是显示裸键名。
+ */
+function translateApiError(
+  code: string | undefined,
+  params: Record<string, unknown> | undefined,
+  fallback: string,
+): string {
+  if (!code) return fallback;
+  const t = i18n.t as (key: string, opts?: Record<string, unknown>) => string;
+  return t(`apiErrors.${code}`, { ...params, defaultValue: fallback });
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -47,12 +62,16 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
   if (!res.ok) {
     let message = i18n.t('api.requestFailed', { status: res.status });
+    let code: string | undefined;
+    let params: Record<string, unknown> | undefined;
     try {
       const body = (await res.json()) as ApiErrorShape;
       message = body.error?.message ?? message;
+      code = body.error?.code;
+      params = body.error?.params;
     } catch {
     }
-    throw new Error(message);
+    throw new Error(translateApiError(code, params, message));
   }
   if (res.status === 204) {
     return undefined as T;
@@ -83,11 +102,16 @@ function uploadWithProgress(
         return;
       }
       let message = i18n.t('api.uploadFailed', { status: xhr.status });
+      let code: string | undefined;
+      let params: Record<string, unknown> | undefined;
       try {
-        message = (JSON.parse(xhr.responseText) as ApiErrorShape).error?.message ?? message;
+        const body = JSON.parse(xhr.responseText) as ApiErrorShape;
+        message = body.error?.message ?? message;
+        code = body.error?.code;
+        params = body.error?.params;
       } catch {
       }
-      reject(new Error(message));
+      reject(new Error(translateApiError(code, params, message)));
     };
     xhr.onerror = () => reject(new Error(i18n.t('api.networkUploadFailed')));
     xhr.send(formData);

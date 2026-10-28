@@ -1622,7 +1622,11 @@ if (fs.existsSync(distDir)) {
 
 app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
   if (error instanceof HttpError) {
-    res.status(error.status).json({ error: { message: error.message } });
+    // code/params 是可选契约：带 code 的错误前端按语言翻译，message 仍是各语言兜底
+    const meta = error.meta?.code
+      ? { code: error.meta.code, params: error.meta.params }
+      : {};
+    res.status(error.status).json({ error: { message: error.message, ...meta } });
     return;
   }
   if (error instanceof multer.MulterError) {
