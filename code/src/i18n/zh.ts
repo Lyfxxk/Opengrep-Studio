@@ -24,11 +24,18 @@ const zh = {
     logoutToast: '已退出登录',
     avatarAlt: '管理员头像',
     language: '切换语言',
+    theme: '切换主题',
   },
   lang: {
     zh: '简体中文',
     zhHant: '繁體中文',
     en: 'English',
+  },
+  // 主题模式文案：light/dark 是手动锁定，system 跟随操作系统明暗
+  theme: {
+    light: '浅色',
+    dark: '深色',
+    system: '跟随系统',
   },
   common: {
     loading: '加载中…',

@@ -26,11 +26,17 @@ const en: typeof zh = {
     logoutToast: 'Signed out',
     avatarAlt: 'Admin avatar',
     language: 'Switch language',
+    theme: 'Switch theme',
   },
   lang: {
     zh: '简体中文',
     zhHant: '繁體中文',
     en: 'English',
+  },
+  theme: {
+    light: 'Light',
+    dark: 'Dark',
+    system: 'System',
   },
   common: {
     loading: 'Loading…',
