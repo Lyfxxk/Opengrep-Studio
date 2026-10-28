@@ -348,6 +348,7 @@ const zhHant: typeof zh = {
     unknownReason: '未知原因',
     loadFailedToast: '載入專案失敗：{{error}}',
     configUpdatedToast: '掃描設定已更新',
+    sourceRestored: '原始碼已匯入',
     uploadFallback: '上傳',
     multiFileLabel: '{{dir}}（{{count}} 個檔案）',
     cloneLabelWithRef: '{{url}}（{{ref}}）',

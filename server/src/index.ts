@@ -1044,7 +1044,13 @@ app.post('/api/rulepacks/:id/check', asyncHandler(async (req, res) => {
 }));
 
 app.get('/api/projects', (_req, res) => {
-  res.json(listProjects());
+  // hasSource 让前端在刷新/从其他页返回时恢复「源码已导入」的扫描按钮可用态
+  res.json(
+    listProjects().map((project) => ({
+      ...project,
+      hasSource: fs.existsSync(pendingSourceDir(project.id)),
+    })),
+  );
 });
 
 app.post('/api/projects', asyncHandler(async (req, res) => {

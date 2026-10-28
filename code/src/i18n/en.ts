@@ -359,6 +359,7 @@ const en: typeof zh = {
     unknownReason: 'unknown reason',
     loadFailedToast: 'Failed to load project: {{error}}',
     configUpdatedToast: 'Scan config updated',
+    sourceRestored: 'Source imported',
     uploadFallback: 'Upload',
     multiFileLabel: '{{dir}} ({{count}} files)',
     cloneLabelWithRef: '{{url}} ({{ref}})',
