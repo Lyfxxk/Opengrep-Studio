@@ -261,6 +261,8 @@ const en: typeof zh = {
     batchPartial_other: 'Deleted {{count}} projects; {{failed}} failed (possibly importing or scanning)',
     listTitle: 'Projects',
     empty: 'No projects yet. Click "New project" in the top-right to start your first code audit.',
+    searchPlaceholder: 'Search by project name or description',
+    searchEmpty: 'No projects match the search',
     selectAllAria: 'Select all projects',
     rowSelectAria: 'Select project {{name}}',
     colName: 'Name',

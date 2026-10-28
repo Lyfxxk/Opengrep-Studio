@@ -254,6 +254,8 @@ const zhHant: typeof zh = {
     batchPartial_other: '已刪除 {{count}} 個專案，{{failed}} 個失敗（可能正在匯入或掃描中）',
     listTitle: '專案列表',
     empty: '暫無專案，點選右上角「新增專案」開始第一次程式碼審查',
+    searchPlaceholder: '按專案名稱或描述搜尋',
+    searchEmpty: '沒有符合搜尋條件的專案',
     selectAllAria: '全選專案',
     rowSelectAria: '選擇專案 {{name}}',
     colName: '專案名稱',
