@@ -370,15 +370,22 @@ export async function installEngineAsset({
       }`,
     );
   }
-  rmSync(backupPath, { force: true });
-  if (process.platform !== 'win32') chmodSync(installedPath, 0o755);
-
+  // 清单必须先于备份清理落盘：Windows 上旧引擎 exe 若仍被占用，删备份会 EBUSY；
+  // 若清单排在后面，会留下"新引擎已就位但 installed.json 缺失"的状态，
+  // 下一轮 setup:engine 回落 engines.json，可能误判重下甚至把刚升级的版本降级回去。
   writeInstalledManifest(toolDir, {
     version: tag,
     assetFile,
     sha256: actual,
     channel,
   });
+  try {
+    rmSync(backupPath, { force: true });
+  } catch {
+    // 与回滚分支同口径：备份清理失败不算安装失败，只提示残留路径供手工删除
+    log?.(`备份文件 ${backupPath} 清理失败（可能仍被占用），已保留，可手工删除`);
+  }
+  if (process.platform !== 'win32') chmodSync(installedPath, 0o755);
 
   return { installedPath, version, sha256: actual, channel };
 }
