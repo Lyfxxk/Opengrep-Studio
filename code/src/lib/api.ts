@@ -26,9 +26,12 @@ import {
   savePackContents,
 } from '@/lib/storage';
 
-/** 当前界面语言 → 服务端产物语言：服务端只提供简繁两份资源，其余语言统一回落简体 */
+/** 当前界面语言 → 服务端产物语言：zh / zh-Hant / en 三种，其余语言回落简体 */
 function productLang(): string {
-  return (i18n.resolvedLanguage ?? i18n.language).startsWith('zh-Hant') ? 'zh-Hant' : 'zh';
+  const lang = (i18n.resolvedLanguage ?? i18n.language).toLowerCase();
+  if (lang.startsWith('zh-hant')) return 'zh-Hant';
+  if (lang.startsWith('en')) return 'en';
+  return 'zh';
 }
 
 // 演示模式开关：只认显式的 'true' / '1'，避免 VITE_USE_MOCK=false 被 Boolean('false') 误判为开
