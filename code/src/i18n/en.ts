@@ -812,6 +812,18 @@ const en: typeof zh = {
       ruleFileInvalid: 'Invalid rule file {{name}}',
       upgradePending: 'An engine upgrade is already in progress — please wait.',
       noUpgradeTarget: 'No upgradable version right now',
+      upgradeCheckFailed: 'Update check failed: {{error}}',
+      upgradeCheckFailedCurrent: 'Update check failed: {{error}}; the current v{{current}} still works',
+      ruleIdUnsafe:
+        'Rule id "{{id}}" contains unsafe characters and cannot be used as a sample directory name. Fix the rule id in the YAML and try again.',
+      ruleFileInvalidDetail: 'Rule file {{name}} is invalid: {{reason}}',
+      packExportParseFailed: 'The rule pack content could not be parsed; export aborted: {{reason}}',
+      packManifestMissing:
+        'The archive contains multiple rule files but no pack.yaml manifest. Package it in the portable format (pack.yaml + rules/).',
+      allFilesIgnored:
+        'No files left to scan after applying .gitignore. Check your ignore rules, or turn off "Respect .gitignore" and upload again.',
+      noEnabledBuiltinPacks:
+        'No built-in rule packs are enabled, so the default config cannot be created automatically. Create a config in Config Management and bind it on the project page.',
     },
     git: {
       badUrl: 'Invalid repository URL — enter a Git URL starting with https://',

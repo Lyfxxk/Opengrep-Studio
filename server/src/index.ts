@@ -557,6 +557,7 @@ function savePortablePackFromLab(
     throw new HttpError(
       400,
       `首个规则 id「${parsed.ruleIds[0]}」含不安全字符，无法作为样本目录名；请修改 YAML 中的规则 id 后重试`,
+      { code: 'srv.ruleIdUnsafe', params: { id: parsed.ruleIds[0] } },
     );
   }
   fs.mkdirSync(config.customRulesDir, { recursive: true });
@@ -765,10 +766,11 @@ function buildExportReadme(pack: RulePack, packDir?: string): string {
       }
     }
   } catch (error) {
-    throw new HttpError(
-      400,
-      `规则包内容无法解析，导出中止：${error instanceof Error ? error.message : String(error)}`,
-    );
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new HttpError(400, `规则包内容无法解析，导出中止：${reason}`, {
+      code: 'srv.packExportParseFailed',
+      params: { reason },
+    });
   }
   return buildPackReadme({
     name: pack.name,
@@ -911,10 +913,11 @@ app.post(
             }
           } catch (error) {
             const rel = path.relative(root, file).replace(/\\/g, '/');
-            throw new HttpError(
-              400,
-              `规则文件 ${rel} 不合法：${error instanceof Error ? error.message : String(error)}`,
-            );
+            const reason = error instanceof Error ? error.message : String(error);
+            throw new HttpError(400, `规则文件 ${rel} 不合法：${reason}`, {
+              code: 'srv.ruleFileInvalidDetail',
+              params: { name: rel, reason },
+            });
           }
         }
         const { sampleCount } = scanPackSamples(root, ids);
@@ -957,6 +960,7 @@ app.post(
         throw new HttpError(
           400,
           '压缩包含多个规则文件但缺少 pack.yaml 清单，请按可移植格式打包（pack.yaml + rules/ 目录）',
+          { code: 'srv.packManifestMissing' },
         );
       }
       const content = fs.readFileSync(path.join(looseRoot, looseFiles[0].name), 'utf8');
@@ -1105,6 +1109,7 @@ function applyIgnoreFilter(
     throw new HttpError(
       400,
       '按 .gitignore 忽略规则过滤后没有剩余可扫描的文件，请检查忽略规则，或关闭“按 .gitignore 忽略文件”后重新上传',
+      { code: 'srv.allFilesIgnored' },
     );
   }
   return { fileCount: keptFiles, ignoredCount: ignoredFiles };
@@ -1285,6 +1290,7 @@ app.post('/api/projects/:id/scans', asyncHandler(async (req, res) => {
       throw new HttpError(
         400,
         '没有已启用的内置规则包，无法自动创建默认配置；请先在配置管理创建配置并在项目详情页绑定',
+        { code: 'srv.noEnabledBuiltinPacks' },
       );
     }
     updateProject(project.id, { configId: defaultConfig.id });

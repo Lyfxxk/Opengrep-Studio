@@ -156,6 +156,12 @@ export async function startEngineUpgrade(): Promise<EngineUpgradeState> {
       throw new HttpError(
         502,
         `${info.error}${info.current ? `；当前 v${info.current} 可正常使用` : ''}`,
+        info.current
+          ? {
+              code: 'srv.upgradeCheckFailedCurrent',
+              params: { error: info.error, current: info.current },
+            }
+          : { code: 'srv.upgradeCheckFailed', params: { error: info.error } },
       );
     }
     if (!info.canUpgrade || !info.latestTag || !info.assetName || !info.assetSha256) {
