@@ -318,7 +318,11 @@ export default function DashboardPage() {
                         {project.name}
                       </Link>
                       {latestScan ? (
-                        <span className="flex shrink-0 items-center gap-1.5 text-xs tabular-nums">
+                        <Link
+                          to={`/projects/${project.id}/scans/${latestScan.id}`}
+                          className="flex shrink-0 items-center gap-1.5 text-xs tabular-nums"
+                          title={t('dashboard.viewScanResult', { id: latestScan.id })}
+                        >
                           {critical > 0 && (
                             <Badge className="bg-destructive/15 px-1.5 font-normal text-destructive">
                               {t('severity.critical')} {critical}
@@ -329,10 +333,10 @@ export default function DashboardPage() {
                               {t('severity.high')} {high}
                             </Badge>
                           )}
-                          <span className="text-muted-foreground">
+                          <span className="text-muted-foreground hover:underline">
                             {t('dashboard.totalCount', { count: issues.length })}
                           </span>
-                        </span>
+                        </Link>
                       ) : (
                         <span className="shrink-0 text-xs text-muted-foreground">
                           {t('dashboard.unscanned')}
