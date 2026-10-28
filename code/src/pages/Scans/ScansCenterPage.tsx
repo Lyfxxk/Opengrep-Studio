@@ -28,6 +28,7 @@ import BatchDeleteBar from '@/components/BatchDeleteBar';
 import BatchDeleteConfirm from '@/components/BatchDeleteConfirm';
 import CompareDialog from '@/pages/ScanResult/CompareDialog';
 import { useRowSelection } from '@/lib/useRowSelection';
+import { usePagedList } from '@/lib/usePagedList';
 import { attachProjectNames, type ScanWithProject } from '@/lib/scans';
 import { formatDateTime } from '@/lib/format';
 import type { IProject } from '@/data/projects';
@@ -41,7 +42,6 @@ export default function ScansCenterPage() {
   const [projects, setProjects] = useState<IProject[]>([]);
   const [filterProjectId, setFilterProjectId] = useState('all');
   const [keyword, setKeyword] = useState('');
-  const [page, setPage] = useState(1);
   const [compareScanId, setCompareScanId] = useState<string | null>(null);
   const [batchConfirmOpen, setBatchConfirmOpen] = useState(false);
   const [batchDeleting, setBatchDeleting] = useState(false);
@@ -84,13 +84,7 @@ export default function ScansCenterPage() {
 
   // 分页：扫描进行中的轮询会频繁重刷列表，页码夹取保证删行 / 新增后不落在空页上
   const pageSize = 20;
-  const scanCount = filteredScans.length;
-  const pageCount = Math.max(1, Math.ceil(scanCount / pageSize));
-  const safePage = Math.min(page, pageCount);
-  useEffect(() => {
-    setPage(safePage);
-  }, [safePage]);
-  const pagedScans = filteredScans.slice((safePage - 1) * pageSize, safePage * pageSize);
+  const { page: safePage, setPage, pageCount, slice: pagedScans } = usePagedList(filteredScans, pageSize);
 
   // 有扫描进行中时轮询刷新，全部落定后停止
   useEffect(() => {

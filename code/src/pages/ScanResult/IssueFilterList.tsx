@@ -34,6 +34,7 @@ import { SEVERITY_BADGE_CLASS, SEVERITY_ORDER } from '@/lib/severity';
 import { cn } from '@/lib/utils';
 import { usePackDisplayName } from '@/lib/packName';
 import { useRowSelection } from '@/lib/useRowSelection';
+import { usePagedList } from '@/lib/usePagedList';
 import { api } from '@/lib/api';
 import { getCurrentUsername } from '@/lib/auth';
 import { KnowledgeLink } from './KnowledgeSheet';
@@ -96,14 +97,8 @@ export default function IssueFilterList({
   };
 
   // 筛选或数据变化后页码可能越界（如筛选后只剩一页），渲染前夹回有效范围
-  const [page, setPage] = useState(1);
   const pageSize = 20;
-  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const safePage = Math.min(page, pageCount);
-  useEffect(() => {
-    setPage(safePage);
-  }, [safePage]);
-  const paged = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
+  const { page: safePage, setPage, pageCount, slice: paged } = usePagedList(filtered, pageSize);
 
   /** 批量复核：循环调用 setReview，最后汇总成功/失败 */
   const handleBatchReview = async () => {

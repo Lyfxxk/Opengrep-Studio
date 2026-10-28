@@ -29,6 +29,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import BatchDeleteBar from '@/components/BatchDeleteBar';
 import BatchDeleteConfirm from '@/components/BatchDeleteConfirm';
 import { useRowSelection } from '@/lib/useRowSelection';
+import { usePagedList } from '@/lib/usePagedList';
 import {
   Dialog,
   DialogContent,
@@ -258,26 +259,20 @@ export default function RulePackTab() {
   const builtinRuleTotal = builtinPacks.reduce((sum, pack) => sum + pack.ruleCount, 0);
 
   // 分页：自定义包表格与内置包卡片流各自翻页，删行 / 导入后夹页码防空页
-  const [customPage, setCustomPage] = useState(1);
-  const [builtinPage, setBuiltinPage] = useState(1);
   const customPageSize = 20;
   const builtinPageSize = 8;
-  const customPageCount = Math.max(1, Math.ceil(customPacks.length / customPageSize));
-  const builtinPageCount = Math.max(1, Math.ceil(builtinPacks.length / builtinPageSize));
-  const safeCustomPage = Math.min(customPage, customPageCount);
-  const safeBuiltinPage = Math.min(builtinPage, builtinPageCount);
-  useEffect(() => {
-    setCustomPage(safeCustomPage);
-    setBuiltinPage(safeBuiltinPage);
-  }, [safeCustomPage, safeBuiltinPage]);
-  const pagedCustomPacks = customPacks.slice(
-    (safeCustomPage - 1) * customPageSize,
-    safeCustomPage * customPageSize,
-  );
-  const pagedBuiltinPacks = builtinPacks.slice(
-    (safeBuiltinPage - 1) * builtinPageSize,
-    safeBuiltinPage * builtinPageSize,
-  );
+  const {
+    page: safeCustomPage,
+    setPage: setCustomPage,
+    pageCount: customPageCount,
+    slice: pagedCustomPacks,
+  } = usePagedList(customPacks, customPageSize);
+  const {
+    page: safeBuiltinPage,
+    setPage: setBuiltinPage,
+    pageCount: builtinPageCount,
+    slice: pagedBuiltinPacks,
+  } = usePagedList(builtinPacks, builtinPageSize);
 
   // 批量删除只覆盖自定义包表格（内置包在下方以卡片流呈现，不参与勾选）
   const selection = useRowSelection(customPacks.map((pack) => pack.id));
