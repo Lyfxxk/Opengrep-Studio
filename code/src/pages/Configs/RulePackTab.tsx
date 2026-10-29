@@ -108,6 +108,8 @@ export default function RulePackTab() {
   const [builtinOpen, setBuiltinOpen] = useState(false);
   const [checking, setChecking] = useState<IRulePack | null>(null);
   const [checkResult, setCheckResult] = useState<IRulePackCheckResult | null>(null);
+  // 列表没取到 ≠ 包不存在：深链此时不能报「已删除」，也不能清掉 ?pack（恢复后还能接着用）
+  const [loadFailed, setLoadFailed] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -115,7 +117,9 @@ export default function RulePackTab() {
   const loadAll = useCallback(async () => {
     try {
       setRulePacks(await api.listRulePacks());
+      setLoadFailed(false);
     } catch (error) {
+      setLoadFailed(true);
       toast.error(error instanceof Error ? error.message : t('rulePacks.loadFailed'));
     } finally {
       setLoading(false);
@@ -128,12 +132,14 @@ export default function RulePackTab() {
 
   // 扫描结果页的「本次扫描规则包」浮层带 ?pack=<id> 深链进来：列表加载完成后直接打开该包的
   // 内容查看对话框，而不是只落到列表页让用户自己找。
-  // 无论是否命中都清掉参数：包可能已被删除，留着会让每次刷新重复尝试，也会挡住手动打开别的包
+  // 命中后清掉参数：留着会让每次刷新重复弹窗，也会挡住手动打开别的包。
   useEffect(() => {
     const packId = searchParams.get('pack');
-    if (!packId || loading) return;
+    if (!packId || loading || loadFailed) return;
     const target = rulePacks.find((pack) => pack.id === packId);
     if (target) {
+      // 内置包默认折叠，不展开的话用户关掉对话框会以为深链没生效
+      if (target.builtin) setBuiltinOpen(true);
       setContentTarget(target);
     } else {
       toast.warning(t('rulePacks.deepLinkMissing', { id: packId }));
@@ -141,7 +147,7 @@ export default function RulePackTab() {
     const next = new URLSearchParams(searchParams);
     next.delete('pack');
     setSearchParams(next, { replace: true });
-  }, [loading, rulePacks, searchParams, setSearchParams, t]);
+  }, [loading, loadFailed, rulePacks, searchParams, setSearchParams, t]);
 
   /** 内容对话框的关闭回调：稳定引用，避免 RulePackContentDialog 的加载 effect 因新函数引用重跑 */
   const handleContentDialogOpenChange = useCallback((open: boolean) => {
@@ -556,14 +562,12 @@ export default function RulePackTab() {
                       <TableBody>{pagedCustomPacks.map(renderPackRow)}</TableBody>
                     </Table>
                   </div>
-                  {customPacks.length > LIST_PAGE_SIZE && (
-                    <Pagination
-                      page={safeCustomPage}
-                      pageCount={customPageCount}
-                      onPage={setCustomPage}
-                      className="border-t px-4 py-2"
-                    />
-                  )}
+                  <Pagination
+                    page={safeCustomPage}
+                    pageCount={customPageCount}
+                    onPage={setCustomPage}
+                    className="border-t px-4 py-2"
+                  />
                 </>
               )}
             </CardContent>
@@ -641,14 +645,12 @@ export default function RulePackTab() {
                     </div>
                   ))}
                 </CardContent>
-                {builtinPacks.length > LIST_PAGE_SIZE && (
-                  <Pagination
-                    page={safeBuiltinPage}
-                    pageCount={builtinPageCount}
-                    onPage={setBuiltinPage}
-                    className="border-t px-4 py-2"
-                  />
-                )}
+                <Pagination
+                  page={safeBuiltinPage}
+                  pageCount={builtinPageCount}
+                  onPage={setBuiltinPage}
+                  className="border-t px-4 py-2"
+                />
               </>
             )}
           </Card>

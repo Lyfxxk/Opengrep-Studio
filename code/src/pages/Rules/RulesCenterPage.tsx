@@ -21,7 +21,16 @@ export default function RulesCenterPage() {
         value={tab}
         onValueChange={(value) => {
           // 仅实验室 tab 进 URL：规则包为默认态保持地址干净，实验室可被直接分享 / 收藏
-          setSearchParams(value === 'lab' ? { tab: 'lab' } : {}, { replace: true });
+          // 只增删 tab 这一个键：整体覆盖会把 ?pack=<id> 深链一起清掉，用户从实验室点回规则包就再也找不到那只包
+          setSearchParams(
+            (prev) => {
+              const next = new URLSearchParams(prev);
+              if (value === 'lab') next.set('tab', 'lab');
+              else next.delete('tab');
+              return next;
+            },
+            { replace: true },
+          );
         }}
       >
         <TabsList>

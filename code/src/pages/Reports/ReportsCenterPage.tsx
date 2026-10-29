@@ -216,9 +216,7 @@ export default function ReportsCenterPage() {
         )
       )}
 
-      {filteredRows.length > LIST_PAGE_SIZE && (
-        <Pagination page={safePage} pageCount={pageCount} onPage={setPage} />
-      )}
+      <Pagination page={safePage} pageCount={pageCount} onPage={setPage} />
     </div>
   );
 }

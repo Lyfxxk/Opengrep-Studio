@@ -274,9 +274,7 @@ export default function ProjectsPage() {
         </CardContent>
       </Card>
 
-      {projects.length > LIST_PAGE_SIZE && (
-        <Pagination page={safePage} pageCount={pageCount} onPage={setPage} />
-      )}
+      <Pagination page={safePage} pageCount={pageCount} onPage={setPage} />
 
       <NewProjectDialog
         open={createOpen}
