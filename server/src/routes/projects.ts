@@ -83,8 +83,13 @@ projectRoutes.patch('/api/projects/:id', asyncHandler(async (req, res) => {
     if (configId === null || configId === '') {
       patch.configId = null;
     } else {
+      // 引用字段校验与 baselineScanId 同口径：配置不存在时报 400，
+      // 而不是静默解绑（否则下次一键扫描会把用户选的配置改绑成默认配置）
       const scanConfig = getConfig(String(configId));
-      patch.configId = scanConfig ? scanConfig.id : null;
+      if (!scanConfig) {
+        throw new HttpError(400, '扫描配置不存在或已被删除', { code: 'srv.configNotFound' });
+      }
+      patch.configId = scanConfig.id;
     }
   }
   updateProject(project.id, patch);
