@@ -39,6 +39,7 @@ import { parseSarifImport } from '../sarif-import.js';
 import { buildReportData, renderReportHtml, type ReportLang } from '../report.js';
 import { applyBaselineComparison, enqueueScan, requestScanCancel, type ScanPlan } from '../scan-runner.js';
 import { asyncHandler, limit400, newId, requireProject, requireValidBaseline } from './shared.js';
+import { isProjectImporting } from './projects.js';
 
 export const scanRoutes = Router();
 
@@ -156,6 +157,13 @@ scanRoutes.post('/api/projects/:id/scans', asyncHandler(async (req, res) => {
     });
   }
   const project = requireProject(req.params.id);
+  // 导入（上传/克隆）进行中时 pending/src 是半成品：放行会让下面的快照复制拿到不完整源码，
+  // 与上传/克隆入口的导入互斥同口径直接 409
+  if (isProjectImporting(project.id)) {
+    throw new HttpError(409, '该项目正在导入源码（上传/克隆）中，请等待完成后再试', {
+      code: 'srv.projectImportBusy',
+    });
+  }
   const pendingDir = pendingSourceDir(project.id);
   if (!fs.existsSync(pendingDir)) {
     throw new HttpError(400, '请先上传源码或克隆仓库再发起扫描', { code: 'srv.noSourceToScan' });
