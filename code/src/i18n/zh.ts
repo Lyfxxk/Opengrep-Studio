@@ -816,6 +816,7 @@ const zh = {
       configNameExists: '配置名称已存在',
       packsRequired: '请至少勾选 1 个规则包',
       packNotFoundById: '规则包 {{id}} 不存在',
+      globSeparatorInvalid: '不能用顿号/逗号分隔多条路径：glob 中这些字符非法，请逐条添加（{{item}}）',
       timeoutInvalid: '单文件超时须为 1–600 的整数',
       jobsInvalid: '并发数须为 1–16 的整数',
       sizeInvalid: '文件体积上限须在 0.1–100 MB 之间',

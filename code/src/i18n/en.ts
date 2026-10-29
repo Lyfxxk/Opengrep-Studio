@@ -848,6 +848,7 @@ const en: typeof zh = {
       configNameExists: 'A config with this name already exists',
       packsRequired: 'Select at least 1 rule pack',
       packNotFoundById: 'Rule pack {{id}} not found',
+      globSeparatorInvalid: 'Do not join paths with 、 or commas — they are invalid in globs; add one at a time ({{item}})',
       timeoutInvalid: 'Per-file timeout must be an integer between 1 and 600',
       jobsInvalid: 'Concurrency must be an integer between 1 and 16',
       sizeInvalid: 'Max file size must be between 0.1 and 100 MB',

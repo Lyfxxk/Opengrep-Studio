@@ -817,6 +817,7 @@ const zhHant: typeof zh = {
       configNameExists: '設定名稱已存在',
       packsRequired: '請至少勾選 1 個規則包',
       packNotFoundById: '規則包 {{id}} 不存在',
+      globSeparatorInvalid: '不能用頓號/逗號分隔多條路徑：glob 不支援這些字元，請逐條新增（{{item}}）',
       timeoutInvalid: '單檔案逾時須為 1–600 的整數',
       jobsInvalid: '並行數須為 1–16 的整數',
       sizeInvalid: '檔案體積上限須在 0.1–100 MB 之間',
