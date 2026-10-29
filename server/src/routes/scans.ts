@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { Router } from 'express';
 import multer from 'multer';
-import { config, pendingSourceDir, scanSourceDir } from '../config.js';
+import { config, pendingSourceDir, scanSnapshotRoot, scanSourceDir } from '../config.js';
 import { copyDirectory, isPathWithin } from '../archive.js';
 import { HttpError } from '../errors.js';
 import {
@@ -251,7 +251,9 @@ scanRoutes.delete('/api/scans/:scanId', asyncHandler(async (req, res) => {
     throw new HttpError(409, '扫描进行中，请等扫描完成或失败后再删除', { code: 'srv.scanBusy' });
   }
   deleteScan(scan.id);
-  fs.rmSync(scanSourceDir(scan.projectId, scan.id), { recursive: true, force: true });
+  // 连快照根目录（workspace/<项目id>/<扫描id>/）一起删：只删 src 会让父目录成为随删除次数
+  // 累积的永久空壳；force 兜底根目录从未落盘的情况（如 SARIF 导入的扫描没有快照）
+  fs.rmSync(scanSnapshotRoot(scan.projectId, scan.id), { recursive: true, force: true });
   res.status(204).end();
 }));
 
