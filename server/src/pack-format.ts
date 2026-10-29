@@ -55,8 +55,9 @@ export function parsePackManifest(text: string): PackManifest {
   const raw = doc as Record<string, unknown>;
   const name = String(raw.name ?? '').trim();
   if (!name) throw new HttpError(400, 'pack.yaml 缺少 name 字段', { code: 'pack.nameMissing' });
-  if (name.length > 60) {
-    throw new HttpError(400, 'pack.yaml 的 name 不能超过 60 个字符', { code: 'pack.nameTooLong' });
+  // 与创建/上传入口的 50 字符上限统一：同一规则包不应因为导入通道不同而放宽命名约束
+  if (name.length > 50) {
+    throw new HttpError(400, 'pack.yaml 的 name 不能超过 50 个字符', { code: 'pack.nameTooLong' });
   }
   const version = String(raw.version ?? '').trim();
   if (!version) throw new HttpError(400, 'pack.yaml 缺少 version 字段', { code: 'pack.versionMissing' });

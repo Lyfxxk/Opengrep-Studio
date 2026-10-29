@@ -896,6 +896,14 @@ assert(
   badImported.status === 400 && badImported.json?.error?.code === 'pack.manifestInvalid'
     && (badImported.json?.error?.message ?? '').includes('pack.yaml'),
   '坏 pack.yaml 被拒绝且保留 pack.manifestInvalid 错误码', JSON.stringify(badImported.json));
+// 名称上限统一为 50：创建/上传入口早就限 50，导入通道原先放宽到 60，同一约束不应因入口不同而异
+const longNamePack = new AdmZip();
+longNamePack.addFile('pack.yaml', Buffer.from(`name: ${'N'.repeat(51)}\nversion: 1.0.0\n`, 'utf8'));
+longNamePack.addFile('rules/r.yaml', Buffer.from(LAB_EVAL_RULE, 'utf8'));
+const longNameImported = await api('POST', '/api/rulepacks/import', packZipForm(longNamePack, 'long-name.zip'));
+assert(
+  longNameImported.status === 400 && longNameImported.json?.error?.code === 'pack.nameTooLong',
+  '导入包 name 超过 50 字符被拒绝', JSON.stringify(longNameImported.json));
 
 const multiYaml = new AdmZip();
 multiYaml.addFile('a.yaml', Buffer.from(LAB_EVAL_RULE, 'utf8'));

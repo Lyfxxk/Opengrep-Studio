@@ -647,7 +647,7 @@ export default function RulePackTab() {
               <Input
                 id="rulepack-name"
                 value={uploadName}
-                maxLength={30}
+                maxLength={50}
                 placeholder={t('rulePacks.uploadNamePlaceholder')}
                 onChange={(event) => setUploadName(event.target.value)}
               />

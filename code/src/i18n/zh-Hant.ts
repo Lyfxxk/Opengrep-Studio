@@ -910,7 +910,7 @@ const zhHant: typeof zh = {
       manifestInvalid: 'pack.yaml 解析失敗：{{reason}}',
       manifestNotObject: 'pack.yaml 頂層必須是鍵值對映',
       nameMissing: 'pack.yaml 缺少 name 欄位',
-      nameTooLong: 'pack.yaml 的 name 不能超過 60 個字元',
+      nameTooLong: 'pack.yaml 的 name 不能超過 50 個字元',
       versionMissing: 'pack.yaml 缺少 version 欄位',
       versionTooLong: 'pack.yaml 的 version 不能超過 30 個字元',
     },

@@ -948,7 +948,7 @@ const en: typeof zh = {
       manifestInvalid: 'Failed to parse pack.yaml: {{reason}}',
       manifestNotObject: 'pack.yaml top level must be a key-value mapping',
       nameMissing: 'pack.yaml is missing the name field',
-      nameTooLong: 'pack.yaml name cannot exceed 60 characters',
+      nameTooLong: 'pack.yaml name cannot exceed 50 characters',
       versionMissing: 'pack.yaml is missing the version field',
       versionTooLong: 'pack.yaml version cannot exceed 30 characters',
     },
