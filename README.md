@@ -7,7 +7,7 @@
 <p>
 <a href="https://github.com/Lyfxxk/Opengrep-Studio/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/Lyfxxk/Opengrep-Studio/ci.yml?branch=main&label=CI&style=flat-square" alt="CI"/></a>
 <a href="#license"><img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="License: MIT"/></a>
-<a href="https://github.com/opengrep/opengrep"><img src="https://img.shields.io/badge/engine-opengrep%20v1.33.0-22c55e?style=flat-square" alt="Engine"/></a>
+<a href="https://github.com/opengrep/opengrep"><img src="https://img.shields.io/badge/engine-opengrep%20v1.33.1-22c55e?style=flat-square" alt="Engine"/></a>
 <a href="#requirements"><img src="https://img.shields.io/badge/node-%E2%89%A522.12-3c873a?style=flat-square&logo=nodedotjs&logoColor=white" alt="Node"/></a>
 <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-64748b?style=flat-square" alt="Platform"/>
 </p>
@@ -136,7 +136,7 @@ The script checks your Node version, installs dependencies, downloads the engine
 git clone https://github.com/Lyfxxk/Opengrep-Studio.git
 cd Opengrep-Studio
 npm run install:all   # root + server + code dependencies in one go
-npm run setup:engine  # download opengrep v1.33.0 and verify SHA-256
+npm run setup:engine  # download opengrep v1.33.1 and verify SHA-256
 npm run dev           # backend (:8787) + frontend (:1022) together
 ```
 
@@ -189,7 +189,7 @@ Want to see it before touching your own code? `npm run seed` seeds three demo pr
 ```mermaid
 flowchart LR
     U["Browser UI<br/>React 19 + Vite"] -->|"REST /api"| S["Express backend<br/>:8787"]
-    S -->|"child process<br/>--json --dataflow-traces"| E["opengrep engine<br/>v1.33.0"]
+    S -->|"child process<br/>--json --dataflow-traces"| E["opengrep engine<br/>v1.33.1"]
     S --> DB[("SQLite<br/>server/data/studio.db")]
     S --> FS[("immutable source snapshots<br/>data/workspace/")]
 ```

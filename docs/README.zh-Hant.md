@@ -7,7 +7,7 @@
 <p>
 <a href="https://github.com/Lyfxxk/Opengrep-Studio/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/Lyfxxk/Opengrep-Studio/ci.yml?branch=main&label=CI&style=flat-square" alt="CI"/></a>
 <a href="#license"><img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="License: MIT"/></a>
-<a href="https://github.com/opengrep/opengrep"><img src="https://img.shields.io/badge/engine-opengrep%20v1.33.0-22c55e?style=flat-square" alt="Engine"/></a>
+<a href="https://github.com/opengrep/opengrep"><img src="https://img.shields.io/badge/engine-opengrep%20v1.33.1-22c55e?style=flat-square" alt="Engine"/></a>
 <a href="#環境需求"><img src="https://img.shields.io/badge/node-%E2%89%A522.12-3c873a?style=flat-square&logo=nodedotjs&logoColor=white" alt="Node"/></a>
 <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-64748b?style=flat-square" alt="Platform"/>
 </p>
@@ -136,7 +136,7 @@ Windows 使用者雙擊 `一键启动（Windows）.bat`，macOS / Linux 使用�
 git clone https://github.com/Lyfxxk/Opengrep-Studio.git
 cd Opengrep-Studio
 npm run install:all   # 安裝根目錄 / server / code 三處相依套件
-npm run setup:engine  # 下載 opengrep v1.33.0 並校驗 SHA-256
+npm run setup:engine  # 下載 opengrep v1.33.1 並校驗 SHA-256
 npm run dev           # 同時啟動後端(8787)與前端(1022)
 ```
 
@@ -189,7 +189,7 @@ npm run docker:run    # 等價於 docker run --rm -p 8787:8787 -v ogstudio-data:
 ```mermaid
 flowchart LR
     U["瀏覽器 UI<br/>React 19 + Vite"] -->|"REST /api"| S["Express 後端<br/>:8787"]
-    S -->|"子程序編排<br/>--json --dataflow-traces"| E["opengrep 引擎<br/>v1.33.0"]
+    S -->|"子程序編排<br/>--json --dataflow-traces"| E["opengrep 引擎<br/>v1.33.1"]
     S --> DB[("SQLite<br/>server/data/studio.db")]
     S --> FS[("不可變更原始碼快照<br/>data/workspace/")]
 ```
