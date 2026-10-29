@@ -1093,7 +1093,7 @@ export function renderReportHtml(
       <div class="doc-meta">
         <b class="mono">${escapeHtml(meta.scanId)}</b><br>
         ${text.meta.finishedAt} <b>${formatDateTime(meta.finishedAt ?? meta.scannedAt)}</b><br>
-        ${text.meta.engine} <b>opengrep v${escapeHtml(meta.engineVersion ?? '—')}</b> · ${text.meta.rulesLabel} <b>${escapeHtml(meta.rules ?? '—')}</b>
+        ${text.meta.engine} <b>${meta.engineVersion ? `opengrep v${escapeHtml(meta.engineVersion)}` : '—'}</b> · ${text.meta.rulesLabel} <b>${escapeHtml(meta.rules ?? '—')}</b>
       </div>
     </div>
 
@@ -1152,7 +1152,7 @@ export function renderReportHtml(
 
     <h3 class="sub">${text.methodSub.repro}</h3>
     <dl class="kv">
-      <dt>${text.meta.engine}</dt><dd>opengrep v${escapeHtml(meta.engineVersion ?? '—')}${meta.durationSeconds !== undefined ? ` · ${formatDuration(meta.durationSeconds, text)}` : ''}</dd>
+      <dt>${text.meta.engine}</dt><dd>${meta.engineVersion ? `opengrep v${escapeHtml(meta.engineVersion)}` : '—'}${meta.durationSeconds !== undefined ? ` · ${formatDuration(meta.durationSeconds, text)}` : ''}</dd>
       <dt>${text.meta.sourceHash}</dt><dd class="mono">${escapeHtml(meta.sourceHash ?? '—')}</dd>
       <dt>${text.meta.generatedAt}</dt><dd>${formatDateTime(meta.generatedAt)}</dd>
     </dl>

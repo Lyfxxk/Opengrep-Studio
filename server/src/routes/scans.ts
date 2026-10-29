@@ -150,6 +150,17 @@ function requireScan(id: string): ScanRecord {
   return scan;
 }
 
+/**
+ * 扫描产物的引擎版本：优先用记录里落库的版本；旧记录没落 engine_version 时，
+ * 只有引擎扫描（有 commandLine）才兜底探测当前版本——SARIF 导入没有 commandLine，
+ * 用本机 opengrep 版本兜底会把外部工具的结果标错来源。
+ */
+async function resolveScanEngineVersion(scan: ScanRecord): Promise<string | undefined> {
+  if (scan.engineVersion) return scan.engineVersion;
+  if (!scan.commandLine) return undefined;
+  return getEngineVersion();
+}
+
 scanRoutes.post('/api/projects/:id/scans', asyncHandler(async (req, res) => {
   if (engineUpgradeRunning()) {
     throw new HttpError(409, '引擎升级进行中，请升级完成后再发起扫描', {
@@ -410,7 +421,7 @@ scanRoutes.get('/api/scans/:scanId/report', asyncHandler(async (req, res) => {
     throw new HttpError(404, '扫描所属项目不存在或已被删除', { code: 'srv.projectNotFound' });
   }
   const issues = listIssues(scan.id);
-  const engineVersion = scan.engineVersion ?? (await getEngineVersion());
+  const engineVersion = await resolveScanEngineVersion(scan);
   const data = buildReportData(scan, project, issues, engineVersion, listReviews(scan.projectId));
 
   const format = String(req.query.format ?? 'json');
@@ -440,7 +451,7 @@ scanRoutes.get('/api/scans/:scanId/sarif', asyncHandler(async (req, res) => {
     throw new HttpError(400, '仅已完成的扫描可导出 SARIF', { code: 'srv.sarifNotCompleted' });
   }
   const issues = listIssues(scan.id);
-  const engineVersion = scan.engineVersion ?? (await getEngineVersion());
+  const engineVersion = await resolveScanEngineVersion(scan);
   const sarif = buildSarifReport(scan, issues, engineVersion);
   res.setHeader(
     'Content-Disposition',
@@ -519,7 +530,7 @@ function parseProductLang(value: unknown): ReportLang {
 scanRoutes.get('/api/scans/:scanId/manifest', asyncHandler(async (req, res) => {
   const scan = requireScan(req.params.scanId);
   const project = getProject(scan.projectId);
-  const engineVersion = scan.engineVersion ?? (await getEngineVersion());
+  const engineVersion = await resolveScanEngineVersion(scan);
   const lang = parseProductLang(req.query.lang);
   res.json({
     scanId: scan.id,
