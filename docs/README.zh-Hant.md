@@ -165,7 +165,7 @@ npm run docker:run    # 等價於 docker run --rm -p 8787:8787 -v ogstudio-data:
 <summary><b>疑難排解</b></summary>
 <ul>
 <li><b>引擎下載慢或失敗</b>：下載會自動按 <code>OPENGREP_DOWNLOAD_BASE 鏡像 → github.com → api.github.com</code> 依次降級，github.com 不可達時通常無需介入即可裝完；仍失敗時可手動設定鏡像 <code>set OPENGREP_DOWNLOAD_BASE=&lt;鏡像位址&gt;</code>（macOS/Linux 用 <code>export</code>），或從 <a href="https://github.com/opengrep/opengrep/releases/tag/v1.31.0">opengrep Releases</a> 手動下載後用 <code>OPENGREP_BIN</code> 指向二進位檔路徑</li>
-<li><b>檢查更新提示 GitHub API 限流</b>：匿名呼叫上限 60 次/小時，檢查結果快取 10 分鐘；稍後再試即可，不影響掃描</li>
+<li><b>檢查更新提示 GitHub API 限流</b>：匿名呼叫上限 60 次/小時，檢查結果快取 30 分鐘；稍後再試即可，不影響掃描</li>
 <li><b>macOS 提示無法驗證引擎</b>：<code>xattr -d com.apple.quarantine &lt;引擎路徑&gt;</code></li>
 <li><b>連接埠被佔用</b>：<code>node server/scripts/kill-port.mjs 8787 1022</code></li>
 <li><b>更多環境變數</b>：<code>PORT</code> / <code>HOST</code> / <code>DATA_DIR</code> / <code>CUSTOM_RULES_DIR</code> / <code>OPENGREP_BIN</code> / <code>OPENGREP_DOWNLOAD_BASE</code></li>

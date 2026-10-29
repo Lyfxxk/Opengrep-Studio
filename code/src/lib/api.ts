@@ -898,7 +898,7 @@ export const api = {
     return request('/api/health');
   },
 
-  /** 检查引擎更新（force=true 跳过服务端 10 分钟缓存） */
+  /** 检查引擎更新（force=true 跳过服务端 30 分钟缓存） */
   checkEngineUpdate(force = false): Promise<IEngineUpdateInfo> {
     if (USE_MOCK) {
       return Promise.resolve({
