@@ -54,6 +54,10 @@ const en: typeof zh = {
   pagination: {
     prev: 'Previous',
     next: 'Next',
+    aria: 'Pagination',
+    first: 'First page',
+    last: 'Last page',
+    jumpHint: 'Type a page number and press Enter',
     pageOf: 'Page {{page}} / {{total}}',
     pagePrefix: 'Page',
     pageSuffix: 'of {{total}}',

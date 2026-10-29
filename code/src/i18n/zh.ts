@@ -53,6 +53,10 @@ const zh = {
   pagination: {
     prev: '上一页',
     next: '下一页',
+    aria: '分页',
+    first: '首页',
+    last: '末页',
+    jumpHint: '输入页码后按回车跳转',
     pageOf: '第 {{page}} / {{total}} 页',
     pagePrefix: '第',
     pageSuffix: '/ {{total}} 页',
