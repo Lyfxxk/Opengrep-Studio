@@ -12,14 +12,11 @@ import {
   getProject,
   getRulePack,
   getScan,
-  insertConfig,
   insertScan,
   isActiveIssue,
   listAllScans,
-  listConfigs,
   listIssues,
   listReviews,
-  listRulePacks,
   listScans,
   replaceIssues,
   updateProject,
@@ -29,6 +26,7 @@ import {
   type ScanConfig,
   type ScanRecord,
 } from '../db.js';
+import { ensureFallbackScanConfig } from '../fallback-config.js';
 import { listRuleMessages } from '../knowledge.js';
 import { engineAvailable, engineInstallHint, getEngineVersion } from '../engine.js';
 import { engineUpgradeRunning } from '../engine-update.js';
@@ -46,18 +44,28 @@ export const scanRoutes = Router();
 /** SARIF 导入的体积上限（文案从取数点引用） */
 const MAX_SARIF_BYTES = 20 * 1024 * 1024;
 
+/**
+ * 解析项目实际生效的扫描配置：绑定有效就用绑定的；未绑定、或绑定的配置已被删除时，
+ * 自动落到受保护的「兜底配置」并重新绑定（兜底配置不可删除，见 fallback-config.ts）。
+ */
+function resolveScanConfig(project: Project): ScanConfig {
+  const bound = project.configId ? getConfig(project.configId) : undefined;
+  if (bound) return bound;
+  const fallbackConfig = ensureFallbackScanConfig();
+  if (!fallbackConfig) {
+    throw new HttpError(
+      400,
+      '没有已启用的内置规则包，无法创建兜底配置；请先在配置管理创建配置并在项目详情页绑定',
+      { code: 'srv.noEnabledBuiltinPacks' },
+    );
+  }
+  updateProject(project.id, { configId: fallbackConfig.id });
+  project.configId = fallbackConfig.id;
+  return fallbackConfig;
+}
+
 function buildConfigPlan(project: Project): ScanPlan {
-  if (!project.configId) {
-    throw new HttpError(400, '项目未绑定扫描配置，请先在配置管理创建配置并在项目详情页绑定', {
-      code: 'srv.configNotBound',
-    });
-  }
-  const scanConfig = getConfig(project.configId);
-  if (!scanConfig) {
-    throw new HttpError(400, '项目绑定的扫描配置已不存在，请重新绑定', {
-      code: 'srv.configGone',
-    });
-  }
+  const scanConfig = resolveScanConfig(project);
   const configFiles: string[] = [];
   const rulepacks: Array<{ id: string; name: string }> = [];
   const filePacks: Record<string, { id: string; name: string }> = {};
@@ -92,36 +100,6 @@ function buildConfigPlan(project: Project): ScanPlan {
     excludes: scanConfig.excludes,
     includes: scanConfig.includes,
   };
-}
-
-/** 一键扫描自动创建并复用的默认配置名（按名查找复用；seed 演示配置名不同，不会冲突） */
-const DEFAULT_SCAN_CONFIG_NAME = '默认扫描配置';
-
-/**
- * 一键扫描的兜底：确保「默认扫描配置」存在（全部启用的内置规则包，引擎参数与 configs 表列默认值一致），
- * 已存在则原样复用（尊重用户在配置页做过的调整）。没有可用内置包时返回 undefined，由调用方给出下一步指引。
- */
-function ensureDefaultScanConfig(): ScanConfig | undefined {
-  const existing = listConfigs().find((config) => config.name === DEFAULT_SCAN_CONFIG_NAME);
-  if (existing) return existing;
-  const rulePackIds = listRulePacks()
-    .filter((pack) => pack.builtin && pack.enabled)
-    .map((pack) => pack.id);
-  if (rulePackIds.length === 0) return undefined;
-  const scanConfig: ScanConfig = {
-    id: newId('cfg'),
-    name: DEFAULT_SCAN_CONFIG_NAME,
-    description: '一键扫描自动创建：全部启用的内置规则包，可在扫描配置页调整',
-    rulePackIds,
-    excludes: [],
-    includes: [],
-    timeoutSeconds: 5,
-    jobs: 4,
-    maxTargetBytes: 1000000,
-    createdAt: new Date().toISOString(),
-  };
-  insertConfig(scanConfig);
-  return scanConfig;
 }
 
 /** 扫描编号带项目与时间信息（如 scan-mobsf-20261027-2301-x7k2）：记录一多也能一眼看出归属与日期 */
@@ -184,20 +162,6 @@ scanRoutes.post('/api/projects/:id/scans', asyncHandler(async (req, res) => {
   // 同款检查保留作双保险，覆盖服务运行期间引擎被删除的窗口）
   if (!engineAvailable()) {
     throw new HttpError(400, engineInstallHint(), { code: 'srv.engineMissing' });
-  }
-
-  // 一键路径：未绑配置时自动创建/复用「默认扫描配置」并绑定，免去先建配置再回来绑定的往返
-  if (!project.configId) {
-    const defaultConfig = ensureDefaultScanConfig();
-    if (!defaultConfig) {
-      throw new HttpError(
-        400,
-        '没有已启用的内置规则包，无法自动创建默认配置；请先在配置管理创建配置并在项目详情页绑定',
-        { code: 'srv.noEnabledBuiltinPacks' },
-      );
-    }
-    updateProject(project.id, { configId: defaultConfig.id });
-    project.configId = defaultConfig.id;
   }
 
   const plan = buildConfigPlan(project);

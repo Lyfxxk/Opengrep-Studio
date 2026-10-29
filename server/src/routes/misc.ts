@@ -169,6 +169,12 @@ miscRoutes.delete('/api/configs/:id', asyncHandler(async (req, res) => {
   if (!existing) {
     throw new HttpError(404, '扫描配置不存在或已被删除', { code: 'srv.configNotFound' });
   }
+  // 兜底配置是未绑定配置的项目扫描的最后一道保障，删掉会让这些项目无法发起扫描
+  if (existing.isProtected) {
+    throw new HttpError(403, '兜底扫描配置不可删除；没有绑定配置的项目扫描会自动使用它', {
+      code: 'srv.configProtected',
+    });
+  }
   deleteConfig(existing.id);
   res.status(204).end();
 }));

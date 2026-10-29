@@ -7,6 +7,7 @@ import { config } from './config.js';
 import { HttpError } from './errors.js';
 import { engineInstallHint, engineSourceLabel, terminateTrackedChildren } from './engine.js';
 import { engineTargetVersion } from './engine-manifest.js';
+import { ensureFallbackScanConfig } from './fallback-config.js';
 import { markStaleScansFailed } from './scan-runner.js';
 import { cleanupRuleLabScratch } from './rule-lab.js';
 import { miscRoutes } from './routes/misc.js';
@@ -135,6 +136,8 @@ app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
 const server = app.listen(config.port, config.host, () => {
   ensureBuiltinRulePacks();
   pruneStaleBuiltinPacks();
+  // 兜底扫描配置常驻：未绑定配置（或绑定已失效）的项目发起扫描时回落到它，且不可删除
+  ensureFallbackScanConfig();
   markStaleScansFailed();
   console.log(`[server] Opengrep Studio 后端已启动: http://${config.host}:${config.port}`);
   console.log(`[server] 引擎路径: ${path.resolve(config.opengrepBin)}（${engineSourceLabel()}）`);
