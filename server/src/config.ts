@@ -90,6 +90,11 @@ export function pendingSourceDir(projectId: string): string {
   return path.join(projectWorkspace(projectId), 'pending', 'src');
 }
 
+/** 扫描快照根目录：目录本身由 POST /scans 创建、DELETE 负责清理，两处必须同一份路径 */
+export function scanSnapshotRoot(projectId: string, scanId: string): string {
+  return path.join(projectWorkspace(projectId), scanId);
+}
+
 export function scanSourceDir(projectId: string, scanId: string): string {
-  return path.join(projectWorkspace(projectId), scanId, 'src');
+  return path.join(scanSnapshotRoot(projectId, scanId), 'src');
 }
