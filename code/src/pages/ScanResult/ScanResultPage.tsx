@@ -258,7 +258,7 @@ export default function ScanResultPage() {
               {scan.rulepacks?.map((pack) => (
                 <Link
                   key={pack.id}
-                  to="/rules?tab=packs"
+                  to={`/rules?tab=packs&pack=${encodeURIComponent(pack.id)}`}
                   className="flex items-center justify-between gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-accent"
                 >
                   <span className="min-w-0 truncate">{packDisplayName(pack.name, pack.id)}</span>

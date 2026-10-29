@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import {
@@ -109,6 +110,7 @@ export default function RulePackTab() {
   const [checkResult, setCheckResult] = useState<IRulePackCheckResult | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const loadAll = useCallback(async () => {
     try {
@@ -123,6 +125,23 @@ export default function RulePackTab() {
   useEffect(() => {
     void loadAll();
   }, [loadAll]);
+
+  // 扫描结果页的「本次扫描规则包」浮层带 ?pack=<id> 深链进来：列表加载完成后直接打开该包的
+  // 内容查看对话框，而不是只落到列表页让用户自己找。
+  // 无论是否命中都清掉参数：包可能已被删除，留着会让每次刷新重复尝试，也会挡住手动打开别的包
+  useEffect(() => {
+    const packId = searchParams.get('pack');
+    if (!packId || loading) return;
+    const target = rulePacks.find((pack) => pack.id === packId);
+    if (target) {
+      setContentTarget(target);
+    } else {
+      toast.warning(t('rulePacks.deepLinkMissing', { id: packId }));
+    }
+    const next = new URLSearchParams(searchParams);
+    next.delete('pack');
+    setSearchParams(next, { replace: true });
+  }, [loading, rulePacks, searchParams, setSearchParams, t]);
 
   /** 内容对话框的关闭回调：稳定引用，避免 RulePackContentDialog 的加载 effect 因新函数引用重跑 */
   const handleContentDialogOpenChange = useCallback((open: boolean) => {

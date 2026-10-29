@@ -576,6 +576,7 @@ const zhHant: typeof zh = {
     emptyAll: '暫無規則包，點選「新增規則包」線上編寫，或上傳現成的 YAML 檔案',
     emptyCustom: '暫無自定義規則包，點選右上角「新增規則包」線上編寫，或上傳現成的 YAML 檔案',
     customSectionTitle: '自定義規則包',
+    deepLinkMissing: '規則包 {{id}} 已不存在，可能已被刪除',
     customSectionHint: '可編輯、可匯出、可刪除',
     packCount: '{{count}} 個',
     builtinRulesTotal: '共 {{count}} 條規則',
