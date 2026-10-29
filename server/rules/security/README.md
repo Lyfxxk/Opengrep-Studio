@@ -39,7 +39,7 @@ rust / kotlin / swift / bash 覆盖少是上游规则库现状，如需补充可
 
 ## 中文映射
 
-`../messages-zh.json` 以规则 ID 为键提供 message 的中文翻译：后端经 `/api/messages-zh` 提供，前端按 checkId 查表展示，查不到时回退英文原文。规则更新产生新 ID 后，用 `server/scripts/sync-messages-zh.py` 导出缺失条目、翻译后合并入库（流程见脚本头部说明）。
+`../messages-zh.json` 以规则 ID 为键提供 message 的中文翻译：后端经 `/api/messages-zh` 提供，前端按 checkId 查表展示，查不到时回退英文原文。规则更新产生新 ID 后，用 `server/scripts/sync-messages-zh.py` 导出缺失条目、翻译后合并入库（流程见脚本头部说明）。脚本只写简体 `../messages-zh.json`；繁体 `../messages-zh-Hant.json` 需按同键手工同步，否则 `npm run i18n:check` 会拦截。
 
 ## 验证与更新
 
