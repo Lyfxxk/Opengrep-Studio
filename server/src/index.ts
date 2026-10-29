@@ -20,7 +20,10 @@ import { projectRoutes } from './routes/projects.js';
 import { scanRoutes } from './routes/scans.js';
 
 const app = express();
-app.use(express.json());
+// 默认 100kb 会先于路由层校验拒绝大 JSON：规则包在线创建/编辑允许 1MB YAML、实验室
+// 允许 1MB YAML + 各 200KB 正反例，JSON 转义后还要膨胀。这里统一放宽到 5MB，
+// 各路由仍按自己的业务上限做 400 校验；文件上传走 multipart，不受此限制。
+app.use(express.json({ limit: '5mb' }));
 
 /** 主机名是否指向本机：localhost 或 IP 字面量（IPv6 的 URL 形态带方括号，先剥掉） */
 function isLocalHost(hostname: string): boolean {

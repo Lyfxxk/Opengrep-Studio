@@ -314,6 +314,18 @@ const badOnline = await api('POST', '/api/rulepacks', {
   content: 'rules: [ { broken',
 });
 assert(badOnline.status === 400, '在线创建的非法 YAML 被拒绝', JSON.stringify(badOnline.json));
+// 历史 bug：express.json 默认 100kb，规则 YAML 明明允许 1MB，却在路由校验前被 413 拦掉。
+// 这里用 >100kb 的合法包锁住 body 上限已放宽（注释行计入 YAML 但不算规则）。
+const bigBodyPack = await api('POST', '/api/rulepacks', {
+  name: 'E2E-大包体规则包',
+  language: 'Python',
+  content: 'rules:\n  - id: py-big-body\n    languages: [python]\n    message: 大包体\n    severity: WARNING\n    pattern: eval(...)\n'
+    + '# padding\n'.repeat(12000),
+});
+assert(
+  bigBodyPack.status === 201 && bigBodyPack.json.ruleCount === 1,
+  '超过 100kb 的规则包 JSON 不再被 413 拦截', JSON.stringify(bigBodyPack.json));
+await api('DELETE', `/api/rulepacks/${bigBodyPack.json.id}`);
 
 const fullConfig = await createConfig({
   name: 'E2E-全量配置',
