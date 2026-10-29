@@ -908,7 +908,7 @@ const zh = {
       manifestInvalid: 'pack.yaml 解析失败：{{reason}}',
       manifestNotObject: 'pack.yaml 顶层必须是键值映射',
       nameMissing: 'pack.yaml 缺少 name 字段',
-      nameTooLong: 'pack.yaml 的 name 不能超过 60 个字符',
+      nameTooLong: 'pack.yaml 的 name 不能超过 50 个字符',
       versionMissing: 'pack.yaml 缺少 version 字段',
       versionTooLong: 'pack.yaml 的 version 不能超过 30 个字符',
     },
