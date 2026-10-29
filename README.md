@@ -165,7 +165,7 @@ Want to see it before touching your own code? `npm run seed` seeds three demo pr
 <summary><b>Troubleshooting</b></summary>
 <ul>
 <li><b>Engine download slow/blocked</b>: downloads fall back automatically (<code>OPENGREP_DOWNLOAD_BASE</code> mirror → github.com → api.github.com), so a blocked github.com usually needs no manual step; if all channels fail, set a mirror (<code>set OPENGREP_DOWNLOAD_BASE=&lt;mirror-url&gt;</code>, use <code>export</code> on macOS/Linux) or download from <a href="https://github.com/opengrep/opengrep/releases/tag/v1.31.0">opengrep Releases</a> and point <code>OPENGREP_BIN</code> at it</li>
-<li><b>"Check for updates" reports GitHub API rate limit</b>: anonymous calls are capped at 60/hour and results are cached for 10 minutes; retry later — scanning is unaffected</li>
+<li><b>"Check for updates" reports GitHub API rate limit</b>: anonymous calls are capped at 60/hour and results are cached for 30 minutes; retry later — scanning is unaffected</li>
 <li><b>macOS Gatekeeper</b>: <code>xattr -d com.apple.quarantine &lt;engine-path&gt;</code></li>
 <li><b>Ports busy</b>: <code>node server/scripts/kill-port.mjs 8787 1022</code></li>
 <li><b>Other env vars</b>: <code>PORT</code> / <code>HOST</code> / <code>DATA_DIR</code> / <code>CUSTOM_RULES_DIR</code> / <code>OPENGREP_BIN</code> / <code>OPENGREP_DOWNLOAD_BASE</code></li>

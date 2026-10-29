@@ -42,7 +42,7 @@ export default function EngineCard({ health, scanRunning, onUpgraded }: EngineCa
     }
   }, []);
 
-  // 进入看板自动查一次：服务端有 10 分钟缓存，不会把 GitHub 匿名配额打光
+  // 进入看板自动查一次：服务端有 30 分钟缓存，不会把 GitHub 匿名配额打光
   useEffect(() => {
     if (ready && managed) void check(false);
   }, [ready, managed, check]);
