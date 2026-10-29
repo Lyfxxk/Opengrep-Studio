@@ -531,6 +531,11 @@ const patched = await api('PATCH', `/api/projects/${pid}`, { baselineScanId: s1.
 assert(patched.json.baselineScanId === s1.id, '项目基线已更新');
 const badPatch = await api('PATCH', `/api/projects/${pid}`, { baselineScanId: 'scan-不存在' });
 assert(badPatch.status === 400, '非法基线被拒绝');
+// 创建与前端输入框都限 50 字符，PATCH 早期漏了同一校验（直连 API 可写入超长名称）
+const longNamePatch = await api('PATCH', `/api/projects/${pid}`, { name: 'E'.repeat(51) });
+assert(
+  longNamePatch.status === 400 && longNamePatch.json?.error?.code === 'srv.projectNameTooLong',
+  'PATCH 项目名超过 50 字符被拒绝', JSON.stringify(longNamePatch.json));
 
 console.log('== 10. 未完成扫描拒绝生成报告 ==');
 // pid 已绑定配置（第 5 节）且有源码，直接走配置通道发起扫描
