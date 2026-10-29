@@ -46,3 +46,24 @@ test('added/removed 与行级统计相对 before→after', async () => {
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('modified 列表超过 500 条时截断（防大仓库撑爆响应）', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'og-diff-cap-'));
+  const before = path.join(root, 'before');
+  const after = path.join(root, 'after');
+  try {
+    const beforeFiles = {};
+    const afterFiles = {};
+    for (let i = 0; i < 510; i += 1) {
+      beforeFiles[`f${i}.txt`] = 'old\n';
+      afterFiles[`f${i}.txt`] = 'new\n';
+    }
+    writeTree(before, beforeFiles);
+    writeTree(after, afterFiles);
+
+    const diff = await diffSnapshots(before, after);
+    assert.equal(diff.modified.length, 500);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
