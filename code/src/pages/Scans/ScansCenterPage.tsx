@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { LIST_PAGE_SIZE } from '@/data/constants';
 import {
   Table,
   TableBody,
@@ -86,8 +87,7 @@ export default function ScansCenterPage() {
   }, [scans, filterProjectId, keyword]);
 
   // 分页：扫描进行中的轮询会频繁重刷列表，页码夹取保证删行 / 新增后不落在空页上
-  const pageSize = 20;
-  const { page: safePage, setPage, pageCount, slice: pagedScans } = usePagedList(filteredScans, pageSize);
+  const { page: safePage, setPage, pageCount, slice: pagedScans } = usePagedList(filteredScans, LIST_PAGE_SIZE);
 
   // 有扫描进行中时轮询刷新，全部落定后停止
   useEffect(() => {
@@ -300,7 +300,7 @@ export default function ScansCenterPage() {
         )
       )}
 
-      {filteredScans.length > pageSize && (
+      {filteredScans.length > LIST_PAGE_SIZE && (
         <Pagination page={safePage} pageCount={pageCount} onPage={setPage} />
       )}
 

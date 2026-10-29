@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { LIST_PAGE_SIZE } from '@/data/constants';
 import {
   Table,
   TableBody,
@@ -73,8 +74,7 @@ export default function ReportsCenterPage() {
   }, [rows, filterProjectId, keyword]);
 
   // 页码夹取：删除 / 新增行后不落在空页上
-  const pageSize = 20;
-  const { page: safePage, setPage, pageCount, slice: pagedRows } = usePagedList(filteredRows, pageSize);
+  const { page: safePage, setPage, pageCount, slice: pagedRows } = usePagedList(filteredRows, LIST_PAGE_SIZE);
 
   return (
     <div className="space-y-6">
@@ -216,7 +216,7 @@ export default function ReportsCenterPage() {
         )
       )}
 
-      {filteredRows.length > pageSize && (
+      {filteredRows.length > LIST_PAGE_SIZE && (
         <Pagination page={safePage} pageCount={pageCount} onPage={setPage} />
       )}
     </div>

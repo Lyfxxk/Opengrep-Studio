@@ -6,6 +6,7 @@ import { formatDateTime } from '@/lib/format';
 import { FolderOpen, MoreHorizontal, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import Pagination from '@/components/Pagination';
 import { Input } from '@/components/ui/input';
+import { LIST_PAGE_SIZE } from '@/data/constants';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -55,7 +56,6 @@ export default function ProjectsPage() {
   const [batchDeleting, setBatchDeleting] = useState(false);
 
   // 页码夹取：删除 / 新建后不落在空页上
-  const pageSize = 20;
   const filteredProjects = useMemo(() => {
     const trimmed = keyword.trim().toLowerCase();
     if (trimmed === '') return projects;
@@ -68,7 +68,7 @@ export default function ProjectsPage() {
 
   const { page: safePage, setPage, pageCount, slice: pagedProjects } = usePagedList(
     filteredProjects,
-    pageSize,
+    LIST_PAGE_SIZE,
   );
 
   const refresh = useCallback(async () => {
@@ -274,7 +274,7 @@ export default function ProjectsPage() {
         </CardContent>
       </Card>
 
-      {projects.length > pageSize && (
+      {projects.length > LIST_PAGE_SIZE && (
         <Pagination page={safePage} pageCount={pageCount} onPage={setPage} />
       )}
 
