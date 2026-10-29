@@ -148,25 +148,23 @@ export async function diffSnapshots(beforeDir: string, afterDir: string): Promis
       continue;
     }
     if (entryBefore.sha256 === entryAfter.sha256) continue;
-    if (modified.length < DIFF_LIST_CAP) {
-      let lineStats: { added: number; removed: number } | null = null;
-      try {
-        lineStats = countLineDiff(
-          await readForDiff(path.join(beforeDir, rel)),
-          await readForDiff(path.join(afterDir, rel)),
-        );
-      } catch {
-        lineStats = null;
-      }
-      modified.push({
-        path: rel,
-        addedLines: lineStats?.added ?? null,
-        removedLines: lineStats?.removed ?? null,
-        diffable: lineStats !== null,
-      });
-    } else {
-      modified.push({ path: rel, addedLines: null, removedLines: null, diffable: false });
+    // 与 added/removed 同口径：超过上限不再追加，否则大仓库会把响应撑到全部文件量级
+    if (modified.length >= DIFF_LIST_CAP) continue;
+    let lineStats: { added: number; removed: number } | null = null;
+    try {
+      lineStats = countLineDiff(
+        await readForDiff(path.join(beforeDir, rel)),
+        await readForDiff(path.join(afterDir, rel)),
+      );
+    } catch {
+      lineStats = null;
     }
+    modified.push({
+      path: rel,
+      addedLines: lineStats?.added ?? null,
+      removedLines: lineStats?.removed ?? null,
+      diffable: lineStats !== null,
+    });
   }
   for (const rel of after.keys()) {
     if (!before.has(rel)) added.push(rel);
