@@ -2,7 +2,7 @@
 # 来源: https://github.com/opengrep/opengrep-rules （精选子集）
 # 许可: LGPL 2.1 + Commons Clause（不得将规则单独出售；保留本出处声明）
 # 精选标准: 含 CWE/OWASP 安全元数据的一档优先、全量收录（ERROR 优先排序），剔除 correctness 目录
-# 校验: opengrep validate --config server/rules/security
+# 校验: opengrep validate server/rules/security
 rules:
 - id: swift.insecure-random
   message: A random number generator was detected which is **not** *guaranteed* to be Cryptographically secure. If the source of entropy is used for security purposes (e.g. with other Cryptographic operations), make sure to use the `SecCopyRandomBytes` API explicitly.
