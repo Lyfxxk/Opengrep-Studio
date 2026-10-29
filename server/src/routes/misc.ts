@@ -97,16 +97,19 @@ function requireValidConfigValues(body: Record<string, unknown>, existingId?: st
   }
   const asStringArray = (value: unknown) =>
     Array.isArray(value) ? value.map((item) => String(item).trim()).filter(Boolean) : [];
-  const timeoutSeconds = Number(body?.timeoutSeconds);
+  // Number() 会把 true/[8]/"30" 强转成合法数值绕过整数校验，先只认 JSON number，
+  // 其余类型（boolean/数组/字符串/对象/null/缺省）落 NaN 统一走各字段现有的 400 口径
+  const timeoutSeconds = typeof body?.timeoutSeconds === 'number' ? body.timeoutSeconds : NaN;
   if (!Number.isInteger(timeoutSeconds) || timeoutSeconds < 1 || timeoutSeconds > 600) {
     throw new HttpError(400, '单文件超时须为 1–600 的整数', { code: 'srv.timeoutInvalid' });
   }
-  const jobs = Number(body?.jobs);
+  const jobs = typeof body?.jobs === 'number' ? body.jobs : NaN;
   if (!Number.isInteger(jobs) || jobs < 1 || jobs > 16) {
     throw new HttpError(400, '并发数须为 1–16 的整数', { code: 'srv.jobsInvalid' });
   }
-  const maxTargetBytes = Number(body?.maxTargetBytes);
-  if (!Number.isFinite(maxTargetBytes) || maxTargetBytes < 100_000 || maxTargetBytes > 100_000_000) {
+  // isInteger 替代 isFinite：NaN/小数一并拒绝，不再被 Math.round 静默取整
+  const maxTargetBytes = typeof body?.maxTargetBytes === 'number' ? body.maxTargetBytes : NaN;
+  if (!Number.isInteger(maxTargetBytes) || maxTargetBytes < 100_000 || maxTargetBytes > 100_000_000) {
     throw new HttpError(400, '文件体积上限须在 0.1–100 MB 之间', { code: 'srv.sizeInvalid' });
   }
   return {
@@ -117,7 +120,7 @@ function requireValidConfigValues(body: Record<string, unknown>, existingId?: st
     includes: asStringArray(body?.includes),
     timeoutSeconds,
     jobs,
-    maxTargetBytes: Math.round(maxTargetBytes),
+    maxTargetBytes,
   };
 }
 
