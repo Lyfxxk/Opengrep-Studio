@@ -8,9 +8,13 @@ import path from 'node:path';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-process.env.DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'og-glob-'));
+const tempDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'og-glob-'));
+process.env.DATA_DIR = tempDataDir;
 
 const { normalizeGlob } = await import('../src/scan-runner.ts');
+const { closeDatabase } = await import('../src/db.ts');
+const { trackTempDir } = await import('./temp-dir.mjs');
+trackTempDir(tempDataDir, closeDatabase);
 
 test('include：中间 **/ 展开为零层与一层以上', () => {
   assert.deepEqual(normalizeGlob('src/**/*.py', 'include'), ['src/*.py', 'src/**/*.py']);

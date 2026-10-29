@@ -8,9 +8,12 @@ import path from 'node:path';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-process.env.DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'og-list-scans-'));
+const tempDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'og-list-scans-'));
+process.env.DATA_DIR = tempDataDir;
 
-const { insertProject, insertScan, listAllScans } = await import('../src/db.ts');
+const { insertProject, insertScan, listAllScans, closeDatabase } = await import('../src/db.ts');
+const { trackTempDir } = await import('./temp-dir.mjs');
+trackTempDir(tempDataDir, closeDatabase);
 
 const now = '2026-10-29T00:00:00.000Z';
 

@@ -10,9 +10,13 @@ import path from 'node:path';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-process.env.DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'og-report-'));
+const tempDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'og-report-'));
+process.env.DATA_DIR = tempDataDir;
 
 const { buildReportData, renderReportHtml } = await import('../src/report.ts');
+const { closeDatabase } = await import('../src/db.ts');
+const { trackTempDir } = await import('./temp-dir.mjs');
+trackTempDir(tempDataDir, closeDatabase);
 
 const SCAN = {
   id: 'scan-1',
