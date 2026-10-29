@@ -159,6 +159,21 @@ function savePortablePackFromLab(
   samples: { positive: string; negative: string },
 ): RulePack {
   const parsed = parseRuleYaml(yamlText);
+  // 与实验室 runRuleLab 的前置校验对齐：样本扩展名取自首条规则语言，语言不在 LANG_EXT
+  // 表内时若静默跳过落盘，包会以 sampleCount=0 照常创建并返回 201，样本彻底丢失且无提示。
+  // 必须在写盘之前拦下，避免留下半成品包目录；文案与实验室保持一致（同语言两条入口同口径）。
+  const sampleLanguage = parsed.firstLanguage.trim();
+  if (
+    (samples.positive.trim() || samples.negative.trim()) &&
+    !LANG_EXT[sampleLanguage.toLowerCase()]
+  ) {
+    throw new HttpError(
+      400,
+      sampleLanguage
+        ? `暂不支持为语言 ${sampleLanguage} 提供测试样本`
+        : '无法从规则推断语言，请在第一条规则的 languages 中填写',
+    );
+  }
   // 规则 id 来自 YAML（不受信输入），落盘前必须确保可作单级样本目录名，否则会写出 customRulesDir
   if (parsed.ruleIds[0] && !isSafeSampleDirName(parsed.ruleIds[0])) {
     throw new HttpError(
