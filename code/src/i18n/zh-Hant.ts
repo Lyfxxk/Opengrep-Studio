@@ -483,6 +483,8 @@ const zhHant: typeof zh = {
     copySuffix: ' 副本',
     empty: '暫無掃描設定，點選「新增設定」建立第一個設定',
     selectAllAria: '全選設定',
+    fallbackBadge: '兜底',
+    fallbackHint: '未綁定設定（或綁定已失效）的專案掃描時自動使用；可調整但不可刪除',
     rowSelectAria: '選擇設定 {{name}}',
     colName: '設定名稱',
     colRulePacks: '規則包',

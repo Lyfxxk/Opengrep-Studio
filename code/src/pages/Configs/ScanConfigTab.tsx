@@ -71,7 +71,8 @@ export default function ScanConfigTab() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [target, setTarget] = useState<ConfigDialogTarget | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<IConfig | null>(null);
-  const selection = useRowSelection(configs.map((config) => config.id));
+  // 兜底配置不进选择域：全选与批量删除都不会带上它（接口侧同样会 403 拒绝）
+  const selection = useRowSelection(configs.filter((config) => !config.isProtected).map((config) => config.id));
   const [batchConfirmOpen, setBatchConfirmOpen] = useState(false);
   const [batchDeleting, setBatchDeleting] = useState(false);
 
@@ -257,11 +258,26 @@ export default function ScanConfigTab() {
                         <Checkbox
                           checked={selection.selected.has(config.id)}
                           onCheckedChange={() => selection.toggle(config.id)}
+                          disabled={config.isProtected}
                           aria-label={t('configs.rowSelectAria', { name: config.name })}
                         />
                       </TableCell>
                       <TableCell>
-                        <span className="block font-medium">{config.name}</span>
+                        <span className="flex items-center gap-1.5 font-medium">
+                          {config.name}
+                          {config.isProtected && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge variant="outline" className="shrink-0 font-normal text-muted-foreground">
+                                  {t('configs.fallbackBadge')}
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-[280px] p-2">
+                                {t('configs.fallbackHint')}
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+                        </span>
                         {config.description && (
                           <span className="block max-w-[220px] truncate text-xs text-muted-foreground">
                             {config.description}
@@ -344,6 +360,8 @@ export default function ScanConfigTab() {
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               className="text-destructive focus:text-destructive"
+                              disabled={config.isProtected}
+                              title={config.isProtected ? t('configs.fallbackHint') : undefined}
                               onSelect={() => setDeleteTarget(config)}
                             >
                               <Trash2 className="size-4" />

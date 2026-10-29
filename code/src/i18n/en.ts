@@ -499,6 +499,8 @@ const en: typeof zh = {
     copySuffix: ' (copy)',
     empty: 'No scan configs yet — click "New config" to create the first one.',
     selectAllAria: 'Select all configs',
+    fallbackBadge: 'Fallback',
+    fallbackHint: 'Used automatically when a project has no valid config bound. Editable, but cannot be deleted.',
     rowSelectAria: 'Select config {{name}}',
     colName: 'Name',
     colRulePacks: 'Rule packs',
