@@ -97,6 +97,21 @@ function requireValidConfigValues(body: Record<string, unknown>, existingId?: st
   }
   const asStringArray = (value: unknown) =>
     Array.isArray(value) ? value.map((item) => String(item).trim()).filter(Boolean) : [];
+  // 与前端 TagPathInput 同一拦截：顿号/逗号在 glob 里非法，整串入库会静默匹配不到任何文件。
+  // 前端只拦新输入、不拦存量回显，服务端必须兜底，否则直连 API 仍能把脏数据写进配置下发给引擎
+  const assertNoGlobSeparator = (entries: string[]) => {
+    const bad = entries.find((item) => /[、，,]/.test(item));
+    if (bad !== undefined) {
+      throw new HttpError(400, '不能用顿号/逗号分隔多条路径：glob 中这些字符非法，请逐条添加', {
+        code: 'srv.globSeparatorInvalid',
+        params: { item: bad },
+      });
+    }
+  };
+  const excludes = asStringArray(body?.excludes);
+  const includes = asStringArray(body?.includes);
+  assertNoGlobSeparator(excludes);
+  assertNoGlobSeparator(includes);
   // Number() 会把 true/[8]/"30" 强转成合法数值绕过整数校验，先只认 JSON number，
   // 其余类型（boolean/数组/字符串/对象/null/缺省）落 NaN 统一走各字段现有的 400 口径
   const timeoutSeconds = typeof body?.timeoutSeconds === 'number' ? body.timeoutSeconds : NaN;
@@ -116,8 +131,8 @@ function requireValidConfigValues(body: Record<string, unknown>, existingId?: st
     name,
     description: String(body?.description ?? '').trim() || undefined,
     rulePackIds: [...new Set(rulePackIds)],
-    excludes: asStringArray(body?.excludes),
-    includes: asStringArray(body?.includes),
+    excludes,
+    includes,
     timeoutSeconds,
     jobs,
     maxTargetBytes,
