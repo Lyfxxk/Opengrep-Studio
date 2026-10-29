@@ -73,10 +73,13 @@ function runGit(args: string[], timeoutMs: number): Promise<GitRunResult> {
   });
 }
 
-/** 日志与回传错误脱敏：URL 内嵌凭据（https://user:token@host/...）不能进控制台或落库 */
-function redactSecrets(text: string, parsed: URL): string {
-  const userinfo = `${parsed.username}${parsed.password ? `:${parsed.password}` : ''}`;
-  return userinfo ? text.split(`${userinfo}@`).join('***@') : text;
+/**
+ * 日志与回传错误脱敏：URL 内嵌凭据（https://user:token@host/...）不能进控制台或落库。
+ * git 回显的是命令行里的原始（百分号编码）URL，不能拿 URL 解码后的 username/password
+ * 去比对——密码含 @ : / 等字符时解码结果与回显永远对不上；这里直接按 URL 形态匹配。
+ */
+export function redactSecrets(text: string): string {
+  return text.replace(/(\b[a-z][a-z0-9+.-]*:\/\/)([^@\s/]+)@/gi, '$1***@');
 }
 
 function gitFail(detail: string): HttpError {
@@ -119,7 +122,7 @@ export async function cloneRepo(
   if (ref) args.push('--branch', ref);
   args.push(parsed.toString(), tmpDir);
 
-  console.log(`[git-clone] git ${redactSecrets(args.map((a) => JSON.stringify(a)).join(' '), parsed)}`);
+  console.log(`[git-clone] git ${redactSecrets(args.map((a) => JSON.stringify(a)).join(' '))}`);
   const { code, stderr, timedOut, spawnError } = await runGit(args, config.cloneTimeoutMs);
   // 所有失败路径只清临时目录：删 destDir 会把用户已上传的源码一起丢掉
   const fail = (message: string): never => {
@@ -137,7 +140,7 @@ export async function cloneRepo(
     const detail = stderr.trim().split('\n').filter(Boolean).pop() ?? `git exit ${code}`;
     fs.rmSync(tmpDir, { recursive: true, force: true });
     // git 的报错行会原样带上带凭据的 URL，回传前必须脱敏
-    throw gitFail(redactSecrets(detail, parsed));
+    throw gitFail(redactSecrets(detail));
   }
 
   // .git 剥离与限额校验都在临时目录上进行，保证 destDir 里出现的永远是校验通过的完整源码
