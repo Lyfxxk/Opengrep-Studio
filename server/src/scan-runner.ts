@@ -229,11 +229,47 @@ export function applyBaselineComparison(
   }
 }
 
-function normalizeGlob(pattern: string): string {
-  return pattern
-    .replace(/\*\*\//g, '')
-    .replace(/\/\*\*$/g, '')
-    .replace(/\*\*/g, '*');
+/**
+ * 引擎 glob 语义与标准 globstar 有出入（opengrep 1.33 实测）：
+ * - 中间 `src/**​/f` 只匹配「一层及以上」目录，不含 src 的直接子文件；
+ * - 末尾 `dir/**` 只匹配直接子文件（等价 dir/*），深层文件扫不到；
+ * - 仅起步的 `**​/` 是零层及以上；
+ * - `--exclude` 对带通配符的路径模式基本不可用（`src/*` 甚至会产出重复结果），
+ *   只能可靠匹配文件名或精确相对路径。
+ * 因此 include 把一条 globstar 展开成「零层 + 一层以上」两种引擎能正确执行的模式；
+ * exclude 保持保守近似（`**​/` 折叠为 basename/前缀，末尾 `/**` 折叠为目录名）。
+ */
+function expandGlobstarSegments(pattern: string): string[] {
+  const idx = pattern.indexOf('**/');
+  if (idx === -1) return [pattern];
+  const head = pattern.slice(0, idx);
+  const tail = pattern.slice(idx + 3);
+  const out: string[] = [];
+  for (const variant of expandGlobstarSegments(tail)) {
+    out.push(`${head}${variant}`, `${head}**/${variant}`);
+  }
+  return [...new Set(out)];
+}
+
+export function normalizeGlob(pattern: string, mode: 'include' | 'exclude'): string[] {
+  if (mode === 'exclude') {
+    const normalized = pattern
+      .replace(/\*\*\//g, '')
+      .replace(/\/\*\*$/, '')
+      .replace(/\*\*/g, '*');
+    return normalized ? [normalized] : [];
+  }
+  const expanded = pattern.endsWith('/**')
+    ? (() => {
+        const prefix = pattern.slice(0, -3);
+        return [`${prefix}/*`, `${prefix}/**/*`];
+      })()
+    : expandGlobstarSegments(pattern);
+  return [...new Set(
+    expanded
+      .map((item) => item.replace(/\*\*(?!\/)/g, '*'))
+      .filter(Boolean),
+  )];
 }
 
 function sha256File(file: string): string {
@@ -338,8 +374,8 @@ async function runScan(scanId: string, plan: ScanPlan): Promise<void> {
       '--no-git-ignore',
       '--exclude', 'node_modules',
       '--exclude', '.git',
-      ...plan.excludes.map(normalizeGlob).filter(Boolean).flatMap((pattern) => ['--exclude', pattern]),
-      ...plan.includes.map(normalizeGlob).filter(Boolean).flatMap((pattern) => ['--include', pattern]),
+      ...plan.excludes.flatMap((pattern) => normalizeGlob(pattern, 'exclude')).flatMap((pattern) => ['--exclude', pattern]),
+      ...plan.includes.flatMap((pattern) => normalizeGlob(pattern, 'include')).flatMap((pattern) => ['--include', pattern]),
       '--max-target-bytes', String(plan.maxTargetBytes),
       '--timeout', String(plan.timeoutSeconds),
       '-j', String(plan.jobs),
