@@ -369,6 +369,37 @@ const reboundConfig = ((await api('GET', '/api/configs')).json ?? []).find((c) =
 assert(reboundConfig?.name === noConfigScan.json.rules, '项目已自动绑定默认配置', JSON.stringify(rebound));
 const s0 = await pollScan(noConfigScan.json.id);
 assert(s0.status === 'completed', '一键扫描完成', JSON.stringify(s0));
+
+// 兜底扫描配置：常驻受保护、删不掉；未绑定或绑定失效的项目都回落到它并重新绑定
+assert(reboundConfig?.isProtected === true, '自动绑定的默认配置即受保护兜底配置', JSON.stringify(reboundConfig));
+const fallbackDel = await api('DELETE', `/api/configs/${reboundConfig.id}`);
+assert(
+  fallbackDel.status === 403 && fallbackDel.json?.error?.code === 'srv.configProtected',
+  '兜底配置禁止删除',
+  JSON.stringify(fallbackDel),
+);
+const danglingCfg = await createConfig({
+  name: 'E2E-兜底回落配置',
+  description: '绑定后删除，验证扫描回落到兜底配置',
+  rulePackIds: [packJs.id],
+  excludes: [],
+  includes: [],
+  timeoutSeconds: 30,
+  jobs: 4,
+  maxTargetBytes: 5000000,
+});
+await api('PATCH', `/api/projects/${pid}`, { configId: danglingCfg.id });
+assert((await api('DELETE', `/api/configs/${danglingCfg.id}`)).status === 204, '删除已绑定的配置');
+const danglingScan = await api('POST', `/api/projects/${pid}/scans`, {});
+assert(danglingScan.status === 201, '绑定失效的项目仍可发起扫描（回落兜底）', JSON.stringify(danglingScan.json));
+const reboundAfter = ((await api('GET', '/api/projects')).json ?? []).find((item) => item.id === pid);
+assert(
+  reboundAfter?.configId === reboundConfig.id,
+  '扫描后项目重新绑定兜底配置',
+  JSON.stringify(reboundAfter?.configId),
+);
+await pollScan(danglingScan.json.id);
+
 await api('PATCH', `/api/projects/${pid}`, { configId: fullConfig.id });
 
 const scan1 = await api('POST', `/api/projects/${pid}/scans`, {});
