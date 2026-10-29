@@ -595,6 +595,7 @@ const en: typeof zh = {
     emptyCustom:
       'No custom rule packs — click "New rule pack" in the top-right to write one online, or upload an existing YAML file.',
     customSectionTitle: 'Custom rule packs',
+    deepLinkMissing: 'Rule pack {{id}} no longer exists — it may have been deleted',
     customSectionHint: 'Editable, exportable and deletable',
     packCount: '{{count}}',
     builtinRulesTotal: '{{count}} rules in total',

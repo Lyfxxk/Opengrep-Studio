@@ -575,6 +575,7 @@ const zh = {
     emptyAll: '暂无规则包，点击「新建规则包」在线编写，或上传现成的 YAML 文件',
     emptyCustom: '暂无自定义规则包，点击右上角「新建规则包」在线编写，或上传现成的 YAML 文件',
     customSectionTitle: '自定义规则包',
+    deepLinkMissing: '规则包 {{id}} 已不存在，可能已被删除',
     customSectionHint: '可编辑、可导出、可删除',
     packCount: '{{count}} 个',
     builtinRulesTotal: '共 {{count}} 条规则',
