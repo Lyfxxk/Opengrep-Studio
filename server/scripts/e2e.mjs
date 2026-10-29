@@ -574,10 +574,19 @@ const badRef = await api('POST', `/api/projects/${p2.json.id}/clone`, {
 assert(badRef.status === 400, '注入式分支名被拒绝', JSON.stringify(badRef.json));
 const emptyBody = await api('POST', `/api/projects/${p2.json.id}/clone`, {});
 assert(emptyBody.status === 400, '缺少仓库地址被拒绝');
-const unreachable = await api('POST', `/api/projects/${p2.json.id}/clone`, { url: 'http://127.0.0.1:9/no-repo.git' });
+// URL 内嵌百分号编码密码：git 报错会原样回显命令行 URL，脱敏必须按编码后的形态匹配
+const unreachable = await api('POST', `/api/projects/${p2.json.id}/clone`, {
+  url: 'http://robot:p%40ssword@127.0.0.1:9/no-repo.git',
+});
 assert(
   unreachable.status === 400 && (unreachable.json?.error?.message ?? '').length > 0,
   '不可达仓库回传失败原因', JSON.stringify(unreachable.json),
+);
+const unreachableText = JSON.stringify(unreachable.json);
+assert(
+  !unreachableText.includes('p%40ssword') && !unreachableText.includes('p@ssword')
+    && !unreachableText.includes('robot:'),
+  '克隆失败信息不回显内嵌凭据', unreachableText,
 );
 
 await api('DELETE', `/api/projects/${p2.json.id}`);
