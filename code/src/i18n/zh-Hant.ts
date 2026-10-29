@@ -796,6 +796,7 @@ const zhHant: typeof zh = {
     srv: {
       routeNotFound: '介面不存在',
       internalError: '伺服器內部錯誤',
+      badRequest: '請求無法解析：參數格式不合法',
       hostNotAllowed: '拒絕存取：Host 標頭不是本機位址（防 DNS 重綁定）',
       originNotAllowed: '拒絕跨站請求：Origin 不是本機位址',
       uploadTooLarge: '檔案超過 {{mb}}MB 上傳上限',

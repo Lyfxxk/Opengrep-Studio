@@ -827,6 +827,7 @@ const en: typeof zh = {
     srv: {
       routeNotFound: 'Endpoint not found',
       internalError: 'Internal server error',
+      badRequest: 'Request could not be parsed: invalid parameter format',
       hostNotAllowed: 'Access denied: Host header is not a local address (DNS-rebinding protection)',
       originNotAllowed: 'Cross-site request rejected: Origin is not a local address',
       uploadTooLarge: 'The file exceeds the {{mb}}MB upload limit',

@@ -795,6 +795,7 @@ const zh = {
     srv: {
       routeNotFound: '接口不存在',
       internalError: '服务器内部错误',
+      badRequest: '请求无法解析：参数格式不合法',
       hostNotAllowed: '拒绝访问：Host 头不是本机地址（防 DNS 重绑定）',
       originNotAllowed: '拒绝跨站请求：Origin 不是本机地址',
       uploadTooLarge: '文件超过 {{mb}}MB 上传上限',
