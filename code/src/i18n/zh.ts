@@ -54,6 +54,8 @@ const zh = {
     prev: '上一页',
     next: '下一页',
     pageOf: '第 {{page}} / {{total}} 页',
+    pagePrefix: '第',
+    pageSuffix: '/ {{total}} 页',
   },
   packNames: {
     'builtin-bash': 'Bash 内置安全规则包',

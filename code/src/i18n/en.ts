@@ -55,6 +55,8 @@ const en: typeof zh = {
     prev: 'Previous',
     next: 'Next',
     pageOf: 'Page {{page}} / {{total}}',
+    pagePrefix: 'Page',
+    pageSuffix: 'of {{total}}',
   },
   packNames: {
     'builtin-bash': 'Bash built-in security pack',
