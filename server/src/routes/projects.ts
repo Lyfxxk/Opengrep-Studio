@@ -111,13 +111,13 @@ projectRoutes.delete('/api/projects/:id', asyncHandler(async (req, res) => {
  * 按 .gitignore / .opengrepignore 过滤，使上传源码与 Git 仓库直扫的扫描口径一致；
  * 关闭后保留全部上传内容（用于排查 .env 等被忽略文件中的硬编码密钥）。
  */
-function applyIgnoreFilter(
+async function applyIgnoreFilter(
   destDir: string,
   preCount: number,
   respectGitignore: boolean,
-): { fileCount: number; ignoredCount: number } {
+): Promise<{ fileCount: number; ignoredCount: number }> {
   if (!respectGitignore) return { fileCount: preCount, ignoredCount: 0 };
-  const { keptFiles, ignoredFiles } = pruneIgnoredFiles(destDir);
+  const { keptFiles, ignoredFiles } = await pruneIgnoredFiles(destDir);
   if (keptFiles === 0) {
     fs.rmSync(destDir, { recursive: true, force: true });
     throw new HttpError(
@@ -131,6 +131,14 @@ function applyIgnoreFilter(
 
 /** 同一项目同一时刻只允许一个源码导入任务（上传/克隆），防止并发写同一个 pending 目录 */
 const importingProjects = new Set<string>();
+
+/**
+ * 导入互斥对扫描入口的暴露：上传解压/剪枝/统计已异步化，期间其余请求照常调度，
+ * 而导入中的 pending/src 是半成品，扫描创建放行会快照到不完整源码。
+ */
+export function isProjectImporting(projectId: string): boolean {
+  return importingProjects.has(projectId);
+}
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -169,8 +177,8 @@ projectRoutes.post(
           );
         }
         const extracted = await extractArchive(archive.buffer, destDir, archive.originalname);
-        const { fileCount, ignoredCount } = applyIgnoreFilter(destDir, extracted, respectGitignore);
-        const languageStats = collectLanguageStats(destDir);
+        const { fileCount, ignoredCount } = await applyIgnoreFilter(destDir, extracted, respectGitignore);
+        const languageStats = await collectLanguageStats(destDir);
         updateProject(project.id, { languageStats });
         const ignoreNote = ignoredCount > 0 ? `，已按 .gitignore 忽略 ${ignoredCount} 个文件` : '';
         res.json({
@@ -238,8 +246,8 @@ projectRoutes.post(
             : undefined;
         const label =
           commonRoot ?? (looseFiles.length === 1 ? firstSegments[0] : `${looseFiles.length} 个文件`);
-        const { fileCount, ignoredCount } = applyIgnoreFilter(destDir, looseFiles.length, respectGitignore);
-        const languageStats = collectLanguageStats(destDir);
+        const { fileCount, ignoredCount } = await applyIgnoreFilter(destDir, looseFiles.length, respectGitignore);
+        const languageStats = await collectLanguageStats(destDir);
         updateProject(project.id, { languageStats });
         const ignoreNote = ignoredCount > 0 ? `，已按 .gitignore 忽略 ${ignoredCount} 个文件` : '';
         res.json({
@@ -276,7 +284,7 @@ projectRoutes.post('/api/projects/:id/clone', asyncHandler(async (req, res) => {
   try {
     const destDir = pendingSourceDir(project.id);
     const { fileCount } = await cloneRepo(url, ref, destDir);
-    const languageStats = collectLanguageStats(destDir);
+    const languageStats = await collectLanguageStats(destDir);
     updateProject(project.id, { languageStats });
     res.json({
       url,

@@ -34,23 +34,24 @@ export interface PruneResult {
   ignoredFiles: number;
 }
 
-function countFilesDeep(absDir: string): number {
+/** 异步深数文件（被整棵剪除的目录统计用）；遍历语义与同步版一致 */
+async function countFilesDeep(absDir: string): Promise<number> {
   let count = 0;
-  const walk = (dir: string) => {
+  const walk = async (dir: string): Promise<void> => {
     let entries: fs.Dirent[];
     try {
-      entries = fs.readdirSync(dir, { withFileTypes: true });
+      entries = await fs.promises.readdir(dir, { withFileTypes: true });
     } catch {
       return;
     }
     for (const entry of entries) {
       if (entry.isSymbolicLink()) continue;
       const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) walk(full);
+      if (entry.isDirectory()) await walk(full);
       else if (entry.isFile()) count += 1;
     }
   };
-  walk(absDir);
+  await walk(absDir);
   return count;
 }
 
@@ -75,15 +76,16 @@ function isIgnored(relPath: string, levels: RuleLevel[]): boolean {
 /**
  * 对快照目录执行忽略规则剪枝（原地删除被忽略的文件/目录），返回剩余与被忽略的文件数。
  * 目录不存在时返回全零，由调用方决定空结果的报错方式。
+ * 异步遍历：大快照数万条目的同步 readdir/rm 会冻结事件循环（上传期间 health 无响应）。
  */
-export function pruneIgnoredFiles(rootDir: string): PruneResult {
+export async function pruneIgnoredFiles(rootDir: string): Promise<PruneResult> {
   let keptFiles = 0;
   let ignoredFiles = 0;
 
-  const walk = (absDir: string, relDir: string, inherited: RuleLevel[]): void => {
+  const walk = async (absDir: string, relDir: string, inherited: RuleLevel[]): Promise<void> => {
     let entries: fs.Dirent[];
     try {
-      entries = fs.readdirSync(absDir, { withFileTypes: true });
+      entries = await fs.promises.readdir(absDir, { withFileTypes: true });
     } catch {
       return;
     }
@@ -92,7 +94,7 @@ export function pruneIgnoredFiles(rootDir: string): PruneResult {
     for (const name of IGNORE_FILE_NAMES) {
       let text: string;
       try {
-        text = fs.readFileSync(path.join(absDir, name), 'utf8');
+        text = await fs.promises.readFile(path.join(absDir, name), 'utf8');
       } catch {
         continue;
       }
@@ -103,24 +105,24 @@ export function pruneIgnoredFiles(rootDir: string): PruneResult {
       const full = path.join(absDir, entry.name);
       const rel = relDir === '.' ? entry.name : `${relDir}/${entry.name}`;
       if (entry.isSymbolicLink()) {
-        fs.rmSync(full, { force: true });
+        await fs.promises.rm(full, { force: true });
         continue;
       }
       if (entry.isDirectory()) {
         if (ALWAYS_IGNORED_DIRS.has(entry.name)) {
-          fs.rmSync(full, { recursive: true, force: true });
+          await fs.promises.rm(full, { recursive: true, force: true });
           continue;
         }
         // 目录判定带尾部斜杠，使 build/ 这类仅匹配目录的模式生效
         if (isIgnored(`${rel}/`, levels)) {
-          ignoredFiles += countFilesDeep(full);
-          fs.rmSync(full, { recursive: true, force: true });
+          ignoredFiles += await countFilesDeep(full);
+          await fs.promises.rm(full, { recursive: true, force: true });
           continue;
         }
-        walk(full, rel, levels);
+        await walk(full, rel, levels);
       } else if (entry.isFile()) {
         if (isIgnored(rel, levels)) {
-          fs.rmSync(full, { force: true });
+          await fs.promises.rm(full, { force: true });
           ignoredFiles += 1;
         } else {
           keptFiles += 1;
@@ -129,6 +131,6 @@ export function pruneIgnoredFiles(rootDir: string): PruneResult {
     }
   };
 
-  walk(rootDir, '.', []);
+  await walk(rootDir, '.', []);
   return { keptFiles, ignoredFiles };
 }

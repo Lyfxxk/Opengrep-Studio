@@ -99,8 +99,12 @@ function enforceExtractLimits(dir: string, kind: 'tar' | 'archive'): number {
   return files;
 }
 
-/** ZIP：保留原有的元数据前置校验（条目数 / 体积在解压前即可判定） */
-export function extractZipSafely(buffer: Buffer, destDir: string): number {
+/**
+ * ZIP：保留原有的元数据前置校验（条目数 / 体积在解压前即可判定）。
+ * 落盘循环走异步 I/O（copyDirectory 同款手法）：3 万条目的 zip 逐条同步 writeFileSync
+ * 会把事件循环冻住数秒，health 等其余接口全程无响应；每条 await 让出后请求照常调度。
+ */
+export async function extractZipSafely(buffer: Buffer, destDir: string): Promise<number> {
   const zip = new AdmZip(buffer);
   const fileEntries = zip.getEntries().filter((entry) => !entry.isDirectory);
   if (fileEntries.length === 0) throw new HttpError(400, 'ZIP 包内没有文件', { code: 'archive.zipEmpty' });
@@ -140,7 +144,7 @@ export function extractZipSafely(buffer: Buffer, destDir: string): number {
     }
   }
 
-  fs.rmSync(destDir, { recursive: true, force: true });
+  await fs.promises.rm(destDir, { recursive: true, force: true });
   let extractedBytes = 0;
   for (const entry of fileEntries) {
     const target = path.join(destDir, safeRelativePath(entry.entryName));
@@ -161,8 +165,8 @@ export function extractZipSafely(buffer: Buffer, destDir: string): number {
         { code: 'archive.zipTooLarge', params: { gb: config.maxExtractedBytes / 1024 ** 3 } },
       );
     }
-    fs.mkdirSync(path.dirname(target), { recursive: true });
-    fs.writeFileSync(target, data);
+    await fs.promises.mkdir(path.dirname(target), { recursive: true });
+    await fs.promises.writeFile(target, data);
   }
   return fileEntries.length;
 }
@@ -251,13 +255,14 @@ function languageOf(fileName: string): string | undefined {
   return EXT_LANG[ext];
 }
 
-/** 遍历解压产物，按扩展名聚合各语言的字节数（跳过 node_modules / .git / 符号链接） */
-export function collectLanguageStats(dir: string): Record<string, number> {
+/** 遍历解压产物，按扩展名聚合各语言的字节数（跳过 node_modules / .git / 符号链接）。
+ *  异步遍历：大快照同步 statSync 数万次同样会冻结事件循环。 */
+export async function collectLanguageStats(dir: string): Promise<Record<string, number>> {
   const stats: Record<string, number> = {};
-  const walk = (current: string) => {
+  const walk = async (current: string): Promise<void> => {
     let entries: fs.Dirent[];
     try {
-      entries = fs.readdirSync(current, { withFileTypes: true });
+      entries = await fs.promises.readdir(current, { withFileTypes: true });
     } catch {
       return;
     }
@@ -266,18 +271,18 @@ export function collectLanguageStats(dir: string): Record<string, number> {
       if (entry.isSymbolicLink()) continue;
       const full = path.join(current, entry.name);
       if (entry.isDirectory()) {
-        walk(full);
+        await walk(full);
       } else if (entry.isFile()) {
         const language = languageOf(entry.name);
         if (!language) continue;
         try {
-          stats[language] = (stats[language] ?? 0) + fs.statSync(full).size;
+          stats[language] = (stats[language] ?? 0) + (await fs.promises.stat(full)).size;
         } catch {
         }
       }
     }
   };
-  walk(dir);
+  await walk(dir);
   return stats;
 }
 
@@ -364,7 +369,7 @@ export async function extractArchive(
   const lower = fileName.toLowerCase();
   try {
     if (lower.endsWith('.zip')) {
-      return extractZipSafely(buffer, destDir);
+      return await extractZipSafely(buffer, destDir);
     }
     if (TAR_RE.test(lower)) {
       extractTarArchive(buffer, destDir, fileName);

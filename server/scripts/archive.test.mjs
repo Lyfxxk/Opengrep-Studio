@@ -83,6 +83,16 @@ function assertRejected(fn, code, messageRe) {
   });
 }
 
+/** 同 assertRejected，但针对异步化的 extractZipSafely（解压落盘已改为异步 I/O） */
+async function assertRejectedAsync(fn, code, messageRe) {
+  await assert.rejects(fn, (error) => {
+    assert.equal(error.status, 400);
+    assert.equal(error.meta?.code, code);
+    if (messageRe) assert.match(error.message, messageRe);
+    return true;
+  });
+}
+
 test('safeRelativePath 归一化相对路径（剥掉 . 段和空段，反斜杠转斜杠）', () => {
   assert.equal(safeRelativePath('src/a.ts'), 'src/a.ts');
   assert.equal(safeRelativePath('a/./b//c.txt'), 'a/b/c.txt');
@@ -126,13 +136,13 @@ test('isPathWithin 遏制不变量：root 本身不算在内，兄弟与前缀�
   }
 });
 
-test('extractZipSafely 拒绝 zip-slip 条目，目标目录内外都不落盘', () => {
+test('extractZipSafely 拒绝 zip-slip 条目，目标目录内外都不落盘', async () => {
   const { parent, dest } = makeTemp();
   try {
     // ../ 穿越、绝对路径、盘符各有独立拦截写法，逐个验证
     for (const name of ['../evil.txt', '..\\evil.txt', '/abs.txt', 'C:\\evil.txt']) {
       const zip = craftZip([{ name, data: Buffer.from('evil-content') }]);
-      assertRejected(() => extractZipSafely(zip, dest), 'archive.unsafePath', /不安全的路径条目/);
+      await assertRejectedAsync(() => extractZipSafely(zip, dest), 'archive.unsafePath', /不安全的路径条目/);
     }
     // 拦截发生在解压循环之前：目标目录连创建都不该发生，父目录也不得出现逃逸文件
     assert.equal(fs.existsSync(dest), false);
@@ -142,19 +152,19 @@ test('extractZipSafely 拒绝 zip-slip 条目，目标目录内外都不落盘',
   }
 });
 
-test('extractZipSafely 拒绝归一化后为空的条目名（archive.zipUnsafePath）', () => {
+test('extractZipSafely 拒绝归一化后为空的条目名（archive.zipUnsafePath）', async () => {
   const { parent, dest } = makeTemp();
   try {
     // 条目名 '.' 经 safeRelativePath 归一化后变空串，走 zipUnsafePath 分支
     const zip = craftZip([{ name: '.', data: Buffer.from('x') }]);
-    assertRejected(() => extractZipSafely(zip, dest), 'archive.zipUnsafePath');
+    await assertRejectedAsync(() => extractZipSafely(zip, dest), 'archive.zipUnsafePath');
     assert.equal(fs.existsSync(dest), false);
   } finally {
     fs.rmSync(parent, { recursive: true, force: true });
   }
 });
 
-test('extractZipSafely 拒绝伪体积条目：声明解压体积 0 却带压缩数据', () => {
+test('extractZipSafely 拒绝伪体积条目：声明解压体积 0 却带压缩数据', async () => {
   const { parent, dest } = makeTemp();
   try {
     // 声明 0 会让 adm-zip 解压时不设输出上限（zip 炸弹的经典伪装），必须在解压前拦下
@@ -162,14 +172,14 @@ test('extractZipSafely 拒绝伪体积条目：声明解压体积 0 却带压缩
     const zip = craftZip([
       { name: 'bomb.txt', method: 8, data: compressed, declaredSize: 0, declaredCompSize: compressed.length },
     ]);
-    assertRejected(() => extractZipSafely(zip, dest), 'archive.zipFakeSize', /伪造体积/);
+    await assertRejectedAsync(() => extractZipSafely(zip, dest), 'archive.zipFakeSize', /伪造体积/);
     assert.equal(fs.existsSync(dest), false);
   } finally {
     fs.rmSync(parent, { recursive: true, force: true });
   }
 });
 
-test('extractZipSafely 声明体积超限：解压前拦截（临时调低上限触发）', () => {
+test('extractZipSafely 声明体积超限：解压前拦截（临时调低上限触发）', async () => {
   const { parent, dest } = makeTemp();
   // config 是模块级单例，测试里临时调小上限以小体积触发超限分支，finally 恢复
   const originalLimit = config.maxExtractedBytes;
@@ -179,7 +189,7 @@ test('extractZipSafely 声明体积超限：解压前拦截（临时调低上限
       { name: 'a.txt', data: Buffer.alloc(8) },
       { name: 'b.txt', data: Buffer.alloc(8) },
     ]);
-    assertRejected(() => extractZipSafely(zip, dest), 'archive.zipTooLarge');
+    await assertRejectedAsync(() => extractZipSafely(zip, dest), 'archive.zipTooLarge');
     assert.equal(fs.existsSync(dest), false);
   } finally {
     config.maxExtractedBytes = originalLimit;
@@ -187,7 +197,7 @@ test('extractZipSafely 声明体积超限：解压前拦截（临时调低上限
   }
 });
 
-test('extractZipSafely 拒绝实际膨胀超限的炸弹：声明 4 字节、真实膨胀 1MB', () => {
+test('extractZipSafely 拒绝实际膨胀超限的炸弹：声明 4 字节、真实膨胀 1MB', async () => {
   const { parent, dest } = makeTemp();
   try {
     // 声明体积骗过前置累计后，解压时的实际字节数仍会失控：adm-zip 解压按声明体积
@@ -196,7 +206,7 @@ test('extractZipSafely 拒绝实际膨胀超限的炸弹：声明 4 字节、真
     const zip = craftZip([
       { name: 'bomb.bin', method: 8, data: compressed, declaredSize: 4, declaredCompSize: compressed.length },
     ]);
-    assert.throws(() => extractZipSafely(zip, dest), (error) => error.code === 'ERR_BUFFER_TOO_LARGE');
+    await assert.rejects(() => extractZipSafely(zip, dest), (error) => error.code === 'ERR_BUFFER_TOO_LARGE');
     assert.equal(fs.existsSync(dest), false);
   } finally {
     fs.rmSync(parent, { recursive: true, force: true });
@@ -221,13 +231,13 @@ test('extractArchive 把膨胀炸弹包装成 400 archive.extractFailed 并清�
   }
 });
 
-test('extractZipSafely 正常 ZIP 解压成功且条目数正确（防过度拦截回归）', () => {
+test('extractZipSafely 正常 ZIP 解压成功且条目数正确（防过度拦截回归）', async () => {
   const { parent, dest } = makeTemp();
   try {
     const zip = new AdmZip();
     zip.addFile('src/a.ts', Buffer.from('const a = 1;\n'));
     zip.addFile('src/lib/b.js', Buffer.from('module.exports = 2;\n'));
-    const count = extractZipSafely(zip.toBuffer(), dest);
+    const count = await extractZipSafely(zip.toBuffer(), dest);
     assert.equal(count, 2);
     assert.equal(fs.readFileSync(path.join(dest, 'src', 'a.ts'), 'utf8'), 'const a = 1;\n');
     assert.equal(fs.readFileSync(path.join(dest, 'src', 'lib', 'b.js'), 'utf8'), 'module.exports = 2;\n');

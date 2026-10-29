@@ -20,7 +20,7 @@ function makeFixture(files) {
 
 // 规则文件本身（.gitignore 等）是快照的一部分，计入 keptFiles——与扫描时 countFiles 口径一致。
 
-test('目录整棵剪除且否定规则不复活', () => {
+test('目录整棵剪除且否定规则不复活', async () => {
   const dir = makeFixture({
     '.gitignore': '.env\ndist/\n!dist/keep.js\n',
     'app.ts': 'x',
@@ -29,7 +29,7 @@ test('目录整棵剪除且否定规则不复活', () => {
     'dist/keep.js': 'x',
     'src/lib.ts': 'x',
   });
-  const r = pruneIgnoredFiles(dir);
+  const r = await pruneIgnoredFiles(dir);
   assert.equal(r.keptFiles, 3);
   assert.equal(r.ignoredFiles, 3);
   assert.ok(!fs.existsSync(path.join(dir, '.env')));
@@ -38,7 +38,7 @@ test('目录整棵剪除且否定规则不复活', () => {
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
-test('深层否定规则覆盖浅层', () => {
+test('深层否定规则覆盖浅层', async () => {
   const dir = makeFixture({
     '.gitignore': '*.log\n',
     'a/inner/.gitignore': '!debug.log\n',
@@ -46,13 +46,13 @@ test('深层否定规则覆盖浅层', () => {
     'a/inner/debug.log': 'x',
     'b/other.log': 'x',
   });
-  const r = pruneIgnoredFiles(dir);
+  const r = await pruneIgnoredFiles(dir);
   assert.equal(r.keptFiles, 3);
   assert.equal(r.ignoredFiles, 2);
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
-test('锚定模式只匹配同层级', () => {
+test('锚定模式只匹配同层级', async () => {
   const dir = makeFixture({
     '.gitignore': '/build\n*.tmp\n',
     'build/root.js': 'x',
@@ -60,54 +60,54 @@ test('锚定模式只匹配同层级', () => {
     'app/scratch.tmp': 'x',
     'main.ts': 'x',
   });
-  const r = pruneIgnoredFiles(dir);
+  const r = await pruneIgnoredFiles(dir);
   assert.equal(r.keptFiles, 3);
   assert.equal(r.ignoredFiles, 2);
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
-test('dist/* 保留子目录内被否定的文件；CRLF 规则文件', () => {
+test('dist/* 保留子目录内被否定的文件；CRLF 规则文件', async () => {
   const dir = makeFixture({
     '.gitignore': 'dist/*\r\n!dist/keep.js\r\n',
     'dist/gen.js': 'x',
     'dist/keep.js': 'x',
     'app.ts': 'x',
   });
-  const r = pruneIgnoredFiles(dir);
+  const r = await pruneIgnoredFiles(dir);
   assert.equal(r.keptFiles, 3);
   assert.equal(r.ignoredFiles, 1);
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
-test('node_modules / .git 强制静默剪除', () => {
+test('node_modules / .git 强制静默剪除', async () => {
   const dir = makeFixture({
     'app.ts': 'x',
     'node_modules/pkg/index.js': 'x',
     '.git/HEAD': 'ref',
     'sub/node_modules/pkg2/index.js': 'x',
   });
-  const r = pruneIgnoredFiles(dir);
+  const r = await pruneIgnoredFiles(dir);
   assert.equal(r.keptFiles, 1);
   assert.equal(r.ignoredFiles, 0);
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
-test('无规则文件时零剪枝', () => {
+test('无规则文件时零剪枝', async () => {
   const dir = makeFixture({ 'a.ts': 'x', 'sub/b.ts': 'x' });
-  const r = pruneIgnoredFiles(dir);
+  const r = await pruneIgnoredFiles(dir);
   assert.equal(r.keptFiles, 2);
   assert.equal(r.ignoredFiles, 0);
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
-test('.opengrepignore 优先级高于同目录 .gitignore', () => {
+test('.opengrepignore 优先级高于同目录 .gitignore', async () => {
   const dir = makeFixture({
     '.gitignore': '*.json\n',
     '.opengrepignore': '!keep.json\n',
     'keep.json': 'x',
     'other.json': 'x',
   });
-  const r = pruneIgnoredFiles(dir);
+  const r = await pruneIgnoredFiles(dir);
   assert.equal(r.keptFiles, 3);
   assert.equal(r.ignoredFiles, 1);
   fs.rmSync(dir, { recursive: true, force: true });

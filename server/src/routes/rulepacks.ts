@@ -490,7 +490,7 @@ rulepackRoutes.post(
     fs.rmSync(tmpDir, { recursive: true, force: true });
     fs.mkdirSync(tmpDir, { recursive: true });
     try {
-      extractZipSafely(req.file.buffer, tmpDir);
+      await extractZipSafely(req.file.buffer, tmpDir);
       const root = detectPackRoot(tmpDir);
 
       if (root) {
