@@ -64,6 +64,9 @@ projectRoutes.patch('/api/projects/:id', asyncHandler(async (req, res) => {
   if (req.body?.name !== undefined) {
     const name = String(req.body.name).trim();
     if (!name) throw new HttpError(400, '项目名称不能为空', { code: 'srv.projectNameRequired' });
+    if (name.length > 50) {
+      throw new HttpError(400, '项目名称不能超过 50 个字符', { code: 'srv.projectNameTooLong' });
+    }
     patch.name = name;
   }
   if (req.body?.description !== undefined) {
