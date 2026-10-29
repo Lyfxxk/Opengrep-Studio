@@ -447,11 +447,11 @@ export function listScans(projectId: string): ScanRecord[] {
   return rows.map(rowToScan);
 }
 
-/** 全量扫描列表（双快照对比的候选池，含跨项目来源） */
-export function listAllScans(limit = 200): ScanRecord[] {
+/** 全量扫描列表（双快照对比的候选池，含跨项目来源）；分页由调用方在本地完成 */
+export function listAllScans(): ScanRecord[] {
   const rows = db
-    .prepare('SELECT * FROM scans ORDER BY scanned_at DESC, id DESC LIMIT ?')
-    .all(limit) as SqlRow[];
+    .prepare('SELECT * FROM scans ORDER BY scanned_at DESC, id DESC')
+    .all() as SqlRow[];
   return rows.map(rowToScan);
 }
 
