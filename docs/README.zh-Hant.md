@@ -282,7 +282,7 @@ flowchart LR
 
 **貢獻一條規則的推薦路徑**：規則實驗室寫規則並用正反例驗證 → 「儲存到規則包」（附上樣本）→ 匯出 zip → 提 PR。⚠️ 請勿提交來自 semgrep-rules 的規則（其許可限制競爭性使用）；opengrep-rules 來源的規則請保留上游溯源資訊。前端有示範模式：`VITE_USE_MOCK=true npm --prefix code run dev`。
 
-CI（`.github/workflows/ci.yml`）包含三個任務：後端型別檢查 + 單元測試、前端 lint + 建置、以及**下載真實引擎跑完整 E2E**。
+CI（`.github/workflows/ci.yml`）包含四個任務：後端型別檢查 + 單元測試、前端 lint + 建置、**下載真實引擎跑完整 E2E**、以及 **Docker 建置與啟動冒煙**。
 
 ## 致謝
 
