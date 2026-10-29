@@ -517,6 +517,7 @@ const reportHtmlRes = await fetch(`${BASE}/api/scans/${s2.id}/report?format=html
 const reportHtml = await reportHtmlRes.text();
 assert(reportHtmlRes.ok && reportHtml.includes('代码审计测试报告'), 'HTML 报告可生成');
 assert(reportHtml.includes('风险分布') && reportHtml.includes('行动清单') && reportHtml.includes('问题明细') && reportHtml.includes('方法与证据'), 'HTML 报告含关键章节');
+assert(reportHtml.includes('class="num crit"'), 'HTML 报告行动清单含严重等级列');
 assert(reportHtml.includes('已修复'), 'HTML 报告含基线已修复分组');
 assert((reportHtmlRes.headers.get('content-disposition') ?? '').includes('attachment'), 'HTML 以附件形式下载');
 // 命令行里的规则路径与快照目录都是本机绝对路径：对外报告必须折叠成 <repo>/，
