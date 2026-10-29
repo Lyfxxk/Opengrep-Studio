@@ -876,8 +876,10 @@ const badManifest = new AdmZip();
 badManifest.addFile('pack.yaml', Buffer.from('name: [broken', 'utf8'));
 badManifest.addFile('rules/r.yaml', Buffer.from(LAB_EVAL_RULE, 'utf8'));
 const badImported = await api('POST', '/api/rulepacks/import', packZipForm(badManifest, 'bad.zip'));
-assert(badImported.status === 400 && (badImported.json?.error?.message ?? '').includes('pack.yaml'),
-  '坏 pack.yaml 被拒绝', JSON.stringify(badImported.json));
+assert(
+  badImported.status === 400 && badImported.json?.error?.code === 'pack.manifestInvalid'
+    && (badImported.json?.error?.message ?? '').includes('pack.yaml'),
+  '坏 pack.yaml 被拒绝且保留 pack.manifestInvalid 错误码', JSON.stringify(badImported.json));
 
 const multiYaml = new AdmZip();
 multiYaml.addFile('a.yaml', Buffer.from(LAB_EVAL_RULE, 'utf8'));
@@ -934,7 +936,9 @@ const evilSamplePack = await api('POST', '/api/rulepacks', {
   content: LAB_EVAL_RULE.replace('lab-eval', '../../../../pwned'),
   samples: { positive: 'eval("1+1");', negative: 'const x = 1;' },
 });
-assert(evilSamplePack.status === 400, '规则 id 不可作样本目录名时被拒绝', JSON.stringify(evilSamplePack.json));
+assert(
+  evilSamplePack.status === 400 && evilSamplePack.json?.error?.code === 'srv.ruleIdUnsafe',
+  '规则 id 不可作样本目录名时被拒绝且保留错误码（前端可翻译）', JSON.stringify(evilSamplePack.json));
 const labSavedCheck = await api('POST', `/api/rulepacks/${labSavedPack.json.id}/check`);
 assert(
   labSavedCheck.status === 200 && labSavedCheck.json.tier === 'verified'
