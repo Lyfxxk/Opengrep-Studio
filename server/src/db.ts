@@ -83,6 +83,10 @@ export interface ScanRecord {
   /** 本次扫描覆盖的源码文件数（不含 node_modules / .git） */
   fileCount: number;
   message?: string;
+  /** 失败原因的语言无关标识（如 scan.timedOut），前端据此按界面语言翻译；无值时回落 message */
+  errorCode?: string;
+  /** 翻译所需的插值参数（分钟数、引擎退出码等） */
+  errorParams?: Record<string, unknown>;
   /** 源码快照 SHA-256（对排序后的"相对路径\0文件内容"序列计算），可复现清单用 */
   srcHash?: string;
   /** 发起扫描时的完整引擎命令行（不含引擎二进制绝对路径以外的环境） */
@@ -176,6 +180,8 @@ CREATE TABLE IF NOT EXISTS scans (
   rules TEXT,
   rulepacks TEXT,
   message TEXT,
+  error_code TEXT,
+  error_params TEXT,
   src_hash TEXT,
   command_line TEXT,
   config_snapshot TEXT,
@@ -252,6 +258,9 @@ for (const sql of [
   'ALTER TABLE scans ADD COLUMN queued_at TEXT',
   // 实际开跑时间（修正排队时间被计入「引擎耗时」）
   'ALTER TABLE scans ADD COLUMN started_at TEXT',
+  // 扫描失败的语言无关标识（供前端按界面语言翻译；message 仍是中文兜底）
+  'ALTER TABLE scans ADD COLUMN error_code TEXT',
+  'ALTER TABLE scans ADD COLUMN error_params TEXT',
   // 污点路径可视化（P1-6）：taint 命中的 source→sink 传播链快照
   'ALTER TABLE issues ADD COLUMN dataflow_trace TEXT',
 ]) {
@@ -328,6 +337,8 @@ function rowToScan(row: SqlRow): ScanRecord {
     rules: str(row.rules as string | null),
     rulepacks: parseRulePackRefs(row.rulepacks),
     message: str(row.message as string | null),
+    errorCode: str(row.error_code as string | null),
+    errorParams: parseJsonObject(row.error_params) ?? undefined,
     srcHash: str(row.src_hash as string | null),
     commandLine: str(row.command_line as string | null),
     configSnapshot: snapshotRaw ? (snapshotRaw as unknown as ScanConfigSnapshot) : undefined,
@@ -491,6 +502,11 @@ export function updateScan(id: string, patch: Partial<Omit<ScanRecord, 'id' | 'p
   if (patch.finishedAt !== undefined) { sets.push('finished_at = ?'); values.push(patch.finishedAt ?? null); }
   if (patch.fileCount !== undefined) { sets.push('file_count = ?'); values.push(patch.fileCount || null); }
   if (patch.message !== undefined) { sets.push('message = ?'); values.push(patch.message ?? null); }
+  if (patch.errorCode !== undefined) { sets.push('error_code = ?'); values.push(patch.errorCode ?? null); }
+  if (patch.errorParams !== undefined) {
+    sets.push('error_params = ?');
+    values.push(patch.errorParams ? JSON.stringify(patch.errorParams) : null);
+  }
   if (patch.srcHash !== undefined) { sets.push('src_hash = ?'); values.push(patch.srcHash ?? null); }
   if (patch.commandLine !== undefined) { sets.push('command_line = ?'); values.push(patch.commandLine ?? null); }
   if (patch.engineVersion !== undefined) { sets.push('engine_version = ?'); values.push(patch.engineVersion ?? null); }

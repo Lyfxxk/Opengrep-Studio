@@ -1,5 +1,6 @@
-# Opengrep Studio —— 可选的 compose 启动方式（等价于 docker run，附数据卷与自动重启）
+# Opengrep Studio —— 可选的 compose 启动方式（等价于 docker run，带命名数据卷）
 # 启动：docker compose up -d   停止：docker compose down
+# 未设 restart 策略：容器退出后不自动拉起（本地工具，崩了希望人先看到原因）
 services:
   studio:
     build: .

@@ -54,21 +54,23 @@ function runGit(args: string[], timeoutMs: number): Promise<GitRunResult> {
         GCM_INTERACTIVE: 'Never',
       },
     });
-    let stderr = '';
+    const stderrChunks: Buffer[] = [];
     let timedOut = false;
     trackChildProcess(child);
     const timer = setTimeout(() => {
       timedOut = true;
       child.kill();
     }, timeoutMs);
-    child.stderr.on('data', (chunk) => { stderr += String(chunk); });
+    // 攒 Buffer 一次解码：git 的中文/UTF-8 报错跨 chunk 时逐段 toString 会出乱码
+    const decode = () => Buffer.concat(stderrChunks).toString('utf8');
+    child.stderr.on('data', (chunk: Buffer) => { stderrChunks.push(chunk); });
     child.on('error', (error) => {
       clearTimeout(timer);
-      resolve({ code: -1, stderr, timedOut, spawnError: error });
+      resolve({ code: -1, stderr: decode(), timedOut, spawnError: error });
     });
     child.on('close', (code) => {
       clearTimeout(timer);
-      resolve({ code: code ?? -1, stderr, timedOut });
+      resolve({ code: code ?? -1, stderr: decode(), timedOut });
     });
   });
 }

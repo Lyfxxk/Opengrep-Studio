@@ -168,7 +168,7 @@ npm run docker:run    # 等價於 docker run --rm -p 8787:8787 -v ogstudio-data:
 <li><b>檢查更新提示 GitHub API 限流</b>：匿名呼叫上限 60 次/小時，檢查結果快取 30 分鐘；稍後再試即可，不影響掃描</li>
 <li><b>macOS 提示無法驗證引擎</b>：<code>xattr -d com.apple.quarantine &lt;引擎路徑&gt;</code></li>
 <li><b>連接埠被佔用</b>：<code>node server/scripts/kill-port.mjs 8787 1022</code></li>
-<li><b>更多環境變數</b>：<code>PORT</code> / <code>HOST</code> / <code>DATA_DIR</code> / <code>CUSTOM_RULES_DIR</code> / <code>OPENGREP_BIN</code> / <code>OPENGREP_DOWNLOAD_BASE</code></li>
+<li><b>更多環境變數</b>：<code>PORT</code> / <code>HOST</code> / <code>DATA_DIR</code> / <code>CUSTOM_RULES_DIR</code> / <code>OPENGREP_BIN</code> / <code>OPENGREP_DOWNLOAD_BASE</code>（後端）；逾時類變數取值單位為秒：<code>CLONE_TIMEOUT_SECONDS</code> / <code>SEVEN_Z_TIMEOUT_SECONDS</code> / <code>RULE_LAB_TIMEOUT_SECONDS</code>；前端開發另有 <code>API_TARGET</code> 指定 <code>/api</code> 代理目標</li>
 </ul>
 </details>
 
@@ -263,7 +263,8 @@ flowchart LR
 | `npm run dev` | 同時啟動後端 `tsx watch`(:8787) 與前端 Vite(:1022) |
 | `npm test` | 後端單元測試（引擎解析 / gitignore 語意 / 規則 YAML / SARIF 匯入） |
 | `npm run test-packs` | 規則包結構校驗與樣本回歸 |
-| `npm run e2e` | 黑箱 REST 回歸（需先啟動後端與引擎，24 組情境） |
+| `npm run i18n:check` | 語言包一致性（三份 UI 語言包＋簡繁規則說明／CWE） |
+| `npm run e2e` | 黑箱 REST 回歸（需先啟動後端與引擎，21 組情境） |
 | `npm run seed` | 灌入示範資料 |
 | `npm --prefix code run lint` | 前端型別檢查 + ESLint |
 

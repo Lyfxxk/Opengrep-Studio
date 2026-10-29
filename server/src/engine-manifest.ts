@@ -21,7 +21,6 @@ export interface EngineAsset {
 
 export interface EngineCatalog {
   version: string;
-  baseUrl: string;
   notes?: string;
   assets: Record<string, EngineAsset>;
 }

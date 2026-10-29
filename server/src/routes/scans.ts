@@ -287,6 +287,7 @@ scanRoutes.post('/api/scans/:scanId/cancel', asyncHandler(async (req, res) => {
     status: 'failed',
     finishedAt: new Date().toISOString(),
     message: '已被手动取消',
+    errorCode: 'scan.cancelled',
     // 排队中取消时同步清排队标记（非排队扫描本就无值，置 null 无副作用）：
     // 原实现要等槽位轮转才清，期间重启会变成 status=failed + queuedAt 永久残留的矛盾数据
     queuedAt: null,

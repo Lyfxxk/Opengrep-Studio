@@ -19,7 +19,6 @@ import {
   getProject,
   insertProject,
   listProjects,
-  listReviews,
   listScans,
   updateProject,
   upsertReview,
@@ -230,7 +229,16 @@ projectRoutes.post(
             params: { limit: config.maxImportEntries },
           });
         }
-        let totalBytes = 0;
+        // 体积闸门放在写盘之前：multer 用 memoryStorage，此刻全部文件已在内存里，
+        // 边写边累加只是把拒绝推迟到写完一堆临时文件之后再回滚
+        const looseTotalBytes = looseFiles.reduce((sum, file) => sum + file.size, 0);
+        if (looseTotalBytes > config.maxExtractedBytes) {
+          throw new HttpError(
+            400,
+            `总体积超过 ${config.maxExtractedBytes / 1024 ** 3}GB 上限`,
+            { code: 'srv.totalTooLarge', params: { gb: config.maxExtractedBytes / 1024 ** 3 } },
+          );
+        }
         try {
           looseFiles.forEach((file, index) => {
             const rel = safeRelativePath(relPaths[index] || file.originalname);
@@ -241,14 +249,6 @@ projectRoutes.post(
                 code: 'srv.unsafeFilePath',
                 params: { path: relPaths[index] },
               });
-            }
-            totalBytes += file.size;
-            if (totalBytes > config.maxExtractedBytes) {
-              throw new HttpError(
-                400,
-                `总体积超过 ${config.maxExtractedBytes / 1024 ** 3}GB 上限`,
-                { code: 'srv.totalTooLarge', params: { gb: config.maxExtractedBytes / 1024 ** 3 } },
-              );
             }
             fs.mkdirSync(path.dirname(target), { recursive: true });
             fs.writeFileSync(target, file.buffer);
@@ -272,7 +272,7 @@ projectRoutes.post(
         const ignoreNote = ignoredCount > 0 ? `，已按 .gitignore 忽略 ${ignoredCount} 个文件` : '';
         res.json({
           fileName: label,
-          fileSize: totalBytes,
+          fileSize: looseTotalBytes,
           fileCount,
           ignoredCount,
           languageStats,
@@ -326,11 +326,6 @@ projectRoutes.post('/api/projects/:id/clone', asyncHandler(async (req, res) => {
 // ---------- 人工复核与证据链（P1-2） ----------
 
 const REVIEW_STATUSES = ['confirmed', 'false_positive', 'accepted'] as const;
-
-projectRoutes.get('/api/projects/:id/reviews', asyncHandler(async (req, res) => {
-  requireProject(req.params.id);
-  res.json(listReviews(req.params.id));
-}));
 
 projectRoutes.put('/api/projects/:id/reviews', asyncHandler(async (req, res) => {
   const project = requireProject(req.params.id);

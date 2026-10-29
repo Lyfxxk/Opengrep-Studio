@@ -42,10 +42,26 @@ const catalog = JSON.parse(readFileSync(path.join(scriptDir, 'engines.json'), 'u
 
 const args = process.argv.slice(2);
 const force = args.includes('--force');
-const versionArg = args[args.indexOf('--version') + 1];
-const shaArg = args[args.indexOf('--sha256') + 1];
-const explicitVersion = args.includes('--version') ? versionArg : undefined;
-const explicitSha = args.includes('--sha256') ? shaArg : undefined;
+
+/**
+ * 读取 `--flag <值>`：缺值、值本身是另一个 flag、或格式不符都直接报错退出。
+ * 原来用 args[indexOf+1] 直取，`-- --version`（本想查版本）会静默回落到清单版本
+ * 开始下 50MB，`-- --version --force` 则把 --force 当成版本名去拼下载链接。
+ */
+function flagValue(flag, pattern, expect) {
+  const index = args.indexOf(flag);
+  if (index === -1) return undefined;
+  const value = args[index + 1];
+  if (!value || value.startsWith('--') || !pattern.test(value)) {
+    console.error(`[setup:engine] ${flag} 需要${expect}，实际拿到：${value ?? '（空）'}`);
+    console.error('[setup:engine] 用法：npm run setup:engine [-- --force] [-- --version vX.Y.Z [-- --sha256 <64位十六进制>]]');
+    process.exit(2);
+  }
+  return value;
+}
+
+const explicitVersion = flagValue('--version', /^v?\d+\.\d+\.\d+$/, '形如 v1.33.0 的版本号');
+const explicitSha = flagValue('--sha256', /^[0-9a-fA-F]{64}$/, '64 位十六进制 SHA-256');
 
 /** 安装名取自脚本侧唯一源头（engine-name.mjs，与 server/src/config.ts 的 engineNameFor 同步维护） */
 const installedName = engineExecutableName;

@@ -21,6 +21,12 @@ export default function LoginPage() {
   const [success, setSuccess] = useState(false);
   const usernameRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
+  const timerRef = useRef<number[]>([]);
+
+  // 登录成功态的两个延时（800ms 校验 + 900ms 跳转）必须在卸载时清掉
+  useEffect(() => () => {
+    for (const timer of timerRef.current) window.clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     document.title = t('login.title');
@@ -60,13 +66,16 @@ export default function LoginPage() {
     clearError();
     setSubmitting(true);
     // 本地账号校验即登录接口：写入登录态后展示成功态，再进入工作台
-    setTimeout(() => {
-      login(trimmedName);
-      setSubmitting(false);
-      setSuccess(true);
-      toast.success(t('login.successToast'));
-      setTimeout(() => navigate('/dashboard'), 900);
-    }, 800);
+    // 定时器登记到 ref 并在卸载时清掉：用户在 800+900ms 窗口内手动离开时，不能被拽回工作台
+    timerRef.current.push(
+      window.setTimeout(() => {
+        login(trimmedName);
+        setSubmitting(false);
+        setSuccess(true);
+        toast.success(t('login.successToast'));
+        timerRef.current.push(window.setTimeout(() => navigate('/dashboard'), 900));
+      }, 800),
+    );
   };
 
   const togglePassword = () => {

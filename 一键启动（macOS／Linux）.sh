@@ -54,23 +54,43 @@ else
 fi
 
 echo "[4/5] 启动前后端服务..."
-echo "    前端: http://localhost:1022    后端: http://127.0.0.1:8787"
-echo "    提示：Ctrl+C 停止全部服务"
+echo "    默认前端: http://localhost:1022    默认后端: http://127.0.0.1:8787"
+echo "    端口被占用时自动顺延：绝不终止已在运行的实例（可能有人正在使用）"
+echo "    提示：Ctrl+C 停止本次启动的全部服务"
 echo "[5/5] 前端就绪后将自动打开浏览器（后台探测进行中）"
 (
-  # 后台探测：前端 HTTP 就绪后用系统默认浏览器打开（最多等 60 秒）
+  # 后台探测：只打开「本次新出现」的前端端口。dev.mjs 在 1022 被别的实例占用时会顺延到 1023+，
+  # 固定打开 1022 会把别人的实例当成自己的（与 Windows .bat 的 BEFORE 快照同口径）。
+  listening_ports() {
+    node -e '
+      const net = require("node:net");
+      const probe = (port) => new Promise((done) => {
+        const s = net.connect({ host: "127.0.0.1", port, timeout: 300 });
+        const off = () => { s.destroy(); done(0); };
+        s.once("connect", () => { s.destroy(); done(port); });
+        s.once("error", off);
+        s.once("timeout", off);
+      });
+      Promise.all(Array.from({ length: 10 }, (_, i) => probe(1022 + i)))
+        .then((list) => console.log(list.filter(Boolean).join(" ")));
+    ' 2>/dev/null || true
+  }
+  before=" $(listening_ports) "
   i=0
-  while [ "$i" -lt 60 ]; do
-    if node -e "fetch('http://127.0.0.1:1022/').then(() => process.exit(0), () => process.exit(1))" >/dev/null 2>&1; then
-      if command -v open >/dev/null 2>&1; then
-        open "http://127.0.0.1:1022/" || true
-      elif command -v xdg-open >/dev/null 2>&1; then
-        xdg-open "http://127.0.0.1:1022/" >/dev/null 2>&1 || true
+  while [ "$i" -lt 30 ]; do
+    for port in $(listening_ports); do
+      case "$before" in *" $port "*) continue ;; esac
+      if node -e "fetch('http://127.0.0.1:$port/').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))" >/dev/null 2>&1; then
+        if command -v open >/dev/null 2>&1; then
+          open "http://127.0.0.1:$port/" || true
+        elif command -v xdg-open >/dev/null 2>&1; then
+          xdg-open "http://127.0.0.1:$port/" >/dev/null 2>&1 || true
+        fi
+        exit 0
       fi
-      exit 0
-    fi
+    done
     i=$((i + 1))
-    sleep 1
+    sleep 2
   done
 ) &
 exec npm run dev

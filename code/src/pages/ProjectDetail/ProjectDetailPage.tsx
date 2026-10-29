@@ -18,7 +18,7 @@ import { type IConfig } from '@/data/configs';
 import type { IProject } from '@/data/projects';
 import type { IRulePack } from '@/data/rulepacks';
 import type { IScanResult } from '@/data/scanresults';
-import { api, type UploadItem } from '@/lib/api';
+import { api, translateApiError, type UploadItem } from '@/lib/api';
 import ScanHistoryTable from './ScanHistoryTable';
 import UploadZone, { type UploadZoneState } from './UploadZone';
 
@@ -73,7 +73,11 @@ export default function ProjectDetailPage() {
         } else if (before?.status === 'scanning' && scan.status === 'failed') {
           toast.error(
             t('projectDetail.scanFailedToast', {
-              reason: scan.message ?? t('projectDetail.unknownReason'),
+              reason: translateApiError(
+                scan.errorCode,
+                scan.errorParams,
+                scan.message ?? t('projectDetail.unknownReason'),
+              ),
             }),
           );
         }

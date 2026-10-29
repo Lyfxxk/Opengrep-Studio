@@ -1,7 +1,6 @@
 {
   "version": "v1.33.1",
-  "baseUrl": "https://github.com/opengrep/opengrep/releases/download",
-  "notes": "opengrep 引擎二进制清单：版本、下载基址与各平台资产的 SHA256。升级引擎 = 换版本后更新资产名与哈希，重跑 npm run setup:engine。哈希于 2026-10-29 实测：win32-x64 取自本机已安装的 1.33.1 二进制（与 opengrep --version 自报版本一致），其余 4 个平台从官方 Release 直链下载后本地计算（已核对 ELF/Mach-O 魔数与资产大小）。",
+  "notes": "opengrep 引擎二进制清单：版本与各平台资产的 SHA256。升级引擎 = 换版本后更新资产名与哈希，重跑 npm run setup:engine；下载通道由 OPENGREP_DOWNLOAD_BASE → github.com → api.github.com 依次降级，不在清单里配置。哈希于 2026-10-29 实测：win32-x64 取自本机已安装的 1.33.1 二进制（与 opengrep --version 自报版本一致），其余 4 个平台从官方 Release 直链下载后本地计算（已核对 ELF/Mach-O 魔数与资产大小）。",
   "assets": {
     "win32-x64": {
       "file": "opengrep_windows_x86.exe",

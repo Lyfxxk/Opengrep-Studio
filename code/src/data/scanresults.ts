@@ -18,6 +18,9 @@ export interface IScanResult {
   /** 排队等待并发槽位的标记（status 为 scanning 且有值 = 排队中，开跑后清除），用于区分"排队中/扫描中" */
   queuedAt?: string
   message?: string
+  /** 失败原因的语言无关标识（如 scan.timedOut），有值时前端按界面语言重拼，message 作兜底 */
+  errorCode?: string
+  errorParams?: Record<string, unknown>
 }
 
 // issueCount 口径与服务端一致：不含基线对比产生的"已修复"项（见 data/issues.ts 的种子明细）
