@@ -9,6 +9,8 @@ export interface IConfig {
   jobs: number
   maxTargetBytes: number
   createdAt: string
+  /** 兜底配置：未绑定配置的项目扫描时自动使用，界面与接口都禁止删除 */
+  isProtected?: boolean
 }
 
 /** 演示模式（VITE_USE_MOCK）的种子扫描配置 */

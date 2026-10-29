@@ -482,6 +482,8 @@ const zh = {
     copySuffix: ' 副本',
     empty: '暂无扫描配置，点击「新建配置」创建第一个配置',
     selectAllAria: '全选配置',
+    fallbackBadge: '兜底',
+    fallbackHint: '未绑定配置（或绑定已失效）的项目扫描时自动使用；可调整但不可删除',
     rowSelectAria: '选择配置 {{name}}',
     colName: '配置名称',
     colRulePacks: '规则包',
