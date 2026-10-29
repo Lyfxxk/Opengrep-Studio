@@ -212,7 +212,7 @@ flowchart LR
 
 <details>
 <summary><b>支持哪些语言和平台？</b></summary>
-<p>内置规则覆盖 Python、JS/TS、Java、Go、C、C#、PHP、Bash、Kotlin、Swift、Rust、Dockerfile 共 12 种语言；Studio 本身可运行在 Windows / macOS / Linux（x64 / arm64）及 Docker。</p>
+<p>内置规则覆盖 Python、JS/TS、Java、Go、C、C#、PHP、Bash、Kotlin、Swift、Rust、Dockerfile 共 12 种语言；Studio 本身可运行在 Windows（x64）／macOS（x64 / arm64）／Linux（x64 / arm64）及 Docker。</p>
 </details>
 
 <details>
