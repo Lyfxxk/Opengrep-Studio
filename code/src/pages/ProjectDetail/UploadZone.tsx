@@ -21,6 +21,7 @@ export interface UploadZoneState {
   ignoredCount?: number;
 }
 
+/** 上传预检上限（分别对应后端 server/src/config.ts 的 maxUploadBytes / maxImportEntries，调整需两处同步；单边放宽会让前端预检提示错误上限，超出部分落入 multer 的英文兜底报错） */
 const MAX_FILE_SIZE = 200 * 1024 * 1024;
 const MAX_FILE_COUNT = 50000;
 
