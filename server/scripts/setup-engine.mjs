@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// 下载 opengrep 引擎二进制并做 SHA256 校验（零第三方依赖，Node ≥ 22.5）。
+// 下载 opengrep 引擎二进制并做 SHA256 校验（零第三方依赖，Node ≥ 22.12）。
 //
 // 版本与哈希的优先级：
 //   1. 命令行 --version / --sha256（界面"一键升级"走这条，新版本哈希来自 release 资产 digest）
@@ -7,7 +7,7 @@
 //      保证升级过的引擎不会被重跑本脚本降级回去）
 //   3. server/scripts/engines.json（仓库钉住的已知好版本，也是随时可用的恢复路径）
 //
-// 用法：npm run setup:engine [-- --force] [-- --version v1.31.0 [-- --sha256 <hex>]]
+// 用法：npm run setup:engine [-- --force] [-- --version vX.Y.Z [-- --sha256 <hex>]]
 //   --force           引擎已就绪时也强制重新下载
 //   --version <tag>   临时改用其他版本下载（资产名仍取自 engines.json）
 //   --sha256 <hex>    配合 --version 使用：指定该版本的 SHA-256

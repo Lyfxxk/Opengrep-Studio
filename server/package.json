@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=22.5.0"
+    "node": ">=22.12.0"
   },
   "description": "Opengrep Studio 后端：REST API + opengrep.exe 进程编排",
   "scripts": {

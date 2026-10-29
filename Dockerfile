@@ -58,7 +58,8 @@ EXPOSE 8787
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 # git 在 Windows 上不保留执行位，COPY 带不出 +x，容器内显式 chmod 保证 Linux/CI 可直接 exec
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-# node:sqlite 需 Node >= 22.5（node:22 镜像满足）；引擎为上游 LGPL-2.1 二进制，未修改
+# Node 下限 22.12：后端内置 node:sqlite 需 22.5+，前端 Vite 8 需 22.12+（node:22 镜像的最新补丁满足下限）
+# 引擎为上游 LGPL-2.1 二进制，未修改
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||8787)+'/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 ENTRYPOINT ["docker-entrypoint.sh"]

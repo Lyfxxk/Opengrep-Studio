@@ -1,27 +1,27 @@
 {
-  "version": "v1.31.0",
+  "version": "v1.33.0",
   "baseUrl": "https://github.com/opengrep/opengrep/releases/download",
-  "notes": "opengrep 引擎二进制清单：版本、下载基址与各平台资产的 SHA256。升级引擎 = 换版本后更新资产名与哈希，重跑 npm run setup:engine。哈希于 2026-10-24 从官方 Release 资产实测（大小与 GitHub API 列出的一致）。",
+  "notes": "opengrep 引擎二进制清单：版本、下载基址与各平台资产的 SHA256。升级引擎 = 换版本后更新资产名与哈希，重跑 npm run setup:engine。哈希于 2026-10-29 实测：win32-x86 取自本机已安装的 1.33.0 二进制（与 opengrep --version 自报版本一致），其余 4 个平台从官方 Release 直链下载后本地计算（已核对 ELF/Mach-O 魔数与资产大小）。",
   "assets": {
     "win32-x64": {
       "file": "opengrep_windows_x86.exe",
-      "sha256": "fdd2e22549e7000ceb66976a01366db6910760b2aa4e457b6bda62545070d26a"
+      "sha256": "9a9e90f187f73149f4d141f78241d18282538ce94d555d7515ca9cd70e8f22e9"
     },
     "darwin-arm64": {
       "file": "opengrep_osx_arm64",
-      "sha256": "035dd8fd2410fe68513916df0c2895257fffafcd5314b4a118484ce8db62bedb"
+      "sha256": "87d38a3ca198694a651e723b503e3ff8b0547429b4b9dfa2946f75fc43bb1962"
     },
     "darwin-x64": {
       "file": "opengrep_osx_x86",
-      "sha256": "2f0d0c7a41a3e48dc02c30dabc4851bc37c18f021b46c9ae54b15177ece088ee"
+      "sha256": "838b74a056be35adfd1067ed7567e0d946b73066ba1b6be8fe5fe966b2142a7e"
     },
     "linux-x64": {
       "file": "opengrep_manylinux_x86",
-      "sha256": "dbbe3c2058dbe600c449a8ba22ea79a1643a6660658400090d0323a8d0d31147"
+      "sha256": "2545812755572e1355ea60f96288f82a26eebed7fc8b512430d49d5667214c24"
     },
     "linux-arm64": {
       "file": "opengrep_manylinux_aarch64",
-      "sha256": "2b713a29a00237f85408b83002fc111db5b94c7fa8d263f0a93184a960655d9d"
+      "sha256": "d58d332649c347678431647661d83f151aa81a0871648228e16a5767117dff92"
     }
   }
 }

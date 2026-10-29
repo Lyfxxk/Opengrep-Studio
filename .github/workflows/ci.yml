@@ -12,18 +12,21 @@ concurrency:
 
 jobs:
   server:
-    name: 后端（typecheck + 单测）
+    name: 后端（typecheck + 单测）· ${{ matrix.os }} · Node ${{ matrix.node-version }}
     strategy:
       # Windows 失败时不连坐 ubuntu，平台差异按平台单独看日志
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
+        # 22 = 支持下限线（最新补丁 ≥22.12；开发机已不再装 22，这条线只能靠 CI 守住）
+        # 26 = 本地日常线，防止「本机过、CI 不过」的版本漂移
+        node-version: ['22', '26']
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: ${{ matrix.node-version }}
       - name: 安装依赖
         run: npm --prefix server ci
       - name: 类型检查
@@ -36,17 +39,19 @@ jobs:
         run: npm run test-packs
 
   frontend:
-    name: 前端（lint + 构建）
+    name: 前端（lint + 构建）· ${{ matrix.os }} · Node ${{ matrix.node-version }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
+        # Vite 8 / rolldown 的 engines 是 ^20.19.0 || >=22.12.0，22 这条线是前端能装上的最低支持线
+        node-version: ['22', '26']
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: ${{ matrix.node-version }}
       - name: 安装依赖
         run: npm --prefix code ci
       - name: 类型检查 + ESLint
@@ -57,6 +62,8 @@ jobs:
   e2e:
     name: 后端 E2E（真实引擎扫描）
     # 真实引擎 E2E 只在 ubuntu 跑：Windows 上下载引擎 + 扫描成本高，单测矩阵已覆盖平台盲区
+    # 版本留在 22（支持下限线，与 Dockerfile 的 node:22 基础镜像一致）：开发机已切到 26，
+    # 这里是唯一能验证「下限线上真实扫描 + 实验性 node:sqlite」的岗位，26 线由上面两个矩阵守住
     runs-on: ubuntu-latest
     needs: [server]
     steps:
