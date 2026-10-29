@@ -865,6 +865,7 @@ const zhHant: typeof zh = {
       scanBusy: '掃描進行中，請等掃描完成或失敗後再刪除',
       scanNotRunning: '掃描已結束，無需取消',
       snippetParamsInvalid: '需要 path、start、end 查詢參數（start ≥ 1 且 end ≥ start）',
+      snippetStartOutOfRange: 'start={{startLine}} 超出檔案行數（檔案共 {{fileLines}} 行）',
       snippetPathInvalid: '非法的檔案路徑',
       snippetNotFound: '原始碼檔案不存在且沒有可用的片段快取',
       scanNotCompleted: '僅已完成的掃描可產生測試報告',
