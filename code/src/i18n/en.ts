@@ -594,6 +594,9 @@ const en: typeof zh = {
     emptyAll: 'No rule packs yet — click "New rule pack" to write one online, or upload an existing YAML file.',
     emptyCustom:
       'No custom rule packs — click "New rule pack" in the top-right to write one online, or upload an existing YAML file.',
+    customSectionTitle: 'Custom rule packs',
+    customSectionHint: 'Editable, exportable and deletable',
+    packCount: '{{count}}',
     builtinRulesTotal: '{{count}} rules in total',
     builtinReadOnlyHint: 'Shipped with the project; view and toggle only',
     builtinViewTitle: 'View YAML (built-in packs are read-only)',
