@@ -109,6 +109,22 @@ app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
     });
     return;
   }
+  // Express 内部抛出的客户端错误自带状态码：路由参数带畸形百分号编码（%FF、截断的多字节
+  // 序列等）时 decode_param 抛的 URIError 已被 express 标为 status=400（layer.js），JSON
+  // body 解析失败同理。这些是客户端输入问题，按其状态码回 4xx，既不误导排障也不刷异常日志
+  const framed = error as { status?: unknown; statusCode?: unknown; message?: unknown };
+  const status = typeof framed.status === 'number'
+    ? framed.status
+    : typeof framed.statusCode === 'number'
+      ? framed.statusCode
+      : undefined;
+  if (status !== undefined && status >= 400 && status < 500) {
+    const message = typeof framed.message === 'string' && framed.message
+      ? framed.message
+      : '请求无法解析';
+    res.status(status).json({ error: { message, code: 'srv.badRequest' } });
+    return;
+  }
   console.error('[server] 未处理异常:', error);
   res.status(500).json({ error: { message: '服务器内部错误', code: 'srv.internalError' } });
 });
