@@ -828,6 +828,15 @@ assert(importedIssues[0].severity === sarifIssue.severity,
   `severity 往返无损 (${sarifIssue.severity})`, importedIssues[0].severity);
 assert(importedIssues[0].filePath === sarifIssue.filePath && importedIssues[0].startLine === sarifIssue.startLine,
   '路径与行号往返无损', `${importedIssues[0].filePath}:${importedIssues[0].startLine}`);
+// SARIF 导入没有 commandLine/engineVersion：报告与清单不能用本机 opengrep 版本兜底，
+// 否则外部工具（CodeQL/Semgrep 等）的结果被标成当前引擎产出
+const importedReport = await api('GET', `/api/scans/${importedScan.json.id}/report`);
+assert(
+  importedReport.status === 200 && importedReport.json.meta?.engineVersion === undefined,
+  'SARIF 导入的报告不冒充本机引擎版本', JSON.stringify(importedReport.json.meta?.engineVersion));
+const importedManifest = await api('GET', `/api/scans/${importedScan.json.id}/manifest`);
+assert(importedManifest.json?.engine?.version === null, 'SARIF 导入清单的引擎版本为空',
+  JSON.stringify(importedManifest.json?.engine));
 
 const badSarif = new FormData();
 badSarif.append('file', new Blob(['{"not":"sarif"}'], { type: 'application/json' }), 'bad.sarif');

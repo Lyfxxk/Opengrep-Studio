@@ -706,7 +706,7 @@ export default function ReportPage() {
           <dl className="mb-3 grid grid-cols-[96px_1fr] gap-x-3 gap-y-1 text-xs sm:grid-cols-[110px_1fr]">
             <dt className="text-muted-foreground">opengrep</dt>
             <dd className="min-w-0">
-              v{meta.engineVersion ?? '—'}
+              {meta.engineVersion ? `v${meta.engineVersion}` : '—'}
               {meta.durationSeconds !== undefined
                 ? ` · ${formatDuration(meta.durationSeconds)}`
                 : ''}
