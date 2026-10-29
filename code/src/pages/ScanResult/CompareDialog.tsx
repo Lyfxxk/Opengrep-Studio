@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { CircleAlert, CircleDot, FilePlus2, FileMinus2, FilePen, Loader2 } from 'lucide-react';
@@ -111,15 +111,23 @@ export default function CompareDialog({ scanId, onClose }: CompareDialogProps) {
     };
   }, [scanId]);
 
+  // 请求序号：切换对比对象时晚到的旧结果不得覆盖新选择（大仓库 diff 可达数秒）
+  const diffSeqRef = useRef(0);
+
   const runDiff = useCallback(async () => {
     if (!againstId) return;
+    const seq = ++diffSeqRef.current;
     setLoading(true);
+    setDiff(null);
     try {
-      setDiff(await api.getScanDiff(scanId, againstId));
+      const result = await api.getScanDiff(scanId, againstId);
+      if (seq !== diffSeqRef.current) return;
+      setDiff(result);
     } catch (error) {
+      if (seq !== diffSeqRef.current) return;
       toast.error(error instanceof Error ? error.message : String(error));
     } finally {
-      setLoading(false);
+      if (seq === diffSeqRef.current) setLoading(false);
     }
   }, [againstId, scanId]);
 

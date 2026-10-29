@@ -10,14 +10,12 @@
 
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { config } from '../src/config.ts';
 import { parseRuleYaml } from '../src/rule-yaml.ts';
 import { runPackCheck } from '../src/rule-lab.ts';
 import { parsePackManifest } from '../src/pack-format.ts';
 import { collectRuleFiles } from '../src/rulepacks.ts';
 
-const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const builtinDir = path.join(config.rulesDir, 'security');
 const customDir = config.customRulesDir; // 尊重 CUSTOM_RULES_DIR（Docker 数据卷）配置
 const asJson = process.argv.includes('--json');

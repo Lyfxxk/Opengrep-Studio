@@ -1,10 +1,13 @@
 export interface ICodeSnippet {
-  issueId: string;
+  /** 请求带 issueId 时服务端原样回传，缺省则无此字段 */
+  issueId?: string;
   filePath: string;
   startLine: number;
   endLine: number;
   content: string;
   highlightedLines: number[];
+  /** 片段来源：磁盘快照文件 / 归档内文件（服务端必回，mock 样本可不带） */
+  source?: 'file' | 'archive';
 }
 
 export const MOCK_CODE_SNIPPETS: ICodeSnippet[] = [

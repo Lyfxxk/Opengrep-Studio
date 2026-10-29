@@ -41,7 +41,8 @@ export default function Header() {
   const { t } = useTranslation();
 
   const segments = pathname.split('/').filter(Boolean);
-  // 一级面包屑标签与侧栏导航同源（label 为 i18n 键）；实验室挂在规则中心下，路由名与导航项不同名
+  // 一级面包屑标签与侧栏导航同源（label 为 i18n 键）；实验室挂在规则中心下，路由名与导航项不同名，
+  // 且 /lab → /rules?tab=lab 的重定向生效前会有一帧停在旧 pathname，这里必须保留 lab 分支
   const navLabel = NAV_ITEMS.find((item) => item.path === `/${segments[0]}`)?.label;
   let crumbs: Crumb[];
   if (navLabel && segments[0] !== 'projects') {

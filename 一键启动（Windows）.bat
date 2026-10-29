@@ -56,7 +56,9 @@ if "%NEED_INSTALL%"=="1" (
 )
 
 echo [3/5] 检查 opengrep 引擎...
-if not exist "opengrep-tool\opengrep.exe" (
+if defined OPENGREP_BIN (
+    echo     已设置 OPENGREP_BIN，跳过引擎下载（后端直接用该二进制）
+) else if not exist "opengrep-tool\opengrep.exe" (
     echo     引擎缺失，正在从官方 Release 下载并校验（约 50MB，首次需要等待）...
     call npm run setup:engine
     if errorlevel 1 (

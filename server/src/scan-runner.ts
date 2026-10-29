@@ -10,8 +10,9 @@ import { engineInstallHint, engineNotRunnableHint, getEngineVersion, runEngine }
 import { HttpError } from './errors.js';
 
 /**
- * 扫描失败错误：message 落库（scan.message，前端失败态展示），code 供前端按语言翻译。
- * message 是落库数据而非响应体，语言切换后旧记录仍为原文，属可接受折衷。
+ * 扫描失败错误：message 落库并作为兜底文案（语言切换后旧记录仍是原文，属可接受折衷），
+ * code + params 同时落库（scans.error_code / error_params），前端按界面语言重拼——
+ * 英文界面看到中文失败原因才是问题，兜底只在未带 code 的意外异常时生效。
  */
 export class ScanError extends Error {
   constructor(
@@ -99,6 +100,11 @@ export function enqueueScan(scanId: string, plan: ScanPlan): void {
   }
   void slot.ready
     .then(() => {
+      // 排队期间用户可能已取消（取消路由直接把记录落成 failed，且此时引擎还没起，
+      // requestScanCancel 无从介入）：状态不是 scanning 就什么也别做，
+      // 否则槽位轮到时会把已取消的扫描跑完并覆盖回 completed，取消形同无效
+      const current = getScan(scanId);
+      if (!current || current.status !== 'scanning') return;
       // 轮到本扫描开跑：清掉排队标记，前端从"排队中"切回"扫描中"
       if (slot.queued) updateScan(scanId, { queuedAt: null });
       return runScan(scanId, plan);
@@ -169,14 +175,27 @@ export function hasRunningScan(): boolean {
   return Number(row?.count ?? 0) > 0;
 }
 
-/** 服务重启时把上次中断在 scanning 的记录标记为失败（引擎进程已丢失，无法续跑） */
+/** 判定「不可能还在跑」的宽限：引擎到点必 kill（温和 5s、兜底 15s），再留 2 分钟吸收时钟与调度抖动 */
+const STALE_SCAN_GRACE_MS = 2 * 60 * 1000;
+
+/**
+ * 服务启动时清理中断在 scanning 的记录：只处理已超过「引擎硬超时 + 宽限」的行。
+ * 判据不能是「所有 scanning」——dev.mjs 允许第二个实例共用同一个数据目录（AI 改代码时
+ * 也会起项目，两边必须互不干扰），无判据会把另一个实例正在跑的扫描直接打成失败。
+ * 超过超时仍在 scanning 的行，任何存活进程都不可能产生（引擎侧到点必终止），只可能是崩溃残骸。
+ */
 export function markStaleScansFailed(): void {
-  const rows = db.prepare("SELECT id FROM scans WHERE status = 'scanning'").all() as Array<{ id: string }>;
+  const cutoff = new Date(Date.now() - (config.scanTimeoutMs + STALE_SCAN_GRACE_MS)).toISOString();
+  const rows = db.prepare(
+    `SELECT id FROM scans
+     WHERE status = 'scanning' AND COALESCE(started_at, queued_at, scanned_at) < ?`,
+  ).all(cutoff) as Array<{ id: string }>;
   for (const row of rows) {
     updateScan(row.id, {
       status: 'failed',
       finishedAt: new Date().toISOString(),
       message: '服务重启导致扫描中断，请重新发起',
+      errorCode: 'scan.interrupted',
       // 排队标记的契约是"status 仍 scanning 且有值 = 排队中"（见 db.ts ScanRecord.queuedAt）；
       // 重启后不再有槽位轮转来清它，这里必须一并置 null，否则失败记录永久残留排队标记
       queuedAt: null,
@@ -416,20 +435,24 @@ async function runScan(scanId: string, plan: ScanPlan): Promise<void> {
     }
 
     let output: OpengrepOutput;
+    // 结论与 message 同形（不带额外冒号），保证前端按 code 重拼的结果与落库兜底文案一致
+    const stderrBrief = stderr.slice(0, 300);
     try {
       output = JSON.parse(stdout) as OpengrepOutput;
     } catch {
-      throw new Error(
-        `引擎输出无法解析（exit=${code}）${stderr ? `：${stderr.slice(0, 300)}` : ''}`,
+      throw new ScanError(
+        'scan.outputUnparseable',
+        `引擎输出无法解析（exit=${code}）${stderrBrief}`,
+        { code, detail: stderrBrief },
       );
     }
 
     if (code !== 0) {
-      const detail = output.errors?.[0]?.message ?? stderr.slice(0, 300) ?? '';
+      const detail = (output.errors?.[0]?.message ?? stderrBrief).slice(0, 500);
       throw new ScanError(
         'scan.engineFailed',
-        `引擎执行失败（exit=${code}）${detail ? `：${detail.slice(0, 500)}` : ''}`.trim(),
-        { code, detail: detail ? detail.slice(0, 500) : '' },
+        `引擎执行失败（exit=${code}）${detail}`,
+        { code, detail },
       );
     }
 
@@ -491,6 +514,10 @@ async function runScan(scanId: string, plan: ScanPlan): Promise<void> {
       status: 'failed',
       finishedAt: new Date().toISOString(),
       message: message.slice(0, 1000),
+      // 带 code 的已知失败连同参数一起落库，前端按界面语言重拼；意外异常只留兜底文案
+      ...(error instanceof ScanError
+        ? { errorCode: error.code, errorParams: error.params }
+        : {}),
     });
     console.error(`[scan-runner] 扫描 ${scanId} 失败: ${message}`);
   }

@@ -322,8 +322,10 @@ export async function installEngineAsset({
 
   mkdirSync(toolDir, { recursive: true });
   const installedPath = path.join(toolDir, installedName);
-  const stagingPath = `${installedPath}.download`;
-  const backupPath = `${installedPath}.old`;
+  // 临时名带 pid：CLI（setup:engine）与界面"一键升级"可能在同一 toolDir 上并发，固定名会让
+  // 一方 rename 就位后仍被另一方的写入追加，POSIX 下产出半坏的引擎文件
+  const stagingPath = `${installedPath}.${process.pid}.download`;
+  const backupPath = `${installedPath}.${process.pid}.old`;
   rmSync(stagingPath, { force: true });
   rmSync(backupPath, { force: true });
 

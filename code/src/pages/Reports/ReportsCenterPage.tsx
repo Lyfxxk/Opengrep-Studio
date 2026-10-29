@@ -32,6 +32,8 @@ import { api } from '@/lib/api';
 export default function ReportsCenterPage() {
   const { t } = useTranslation();
   const [rows, setRows] = useState<ScanWithProject[] | null>(null);
+  /** 加载失败与"确实一份报告都没有"必须区分：失败时给可操作的重试入口，而不是假的空态 */
+  const [loadFailed, setLoadFailed] = useState(false);
   const [projects, setProjects] = useState<IProject[]>([]);
   const [filterProjectId, setFilterProjectId] = useState('all');
   const [keyword, setKeyword] = useState('');
@@ -40,6 +42,7 @@ export default function ReportsCenterPage() {
     try {
       const [allScans, projects] = await Promise.all([api.listAllScans(), api.listProjects()]);
       setProjects(projects);
+      setLoadFailed(false);
       setRows(
         attachProjectNames(
           allScans.filter((scan) => scan.status === 'completed'),
@@ -48,7 +51,7 @@ export default function ReportsCenterPage() {
       );
     } catch (error) {
       toast.error(error instanceof Error ? error.message : String(error));
-      setRows([]);
+      setLoadFailed(true);
     }
   }, []);
 
@@ -114,7 +117,20 @@ export default function ReportsCenterPage() {
 
       {rows === null ? (
         <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
-          {t('common.loading')}
+          {loadFailed ? (
+            <>
+              {t('common.loadFailedHint')}
+              <button
+                type="button"
+                className="ml-2 text-sm font-medium text-primary hover:underline"
+                onClick={() => void load()}
+              >
+                {t('common.retry')}
+              </button>
+            </>
+          ) : (
+            t('common.loading')
+          )}
         </div>
       ) : filteredRows.length === 0 && rows.length === 0 ? (
         <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
@@ -185,7 +201,7 @@ export default function ReportsCenterPage() {
                               title={t('reports.actionManifestTitle')}
                             >
                               <ListOrdered className="size-3.5" />
-                              manifest
+                              {t('reports.actionManifest')}
                             </a>
                           </Button>
                         </>

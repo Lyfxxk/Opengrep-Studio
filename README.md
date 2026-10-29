@@ -168,7 +168,7 @@ Want to see it before touching your own code? `npm run seed` seeds three demo pr
 <li><b>"Check for updates" reports GitHub API rate limit</b>: anonymous calls are capped at 60/hour and results are cached for 30 minutes; retry later — scanning is unaffected</li>
 <li><b>macOS Gatekeeper</b>: <code>xattr -d com.apple.quarantine &lt;engine-path&gt;</code></li>
 <li><b>Ports busy</b>: <code>node server/scripts/kill-port.mjs 8787 1022</code></li>
-<li><b>Other env vars</b>: <code>PORT</code> / <code>HOST</code> / <code>DATA_DIR</code> / <code>CUSTOM_RULES_DIR</code> / <code>OPENGREP_BIN</code> / <code>OPENGREP_DOWNLOAD_BASE</code></li>
+<li><b>Other env vars</b>: <code>PORT</code> / <code>HOST</code> / <code>DATA_DIR</code> / <code>CUSTOM_RULES_DIR</code> / <code>OPENGREP_BIN</code> / <code>OPENGREP_DOWNLOAD_BASE</code> (server); timeout overrides take seconds: <code>CLONE_TIMEOUT_SECONDS</code> / <code>SEVEN_Z_TIMEOUT_SECONDS</code> / <code>RULE_LAB_TIMEOUT_SECONDS</code>. The dev server honours <code>API_TARGET</code> for the <code>/api</code> proxy</li>
 </ul>
 </details>
 
@@ -263,7 +263,8 @@ Common commands (run from the repo root):
 | `npm run dev` | Backend (`tsx watch` :8787) + frontend (Vite :1022) together |
 | `npm test` | Backend unit tests (engine resolution / gitignore semantics / rule YAML / SARIF import) |
 | `npm run test-packs` | Rule-pack structure validation & sample regression |
-| `npm run e2e` | Black-box REST regression (start backend + engine first; 24 scenario groups) |
+| `npm run i18n:check` | Language-pack consistency (3 UI packs + simplified/traditional rule texts & CWE) |
+| `npm run e2e` | Black-box REST regression (start backend + engine first; 21 scenario groups) |
 | `npm run seed` | Seed demo data |
 | `npm --prefix code run lint` | Frontend typecheck + ESLint |
 

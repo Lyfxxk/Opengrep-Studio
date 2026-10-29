@@ -33,12 +33,15 @@ async function api(method, path, body) {
   return { status: res.status, json };
 }
 
+/** 单个请求的最长等待：后端卡死时 CI 要失败并报错，而不是挂到 6 小时任务上限 */
+const REQUEST_TIMEOUT_MS = 60_000;
+
 /** Windows 下 undici 与服务端 keep-alive 存在偶发 ECONNRESET 竞态，失败重试 2 次 */
 async function fetchRetry(url, init, tries = 3) {
   let lastError;
   for (let attempt = 0; attempt < tries; attempt += 1) {
     try {
-      return await fetch(url, init);
+      return await fetch(url, { ...init, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
     } catch (error) {
       lastError = error;
       await new Promise((r) => setTimeout(r, 400));
@@ -513,7 +516,7 @@ assert((report.json.conclusion ?? '').includes(s1.id), '结论文本含基线编
 assert(typeof report.json.meta?.engineVersion === 'string' && report.json.meta.engineVersion.length > 0,
   '报告标注扫描时的引擎版本', report.json.meta?.engineVersion);
 
-const reportHtmlRes = await fetch(`${BASE}/api/scans/${s2.id}/report?format=html`);
+const reportHtmlRes = await fetchRetry(`${BASE}/api/scans/${s2.id}/report?format=html`);
 const reportHtml = await reportHtmlRes.text();
 assert(reportHtmlRes.ok && reportHtml.includes('代码审计测试报告'), 'HTML 报告可生成');
 assert(reportHtml.includes('风险分布') && reportHtml.includes('行动清单') && reportHtml.includes('问题明细') && reportHtml.includes('方法与证据'), 'HTML 报告含关键章节');
@@ -525,7 +528,7 @@ assert((reportHtmlRes.headers.get('content-disposition') ?? '').includes('attach
 assert(!/[A-Za-z]:[\\/]/.test(reportHtml), 'HTML 报告不含 Windows 盘符绝对路径');
 assert(!/[\\/]workspace[\\/]/.test(reportHtml), 'HTML 报告不泄漏源码快照目录');
 assert(reportHtml.includes('&lt;repo&gt;/'), 'HTML 报告的命令行路径已折叠为 <repo>/');
-const reportSummaryRes = await fetch(`${BASE}/api/scans/${s2.id}/report?format=html&detail=summary`);
+const reportSummaryRes = await fetchRetry(`${BASE}/api/scans/${s2.id}/report?format=html&detail=summary`);
 const reportSummary = await reportSummaryRes.text();
 assert(
   reportSummaryRes.ok && !reportSummary.includes('<pre class="entry-snippet">'),
@@ -563,6 +566,38 @@ const badZip = new FormData();
 badZip.append('file', new Blob([Buffer.from('not a zip')], { type: 'application/zip' }), 'evil.zip');
 const badUp = await api('POST', `/api/projects/${p2.json.id}/source`, badZip);
 assert(badUp.status === 400, '损坏 ZIP 被拒绝');
+
+console.log('== 11a. 取消扫描：两种取消路径都要落成 failed + 可翻译错误码 ==');
+{
+  const cancelPid = await makeProjectWithSource('E2E-取消扫描');
+  const submitted = [];
+  // 全局并发池 2 路，连发 5 个保证尾部还在排队（排队中的引擎还没起，取消走"直接落 failed"分支）
+  for (let i = 0; i < 5; i += 1) {
+    const r = await api('POST', `/api/projects/${cancelPid}/scans`, {});
+    assert(r.status === 201 && r.json.id, `第 ${i + 1} 个扫描已受理`, JSON.stringify(r.json));
+    submitted.push(r.json.id);
+  }
+  const target = submitted[submitted.length - 1];
+  const cancelRes = await api('POST', `/api/scans/${target}/cancel`, {});
+  assert(cancelRes.status === 200, '取消请求被接受', JSON.stringify(cancelRes.json));
+  const cancelled = await pollScan(target);
+  assert(
+    cancelled.status === 'failed' && cancelled.errorCode === 'scan.cancelled',
+    '取消最终落 failed 并带语言无关错误码',
+    JSON.stringify(cancelled),
+  );
+  assert(cancelled.queuedAt === undefined, '取消后排队标记已清除', JSON.stringify(cancelled));
+  const listed = await api('GET', `/api/projects/${cancelPid}/scans`);
+  assert(
+    (listed.json ?? []).some((item) => item.id === target && item.errorCode === 'scan.cancelled'),
+    '列表接口同样回传错误码（详情页失败提示按语言重拼要用）',
+    JSON.stringify(listed.json?.map?.((item) => [item.id, item.status, item.errorCode])),
+  );
+  // 等其余扫描跑完释放槽位：被取消的那条不得被复活成 completed
+  for (const id of submitted.slice(0, 4)) await pollScan(id);
+  const afterSlotsFreed = await api('GET', `/api/scans/${target}`);
+  assert(afterSlotsFreed.json.status === 'failed', '槽位轮转不会复活已取消的扫描', JSON.stringify(afterSlotsFreed.json));
+}
 
 console.log('== 11b. Git 仓库直扫：校验与失败路径 ==');
 const badProto = await api('POST', `/api/projects/${p2.json.id}/clone`, { url: 'file:///etc/passwd' });
@@ -879,7 +914,7 @@ const packAfterCheck = (await api('GET', '/api/rulepacks')).json.find((rp) => rp
 assert(packAfterCheck?.lastCheck?.tier === 'verified' && packAfterCheck.lastCheck.passed === 1,
   '检查结果已存为 lastCheck', JSON.stringify(packAfterCheck?.lastCheck));
 
-const exportedRes = await fetch(`${BASE}/api/rulepacks/${imported.json.id}/export`);
+const exportedRes = await fetchRetry(`${BASE}/api/rulepacks/${imported.json.id}/export`);
 assert(exportedRes.ok && (exportedRes.headers.get('content-disposition') ?? '').includes('attachment'),
   '导出 zip 为附件下载');
 const exportBytes = Buffer.from(await exportedRes.arrayBuffer());
@@ -939,7 +974,7 @@ assert(basicImported.status === 201 && basicImported.json.sampleCount === 0,
 const basicCheck = await api('POST', `/api/rulepacks/${basicImported.json.id}/check`);
 assert(basicCheck.json.tier === 'basic' && basicCheck.json.items[0].verdict === 'unverified',
   '无样本包检查为 basic/unverified', JSON.stringify(basicCheck.json));
-const basicExport = await fetch(`${BASE}/api/rulepacks/${basicImported.json.id}/export`);
+const basicExport = await fetchRetry(`${BASE}/api/rulepacks/${basicImported.json.id}/export`);
 const basicZip = new AdmZip(Buffer.from(await basicExport.arrayBuffer()));
 assert(basicZip.getEntries().some((entry) => /\/?README\.md$/i.test(entry.entryName)),
   '单文件包导出也注入 README.md', basicZip.getEntries().map((e) => e.entryName).join(' | '));

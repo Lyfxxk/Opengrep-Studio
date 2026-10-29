@@ -198,6 +198,7 @@ const REPORT_TEXT_ZH = {
   comparisonSentence: (baseline: string, added: number, remaining: number, fixed: number) =>
     `与基线扫描 ${baseline} 相比：新增 ${added} 项、遗留 ${remaining} 项、已修复 ${fixed} 项。`,
   urgentHint: (urgent: number) => `建议优先处理严重与高危问题（共 ${urgent} 项），修复后重新扫描回归验证。`,
+  nonUrgentHint: () => '当前无严重/高危问题，建议按业务优先级安排中低危问题的修复。',
   summaryReview: (s: ReportReviewSummary) =>
     ` 人工复核已完成 ${s.reviewed} 项（确认 ${s.confirmed}、误报 ${s.falsePositives}、有条件接受 ${s.accepted}）。`,
 };
@@ -284,6 +285,7 @@ const REPORT_TEXT_HANT: typeof REPORT_TEXT_ZH = {
   comparisonSentence: (baseline: string, added: number, remaining: number, fixed: number) =>
     `與基線掃描 ${baseline} 相比：新增 ${added} 項、遺留 ${remaining} 項、已修復 ${fixed} 項。`,
   urgentHint: (urgent: number) => `建議優先處理嚴重與高危問題（共 ${urgent} 項），修復後重新掃描回歸驗證。`,
+  nonUrgentHint: () => '目前無嚴重/高危問題，建議依業務優先度安排中低危問題的修復。',
   summaryReview: (s: ReportReviewSummary) =>
     ` 人工複核已完成 ${s.reviewed} 項（確認 ${s.confirmed}、誤報 ${s.falsePositives}、有條件接受 ${s.accepted}）。`,
 };
@@ -389,6 +391,8 @@ const REPORT_TEXT_EN: typeof REPORT_TEXT_ZH = {
     `Compared with baseline scan ${baseline}: ${added} new, ${remaining} remaining, ${fixed} fixed.`,
   urgentHint: (urgent: number) =>
     `Prioritize critical and high issues (${urgent} in total), then rescan to verify.`,
+  nonUrgentHint: () =>
+    'No critical or high issues remain; schedule medium and low fixes by business priority.',
   summaryReview: (s: ReportReviewSummary) =>
     ` Manual review: ${s.reviewed} reviewed (${s.confirmed} confirmed, ${s.falsePositives} false positive, ${s.accepted} accepted).`,
 };
@@ -401,13 +405,21 @@ const REPORT_TEXT: Record<ReportLang, ReportText> = {
   en: REPORT_TEXT_EN,
 };
 
+/** 结论句输入：报告数据、载荷兜底文案、HTML 按语言重拼三处共用同一拼装 */
+interface ConclusionInput {
+  fileCount?: number | null;
+  baselineScanId?: string | null;
+  totals: ReportTotals;
+  reviewStats?: ReportReviewSummary;
+}
+
 /**
- * 按当前统计值重拼结论句：不依赖 conclusionCode 载荷，旧扫描也能拿到对应语言的结论，
+ * 结论句的唯一实现（按语言重拼）：不依赖 conclusionCode 载荷，旧扫描也能拿到对应语言的结论，
  * 避免繁体/英文报告里夹一段简体原文。
  */
-function localizedConclusion(data: ReportData, text: ReportText): string {
-  const { meta, totals } = data;
-  const files = meta.fileCount ? String(meta.fileCount) : '—';
+function composeConclusion(input: ConclusionInput, text: ReportText): string {
+  const { totals } = input;
+  const files = input.fileCount ? String(input.fileCount) : '—';
   let base: string;
   if (totals.total === 0) {
     base = text.conclusionNoIssues(files);
@@ -416,10 +428,10 @@ function localizedConclusion(data: ReportData, text: ReportText): string {
       .map((sev) => text.severityPhrase(text.severity[sev], totals.bySeverity[sev]))
       .join(text.listSeparator);
     const parts = [text.conclusionSummary(files, totals.total, sevText)];
-    if (meta.baselineScanId) {
+    if (input.baselineScanId) {
       parts.push(
         text.comparisonSentence(
-          meta.baselineScanId,
+          input.baselineScanId,
           totals.byComparison.new,
           totals.byComparison.remaining,
           totals.byComparison.fixed,
@@ -427,10 +439,10 @@ function localizedConclusion(data: ReportData, text: ReportText): string {
       );
     }
     const urgent = totals.bySeverity.critical + totals.bySeverity.high;
-    if (urgent > 0) parts.push(text.urgentHint(urgent));
+    parts.push(urgent > 0 ? text.urgentHint(urgent) : text.nonUrgentHint());
     base = parts.join(text.sentenceSeparator);
   }
-  const review = data.reviewStats;
+  const review = input.reviewStats;
   return review && review.reviewed > 0 ? `${base}${text.summaryReview(review)}` : base;
 }
 
@@ -535,49 +547,22 @@ export function buildReportData(
   };
 
   const mappedIssues = issues.map(attachReview);
-  const conclusion = buildConclusion(scan, current.length, bySeverity, byComparison);
-  const reviewSentence = reviewStats.reviewed > 0
-    ? ` 人工复核已完成 ${reviewStats.reviewed} 项（确认 ${reviewStats.confirmed}、误报 ${reviewStats.falsePositives}、有条件接受 ${reviewStats.accepted}）。`
-    : '';
+  const totals: ReportTotals = { total: current.length, bySeverity, byComparison };
+  const conclusionInput: ConclusionInput = {
+    fileCount: scan.fileCount,
+    baselineScanId: scan.baselineScanId,
+    totals,
+    ...(reviewStats.reviewed > 0 ? { reviewStats } : {}),
+  };
   return {
     meta,
-    totals: { total: current.length, bySeverity, byComparison },
-    conclusion: `${conclusion}${reviewSentence}`,
-    conclusionCode: buildConclusionPayload(scan, current.length, bySeverity, byComparison),
+    totals,
+    conclusion: composeConclusion(conclusionInput, REPORT_TEXT_ZH),
+    conclusionCode: buildConclusionPayload(scan, totals),
     topFiles,
     issues: mappedIssues,
     ...(reviewStats.reviewed > 0 ? { reviewStats } : {}),
   };
-}
-
-function buildConclusion(
-  scan: ScanRecord,
-  total: number,
-  bySeverity: Record<Severity, number>,
-  byComparison: Record<ComparisonStatus, number>,
-): string {
-  const parts: string[] = [];
-  const fileText = scan.fileCount ? `${scan.fileCount}` : '—';
-  if (total === 0) {
-    parts.push(`本次扫描共检查 ${fileText} 个源码文件，未命中任何已启用规则，未发现风险问题。`);
-  } else {
-    const sevText = SEVERITY_ORDER.filter((sev) => bySeverity[sev] > 0)
-      .map((sev) => `${SEVERITY_LABEL[sev]} ${bySeverity[sev]} 项`)
-      .join('、');
-    parts.push(`本次扫描共检查 ${fileText} 个源码文件，发现 ${total} 个风险问题（${sevText}）。`);
-  }
-  if (scan.baselineScanId) {
-    parts.push(
-      `与基线扫描 ${scan.baselineScanId} 相比：新增 ${byComparison.new} 项、遗留 ${byComparison.remaining} 项、已修复 ${byComparison.fixed} 项。`,
-    );
-  }
-  const urgent = bySeverity.critical + bySeverity.high;
-  if (urgent > 0) {
-    parts.push(`建议优先处理严重与高危问题（共 ${urgent} 项），修复后重新扫描回归验证。`);
-  } else if (total > 0) {
-    parts.push('当前无严重/高危问题，建议按业务优先级安排中低危问题的修复。');
-  }
-  return parts.join('');
 }
 
 /**
@@ -585,26 +570,26 @@ function buildConclusion(
  * message（中文兜底）供自包含 HTML 报告与前后端版本错位场景直接使用。
  * 复核句不在载荷内——它属于统计呈现，由前端 reviewStats 独立渲染。
  */
-function buildConclusionPayload(
-  scan: ScanRecord,
-  total: number,
-  bySeverity: Record<Severity, number>,
-  byComparison: Record<ComparisonStatus, number>,
-): ConclusionPayload | null {
+function buildConclusionPayload(scan: ScanRecord, totals: ReportTotals): ConclusionPayload | null {
+  const { bySeverity, byComparison } = totals;
   const fileCount = scan.fileCount ?? 0;
   const urgent = bySeverity.critical + bySeverity.high;
-  if (total === 0) {
+  const message = composeConclusion(
+    { fileCount: scan.fileCount, baselineScanId: scan.baselineScanId, totals },
+    REPORT_TEXT_ZH,
+  );
+  if (totals.total === 0) {
     return {
       code: 'noIssues',
       params: { files: fileCount, baseline: scan.baselineScanId ?? '' },
-      message: `本次扫描共检查 ${fileCount || '—'} 个源码文件，未命中任何已启用规则，未发现风险问题。`,
+      message,
     };
   }
   return {
     code: 'summary',
     params: {
       files: fileCount,
-      total,
+      total: totals.total,
       critical: bySeverity.critical,
       high: bySeverity.high,
       medium: bySeverity.medium,
@@ -615,7 +600,7 @@ function buildConclusionPayload(
       baselineFixed: byComparison.fixed,
       urgent,
     },
-    message: buildConclusion(scan, total, bySeverity, byComparison),
+    message,
   };
 }
 
@@ -847,7 +832,18 @@ export function renderReportHtml(
     (a, b) => SEVERITY_RANK[a.maxSev] - SEVERITY_RANK[b.maxSev] || b.count - a.count,
   );
 
-  const conclusionText = escapeHtml(lang === 'zh' ? data.conclusion : localizedConclusion(data, text));
+  // 三种语言统一按统计值重拼结论：zh 的拼装结果与 data.conclusion 同字，不必再分叉
+  const conclusionText = escapeHtml(
+    composeConclusion(
+      {
+        fileCount: data.meta.fileCount,
+        baselineScanId: data.meta.baselineScanId,
+        totals: data.totals,
+        ...(data.reviewStats ? { reviewStats: data.reviewStats } : {}),
+      },
+      text,
+    ),
+  );
   const metricsHtml = `
     <div class="metrics">
       <div class="metric"><div class="k">${text.metrics.total}</div><div class="v">${totals.total}</div></div>

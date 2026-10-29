@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { load as yamlLoad } from 'js-yaml';
 import { db, listRulePacks, type RulePack } from './db.js';
 import { customPackDir, packRuleFiles } from './rulepacks.js';
+import { isSampleKind } from './pack-format.js';
 
 const srcDir = path.dirname(fileURLToPath(import.meta.url));
 const rulesDir = path.join(srcDir, '..', 'rules');
@@ -143,7 +144,7 @@ export function listRuleMessages(lang: KnowledgeLang): Record<string, string> {
   return loadResources(lang).messages;
 }
 
-function readSample(dir: string, filter: string): KnowledgeSample[] {
+function readSample(dir: string, kind: 'positive' | 'negative'): KnowledgeSample[] {
   const out: KnowledgeSample[] = [];
   let entries: fs.Dirent[];
   try {
@@ -152,7 +153,7 @@ function readSample(dir: string, filter: string): KnowledgeSample[] {
     return out;
   }
   for (const entry of entries) {
-    if (!entry.isFile() || !entry.name.toLowerCase().startsWith(filter)) continue;
+    if (!entry.isFile() || !isSampleKind(entry.name, kind)) continue;
     if (out.length >= SAMPLE_MAX_FILES) break;
     try {
       const stat = fs.statSync(path.join(dir, entry.name));

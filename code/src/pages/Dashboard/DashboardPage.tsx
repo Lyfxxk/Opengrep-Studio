@@ -221,7 +221,9 @@ export default function DashboardPage() {
         <StatCard
           icon={ShieldAlert}
           label={t('dashboard.statsIssues')}
-          value={completedScans.reduce((sum, scan) => sum + scan.issueCount, 0)}
+          // 口径与下方 sub / 风险分布一致：只算每个项目最近一次已完成扫描，
+          // 否则同一项目反复扫描会把历史问题数重复累加
+          value={Array.from(latestByProject.values()).reduce((sum, scan) => sum + scan.issueCount, 0)}
           sub={
             risks
               ? t('dashboard.issueStats', { active: aggregated.total, pending: aggregated.pendingReview })

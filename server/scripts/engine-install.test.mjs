@@ -16,7 +16,6 @@ import {
 
 const CATALOG = {
   version: 'v1.31.0',
-  baseUrl: 'https://github.com/opengrep/opengrep/releases/download',
   assets: {
     'win32-x64': { file: 'opengrep_windows_x86.exe', sha256: 'a'.repeat(64) },
     'linux-x64': { file: 'opengrep_manylinux_x86', sha256: 'b'.repeat(64) },

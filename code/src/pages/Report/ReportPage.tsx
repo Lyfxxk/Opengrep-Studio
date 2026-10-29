@@ -65,13 +65,11 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 function DistBar({
   label,
   count,
-  max,
   barClass,
   total,
 }: {
   label: string;
   count: number;
-  max: number;
   barClass: string;
   total: number;
 }) {
@@ -333,7 +331,7 @@ export default function ReportPage() {
     );
   }
 
-  const { meta, totals, conclusion, conclusionCode, topFiles, issues, reviewStats } = report;
+  const { meta, totals, conclusion, conclusionCode, issues, reviewStats } = report;
   // 结论按语言重拼；载荷缺失（演示模式/旧缓存）回落服务端原文。
   // urgent=0 时没有可"优先处理"的对象，切到 NoUrgent 键，与服务端 buildConclusion 的中低危兜底句口径一致
   const conclusionKey =
@@ -350,7 +348,6 @@ export default function ReportPage() {
     : conclusion;
   const current = issues.filter((issue) => issue.comparisonStatus !== 'fixed');
   const fixed = issues.filter((issue) => issue.comparisonStatus === 'fixed');
-  const severityMax = Math.max(1, ...Object.values(totals.bySeverity));
   const groupHint: Record<Severity, string> = {
     critical: t('report.groupHintCritical'),
     high: t('report.groupHintHigh'),
@@ -447,7 +444,6 @@ export default function ReportPage() {
                 key={sev}
                 label={t(`severity.${sev}`)}
                 count={totals.bySeverity[sev]}
-                max={severityMax}
                 total={totals.total}
                 barClass={SEVERITY_BAR_CLASS[sev]}
               />

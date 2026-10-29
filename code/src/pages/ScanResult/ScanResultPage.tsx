@@ -23,7 +23,7 @@ import ScanStatusBadge from '@/components/ScanStatusBadge';
 import type { IIssue } from '@/data/issues';
 import type { IProject } from '@/data/projects';
 import type { IScanResult } from '@/data/scanresults';
-import { api } from '@/lib/api';
+import { api, translateApiError } from '@/lib/api';
 import CodeSnippetViewer from './CodeSnippetViewer';
 import ComparisonSummary from './ComparisonSummary';
 import IssueFilterList from './IssueFilterList';
@@ -100,6 +100,24 @@ export default function ScanResultPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // 路由 :id/:scanId 变化复用同一组件实例：先清掉上一个扫描留下的状态。
+  // 不重置时 loadedOnceRef 仍为 true，新扫描在 scanning 期间不会重取 project，
+  // 复核对话框会拿着旧项目的 id 提交（复核按 projectId + fingerprint 落库，直接写错归属）。
+  useEffect(() => {
+    setProject(null);
+    setScan(null);
+    setBaselineScan(null);
+    setIssues([]);
+    setLoading(true);
+    setLoadFailed(false);
+    setSelectedIssueId(null);
+    setReviewTarget(null);
+    setKnowledgeRuleId(null);
+    setPacksOpen(false);
+    loadedOnceRef.current = false;
+    pollErrorShownRef.current = false;
+  }, [id, scanId]);
 
   const isScanning = scan?.status === 'scanning';
   useEffect(() => {
@@ -259,7 +277,7 @@ export default function ScanResultPage() {
             <p className="text-sm font-medium">{t('scanResult.failedTitle')}</p>
             {scan.message && (
               <p className="max-w-[640px] break-all font-mono text-xs text-muted-foreground">
-                {scan.message}
+                {translateApiError(scan.errorCode, scan.errorParams, scan.message)}
               </p>
             )}
             <p className="text-xs text-muted-foreground">{t('scanResult.failedHint')}</p>

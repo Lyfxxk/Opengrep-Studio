@@ -90,7 +90,8 @@ export function parsePackManifest(text: string): PackManifest {
 }
 
 
-function isSampleKind(basename: string, kind: 'positive' | 'negative'): boolean {
+/** 样本归属的唯一口径（`positive.*` / `negative.*`）：质量检查与知识库展示共用，避免两套判断漂移 */
+export function isSampleKind(basename: string, kind: 'positive' | 'negative'): boolean {
   const firstToken = basename.split('.')[0].toLowerCase();
   return firstToken === kind;
 }

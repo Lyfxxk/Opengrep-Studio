@@ -145,12 +145,15 @@ export function runEngine(
     // spawn 成功即回调：取消扫描需要拿到这次运行的子进程句柄（scan-runner 按 scanId 登记），
     // 全局 trackedChildren 只有 Set 没有归属信息，定位不到单个扫描的引擎
     options.onSpawn?.(child);
-    let stdout = '';
-    let stderr = '';
     let timedOut = false;
     let stdoutTruncated = false;
     let stdoutBytes = 0;
     let stderrBytes = 0;
+    // 逐 chunk toString 会把跨 chunk 边界的多字节 UTF-8 截成 U+FFFD（中文规则说明与引擎报错都会踩），
+    // 因此攒 Buffer、在 resolve 前一次性解码
+    const stdoutChunks: Buffer[] = [];
+    const stderrChunks: Buffer[] = [];
+    const decode = (chunks: Buffer[]) => Buffer.concat(chunks).toString('utf8');
     // 引擎若无视终止信号，Promise 永不 resolve，会把扫描串行链整体卡死并锁死引擎升级：
     // 温和终止无效则 5 秒后 SIGKILL（Windows 等价 TerminateProcess），再不行兜底强制返回
     const killTimers: NodeJS.Timeout[] = [];
@@ -160,7 +163,13 @@ export function runEngine(
       killTimers.push(setTimeout(() => child.kill('SIGKILL'), 5000));
       killTimers.push(
         setTimeout(() => {
-          resolve({ code: -1, stdout, stderr: `${stderr}\n引擎超时且终止失败，已放弃等待`, timedOut: true, stdoutTruncated });
+          resolve({
+            code: -1,
+            stdout: decode(stdoutChunks),
+            stderr: `${decode(stderrChunks)}\n引擎超时且终止失败，已放弃等待`,
+            timedOut: true,
+            stdoutTruncated,
+          });
         }, 15000),
       );
     }, options.timeoutMs);
@@ -176,21 +185,33 @@ export function runEngine(
         stdoutTruncated = true;
         return;
       }
-      stdout += String(chunk);
+      stdoutChunks.push(chunk);
     });
     child.stderr.on('data', (chunk: Buffer) => {
       // 超限即停止拼接：stderr 只用于错误信息展示，防异常引擎刷屏打爆内存，不按失败处理
       stderrBytes += chunk.length;
       if (stderrBytes > MAX_ENGINE_STDERR_BYTES) return;
-      stderr += String(chunk);
+      stderrChunks.push(chunk);
     });
     child.on('error', (error) => {
       stopKillTimers();
-      resolve({ code: -1, stdout, stderr: `${stderr}\n${String(error)}`, timedOut, stdoutTruncated });
+      resolve({
+        code: -1,
+        stdout: decode(stdoutChunks),
+        stderr: `${decode(stderrChunks)}\n${String(error)}`,
+        timedOut,
+        stdoutTruncated,
+      });
     });
     child.on('close', (code) => {
       stopKillTimers();
-      resolve({ code: code ?? -1, stdout, stderr, timedOut, stdoutTruncated });
+      resolve({
+        code: code ?? -1,
+        stdout: decode(stdoutChunks),
+        stderr: decode(stderrChunks),
+        timedOut,
+        stdoutTruncated,
+      });
     });
   });
 }

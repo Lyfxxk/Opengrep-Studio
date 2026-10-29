@@ -50,7 +50,8 @@ interface ApiErrorShape {
  * 键由后端契约动态决定、无法枚举进 t() 的类型系统，故对 t 做局部宽化；
  * defaultValue 兜底保证前后端版本错位时退回后端原文而不是显示裸键名。
  */
-function translateApiError(
+/** 按当前界面语言重拼后端错误；无 code（旧数据/意外异常）时回落后端原文 */
+export function translateApiError(
   code: string | undefined,
   params: Record<string, unknown> | undefined,
   fallback: string,

@@ -345,8 +345,10 @@ async function extractSevenZ(buffer: Buffer, destDir: string, fileName: string):
       worker.once('error', (error) => {
         settle({ ok: false, message: error instanceof Error ? error.message : String(error) });
       });
-      worker.once('exit', () => {
-        if (abortReason) settle({ ok: false, message: abortReason });
+      worker.once('exit', (exitCode) => {
+        // worker 没发消息就退出（崩溃或被系统回收）时也必须 settle，
+        // 否则这个 Promise 永不落地，项目的导入互斥会一直 409 到重启
+        settle({ ok: false, message: abortReason ?? `解压线程意外退出（code ${exitCode}）` });
       });
     });
     if (!result.ok) {

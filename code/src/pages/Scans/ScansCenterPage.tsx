@@ -39,6 +39,8 @@ export default function ScansCenterPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [scans, setScans] = useState<ScanWithProject[] | null>(null);
+  /** 加载失败与"确实一条都没有"必须区分：失败时给可操作的重试入口，而不是假的空态 */
+  const [loadFailed, setLoadFailed] = useState(false);
   const [projects, setProjects] = useState<IProject[]>([]);
   const [filterProjectId, setFilterProjectId] = useState('all');
   const [keyword, setKeyword] = useState('');
@@ -57,9 +59,10 @@ export default function ScansCenterPage() {
       const [allScans, projects] = await Promise.all([api.listAllScans(), api.listProjects()]);
       setProjects(projects);
       setScans(attachProjectNames(allScans, projects));
+      setLoadFailed(false);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : String(error));
-      setScans([]);
+      setLoadFailed(true);
     }
   }, []);
 
@@ -164,7 +167,20 @@ export default function ScansCenterPage() {
 
       {scans === null ? (
         <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
-          {t('common.loading')}
+          {loadFailed ? (
+            <>
+              {t('common.loadFailedHint')}
+              <button
+                type="button"
+                className="ml-2 text-sm font-medium text-primary hover:underline"
+                onClick={() => void load()}
+              >
+                {t('common.retry')}
+              </button>
+            </>
+          ) : (
+            t('common.loading')
+          )}
         </div>
       ) : filteredScans.length === 0 && scans.length === 0 ? (
         <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
