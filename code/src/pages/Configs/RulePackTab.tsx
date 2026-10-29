@@ -288,7 +288,7 @@ export default function RulePackTab() {
   const builtinRuleTotal = builtinPacks.reduce((sum, pack) => sum + pack.ruleCount, 0);
 
   // 分页：自定义包表格与内置包卡片流各自翻页，删行 / 导入后夹页码防空页
-  const builtinPageSize = 8;
+  // 卡片流是 1/2 列栅格，10 条正好 5 行，与其余列表同口径
   const {
     page: safeCustomPage,
     setPage: setCustomPage,
@@ -300,7 +300,7 @@ export default function RulePackTab() {
     setPage: setBuiltinPage,
     pageCount: builtinPageCount,
     slice: pagedBuiltinPacks,
-  } = usePagedList(builtinPacks, builtinPageSize);
+  } = usePagedList(builtinPacks, LIST_PAGE_SIZE);
 
   // 批量删除只覆盖自定义包表格（内置包在下方以卡片流呈现，不参与勾选）
   const selection = useRowSelection(customPacks.map((pack) => pack.id));
@@ -603,7 +603,7 @@ export default function RulePackTab() {
                         </div>
                       ))}
                     </div>
-                    {builtinPacks.length > builtinPageSize && (
+                    {builtinPacks.length > LIST_PAGE_SIZE && (
                       <Pagination
                         page={safeBuiltinPage}
                         pageCount={builtinPageCount}
