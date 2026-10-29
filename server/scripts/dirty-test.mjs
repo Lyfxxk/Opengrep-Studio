@@ -312,6 +312,19 @@ async function main() {
   record('代码片段[路径穿越] → 不返回服务器文件', res.status >= 400 || !String(res.body?.content ?? '').includes('HttpError'), `status=${res.status}`);
   res = await call(`/api/scans/${seedScan.id}/snippet?path=config.js&start=-5&end=99999`);
   record('代码片段[越界行号] → 不崩溃', res.status >= 200 && res.status < 500, `status=${res.status}`);
+  // 回归：超大 end 曾令高亮循环按原始 [start, end] 区间迭代，单请求即可拖死事件循环
+  const seedIssue = (await call(`/api/scans/${seedScan.id}/issues`)).body[0];
+  if (seedIssue) {
+    try {
+      res = await call(
+        `/api/scans/${seedScan.id}/snippet?path=${encodeURIComponent(seedIssue.filePath)}&start=${seedIssue.startLine}&end=${Number.MAX_SAFE_INTEGER - 1}&issueId=${seedIssue.id}`,
+        { signal: AbortSignal.timeout(10000) },
+      );
+      record('代码片段[超大 end] → 10s 内正常返回', res.status >= 200 && res.status < 500, `status=${res.status}`);
+    } catch {
+      record('代码片段[超大 end] → 10s 内正常返回', false, '请求 10s 未返回（高亮循环拖死事件循环）');
+    }
+  }
 
   console.log('===== 十一、其他 =====');
   r = await fetch(`${BASE}/api/no-such-endpoint`);

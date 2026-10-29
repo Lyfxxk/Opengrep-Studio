@@ -355,9 +355,12 @@ scanRoutes.get('/api/scans/:scanId/snippet', asyncHandler(async (req, res) => {
     source = 'archive';
   }
 
+  // 高亮行取请求区间与切片区间的交集：若按原始 [startLine, endLine] 迭代，
+  // 超大 end（如 Number.MAX_SAFE_INTEGER）会空转约 9e15 次拖死事件循环；
+  // 交集上界受切片区间约束（文件路径 ≤ 文件行数，归档路径 ≤ issue.endLine），迭代次数有界
   const highlightedLines: number[] = [];
-  for (let line = startLine; line <= endLine; line += 1) {
-    if (line >= from && line <= to) highlightedLines.push(line);
+  for (let line = Math.max(startLine, from); line <= Math.min(endLine, to); line += 1) {
+    highlightedLines.push(line);
   }
 
   res.json({
