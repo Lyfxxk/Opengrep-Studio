@@ -282,7 +282,7 @@ Directory layout:
 
 **Recommended path for contributing a rule**: write it in the Rule Lab and validate with positive/negative samples → "Save to rule pack" (with samples attached) → export the zip → open a PR. ⚠️ Do not submit rules sourced from semgrep-rules (its license restricts competitive use); keep upstream provenance for rules from opengrep-rules. The frontend has a demo mode: `VITE_USE_MOCK=true npm --prefix code run dev`.
 
-CI (`.github/workflows/ci.yml`) runs three jobs: backend typecheck + unit tests, frontend lint + build, and a **full E2E with the real engine downloaded**.
+CI (`.github/workflows/ci.yml`) runs four jobs: backend typecheck + unit tests, frontend lint + build, a **full E2E with the real engine downloaded**, and a **Docker build with a container smoke test**.
 
 ## Thanks
 
