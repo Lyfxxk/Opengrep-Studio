@@ -177,6 +177,9 @@ export function markStaleScansFailed(): void {
       status: 'failed',
       finishedAt: new Date().toISOString(),
       message: '服务重启导致扫描中断，请重新发起',
+      // 排队标记的契约是"status 仍 scanning 且有值 = 排队中"（见 db.ts ScanRecord.queuedAt）；
+      // 重启后不再有槽位轮转来清它，这里必须一并置 null，否则失败记录永久残留排队标记
+      queuedAt: null,
     });
   }
 }
