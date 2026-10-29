@@ -501,12 +501,15 @@ export function buildReportData(
     .sort((a, b) => b.count - a.count || SEVERITY_RANK[a.maxSeverity] - SEVERITY_RANK[b.maxSeverity])
     .slice(0, TOP_FILES_LIMIT);
 
+  // 耗时从实际开跑时间算起：排队等待（并发池）与快照准备不属于引擎运行时间；
+  // 旧记录没有 startedAt，回落到创建时间（与历史行为一致）
+  const durationStart = scan.startedAt ?? scan.scannedAt;
   const durationSeconds =
-    scan.finishedAt && scan.scannedAt
+    scan.finishedAt && durationStart
       ? Math.max(
           0,
           Math.round(
-            (new Date(scan.finishedAt).getTime() - new Date(scan.scannedAt).getTime()) / 1000,
+            (new Date(scan.finishedAt).getTime() - new Date(durationStart).getTime()) / 1000,
           ),
         )
       : undefined;

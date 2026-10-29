@@ -4,6 +4,8 @@ export interface IScanResult {
   status: 'scanning' | 'completed' | 'failed'
   issueCount: number
   scannedAt: string
+  /** 实际开跑时间（排队结束后落库；旧记录没有，耗时回落到 scannedAt） */
+  startedAt?: string
   finishedAt?: string
   /** 本次扫描覆盖的源码文件数（旧记录可能没有） */
   fileCount?: number

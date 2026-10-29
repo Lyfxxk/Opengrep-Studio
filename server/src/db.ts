@@ -73,6 +73,8 @@ export interface ScanRecord {
   status: ScanStatus;
   issueCount: number;
   scannedAt: string;
+  /** 实际开跑时间（排队/快照准备结束后、引擎启动前落库；旧记录没有，报告耗时回落到 scannedAt） */
+  startedAt?: string;
   finishedAt?: string;
   baselineScanId?: string;
   rules?: string;
@@ -248,6 +250,8 @@ for (const sql of [
   'ALTER TABLE scans ADD COLUMN engine_version TEXT',
   // 扫描排队标记（并发池 2 路后排队可区分）：CREATE TABLE IF NOT EXISTS 不给旧库加列，走 ALTER 兜底
   'ALTER TABLE scans ADD COLUMN queued_at TEXT',
+  // 实际开跑时间（修正排队时间被计入「引擎耗时」）
+  'ALTER TABLE scans ADD COLUMN started_at TEXT',
   // 污点路径可视化（P1-6）：taint 命中的 source→sink 传播链快照
   'ALTER TABLE issues ADD COLUMN dataflow_trace TEXT',
 ]) {
@@ -317,6 +321,7 @@ function rowToScan(row: SqlRow): ScanRecord {
     status: String(row.status) as ScanStatus,
     issueCount: Number(row.issue_count ?? 0),
     scannedAt: String(row.scanned_at),
+    startedAt: str(row.started_at as string | null),
     finishedAt: str(row.finished_at as string | null),
     fileCount: Number(row.file_count ?? 0),
     baselineScanId: str(row.baseline_scan_id as string | null),
@@ -482,6 +487,7 @@ export function updateScan(id: string, patch: Partial<Omit<ScanRecord, 'id' | 'p
   const values: (string | number | null)[] = [];
   if (patch.status !== undefined) { sets.push('status = ?'); values.push(patch.status); }
   if (patch.issueCount !== undefined) { sets.push('issue_count = ?'); values.push(patch.issueCount); }
+  if (patch.startedAt !== undefined) { sets.push('started_at = ?'); values.push(patch.startedAt ?? null); }
   if (patch.finishedAt !== undefined) { sets.push('finished_at = ?'); values.push(patch.finishedAt ?? null); }
   if (patch.fileCount !== undefined) { sets.push('file_count = ?'); values.push(patch.fileCount || null); }
   if (patch.message !== undefined) { sets.push('message = ?'); values.push(patch.message ?? null); }

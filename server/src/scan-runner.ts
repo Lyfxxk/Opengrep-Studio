@@ -350,6 +350,8 @@ async function runScan(scanId: string, plan: ScanPlan): Promise<void> {
     // 引擎启动前复查：排队或快照准备阶段被取消的扫描已被取消接口落库失败，
     // 这里直接退出，避免取消之后仍把引擎拉起来或用最终结果覆盖取消记录
     if (getScan(scanId)?.status !== 'scanning') return;
+    // 实际开跑时间：排队等待与快照哈希/复现清单落库都在此之前，不应计入「引擎耗时」
+    updateScan(scanId, { startedAt: new Date().toISOString() });
     const { code, stdout, stderr, timedOut, stdoutTruncated } = await runEngine(args, srcDir, {
       timeoutMs: config.scanTimeoutMs,
       logLabel: 'scan-runner',

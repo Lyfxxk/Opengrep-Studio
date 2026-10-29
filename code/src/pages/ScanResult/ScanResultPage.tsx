@@ -132,8 +132,12 @@ export default function ScanResultPage() {
   // 扫描完成 + 0 问题：这是审计的"绿色结论"，用专门的成功态呈现而不是"搜索无结果"
   const durationLabel = (() => {
     if (!scan?.finishedAt) return null;
+    // 排队等待与快照准备不算引擎耗时；旧记录无 startedAt 时回落到 scannedAt
     return formatDuration(
-      Math.round((new Date(scan.finishedAt).getTime() - new Date(scan.scannedAt).getTime()) / 1000),
+      Math.round(
+        (new Date(scan.finishedAt).getTime() - new Date(scan.startedAt ?? scan.scannedAt).getTime()) /
+          1000,
+      ),
     );
   })();
 
