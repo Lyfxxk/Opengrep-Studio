@@ -55,6 +55,8 @@ const zhHant: typeof zh = {
     prev: '上一頁',
     next: '下一頁',
     pageOf: '第 {{page}} / {{total}} 頁',
+    pagePrefix: '第',
+    pageSuffix: '/ {{total}} 頁',
   },
   packNames: {
     'builtin-bash': 'Bash 內建安全規則包',
