@@ -551,6 +551,7 @@ export default function ReportPage() {
                 <TableRow className="bg-muted/50">
                   <TableHead>{t('report.thFileMainIssue')}</TableHead>
                   <TableHead className="w-14 text-right">{t('report.thCount')}</TableHead>
+                  <TableHead className="w-14 text-right">{t('severity.critical')}</TableHead>
                   <TableHead className="w-14 text-right">{t('severity.high')}</TableHead>
                   <TableHead className="w-14 text-right">{t('severity.medium')}</TableHead>
                   <TableHead className="w-14 text-right">{t('severity.low')}</TableHead>
@@ -569,6 +570,9 @@ export default function ReportPage() {
                     </TableCell>
                     <TableCell className="text-right text-xs font-semibold tabular-nums">
                       {file.count}
+                    </TableCell>
+                    <TableCell className="text-right text-xs tabular-nums text-destructive">
+                      {file.bySev.critical || '—'}
                     </TableCell>
                     <TableCell className="text-right text-xs tabular-nums text-warning">
                       {file.bySev.high || '—'}

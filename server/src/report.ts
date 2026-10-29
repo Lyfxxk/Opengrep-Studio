@@ -883,6 +883,7 @@ export function renderReportHtml(
       (file) => `<tr>
         <td class="path">${pathHtml(file.path)}<div class="sub-rule">${escapeHtml(file.topRule)}</div></td>
         <td class="num strong">${file.count}</td>
+        <td class="num crit">${file.bySev.critical || '—'}</td>
         <td class="num hi">${file.bySev.high || '—'}</td>
         <td class="num mid">${file.bySev.medium || '—'}</td>
         <td class="num low">${file.bySev.low || '—'}</td>
@@ -1019,6 +1020,7 @@ export function renderReportHtml(
   tbody tr:nth-child(even) { background: var(--softer); }
   td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
   td.num.strong { font-weight: 600; }
+  td.num.crit { color: #d92b2b; }
   td.num.hi { color: var(--high-c, #c76a00); }
   td.num.mid { color: #1f7fe0; }
   td.num.low { color: var(--faint); }
@@ -1124,7 +1126,7 @@ export function renderReportHtml(
     <h2 class="sec">${text.sections.actions}</h2>
     <p class="hint">${text.actionsHint(fileList.length)}</p>
     <table>
-      <thead><tr><th>${text.thFileMainIssue}</th><th class="num">${text.thCount}</th><th class="num">${text.severity.high}</th><th class="num">${text.severity.medium}</th><th class="num">${text.severity.low}</th></tr></thead>
+      <thead><tr><th>${text.thFileMainIssue}</th><th class="num">${text.thCount}</th><th class="num">${text.severity.critical}</th><th class="num">${text.severity.high}</th><th class="num">${text.severity.medium}</th><th class="num">${text.severity.low}</th></tr></thead>
       <tbody>${actionRows}</tbody>
     </table>
   </section>
