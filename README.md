@@ -149,6 +149,8 @@ npm run docker:run    # = docker run --rm -p 8787:8787 -v ogstudio-data:/data op
 
 The image ships with the engine and the built frontend — open <http://localhost:8787> and you're in; data persists in the `ogstudio-data` volume.
 
+One caveat on upgrades: a one-click upgrade writes to the container layer (`/app/opengrep-tool`), so it survives container restarts but is lost when the container is recreated (`docker compose down && up`), falling back to the version pinned in `engines.json`. For a long-term engine bump, change `server/scripts/engines.json` and rebuild the image.
+
 ### First run
 
 Default login: `admin` / `123456` (see [Security Model](#security-model)). Suggested flow:

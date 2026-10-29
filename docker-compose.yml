@@ -10,6 +10,8 @@ services:
       - "127.0.0.1:8787:8787"
     volumes:
       # 数据卷：SQLite + 源码快照 + 自定义规则包，重建容器不丢失
+      # 引擎不在此卷：容器内"一键升级"写在容器可写层（/app/opengrep-tool），重建容器即丢失并
+      # 回落到镜像烧入的 engines.json 钉住版本；长期换引擎版本请改 engines.json 后重建镜像
       - ogstudio-data:/data
 volumes:
   ogstudio-data:

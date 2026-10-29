@@ -149,6 +149,8 @@ npm run docker:run    # 等價於 docker run --rm -p 8787:8787 -v ogstudio-data:
 
 映像內建引擎與已建置前端，存取 <http://localhost:8787> 即可使用，資料持久化在 `ogstudio-data` 卷。
 
+注意：容器內「一鍵升級」寫入的是容器可寫層（`/app/opengrep-tool`），容器重啟後仍在，但重建容器（如 `docker compose down && up`）後會遺失並回落到 `engines.json` 鎖定的版本；長期更換引擎版本請修改 `server/scripts/engines.json` 後重新建置映像。
+
 ### 首次使用
 
 預設帳號 `admin` / `123456`（見[安全模型](#安全模型)）。建議流程：
