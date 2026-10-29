@@ -17,7 +17,7 @@ const STEP_BUTTON = 'h-7 shrink-0 gap-1 px-2';
 
 /**
  * 分页条：首页 / 上一页 / 页码（可直接输入跳转）/ 下一页 / 末页，整组居中。
- * 列表页与问题明细共用；总页数 ≤ 1 时整条不渲染（由调用方的长度闸再兜一层）。
+ * 列表页与问题明细共用；总页数 ≤ 1 时整条不渲染，调用方无需再加长度闸。
  */
 export default function Pagination({ page, pageCount, onPage, className }: PaginationProps) {
   const { t } = useTranslation();
@@ -61,7 +61,8 @@ export default function Pagination({ page, pageCount, onPage, className }: Pagin
         <span>{t('pagination.pagePrefix')}</span>
         {/* 非受控 + key={page}：外部翻页（首页/末页、筛选后页码夹取）时重挂载回显新页码，
             不与 onPage 双向打抖；回车当帧结算，不依赖元素是否真的拿到焦点。
-            宽度按总页数位数取，翻页时整行不会左右跳动。 */}
+            宽度只随总页数位数变（翻页不跳动），且 Tailwind preflight 是 border-box，
+            必须把内边距和边框算进去，否则 1 位数字就被挤到看不见。 */}
         <input
           key={page}
           type="text"
@@ -69,7 +70,7 @@ export default function Pagination({ page, pageCount, onPage, className }: Pagin
           defaultValue={page}
           title={t('pagination.jumpHint')}
           aria-label={t('pagination.pageOf', { page, total: pageCount })}
-          style={{ width: `${Math.max(2, String(pageCount).length)}ch` }}
+          style={{ width: `calc(${Math.max(1, String(pageCount).length)}ch + 0.75rem)` }}
           className="h-7 rounded-md border border-input bg-muted/40 px-1 text-center tabular-nums text-foreground outline-none transition-colors hover:bg-muted focus:border-primary focus:bg-background focus:ring-2 focus:ring-ring/30"
           onFocus={(event) => event.currentTarget.select()}
           onChange={(event) => {
