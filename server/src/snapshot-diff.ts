@@ -5,6 +5,8 @@ import { ALWAYS_SKIP_DIR_NAMES } from './fs-walk.js';
 
 /**
  * 无 Git 双快照 diff：对两次扫描的不可变源码快照做文件级 + 行级对比。
+ * - 方向固定为 before（旧快照）→ after（新快照）：added = 只在 after、removed = 只在 before，
+ *   行级 addedLines/removedLines 同样相对 before→after
  * - 文件级：sha256（大文件只哈希前 5MB + 体积）分类为 added / removed / modified
  * - 行级：modified 文件做"前后缀裁剪 + LCS"行差异统计；中段过大时放弃行级计数（diffable=false）
  */
@@ -132,24 +134,27 @@ async function readForDiff(file: string): Promise<string> {
   }
 }
 
-/** 对比两份源码快照（调用方需保证两目录存在且属于已完成扫描） */
-export async function diffSnapshots(dirA: string, dirB: string): Promise<SnapshotDiff> {
-  const [a, b] = [await hashSnapshot(dirA), await hashSnapshot(dirB)];
+/** 对比两份源码快照（before 旧、after 新；调用方需保证两目录存在且属于已完成扫描） */
+export async function diffSnapshots(beforeDir: string, afterDir: string): Promise<SnapshotDiff> {
+  const [before, after] = [await hashSnapshot(beforeDir), await hashSnapshot(afterDir)];
   const added: string[] = [];
   const removed: string[] = [];
   const modified: FileDiffEntry[] = [];
 
-  for (const [rel, entryA] of a) {
-    const entryB = b.get(rel);
-    if (!entryB) {
+  for (const [rel, entryBefore] of before) {
+    const entryAfter = after.get(rel);
+    if (!entryAfter) {
       removed.push(rel);
       continue;
     }
-    if (entryA.sha256 === entryB.sha256) continue;
+    if (entryBefore.sha256 === entryAfter.sha256) continue;
     if (modified.length < DIFF_LIST_CAP) {
       let lineStats: { added: number; removed: number } | null = null;
       try {
-        lineStats = countLineDiff(await readForDiff(path.join(dirA, rel)), await readForDiff(path.join(dirB, rel)));
+        lineStats = countLineDiff(
+          await readForDiff(path.join(beforeDir, rel)),
+          await readForDiff(path.join(afterDir, rel)),
+        );
       } catch {
         lineStats = null;
       }
@@ -163,14 +168,14 @@ export async function diffSnapshots(dirA: string, dirB: string): Promise<Snapsho
       modified.push({ path: rel, addedLines: null, removedLines: null, diffable: false });
     }
   }
-  for (const rel of b.keys()) {
-    if (!a.has(rel)) added.push(rel);
+  for (const rel of after.keys()) {
+    if (!before.has(rel)) added.push(rel);
   }
   return {
     added: added.sort().slice(0, DIFF_LIST_CAP),
     removed: removed.sort().slice(0, DIFF_LIST_CAP),
     modified: modified.sort((x, y) => x.path.localeCompare(y.path)),
-    filesA: a.size,
-    filesB: b.size,
+    filesA: before.size,
+    filesB: after.size,
   };
 }

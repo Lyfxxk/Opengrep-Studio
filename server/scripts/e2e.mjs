@@ -965,9 +965,12 @@ const diffV2 = await api('GET', `/api/scans/${p20scanC.id}/diff?against=${p20sca
 assert(diffV2.json.issueDiff.new.count >= 1 && diffV2.json.issueDiff.fixed.count >= 1,
   '版本演进对比：检测到新增与修复', JSON.stringify(diffV2.json.issueDiff));
 const modifiedApi = diffV2.json.fileDiff.modified.find((file) => file.path.endsWith('api.ts'));
+// V2 相对 V1 删掉 runDynamic 三行、新增一行 slack token：方向必须按「基线→本次」统计，
+// 反向会把新增/删除行数对调（历史 bug），因此这里同时锁住两个计数而不是只看 addedLines >= 1
 assert(
-  Boolean(modifiedApi) && modifiedApi.diffable && modifiedApi.addedLines >= 1,
-  '文件级 diff：api.ts 修改并统计行级变更', JSON.stringify(modifiedApi));
+  Boolean(modifiedApi) && modifiedApi.diffable
+    && modifiedApi.addedLines === 1 && modifiedApi.removedLines === 3,
+  '文件级 diff：api.ts 修改并按基线→本次方向统计行级变更', JSON.stringify(modifiedApi));
 const diffSelf = await api('GET', `/api/scans/${p20scanC.id}/diff?against=${p20scanC.id}`);
 assert(diffSelf.status === 400, '对比自身被拒绝');
 const diffMissing = await api('GET', `/api/scans/${p20scanC.id}/diff?against=scan-不存在`);

@@ -576,7 +576,9 @@ scanRoutes.get('/api/scans/:scanId/diff', asyncHandler(async (req, res) => {
     );
   }
   const againstProject = getProject(against.projectId);
-  const fileDiff = await diffSnapshots(srcDir, againstDir);
+  // 方向固定为「对比目标（before）→ 当前扫描（after）」：added/removed 与行级 +/- 才与
+  // 界面「本次新增/删除」的口径一致，传反会把新增文件显示成删除文件
+  const fileDiff = await diffSnapshots(againstDir, srcDir);
 
   // 基线扫描会把已修复问题以 comparisonStatus='fixed' 追加落库（见 applyBaselineComparison），
   // 这里与结果页三分类同口径把它排除，否则 fixed 副本会被当作"当前存在/当前独有"，数字互相矛盾
