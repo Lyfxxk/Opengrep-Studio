@@ -16,7 +16,7 @@ export default function Pagination({ page, pageCount, onPage, className }: Pagin
   const { t } = useTranslation();
   if (pageCount <= 1) return null;
   return (
-    <nav className={cn('flex items-center justify-end gap-1', className)} aria-label="pagination">
+    <nav className={cn('flex items-center justify-center gap-1', className)} aria-label="pagination">
       <Button
         variant="outline"
         size="sm"
