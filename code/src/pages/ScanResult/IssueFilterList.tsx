@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Search, ShieldCheck, XCircle } from 'lucide-react';
+import { LIST_PAGE_SIZE } from '@/data/constants';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -97,8 +98,7 @@ export default function IssueFilterList({
   };
 
   // 筛选或数据变化后页码可能越界（如筛选后只剩一页），渲染前夹回有效范围
-  const pageSize = 20;
-  const { page: safePage, setPage, pageCount, slice: paged } = usePagedList(filtered, pageSize);
+  const { page: safePage, setPage, pageCount, slice: paged } = usePagedList(filtered, LIST_PAGE_SIZE);
 
   /** 批量复核：循环调用 setReview，最后汇总成功/失败 */
   const handleBatchReview = async () => {

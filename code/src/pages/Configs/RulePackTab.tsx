@@ -60,7 +60,7 @@ import type { IRulePack, IRulePackCheckResult } from '@/data/rulepacks';
 import { cn } from '@/lib/utils';
 import { usePackDisplayName } from '@/lib/packName';
 import Pagination from '@/components/Pagination';
-import { PACK_LANGUAGES } from '@/data/constants';
+import { LIST_PAGE_SIZE, PACK_LANGUAGES } from '@/data/constants';
 import { api } from '@/lib/api';
 import RulePackContentDialog from './RulePackContentDialog';
 import RulePackCreateDialog from './RulePackCreateDialog';
@@ -288,14 +288,13 @@ export default function RulePackTab() {
   const builtinRuleTotal = builtinPacks.reduce((sum, pack) => sum + pack.ruleCount, 0);
 
   // 分页：自定义包表格与内置包卡片流各自翻页，删行 / 导入后夹页码防空页
-  const customPageSize = 20;
   const builtinPageSize = 8;
   const {
     page: safeCustomPage,
     setPage: setCustomPage,
     pageCount: customPageCount,
     slice: pagedCustomPacks,
-  } = usePagedList(customPacks, customPageSize);
+  } = usePagedList(customPacks, LIST_PAGE_SIZE);
   const {
     page: safeBuiltinPage,
     setPage: setBuiltinPage,
@@ -524,7 +523,7 @@ export default function RulePackTab() {
                 </div>
               )}
 
-              {customPacks.length > customPageSize && (
+              {customPacks.length > LIST_PAGE_SIZE && (
                 <Pagination
                   page={safeCustomPage}
                   pageCount={customPageCount}
