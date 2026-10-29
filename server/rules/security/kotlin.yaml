@@ -2,7 +2,7 @@
 # 来源: https://github.com/opengrep/opengrep-rules （精选子集）
 # 许可: LGPL 2.1 + Commons Clause（不得将规则单独出售；保留本出处声明）
 # 精选标准: 含 CWE/OWASP 安全元数据的一档优先、全量收录（ERROR 优先排序），剔除 correctness 目录
-# 校验: opengrep validate --config server/rules/security
+# 校验: opengrep validate server/rules/security
 rules:
 - id: kotlin.build-gradle-password-hardcoded
   message: A secret is hard-coded in the application. Secrets stored in source code, such as credentials, identifiers, and other types of sensitive data, can be leaked and used by internal or external malicious actors. It is recommended to rotate the secret and retrieve them from a secure secret vault or Hardware Security Module (HSM), alternatively environment variables can be used if allowed by your company policy.
