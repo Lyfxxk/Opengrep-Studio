@@ -1,6 +1,6 @@
 /**
  * taint 规则命中的 dataflow_trace 提取（引擎需带 --dataflow-traces 参数）。
- * 实测结构（opengrep v1.31.0）：
+ * 实测结构（opengrep v1.31.0；v1.33.0 下 e2e 的「source→intermediate→sink」传播链断言复验通过）：
  *   { taint_source: ["CliLoc", [{path,start,end}, "req.query"]],
  *     intermediate_vars: [{location: {path,start,end}, content: "code"}, ...],
  *     taint_sink: ["CliLoc", [{path,start,end}, "eval(middle)"]] }

@@ -2,6 +2,9 @@
   "name": "opengrep-studio",
   "version": "0.1.6",
   "private": true,
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "description": "Opengrep Studio —— opengrep 静态代码分析工作台（前端 + 后端联调仓）",
   "scripts": {
     "install:all": "npm install && npm --prefix server install && npm --prefix code install",

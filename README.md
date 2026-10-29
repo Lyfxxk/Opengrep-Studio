@@ -7,8 +7,8 @@
 <p>
 <a href="https://github.com/Lyfxxk/Opengrep-Studio/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/Lyfxxk/Opengrep-Studio/ci.yml?branch=main&label=CI&style=flat-square" alt="CI"/></a>
 <a href="#license"><img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="License: MIT"/></a>
-<a href="https://github.com/opengrep/opengrep"><img src="https://img.shields.io/badge/engine-opengrep%20v1.31.0-22c55e?style=flat-square" alt="Engine"/></a>
-<a href="#requirements"><img src="https://img.shields.io/badge/node-%E2%89%A522.5-3c873a?style=flat-square&logo=nodedotjs&logoColor=white" alt="Node"/></a>
+<a href="https://github.com/opengrep/opengrep"><img src="https://img.shields.io/badge/engine-opengrep%20v1.33.0-22c55e?style=flat-square" alt="Engine"/></a>
+<a href="#requirements"><img src="https://img.shields.io/badge/node-%E2%89%A522.12-3c873a?style=flat-square&logo=nodedotjs&logoColor=white" alt="Node"/></a>
 <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-64748b?style=flat-square" alt="Platform"/>
 </p>
 <img src="docs/images/scanresult.png" alt="Scan result triage view: baseline cards, taint flow, highlighted code" width="880"/>
@@ -117,7 +117,7 @@ The dashboard "Engine status" card shows the **actually installed** version and 
 
 ### Requirements
 
-- **Node.js ≥ 22.5** (the backend uses built-in `node:sqlite` — no native dependencies)
+- **Node.js ≥ 22.12** — built-in `node:sqlite` needs 22.5+, and Vite 8 in the frontend needs 22.12+; still no native dependencies
 - The scan engine is downloaded and SHA-256-verified automatically (~50 MB), nothing to preinstall; Git is only needed for repo-clone import
 
 ### Option 1: One-click launch (recommended)
@@ -136,7 +136,7 @@ The script checks your Node version, installs dependencies, downloads the engine
 git clone https://github.com/Lyfxxk/Opengrep-Studio.git
 cd Opengrep-Studio
 npm run install:all   # root + server + code dependencies in one go
-npm run setup:engine  # download opengrep v1.31.0 and verify SHA-256
+npm run setup:engine  # download opengrep v1.33.0 and verify SHA-256
 npm run dev           # backend (:8787) + frontend (:1022) together
 ```
 
@@ -164,7 +164,7 @@ Want to see it before touching your own code? `npm run seed` seeds three demo pr
 <details>
 <summary><b>Troubleshooting</b></summary>
 <ul>
-<li><b>Engine download slow/blocked</b>: downloads fall back automatically (<code>OPENGREP_DOWNLOAD_BASE</code> mirror → github.com → api.github.com), so a blocked github.com usually needs no manual step; if all channels fail, set a mirror (<code>set OPENGREP_DOWNLOAD_BASE=&lt;mirror-url&gt;</code>, use <code>export</code> on macOS/Linux) or download from <a href="https://github.com/opengrep/opengrep/releases/tag/v1.31.0">opengrep Releases</a> and point <code>OPENGREP_BIN</code> at it</li>
+<li><b>Engine download slow/blocked</b>: downloads fall back automatically (<code>OPENGREP_DOWNLOAD_BASE</code> mirror → github.com → api.github.com), so a blocked github.com usually needs no manual step; if all channels fail, set a mirror (<code>set OPENGREP_DOWNLOAD_BASE=&lt;mirror-url&gt;</code>, use <code>export</code> on macOS/Linux) or download from <a href="https://github.com/opengrep/opengrep/releases">opengrep Releases</a> and point <code>OPENGREP_BIN</code> at it</li>
 <li><b>"Check for updates" reports GitHub API rate limit</b>: anonymous calls are capped at 60/hour and results are cached for 30 minutes; retry later — scanning is unaffected</li>
 <li><b>macOS Gatekeeper</b>: <code>xattr -d com.apple.quarantine &lt;engine-path&gt;</code></li>
 <li><b>Ports busy</b>: <code>node server/scripts/kill-port.mjs 8787 1022</code></li>
@@ -189,7 +189,7 @@ Want to see it before touching your own code? `npm run seed` seeds three demo pr
 ```mermaid
 flowchart LR
     U["Browser UI<br/>React 19 + Vite"] -->|"REST /api"| S["Express backend<br/>:8787"]
-    S -->|"child process<br/>--json --dataflow-traces"| E["opengrep engine<br/>v1.31.0"]
+    S -->|"child process<br/>--json --dataflow-traces"| E["opengrep engine<br/>v1.33.0"]
     S --> DB[("SQLite<br/>server/data/studio.db")]
     S --> FS[("immutable source snapshots<br/>data/workspace/")]
 ```

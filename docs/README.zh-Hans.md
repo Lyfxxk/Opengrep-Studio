@@ -7,8 +7,8 @@
 <p>
 <a href="https://github.com/Lyfxxk/Opengrep-Studio/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/Lyfxxk/Opengrep-Studio/ci.yml?branch=main&label=CI&style=flat-square" alt="CI"/></a>
 <a href="#license"><img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="License: MIT"/></a>
-<a href="https://github.com/opengrep/opengrep"><img src="https://img.shields.io/badge/engine-opengrep%20v1.31.0-22c55e?style=flat-square" alt="Engine"/></a>
-<a href="#环境要求"><img src="https://img.shields.io/badge/node-%E2%89%A522.5-3c873a?style=flat-square&logo=nodedotjs&logoColor=white" alt="Node"/></a>
+<a href="https://github.com/opengrep/opengrep"><img src="https://img.shields.io/badge/engine-opengrep%20v1.33.0-22c55e?style=flat-square" alt="Engine"/></a>
+<a href="#环境要求"><img src="https://img.shields.io/badge/node-%E2%89%A522.12-3c873a?style=flat-square&logo=nodedotjs&logoColor=white" alt="Node"/></a>
 <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-64748b?style=flat-square" alt="Platform"/>
 </p>
 <img src="images/scanresult.png" alt="扫描结果审阅页：基线对比、污点传播链与代码高亮" width="880"/>
@@ -117,7 +117,7 @@ Opengrep Studio 把这条流水线补齐：**拖进代码 → 点一下扫描 �
 
 ### 环境要求
 
-- **Node.js ≥ 22.5**（后端使用内置 `node:sqlite`，无原生依赖）
+- **Node.js ≥ 22.12**（后端内置 `node:sqlite` 需 22.5+，前端 Vite 8 需 22.12+；同样无原生依赖）
 - 扫描引擎由脚本自动下载（约 50 MB，SHA-256 校验），无需预装；Git 仅在使用仓库克隆导入时需要
 
 ### 方式一：一键启动（推荐）
@@ -136,7 +136,7 @@ Windows 用户双击 `一键启动（Windows）.bat`，macOS / Linux 用户执�
 git clone https://github.com/Lyfxxk/Opengrep-Studio.git
 cd Opengrep-Studio
 npm run install:all   # 安装根目录 / server / code 三处依赖
-npm run setup:engine  # 下载 opengrep v1.31.0 并校验 SHA-256
+npm run setup:engine  # 下载 opengrep v1.33.0 并校验 SHA-256
 npm run dev           # 同时启动后端(8787)与前端(1022)
 ```
 
@@ -164,7 +164,7 @@ npm run docker:run    # 等价于 docker run --rm -p 8787:8787 -v ogstudio-data:
 <details>
 <summary><b>故障排查</b></summary>
 <ul>
-<li><b>引擎下载慢或失败</b>：下载会自动按 <code>OPENGREP_DOWNLOAD_BASE 镜像 → github.com → api.github.com</code> 依次降级，github.com 不可达时通常无需干预即可装完；仍失败时可手动设置镜像 <code>set OPENGREP_DOWNLOAD_BASE=&lt;镜像地址&gt;</code>（macOS/Linux 用 <code>export</code>），或从 <a href="https://github.com/opengrep/opengrep/releases/tag/v1.31.0">opengrep Releases</a> 手动下载后用 <code>OPENGREP_BIN</code> 指向二进制路径</li>
+<li><b>引擎下载慢或失败</b>：下载会自动按 <code>OPENGREP_DOWNLOAD_BASE 镜像 → github.com → api.github.com</code> 依次降级，github.com 不可达时通常无需干预即可装完；仍失败时可手动设置镜像 <code>set OPENGREP_DOWNLOAD_BASE=&lt;镜像地址&gt;</code>（macOS/Linux 用 <code>export</code>），或从 <a href="https://github.com/opengrep/opengrep/releases">opengrep Releases</a> 手动下载后用 <code>OPENGREP_BIN</code> 指向二进制路径</li>
 <li><b>检查更新提示 GitHub API 限流</b>：匿名调用上限 60 次/小时，检查结果缓存 30 分钟；稍后再试即可，不影响扫描</li>
 <li><b>macOS 提示无法验证引擎</b>：<code>xattr -d com.apple.quarantine &lt;引擎路径&gt;</code></li>
 <li><b>端口被占用</b>：<code>node server/scripts/kill-port.mjs 8787 1022</code></li>
@@ -189,7 +189,7 @@ npm run docker:run    # 等价于 docker run --rm -p 8787:8787 -v ogstudio-data:
 ```mermaid
 flowchart LR
     U["浏览器 UI<br/>React 19 + Vite"] -->|"REST /api"| S["Express 后端<br/>:8787"]
-    S -->|"子进程编排<br/>--json --dataflow-traces"| E["opengrep 引擎<br/>v1.31.0"]
+    S -->|"子进程编排<br/>--json --dataflow-traces"| E["opengrep 引擎<br/>v1.33.0"]
     S --> DB[("SQLite<br/>server/data/studio.db")]
     S --> FS[("不可变源码快照<br/>data/workspace/")]
 ```

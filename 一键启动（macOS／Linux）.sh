@@ -11,7 +11,7 @@ echo "================================================"
 
 echo "[1/5] 检查 Node.js 环境..."
 if ! command -v node >/dev/null 2>&1; then
-  echo "[错误] 未检测到 Node.js，请安装 22.5 或更高版本：https://nodejs.org"
+  echo "[错误] 未检测到 Node.js，请安装 22.12 或更高版本：https://nodejs.org"
   exit 1
 fi
 NODE_VER="$(node -v | sed 's/^v//')"
@@ -19,8 +19,8 @@ NODE_MAJOR="${NODE_VER%%.*}"
 NODE_REST="${NODE_VER#*.}"
 NODE_MINOR="${NODE_REST%%.*}"
 echo "    当前版本 v$NODE_VER"
-if [ "$NODE_MAJOR" -lt 22 ] || { [ "$NODE_MAJOR" -eq 22 ] && [ "$NODE_MINOR" -lt 5 ]; }; then
-  echo "[错误] Node.js 版本过低（v$NODE_VER），本项目要求 >= 22.5（后端依赖内置 node:sqlite）"
+if [ "$NODE_MAJOR" -lt 22 ] || { [ "$NODE_MAJOR" -eq 22 ] && [ "$NODE_MINOR" -lt 12 ]; }; then
+  echo "[错误] Node.js 版本过低（v$NODE_VER），本项目要求 >= 22.12（后端内置 node:sqlite 需 22.5+，前端 Vite 8 需 22.12+）"
   exit 1
 fi
 if ! command -v npm >/dev/null 2>&1; then
@@ -44,7 +44,7 @@ if [ ! -f opengrep-tool/opengrep ] && [ ! -f opengrep-tool/opengrep.exe ] && [ -
   echo "    引擎缺失，正在从官方 Release 下载并校验（约 50MB，首次需要等待）..."
   if ! npm run setup:engine; then
     echo "[错误] 引擎下载失败。网络受限时可先 export OPENGREP_DOWNLOAD_BASE=镜像地址 再重试，"
-    echo "        或手动下载：https://github.com/opengrep/opengrep/releases/tag/v1.31.0"
+    echo "        或手动下载：https://github.com/opengrep/opengrep/releases（版本以 server/scripts/engines.json 钉住的为准）"
     echo "        （重命名为 opengrep 放入 opengrep-tool/ 目录，或设置 OPENGREP_BIN 指向它；"
     echo "         macOS 浏览器下载的二进制需先执行 xattr -d com.apple.quarantine <引擎路径>）"
     exit 1

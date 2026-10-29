@@ -14,7 +14,7 @@ echo.
 echo [1/5] 检查 Node.js 环境...
 where node >nul 2>nul
 if errorlevel 1 (
-    echo [错误] 未检测到 Node.js，请安装 22.5 或更高版本：https://nodejs.org
+    echo [错误] 未检测到 Node.js，请安装 22.12 或更高版本：https://nodejs.org
     pause
     exit /b 1
 )
@@ -30,7 +30,7 @@ if "%NODE_MAJOR%"=="" set "NODE_MAJOR=0"
 if "%NODE_MINOR%"=="" set "NODE_MINOR=0"
 echo     当前版本 %NODE_VER%
 if %NODE_MAJOR% LSS 22 goto node_too_old
-if %NODE_MAJOR% EQU 22 if %NODE_MINOR% LSS 5 goto node_too_old
+if %NODE_MAJOR% EQU 22 if %NODE_MINOR% LSS 12 goto node_too_old
 where npm >nul 2>nul
 if errorlevel 1 (
     echo [错误] 未检测到 npm，请重新安装 Node.js：https://nodejs.org
@@ -61,7 +61,7 @@ if not exist "opengrep-tool\opengrep.exe" (
     call npm run setup:engine
     if errorlevel 1 (
         echo [错误] 引擎下载失败。网络受限时可先执行 set OPENGREP_DOWNLOAD_BASE=镜像地址 再重试，
-        echo         或手动下载：https://github.com/opengrep/opengrep/releases/tag/v1.31.0
+        echo         或手动下载：https://github.com/opengrep/opengrep/releases
         echo         （重命名为 opengrep.exe 放入 opengrep-tool\ 目录，或设置 OPENGREP_BIN 指向它）
         pause
         exit /b 1
@@ -114,6 +114,6 @@ if !TRIES! LSS 60 goto waitloop
 exit /b 0
 
 :node_too_old
-echo [错误] Node.js 版本过低（%NODE_VER%），本项目要求 ≥ 22.5（后端依赖内置 node:sqlite）
+echo [错误] Node.js 版本过低（%NODE_VER%），本项目要求 ≥ 22.12（后端内置 node:sqlite 需 22.5+，前端 Vite 8 需 22.12+）
 pause
 exit /b 1
