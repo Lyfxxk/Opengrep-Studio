@@ -6,9 +6,18 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { engineExecutableName, resolveEngineBin } from '../src/config.ts';
 
+const { trackTempDir } = await import('./temp-dir.mjs');
+
+/** 建一个退出时自动回收的临时目录（一次跑留出四五个，不清就是 %TEMP% 里的几百个） */
+function makeTempDir(prefix) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
+  trackTempDir(dir);
+  return dir;
+}
+
 /** 造一个含指定文件的临时目录，返回其路径 */
 function makeDirWith(fileName) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'engine-test-'));
+  const dir = makeTempDir('engine-test-');
   fs.writeFileSync(path.join(dir, fileName), 'fake-binary', 'utf8');
   return dir;
 }
@@ -55,7 +64,7 @@ test('全部落空时返回安装位并标记 missing（bin 指向 setup:engine 
 });
 
 test('PATH 中的目录必须是普通文件，目录同名不算命中', () => {
-  const dirNamedEngine = fs.mkdtempSync(path.join(os.tmpdir(), 'engine-dir-'));
+  const dirNamedEngine = makeTempDir('engine-dir-');
   // 造一个名字与引擎相同的目录（statSync.isFile 为 false，应跳过）
   fs.mkdirSync(path.join(dirNamedEngine, engineExecutableName));
   const resolved = resolveEngineBin({

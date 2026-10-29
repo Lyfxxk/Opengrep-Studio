@@ -9,10 +9,13 @@ import path from 'node:path';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-process.env.DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'og-stale-scan-'));
+const tempDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'og-stale-scan-'));
+process.env.DATA_DIR = tempDataDir;
 
-const { insertProject, insertScan, updateScan, getScan } = await import('../src/db.ts');
+const { insertProject, insertScan, updateScan, getScan, closeDatabase } = await import('../src/db.ts');
 const { markStaleScansFailed } = await import('../src/scan-runner.ts');
+const { trackTempDir } = await import('./temp-dir.mjs');
+trackTempDir(tempDataDir, closeDatabase);
 
 const hoursAgo = (h) => new Date(Date.now() - h * 3600 * 1000).toISOString();
 

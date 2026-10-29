@@ -155,6 +155,14 @@ export interface Review {
 fs.mkdirSync(path.dirname(dbPath), { recursive: true });
 export const db = new DatabaseSync(dbPath);
 
+/**
+ * 关闭数据句柄。仅测试用：单测把 DATA_DIR 指到临时目录，Windows 上句柄不关就删不掉整个目录
+ * （rmSync 抛 EPERM），跑一次留一份临时库。服务进程不需要它——进程退出时由系统回收。
+ */
+export function closeDatabase(): void {
+  db.close();
+}
+
 db.exec(`
 PRAGMA journal_mode = WAL;
 
