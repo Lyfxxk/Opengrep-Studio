@@ -261,6 +261,9 @@ rulepackRoutes.post('/api/rulepacks', asyncHandler(async (req, res) => {
       : saveNewRulePack(name, language, content, 'online-editor');
     res.status(201).json(pack);
   } catch (error) {
+    // savePortablePackFromLab 抛的 HttpError 自带 code/params（如 srv.ruleIdUnsafe），
+    // 重新包装会丢掉契约键，前端就只能显示中文兜底文案
+    if (error instanceof HttpError) throw error;
     throw new HttpError(400, error instanceof Error ? error.message : String(error));
   }
 }));
@@ -301,6 +304,7 @@ rulepackRoutes.post(
     try {
       res.status(201).json(saveNewRulePack(name, language, content, req.file.originalname));
     } catch (error) {
+      if (error instanceof HttpError) throw error;
       throw new HttpError(400, error instanceof Error ? error.message : String(error));
     }
   }),
@@ -344,6 +348,7 @@ rulepackRoutes.put('/api/rulepacks/:id/content', asyncHandler(async (req, res) =
   try {
     ruleCount = parseRuleYaml(content).ruleCount;
   } catch (error) {
+    if (error instanceof HttpError) throw error;
     throw new HttpError(400, error instanceof Error ? error.message : String(error));
   }
   fs.writeFileSync(customPackPath(pack.id), content, 'utf8');
@@ -514,6 +519,7 @@ rulepackRoutes.post(
         try {
           manifest = parsePackManifest(fs.readFileSync(path.join(root, 'pack.yaml'), 'utf8'));
         } catch (error) {
+          if (error instanceof HttpError) throw error;
           throw new HttpError(400, error instanceof Error ? error.message : String(error));
         }
         // 缺 rules/ 目录（ENOENT）、或 rules 是普通文件（ENOTDIR）时 readdirSync 都会抛错落成 500，
