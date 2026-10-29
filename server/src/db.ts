@@ -37,6 +37,8 @@ export interface ScanConfig {
   jobs: number;
   maxTargetBytes: number;
   createdAt: string;
+  /** 兜底配置：所有未绑定配置（或绑定已失效）的项目扫描时自动使用，不可删除 */
+  isProtected?: boolean;
 }
 
 export interface RulePack {
@@ -228,6 +230,8 @@ CREATE TABLE IF NOT EXISTS configs (
   timeout_seconds INTEGER NOT NULL DEFAULT 5,
   jobs INTEGER NOT NULL DEFAULT 4,
   max_target_bytes INTEGER NOT NULL DEFAULT 1000000,
+  -- 兜底配置：未绑定/绑定失效的项目扫描时自动使用，接口层禁止删除
+  is_protected INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL
 );
 
@@ -261,6 +265,8 @@ for (const sql of [
   // 扫描失败的语言无关标识（供前端按界面语言翻译；message 仍是中文兜底）
   'ALTER TABLE scans ADD COLUMN error_code TEXT',
   'ALTER TABLE scans ADD COLUMN error_params TEXT',
+  // 兜底扫描配置标记（旧库补列；见 fallback-config.ts）
+  'ALTER TABLE configs ADD COLUMN is_protected INTEGER NOT NULL DEFAULT 0',
   // 污点路径可视化（P1-6）：taint 命中的 source→sink 传播链快照
   'ALTER TABLE issues ADD COLUMN dataflow_trace TEXT',
 ]) {
@@ -593,6 +599,7 @@ function rowToConfig(row: SqlRow): ScanConfig {
     timeoutSeconds: Number(row.timeout_seconds ?? 5),
     jobs: Number(row.jobs ?? 4),
     maxTargetBytes: Number(row.max_target_bytes ?? 1000000),
+    isProtected: Number(row.is_protected ?? 0) === 1,
     createdAt: String(row.created_at),
   };
 }
@@ -611,7 +618,7 @@ export function getConfig(id: string): ScanConfig | undefined {
 
 export function insertConfig(config: ScanConfig): void {
   db.prepare(
-    'INSERT INTO configs (id, name, description, rule_pack_ids, excludes, includes, timeout_seconds, jobs, max_target_bytes, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO configs (id, name, description, rule_pack_ids, excludes, includes, timeout_seconds, jobs, max_target_bytes, is_protected, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
   ).run(
     config.id,
     config.name,
@@ -622,6 +629,7 @@ export function insertConfig(config: ScanConfig): void {
     config.timeoutSeconds,
     config.jobs,
     config.maxTargetBytes,
+    config.isProtected ? 1 : 0,
     config.createdAt,
   );
 }
@@ -634,7 +642,7 @@ export function updateConfig(
   if (!existing) return;
   const next: ScanConfig = { ...existing, ...patch };
   db.prepare(
-    'UPDATE configs SET name = ?, description = ?, rule_pack_ids = ?, excludes = ?, includes = ?, timeout_seconds = ?, jobs = ?, max_target_bytes = ? WHERE id = ?',
+    'UPDATE configs SET name = ?, description = ?, rule_pack_ids = ?, excludes = ?, includes = ?, timeout_seconds = ?, jobs = ?, max_target_bytes = ?, is_protected = ? WHERE id = ?',
   ).run(
     next.name,
     next.description ?? null,
@@ -644,6 +652,7 @@ export function updateConfig(
     next.timeoutSeconds,
     next.jobs,
     next.maxTargetBytes,
+    next.isProtected ? 1 : 0,
     id,
   );
 }
