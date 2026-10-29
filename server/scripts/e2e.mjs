@@ -398,6 +398,24 @@ assert(by('new') >= 1, '检测到新增问题（slackWebhookToken）');
 assert(by('fixed') >= 1, '检测到已修复问题（eval 被移除）');
 assert(s2.issueCount === by('new') + by('remaining'), 'issueCount 不含已修复');
 
+console.log('== 7a. 上传失败不丢弃已导入源码 ==');
+// 历史 bug：解压/校验失败时直接删 pending/src，用户重新上传一个损坏包就会丢掉此前源码。
+// 现在上传先落临时目录，失败只清临时目录，这里锁住「失败后 hasSource 仍为 true」。
+const brokenUpload = new FormData();
+brokenUpload.append('file', new Blob([Buffer.from('not a zip')], { type: 'application/zip' }), 'broken.zip');
+const brokenUp = await api('POST', `/api/projects/${pid}/source`, brokenUpload);
+assert(brokenUp.status === 400, '损坏 ZIP 被拒绝', JSON.stringify(brokenUp.json));
+const afterBroken = ((await api('GET', '/api/projects')).json ?? []).find((p) => p.id === pid);
+assert(afterBroken?.hasSource === true, '损坏包上传失败后保留此前源码', JSON.stringify(afterBroken));
+
+const unsafeLoose = new FormData();
+unsafeLoose.append('files', new Blob([Buffer.from('const x = 1;\n')], { type: 'text/plain' }), 'a.ts');
+unsafeLoose.append('paths', '../escape.ts');
+const unsafeLooseUp = await api('POST', `/api/projects/${pid}/source`, unsafeLoose);
+assert(unsafeLooseUp.status === 400, '越界散装路径被拒绝', JSON.stringify(unsafeLooseUp.json));
+const afterUnsafeLoose = ((await api('GET', '/api/projects')).json ?? []).find((p) => p.id === pid);
+assert(afterUnsafeLoose?.hasSource === true, '散装文件校验失败后保留此前源码', JSON.stringify(afterUnsafeLoose));
+
 console.log('== 7b. 上传按 .gitignore 忽略过滤（默认开启，可显式关闭） ==');
 const makeIgnoreZip = () => {
   const zip = new AdmZip();

@@ -164,13 +164,25 @@ projectRoutes.post(
       });
     }
     importingProjects.add(project.id);
+    // 上传先落 pending/src 的兄弟临时目录，全部校验通过后才替换 pending/src：
+    // 解析失败/路径不安全/全部被忽略等错误只清临时目录，用户此前导入的源码原样保留
+    // （与 cloneRepo 的临时目录 + 原子替换同口径）。临时目录与 destDir 同盘，rename 原子。
+    const destDir = pendingSourceDir(project.id);
+    const stagingDir = `${destDir}.uploading`;
     try {
-      const destDir = pendingSourceDir(project.id);
       fs.mkdirSync(path.dirname(destDir), { recursive: true });
+      fs.rmSync(stagingDir, { recursive: true, force: true });
+      fs.mkdirSync(stagingDir, { recursive: true });
       const filesMap = (req.files ?? {}) as Record<string, Express.Multer.File[]>;
       const archive = filesMap.file?.[0];
       const looseFiles = filesMap.files ?? [];
       const respectGitignore = req.body?.respectGitignore !== 'false';
+
+      /** 校验全部通过后再用新内容替换旧源码（Windows 上 rename 目标已存在会 EPERM，先删旧） */
+      const commitStaging = () => {
+        fs.rmSync(destDir, { recursive: true, force: true });
+        fs.renameSync(stagingDir, destDir);
+      };
 
       // 形态一：单个压缩包（ZIP / 7Z / RAR / TAR / TAR.GZ），按扩展名分发解压
       if (archive) {
@@ -181,9 +193,10 @@ projectRoutes.post(
             { code: 'srv.archiveTypeUnsupported' },
           );
         }
-        const extracted = await extractArchive(archive.buffer, destDir, archive.originalname);
-        const { fileCount, ignoredCount } = await applyIgnoreFilter(destDir, extracted, respectGitignore);
-        const languageStats = await collectLanguageStats(destDir);
+        const extracted = await extractArchive(archive.buffer, stagingDir, archive.originalname);
+        const { fileCount, ignoredCount } = await applyIgnoreFilter(stagingDir, extracted, respectGitignore);
+        const languageStats = await collectLanguageStats(stagingDir);
+        commitStaging();
         updateProject(project.id, { languageStats });
         const ignoreNote = ignoredCount > 0 ? `，已按 .gitignore 忽略 ${ignoredCount} 个文件` : '';
         res.json({
@@ -215,14 +228,12 @@ projectRoutes.post(
           });
         }
         let totalBytes = 0;
-        fs.rmSync(destDir, { recursive: true, force: true });
-        fs.mkdirSync(destDir, { recursive: true });
         try {
           looseFiles.forEach((file, index) => {
             const rel = safeRelativePath(relPaths[index] || file.originalname);
             if (!rel) throw new HttpError(400, '文件路径不能为空', { code: 'srv.pathRequired' });
-            const target = path.join(destDir, rel);
-            if (!isPathWithin(destDir, target)) {
+            const target = path.join(stagingDir, rel);
+            if (!isPathWithin(stagingDir, target)) {
               throw new HttpError(400, `文件路径不安全：${relPaths[index]}`, {
                 code: 'srv.unsafeFilePath',
                 params: { path: relPaths[index] },
@@ -240,8 +251,8 @@ projectRoutes.post(
             fs.writeFileSync(target, file.buffer);
           });
         } catch (error) {
-          // 中途失败不留半成品 pending 目录（否则后续扫描会拿到不完整源码）
-          fs.rmSync(destDir, { recursive: true, force: true });
+          // 中途失败只清临时目录；旧 pending/src 由外层兜底保留（不会被半成品覆盖）
+          fs.rmSync(stagingDir, { recursive: true, force: true });
           throw error;
         }
         const firstSegments = relPaths.map((p) => p.replace(/\\/g, '/').split('/')[0]);
@@ -251,8 +262,9 @@ projectRoutes.post(
             : undefined;
         const label =
           commonRoot ?? (looseFiles.length === 1 ? firstSegments[0] : `${looseFiles.length} 个文件`);
-        const { fileCount, ignoredCount } = await applyIgnoreFilter(destDir, looseFiles.length, respectGitignore);
-        const languageStats = await collectLanguageStats(destDir);
+        const { fileCount, ignoredCount } = await applyIgnoreFilter(stagingDir, looseFiles.length, respectGitignore);
+        const languageStats = await collectLanguageStats(stagingDir);
+        commitStaging();
         updateProject(project.id, { languageStats });
         const ignoreNote = ignoredCount > 0 ? `，已按 .gitignore 忽略 ${ignoredCount} 个文件` : '';
         res.json({
@@ -269,6 +281,11 @@ projectRoutes.post(
       throw new HttpError(400, '请通过 multipart 表单上传 file 或 files 字段', {
         code: 'srv.fileRequired',
       });
+    } catch (error) {
+      // 任何失败都只清本次临时目录：commitStaging 成功前的异常不能动旧 pending/src，
+      // 否则一次损坏压缩包上传就会把用户此前导入的源码一起丢掉
+      fs.rmSync(stagingDir, { recursive: true, force: true });
+      throw error;
     } finally {
       importingProjects.delete(project.id);
     }
