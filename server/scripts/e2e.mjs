@@ -810,6 +810,12 @@ assert(manifest.engine.version === scanRecord.engineVersion,
   'manifest 引擎版本取扫描记录快照', `${manifest.engine.version} vs ${scanRecord.engineVersion}`);
 assert(scanRecord.engineVersion === health.json.engineVersion,
   '扫描记录引擎版本与运行引擎一致', `${scanRecord.engineVersion} vs ${health.json.engineVersion}`);
+assert(
+  typeof scanRecord.startedAt === 'string'
+    && new Date(scanRecord.startedAt) >= new Date(scanRecord.scannedAt)
+    && new Date(scanRecord.startedAt) <= new Date(scanRecord.finishedAt),
+  '扫描记录含实际开跑时间（引擎耗时不掺排队等待）',
+  JSON.stringify({ startedAt: scanRecord.startedAt, scannedAt: scanRecord.scannedAt, finishedAt: scanRecord.finishedAt }));
 
 console.log('== 18c. SARIF 导入：导出 → 导入往返 + 基线对比 ==');
 const roundtripForm = new FormData();
