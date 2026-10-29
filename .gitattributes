@@ -7,5 +7,5 @@
 *.bat text eol=crlf
 *.cmd text eol=crlf
 
-# 引擎目录即便误加也不会入库（双保险）
+# binary 属性只让该目录文件不做文本 diff/merge；阻止入库仅靠 .gitignore 的 opengrep-tool/（git add -f 可强加，需提交前自查）
 opengrep-tool/** binary
