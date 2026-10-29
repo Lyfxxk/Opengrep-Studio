@@ -344,15 +344,28 @@ scanRoutes.get('/api/scans/:scanId/snippet', asyncHandler(async (req, res) => {
   let from = Math.max(1, startLine - context);
   let to = endLine + context;
   let source: 'file' | 'archive' = 'file';
+  let lines: string[] | undefined;
   try {
     const stat = fs.statSync(full);
     if (stat.isFile() && stat.size <= config.maxSnippetFileBytes) {
-      const lines = fs.readFileSync(full, 'utf8').split(/\r?\n/);
-      from = Math.max(1, from);
-      to = Math.min(lines.length, to);
-      content = lines.slice(from - 1, to).join('\n');
+      lines = fs.readFileSync(full, 'utf8').split(/\r?\n/);
     }
   } catch {
+  }
+
+  // start 超出文件末尾时 from 夹取后仍大于 to（to 已夹到 lines.length），会得到
+  // startLine > endLine 的倒挂区间；与 start ≥ 1 同属参数错误，直接 400 拒绝，
+  // 不能落进下面的归档兜底，否则越界请求会被 issue 缓存伪装成"成功"
+  if (lines && startLine > lines.length) {
+    throw new HttpError(400, `start=${startLine} 超出文件行数（文件共 ${lines.length} 行）`, {
+      code: 'srv.snippetStartOutOfRange',
+      params: { startLine, fileLines: lines.length },
+    });
+  }
+
+  if (lines) {
+    to = Math.min(lines.length, to);
+    content = lines.slice(from - 1, to).join('\n');
   }
 
   if (content === undefined) {

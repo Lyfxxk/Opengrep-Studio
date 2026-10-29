@@ -897,6 +897,7 @@ const en: typeof zh = {
       scanBusy: 'The scan is running — wait for it to complete or fail before deleting.',
       scanNotRunning: 'The scan has finished — nothing to cancel.',
       snippetParamsInvalid: 'path, start, and end query parameters are required (start ≥ 1 and end ≥ start)',
+      snippetStartOutOfRange: 'start={{startLine}} exceeds the file length ({{fileLines}} lines)',
       snippetPathInvalid: 'Invalid file path',
       snippetNotFound: 'The source file does not exist and no snippet cache is available',
       scanNotCompleted: 'Only completed scans can generate a test report',

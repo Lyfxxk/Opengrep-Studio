@@ -863,6 +863,7 @@ const zh = {
       scanBusy: '扫描进行中，请等扫描完成或失败后再删除',
       scanNotRunning: '扫描已结束，无需取消',
       snippetParamsInvalid: '需要 path、start、end 查询参数（start ≥ 1 且 end ≥ start）',
+      snippetStartOutOfRange: 'start={{startLine}} 超出文件行数（文件共 {{fileLines}} 行）',
       snippetPathInvalid: '非法的文件路径',
       snippetNotFound: '源码文件不存在且没有可用的片段缓存',
       scanNotCompleted: '仅已完成的扫描可生成测试报告',
