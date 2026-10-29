@@ -636,7 +636,8 @@ export function insertConfig(config: ScanConfig): void {
 
 export function updateConfig(
   id: string,
-  patch: Partial<Omit<ScanConfig, 'id' | 'createdAt'>>,
+  /** isProtected 只能由 setConfigProtected 改写：配置编辑接口拿到它就能把兜底配置变成可删除的普通配置 */
+  patch: Partial<Omit<ScanConfig, 'id' | 'createdAt' | 'isProtected'>>,
 ): void {
   const existing = getConfig(id);
   if (!existing) return;
@@ -657,11 +658,15 @@ export function updateConfig(
   );
 }
 
+/** 受保护标记的唯一写入口（兜底配置的身份位，见 fallback-config.ts） */
+export function setConfigProtected(id: string): void {
+  db.prepare('UPDATE configs SET is_protected = 1 WHERE id = ?').run(id);
+}
+
 export function deleteConfig(id: string): void {
   db.prepare('DELETE FROM configs WHERE id = ?').run(id);
   db.prepare('UPDATE projects SET config_id = NULL WHERE config_id = ?').run(id);
 }
-
 
 function parseJsonObject(value: unknown): Record<string, unknown> | null {
   if (typeof value !== 'string' || value === '') return null;

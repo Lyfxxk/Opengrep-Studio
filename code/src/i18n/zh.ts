@@ -898,7 +898,7 @@ const zh = {
       packExportParseFailed: '规则包内容无法解析，导出中止：{{reason}}',
       packManifestMissing: '压缩包含多个规则文件但缺少 pack.yaml 清单，请按可移植格式打包（pack.yaml + rules/ 目录）',
       allFilesIgnored: '按 .gitignore 忽略规则过滤后没有剩余可扫描的文件，请检查忽略规则，或关闭「按 .gitignore 忽略文件」后重新上传',
-      noEnabledBuiltinPacks: '没有已启用的内置规则包，无法自动创建默认配置；请先在配置管理创建配置并在项目详情页绑定',
+      noEnabledBuiltinPacks: '没有已启用的内置规则包，无法创建兜底配置；请先在配置管理创建配置并在项目详情页绑定',
     },
     git: {
       badUrl: '仓库地址格式不正确，请输入 https:// 开头的 Git 仓库 URL',

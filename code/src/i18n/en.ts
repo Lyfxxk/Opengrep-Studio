@@ -937,7 +937,7 @@ const en: typeof zh = {
       allFilesIgnored:
         'No files left to scan after applying .gitignore. Check your ignore rules, or turn off "Respect .gitignore" and upload again.',
       noEnabledBuiltinPacks:
-        'No built-in rule packs are enabled, so the default config cannot be created automatically. Create a config in Config Management and bind it on the project page.',
+        'No built-in rule packs are enabled, so the fallback config cannot be created. Create a config in Config Management and bind it on the project page.',
     },
     git: {
       badUrl: 'Invalid repository URL — enter a Git URL starting with https://',

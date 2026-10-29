@@ -36,7 +36,7 @@ import { buildSarifReport } from '../sarif.js';
 import { parseSarifImport } from '../sarif-import.js';
 import { buildReportData, renderReportHtml, type ReportLang } from '../report.js';
 import { applyBaselineComparison, enqueueScan, requestScanCancel, type ScanPlan } from '../scan-runner.js';
-import { asyncHandler, limit400, newId, requireProject, requireValidBaseline } from './shared.js';
+import { asyncHandler, limit400, requireProject, requireValidBaseline } from './shared.js';
 import { isProjectImporting } from './projects.js';
 
 export const scanRoutes = Router();
