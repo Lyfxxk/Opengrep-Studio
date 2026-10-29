@@ -115,9 +115,39 @@ function sampleKindOf(findingPath: string): 'positive' | 'negative' | undefined 
   return undefined;
 }
 
-/** 服务启动时清理上次异常退出残留的实验室临时目录 */
+/**
+ * 实验室临时目录的保留期。单次实验被 ruleLabTimeoutMs（默认 30 秒）封顶，
+ * 10 分钟远超其上限，足以区分"上次崩溃的残留"与"别的进程正在使用的目录"。
+ */
+const RULE_LAB_STALE_MS = 10 * 60 * 1000;
+
+/**
+ * 服务启动时清理上次异常退出残留的实验室临时目录。
+ * 只删超过保留期的 lab-* 目录、不做整树 rmSync：rulelab 树由多个进程共用
+ * （pack-regression 等独立进程也在这里建 scratch 跑引擎），而本服务会因 tsx watch
+ * 热重启等原因频繁启动——整树删除会把别的进程刚建好、引擎即将读取的
+ * rule.yaml 连根端掉，引擎侧表现为「配置文件 rule.yaml 不存在」。
+ */
 export function cleanupRuleLabScratch(): void {
-  fs.rmSync(path.join(config.dataDir, 'rulelab'), { recursive: true, force: true });
+  const scratchRoot = path.join(config.dataDir, 'rulelab');
+  let entries: fs.Dirent[];
+  try {
+    entries = fs.readdirSync(scratchRoot, { withFileTypes: true });
+  } catch {
+    return; // rulelab 根目录尚不存在：无可清理
+  }
+  const staleBefore = Date.now() - RULE_LAB_STALE_MS;
+  for (const entry of entries) {
+    if (!entry.name.startsWith('lab-')) continue;
+    const dir = path.join(scratchRoot, entry.name);
+    try {
+      if (fs.statSync(dir).mtimeMs < staleBefore) {
+        fs.rmSync(dir, { recursive: true, force: true });
+      }
+    } catch {
+      // 目录被并发进程抢先清理等竞态：跳过即可
+    }
+  }
 }
 
 interface PackCheckItem {
