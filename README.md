@@ -212,7 +212,7 @@ Honest disclosure — please read:
 
 <details>
 <summary><b>Which languages and platforms are supported?</b></summary>
-<p>Built-in rules cover Python, JS/TS, Java, Go, C, C#, PHP, Bash, Kotlin, Swift, Rust and Dockerfile — 12 languages in total; Studio itself runs on Windows / macOS / Linux (x64 / arm64) and in Docker.</p>
+<p>Built-in rules cover Python, JS/TS, Java, Go, C, C#, PHP, Bash, Kotlin, Swift, Rust and Dockerfile — 12 languages in total; Studio itself runs on Windows (x64) / macOS (x64 / arm64) / Linux (x64 / arm64) and in Docker.</p>
 </details>
 
 <details>
