@@ -653,16 +653,26 @@ function firstSentence(value: string): string {
   return cut.length > 64 ? `${cut.slice(0, 64)}…` : cut;
 }
 
-/** 命令行含本机绝对路径：对外交付泄露目录结构且撑坏版面，统一折叠成 <repo>/ */
+/** 绝对路径 token 判定：POSIX 根、Windows 盘符、UNC 前缀 */
+function isAbsolutePathToken(token: string): boolean {
+  return token.startsWith('/') || token.startsWith('\\\\') || /^[A-Za-z]:[\\/]/.test(token);
+}
+
+/** 命令行含本机绝对路径：对外交付泄露目录结构且撑坏版面，逐个折叠成 <repo>/<文件名> */
 function sanitizeCommand(cmd: string): string {
-  const paths = [...cmd.matchAll(/"([^"]+)"/g)].map((match) => match[1]);
-  if (!paths.length) return cmd;
-  let prefix = paths[0];
-  for (const p of paths) while (prefix && !p.startsWith(prefix)) prefix = prefix.slice(0, -1);
-  const cut = Math.max(prefix.lastIndexOf('\\'), prefix.lastIndexOf('/')) + 1;
-  const root = prefix.slice(0, cut);
-  if (!root) return cmd;
-  return cmd.split(root).join('<repo>/').replace(/\\/g, '/');
+  // 不能只处理带引号的参数：参数只有在含空白时才会被加引号，无空格的快照路径
+  // （Docker /data、/opt/... 等）会以裸参数出现；改为同时扫描引号内与裸 token
+  return cmd.replace(/"([^"]*)"|(\S+)/g, (match: string, quoted?: string, bare?: string) => {
+    const token = quoted ?? bare ?? '';
+    if (!isAbsolutePathToken(token)) return match;
+    const base = token
+      .replace(/[\\/]+$/, '')
+      .split(/[\\/]/)
+      .filter(Boolean)
+      .pop();
+    const masked = base ? `<repo>/${base}` : '<repo>';
+    return quoted !== undefined ? `"${masked}"` : masked;
+  });
 }
 
 /** 路径拆「目录 + 文件名」：目录允许断行，文件名不折断，避免按字符断词 */

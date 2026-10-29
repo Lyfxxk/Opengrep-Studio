@@ -519,9 +519,14 @@ assert(reportHtmlRes.ok && reportHtml.includes('代码审计测试报告'), 'HTM
 assert(reportHtml.includes('风险分布') && reportHtml.includes('行动清单') && reportHtml.includes('问题明细') && reportHtml.includes('方法与证据'), 'HTML 报告含关键章节');
 assert(reportHtml.includes('已修复'), 'HTML 报告含基线已修复分组');
 assert((reportHtmlRes.headers.get('content-disposition') ?? '').includes('attachment'), 'HTML 以附件形式下载');
+// 命令行里的规则路径与快照目录都是本机绝对路径：对外报告必须折叠成 <repo>/，
+// 不能只脱敏带引号的参数（无空格的快照路径是裸参数，历史 bug 会原样泄漏）
+assert(!/[A-Za-z]:[\\/]/.test(reportHtml), 'HTML 报告不含 Windows 盘符绝对路径');
+assert(!/[\\/]workspace[\\/]/.test(reportHtml), 'HTML 报告不泄漏源码快照目录');
+assert(reportHtml.includes('&lt;repo&gt;/'), 'HTML 报告的命令行路径已折叠为 <repo>/');
 const reportSummaryRes = await fetch(`${BASE}/api/scans/${s2.id}/report?format=html&detail=summary`);
 const reportSummary = await reportSummaryRes.text();
-assert(reportSummaryRes.ok && !reportSummary.includes('<pre>'), 'detail=summary 省略代码片段');
+assert(reportSummaryRes.ok && !reportSummary.includes('entry-snippet'), 'detail=summary 省略代码片段');
 
 const badReport = await api('GET', '/api/scans/scan-不存在/report');
 assert(badReport.status === 404, '不存在的扫描无报告');
