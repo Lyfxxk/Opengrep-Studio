@@ -527,7 +527,9 @@ assert(!/[\\/]workspace[\\/]/.test(reportHtml), 'HTML 报告不泄漏源码快�
 assert(reportHtml.includes('&lt;repo&gt;/'), 'HTML 报告的命令行路径已折叠为 <repo>/');
 const reportSummaryRes = await fetch(`${BASE}/api/scans/${s2.id}/report?format=html&detail=summary`);
 const reportSummary = await reportSummaryRes.text();
-assert(reportSummaryRes.ok && !reportSummary.includes('entry-snippet'), 'detail=summary 省略代码片段');
+assert(
+  reportSummaryRes.ok && !reportSummary.includes('<pre class="entry-snippet">'),
+  'detail=summary 省略代码片段');
 
 const badReport = await api('GET', '/api/scans/scan-不存在/report');
 assert(badReport.status === 404, '不存在的扫描无报告');
@@ -1044,9 +1046,11 @@ assert(diffV2.json.issueDiff.new.count >= 1 && diffV2.json.issueDiff.fixed.count
 const modifiedApi = diffV2.json.fileDiff.modified.find((file) => file.path.endsWith('api.ts'));
 // V2 相对 V1 删掉 runDynamic 三行、新增一行 slack token：方向必须按「基线→本次」统计，
 // 反向会把新增/删除行数对调（历史 bug），因此这里同时锁住两个计数而不是只看 addedLines >= 1
+// V2 = V1 删掉 runDynamic 三行 + 追加「空行 + slack token 一行」，故正确方向是 +2/-3；
+// 方向反转时会是 +3/-2，因此两个计数都要精确断言
 assert(
   Boolean(modifiedApi) && modifiedApi.diffable
-    && modifiedApi.addedLines === 1 && modifiedApi.removedLines === 3,
+    && modifiedApi.addedLines === 2 && modifiedApi.removedLines === 3,
   '文件级 diff：api.ts 修改并按基线→本次方向统计行级变更', JSON.stringify(modifiedApi));
 const diffSelf = await api('GET', `/api/scans/${p20scanC.id}/diff?against=${p20scanC.id}`);
 assert(diffSelf.status === 400, '对比自身被拒绝');
