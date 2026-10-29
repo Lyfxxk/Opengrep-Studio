@@ -10,6 +10,7 @@ import { engineTargetVersion } from './engine-manifest.js';
 import { ensureFallbackScanConfig } from './fallback-config.js';
 import { markStaleScansFailed } from './scan-runner.js';
 import { cleanupRuleLabScratch } from './rule-lab.js';
+import { reportCustomPackDrift } from './rulepacks.js';
 import { miscRoutes } from './routes/misc.js';
 import { engineRoutes } from './routes/engine.js';
 import {
@@ -145,6 +146,9 @@ const server = app.listen(config.port, config.host, () => {
     `[server] 运行平台: ${process.platform}/${process.arch}  清单目标引擎版本: ${engineTargetVersion() ?? '未知'}`,
   );
   console.log(`[server] 数据目录: ${config.dataDir}`);
+  console.log(`[server] 自定义规则包目录: ${config.customRulesDir}`);
+  // 紧跟数据目录打印：文件与数据库记录对不上的残骸（孤儿文件 / 记录没文件）要让人当场看见
+  reportCustomPackDrift();
   if (!fs.existsSync(config.opengrepBin)) {
     console.error(`[server] 警告：${engineInstallHint().replace(/\n/g, '\n[server] ')}`);
   }

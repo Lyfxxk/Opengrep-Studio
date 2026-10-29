@@ -168,7 +168,7 @@ npm run docker:run    # 等价于 docker run --rm -p 8787:8787 -v ogstudio-data:
 <li><b>检查更新提示 GitHub API 限流</b>：匿名调用上限 60 次/小时，检查结果缓存 30 分钟；稍后再试即可，不影响扫描</li>
 <li><b>macOS 提示无法验证引擎</b>：<code>xattr -d com.apple.quarantine &lt;引擎路径&gt;</code></li>
 <li><b>端口被占用</b>：<code>node server/scripts/kill-port.mjs 8787 1022</code></li>
-<li><b>更多环境变量</b>：<code>PORT</code> / <code>HOST</code> / <code>DATA_DIR</code> / <code>CUSTOM_RULES_DIR</code> / <code>OPENGREP_BIN</code> / <code>OPENGREP_DOWNLOAD_BASE</code>（后端）；超时类变量取值单位为秒：<code>CLONE_TIMEOUT_SECONDS</code> / <code>SEVEN_Z_TIMEOUT_SECONDS</code> / <code>RULE_LAB_TIMEOUT_SECONDS</code>；前端开发另有 <code>API_TARGET</code> 指定 <code>/api</code> 代理目标</li>
+<li><b>更多环境变量</b>：<code>PORT</code> / <code>HOST</code> / <code>DATA_DIR</code> / <code>CUSTOM_RULES_DIR</code> / <code>OPENGREP_BIN</code> / <code>OPENGREP_DOWNLOAD_BASE</code>（后端）；超时类变量取值单位为秒：<code>CLONE_TIMEOUT_SECONDS</code> / <code>SEVEN_Z_TIMEOUT_SECONDS</code> / <code>RULE_LAB_TIMEOUT_SECONDS</code>；前端开发另有 <code>API_TARGET</code> 指定 <code>/api</code> 代理目标。只设 <code>DATA_DIR</code> 时自定义规则包文件仍落在 <code>server/rules/custom</code>，换数据目录请两个变量一起设，否则库和文件会分家（后端启动时会打印两个目录并报告对不上的残骸）</li>
 </ul>
 </details>
 
