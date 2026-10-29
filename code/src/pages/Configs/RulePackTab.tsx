@@ -495,129 +495,146 @@ export default function RulePackTab() {
         onClear={selection.clear}
       />
 
-      <Card className="overflow-hidden">
-        <CardContent className="p-0">
-          {loading ? (
-            <div className="space-y-3 p-4">
-              {Array.from({ length: 3 }).map((_, index) => (
-                <Skeleton key={index} className="h-10 w-full" />
-              ))}
+      {loading ? (
+        <Card className="overflow-hidden">
+          <CardContent className="space-y-3 p-4">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <Skeleton key={index} className="h-10 w-full" />
+            ))}
+          </CardContent>
+        </Card>
+      ) : rulePacks.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center gap-3 px-6 py-16 text-center">
+            <PackageOpen className="size-8 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">{t('rulePacks.emptyAll')}</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          {/* 自定义规则包：用户自己的资产（可编辑 / 导出 / 删除），独立一张卡 */}
+          <Card className="overflow-hidden">
+            <div className="flex items-center gap-2 border-b bg-muted/20 px-4 py-2.5">
+              <PackageOpen className="size-4 shrink-0 text-primary" />
+              <h2 className="shrink-0 text-sm font-medium">{t('rulePacks.customSectionTitle')}</h2>
+              <Badge variant="secondary" className="shrink-0 font-normal">
+                {t('rulePacks.packCount', { count: customPacks.length })}
+              </Badge>
+              <span className="ml-auto hidden truncate text-xs text-muted-foreground/80 sm:inline">
+                {t('rulePacks.customSectionHint')}
+              </span>
             </div>
-          ) : rulePacks.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">
-              <PackageOpen className="size-8 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">{t('rulePacks.emptyAll')}</p>
-            </div>
-          ) : (
-            <div>
-              {customPacks.length > 0 ? (
-                <div className="w-full overflow-x-auto">
-                  <Table>
-                    {renderTableHeader}
-                    <TableBody>{pagedCustomPacks.map(renderPackRow)}</TableBody>
-                  </Table>
-                </div>
-              ) : (
+            <CardContent className="p-0">
+              {customPacks.length === 0 ? (
                 <div className="m-4 rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
                   {t('rulePacks.emptyCustom')}
                 </div>
-              )}
-
-              {customPacks.length > LIST_PAGE_SIZE && (
-                <Pagination
-                  page={safeCustomPage}
-                  pageCount={customPageCount}
-                  onPage={setCustomPage}
-                  className="border-t px-4 py-2"
-                />
-              )}
-
-              {/* 内置规则包：文件夹式分区头 + 缩进浅底卡片流，与上方自定义数据行形成父子层级 */}
-              <div className="p-4 pt-3">
-                <button
-                  type="button"
-                  aria-expanded={builtinOpen}
-                  onClick={() => setBuiltinOpen((open) => !open)}
-                  className="flex w-full items-center gap-2 rounded-lg border border-border/70 bg-muted/40 px-3.5 py-2.5 text-left text-sm font-medium transition-colors hover:bg-muted/60"
-                >
-                  {builtinOpen ? (
-                    <FolderOpen className="size-4 shrink-0 text-primary" />
-                  ) : (
-                    <Folder className="size-4 shrink-0 text-muted-foreground" />
-                  )}
-                  <span className="shrink-0">{t('configs.builtinPacksTitle')}</span>
-                  <Badge variant="secondary" className="shrink-0 font-normal">
-                    {t('configs.builtinCount', { count: builtinPacks.length })}
-                  </Badge>
-                  <span className="shrink-0 text-xs font-normal text-muted-foreground">
-                    {t('rulePacks.builtinRulesTotal', { count: builtinRuleTotal })}
-                  </span>
-                  <span className="ml-auto hidden truncate text-xs font-normal text-muted-foreground/80 sm:inline">
-                    {t('rulePacks.builtinReadOnlyHint')}
-                  </span>
-                  <ChevronDown
-                    className={cn(
-                      'size-4 shrink-0 text-muted-foreground transition-transform',
-                      builtinOpen && 'rotate-180',
-                    )}
-                  />
-                </button>
-                {builtinOpen && (
-                  <div className="ml-5 border-l-2 border-border/70 pl-4 sm:ml-6 sm:pl-6">
-                    <div className="mt-3 grid grid-cols-1 gap-2 rounded-lg bg-muted/25 p-3 lg:grid-cols-2">
-                      {pagedBuiltinPacks.map((pack) => (
-                        <div
-                          key={pack.id}
-                          className="flex items-center gap-3 rounded-lg border bg-card px-3 py-2.5"
-                        >
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium">
-                              {packDisplayName(pack.name, pack.id)}
-                            </p>
-                            <div className="mt-1.5 flex items-center gap-2">
-                              <Badge
-                                variant="secondary"
-                                className="px-1.5 py-0 text-[11px] font-normal"
-                              >
-                                {pack.language}
-                              </Badge>
-                              <span className="text-xs tabular-nums text-muted-foreground">
-                                {t('configs.ruleCount', { count: pack.ruleCount })}
-                              </span>
-                            </div>
-                          </div>
-                          <Switch
-                            checked={pack.enabled}
-                            onCheckedChange={(checked) => void handleToggle(pack, checked)}
-                            aria-label={t('rulePacks.enableAria', { name: pack.name })}
-                          />
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="size-8 shrink-0"
-                            title={t('rulePacks.builtinViewTitle')}
-                            onClick={() => setContentTarget(pack)}
-                          >
-                            <Eye className="size-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                    {builtinPacks.length > LIST_PAGE_SIZE && (
-                      <Pagination
-                        page={safeBuiltinPage}
-                        pageCount={builtinPageCount}
-                        onPage={setBuiltinPage}
-                        className="pb-3"
-                      />
-                    )}
+              ) : (
+                <>
+                  <div className="w-full overflow-x-auto">
+                    <Table>
+                      {renderTableHeader}
+                      <TableBody>{pagedCustomPacks.map(renderPackRow)}</TableBody>
+                    </Table>
                   </div>
+                  {customPacks.length > LIST_PAGE_SIZE && (
+                    <Pagination
+                      page={safeCustomPage}
+                      pageCount={customPageCount}
+                      onPage={setCustomPage}
+                      className="border-t px-4 py-2"
+                    />
+                  )}
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* 内置规则包：随项目分发的只读资产，与自定义包平级但另起一张卡。
+              原先嵌在自定义表格卡内、还用缩进竖线冒充父子层级，视觉上像被塞进表格的一行 */}
+          <Card className="overflow-hidden">
+            <button
+              type="button"
+              aria-expanded={builtinOpen}
+              onClick={() => setBuiltinOpen((open) => !open)}
+              className="flex w-full items-center gap-2 border-b bg-muted/20 px-4 py-2.5 text-left transition-colors hover:bg-muted/40"
+            >
+              {builtinOpen ? (
+                <FolderOpen className="size-4 shrink-0 text-primary" />
+              ) : (
+                <Folder className="size-4 shrink-0 text-muted-foreground" />
+              )}
+              <span className="shrink-0 text-sm font-medium">{t('configs.builtinPacksTitle')}</span>
+              <Badge variant="secondary" className="shrink-0 font-normal">
+                {t('configs.builtinCount', { count: builtinPacks.length })}
+              </Badge>
+              <span className="shrink-0 text-xs text-muted-foreground">
+                {t('rulePacks.builtinRulesTotal', { count: builtinRuleTotal })}
+              </span>
+              <span className="ml-auto hidden truncate text-xs text-muted-foreground/80 sm:inline">
+                {t('rulePacks.builtinReadOnlyHint')}
+              </span>
+              <ChevronDown
+                className={cn(
+                  'size-4 shrink-0 text-muted-foreground transition-transform',
+                  builtinOpen && 'rotate-180',
                 )}
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+              />
+            </button>
+            {builtinOpen && (
+              <>
+                <CardContent className="grid grid-cols-1 gap-2 p-3 lg:grid-cols-2">
+                  {pagedBuiltinPacks.map((pack) => (
+                    <div
+                      key={pack.id}
+                      className="flex items-center gap-3 rounded-lg border bg-card px-3 py-2.5"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">
+                          {packDisplayName(pack.name, pack.id)}
+                        </p>
+                        <div className="mt-1.5 flex items-center gap-2">
+                          <Badge
+                            variant="secondary"
+                            className="px-1.5 py-0 text-[11px] font-normal"
+                          >
+                            {pack.language}
+                          </Badge>
+                          <span className="text-xs tabular-nums text-muted-foreground">
+                            {t('configs.ruleCount', { count: pack.ruleCount })}
+                          </span>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={pack.enabled}
+                        onCheckedChange={(checked) => void handleToggle(pack, checked)}
+                        aria-label={t('rulePacks.enableAria', { name: pack.name })}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-8 shrink-0"
+                        title={t('rulePacks.builtinViewTitle')}
+                        onClick={() => setContentTarget(pack)}
+                      >
+                        <Eye className="size-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </CardContent>
+                {builtinPacks.length > LIST_PAGE_SIZE && (
+                  <Pagination
+                    page={safeBuiltinPage}
+                    pageCount={builtinPageCount}
+                    onPage={setBuiltinPage}
+                    className="border-t px-4 py-2"
+                  />
+                )}
+              </>
+            )}
+          </Card>
+        </>
+      )}
 
       {/* 在线创建 */}
       <RulePackCreateDialog
