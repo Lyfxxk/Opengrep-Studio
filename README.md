@@ -154,7 +154,7 @@ The image ships with the engine and the built frontend — open <http://localhos
 Default login: `admin` / `123456` (see [Security Model](#security-model)). Suggested flow:
 
 1. **Scan config** — pick the rule packs to enable (optionally with exclude/include paths and engine args)
-2. **Create a project** and bind that config
+2. **Create a project** and bind that config — or skip binding: a protected fallback config (all enabled built-in rule packs, cannot be deleted) is bound automatically on the first scan
 3. **Import source** (drag a folder / upload an archive / Git clone)
 4. **Run a scan**, then triage findings one by one
 5. Set a baseline, rescan, and watch **new / fixed / remaining**; when it's time to deliver, **generate the test report**
