@@ -486,7 +486,14 @@ scanRoutes.post(
     scan.issueCount = issues.filter(isActiveIssue).length;
 
     insertScan(scan);
-    replaceIssues(scan.id, issues);
+    try {
+      replaceIssues(scan.id, issues);
+    } catch (error) {
+      // 记录先落库、明细后写入：明细失败时删掉刚插入的扫描，避免列表里留下一条
+      // 「已完成但 0 问题」的假记录（与扫描快照复制失败的清理口径一致）
+      deleteScan(scan.id);
+      throw error;
+    }
     console.log(
       `[sarif-import] 项目 ${project.id} 导入 ${req.file.originalname}（${toolName}）：` +
         `${scan.issueCount} 个问题`,
