@@ -86,7 +86,7 @@ export default function ReportsCenterPage() {
         <div className="flex flex-wrap items-center gap-2">
           <Select value={filterProjectId} onValueChange={setFilterProjectId}>
             <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder={t('reports.filterProjectPlaceholder')} />
+              <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t('reports.filterProjectAll')}</SelectItem>

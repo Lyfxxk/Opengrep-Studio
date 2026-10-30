@@ -400,10 +400,7 @@ export default function ReportPage() {
         <section className="mb-8">
           <header className="mb-5 flex flex-wrap items-start justify-between gap-3 border-b-2 pb-4">
             <div className="min-w-0">
-              <div className="text-xs uppercase tracking-widest text-muted-foreground">
-                {t('report.headerTagline')}
-              </div>
-              <h1 className="mt-1.5 text-2xl font-bold">{t('report.docTitle')}</h1>
+              <h1 className="text-2xl font-bold">{t('report.docTitle')}</h1>
               <div className="mt-1 text-sm text-muted-foreground">
                 {meta.projectName}
                 {meta.projectDescription ? ` · ${meta.projectDescription}` : ''}
