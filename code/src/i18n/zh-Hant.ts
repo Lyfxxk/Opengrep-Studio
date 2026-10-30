@@ -181,7 +181,6 @@ const zhHant: typeof zh = {
     riskDistTitle: '風險分佈',
     riskDistScope: '統計基準：各專案最近一次已完成掃描',
     riskDistEmpty: '最近一輪掃描未檢出問題，或尚無已完成的掃描',
-    riskDistEmptyProject: '建立專案並完成一次掃描後展示',
     topRulesTitle: '高頻命中規則',
     topRulesEmpty: '暫無命中資料',
     hits: '{{count}} 次',
@@ -189,7 +188,6 @@ const zhHant: typeof zh = {
     noProjects: '暫無專案',
     totalCount: '共 {{count}}',
     unscanned: '未掃描',
-    viewScanResult: '查看掃描結果 · {{id}}',
   },
   engine: {
     title: '引擎狀態',
