@@ -392,9 +392,6 @@ export default function ProjectDetailPage() {
         <Button
           className="gap-1"
           disabled={!canStartScan}
-          title={
-            project.configId ? undefined : t('projectDetail.startScanUnboundTitle')
-          }
           onClick={() => void handleStartScan()}
         >
           {isScanning ? (
