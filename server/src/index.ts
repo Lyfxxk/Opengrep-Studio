@@ -84,6 +84,9 @@ if (fs.existsSync(distDir)) {
   app.use(express.static(distDir));
   app.use((req, res, next) => {
     if (req.method !== 'GET') { next(); return; }
+    // 只对 HTML 导航回落到 index.html：缺失的静态资源（/assets/*.js）拿到 HTML 会以 MIME
+    // 错误收场，掩盖真正的 404；带扩展名的路径一律走后续 404
+    if (!req.accepts('html') || path.extname(req.path)) { next(); return; }
     res.sendFile(path.join(distDir, 'index.html'));
   });
 }
