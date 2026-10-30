@@ -48,12 +48,6 @@ export default function ScansCenterPage() {
   const [compareScanId, setCompareScanId] = useState<string | null>(null);
   const [batchConfirmOpen, setBatchConfirmOpen] = useState(false);
   const [batchDeleting, setBatchDeleting] = useState(false);
-  // 进行中的扫描还在被引擎写入，禁止勾选删除；全选范围也只覆盖可删除的行
-  const deletableIds = useMemo(
-    () => (scans ?? []).filter((scan) => scan.status !== 'scanning').map((scan) => scan.id),
-    [scans],
-  );
-  const selection = useRowSelection(deletableIds);
 
   const load = useCallback(async () => {
     try {
@@ -85,6 +79,14 @@ export default function ScansCenterPage() {
       );
     });
   }, [scans, filterProjectId, keyword]);
+
+  // 进行中的扫描还在被引擎写入，禁止勾选删除；全选范围同样只覆盖当前筛选结果里的可删除行，
+  // 否则「先按项目筛选、再全选删除」会把其他项目的扫描一起删掉
+  const deletableIds = useMemo(
+    () => filteredScans.filter((scan) => scan.status !== 'scanning').map((scan) => scan.id),
+    [filteredScans],
+  );
+  const selection = useRowSelection(deletableIds);
 
   // 分页：扫描进行中的轮询会频繁重刷列表，页码夹取保证删行 / 新增后不落在空页上
   const { page: safePage, setPage, pageCount, slice: pagedScans } = usePagedList(filteredScans, LIST_PAGE_SIZE);
