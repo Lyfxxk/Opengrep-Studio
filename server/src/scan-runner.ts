@@ -82,10 +82,17 @@ const cancelRequested = new Set<string>();
  * 取消扫描：引擎运行中则终止进程（复用 runEngine 既有 kill 链：温和终止 → 5s SIGKILL → 15s 兜底），
  * runScan 收尾按"已被手动取消"落库；返回 false 表示引擎尚未启动（排队中/快照准备阶段），
  * 此时由调用方直接落库失败（槽位轮到时 runScan 复查状态会自动退出，不会覆盖取消结果）。
+ * 引擎已退出但登记未删的窗口（exit → close）也返回 true 供调用方按"取消中"应答，
+ * 但不置取消标记也不杀进程：结果已产出，runScan 按实际结果收尾。
  */
 export function requestScanCancel(scanId: string): boolean {
   const child = runningEngines.get(scanId);
   if (!child) return false;
+  // 引擎已退出（exit/signal 码置位）而 close 未触发、登记未删的窗口里，结果已完整产出，
+  // kill 只是 no-op；若置取消标记，runScan 会把刚成功的扫描误打成"已被手动取消"并丢弃全部结果。
+  // 照常受理返回 true 让路由应答"取消中"即可，收尾交给 runScan（已完成的落 completed）；
+  // 若此处返回 false，调用方会按"引擎未启动"直落 failed，反而复刻同一误标
+  if (child.exitCode !== null || child.signalCode !== null) return true;
   cancelRequested.add(scanId);
   child.kill();
   return true;
