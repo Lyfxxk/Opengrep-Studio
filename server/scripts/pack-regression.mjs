@@ -63,8 +63,15 @@ function structuralCheck(pack) {
         errors.push(`pack.yaml 不合法：${error instanceof Error ? error.message : String(error)}`);
       }
     }
-    const ruleFiles = collectRuleFiles(path.join(pack.dir, 'rules'));
-    if (ruleFiles.length === 0) {
+    // collectRuleFiles 对不存在/不是目录的 rules/ 会直接抛 ENOENT/ENOTDIR：
+    // 目录包漂移（用户手工删了 rules/）时这里要报成结构错误，而不是让整个回归脚本崩掉
+    let ruleFiles = [];
+    try {
+      ruleFiles = collectRuleFiles(path.join(pack.dir, 'rules'));
+    } catch (error) {
+      errors.push(`rules/ 目录不可读：${error instanceof Error ? error.message : String(error)}`);
+    }
+    if (ruleFiles.length === 0 && errors.length === 0) {
       errors.push('rules/ 目录没有任何 YAML 规则文件');
     }
     for (const file of ruleFiles) {
