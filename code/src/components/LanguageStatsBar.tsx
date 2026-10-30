@@ -74,7 +74,6 @@ export default function LanguageStatsBar({ stats }: LanguageStatsBarProps) {
         {head.map((seg) => (
           <span
             key={seg.language}
-            title={`${seg.language} ${seg.percent.toFixed(1)}%`}
             style={{ width: `${seg.percent}%`, backgroundColor: seg.color }}
             className="h-full"
           />
