@@ -21,7 +21,6 @@ const zh = {
   },
   header: {
     logout: '退出登录',
-    logoutToast: '已退出登录',
     avatarAlt: '管理员头像',
     language: '切换语言',
     theme: '切换主题',
@@ -983,8 +982,6 @@ const zh = {
     heroTitle1: '让隐患，先于攻击者',
     heroTitleEm: '现形',
     heroTitle2: '。',
-    heroSub1: '从导入源码到交付测试报告，规则引擎逐条比对，',
-    heroSub2: '风险直达文件与行号，四步完成一次完整审计。',
     termAria: '审计流程演示：新建项目、导入源码、扫描标记风险、生成测试报告',
     termTitle: 'opengrep · scan — 示例数据',
     termEngineLoaded: '引擎就绪 · 已加载',
@@ -1007,8 +1004,6 @@ const zh = {
     step4Desc: '汇总风险等级，生成测试报告。',
     username: '账号',
     password: '密码',
-    usernamePlaceholder: '请输入管理员账号',
-    passwordPlaceholder: '请输入密码',
     showPassword: '显示密码',
     hidePassword: '隐藏密码',
     errorUsername: '请输入账号',
@@ -1018,7 +1013,6 @@ const zh = {
     submitting: '登录中…',
     successTitle: '身份已确认',
     successDesc: '正在进入工作台…',
-    successToast: '登录成功，欢迎回来',
   },
 };
 

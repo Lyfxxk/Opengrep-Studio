@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 import { login, validateCredentials } from '@/lib/auth';
 import LanguageMenu from '@/components/LanguageMenu';
 import logoUrl from '@/assets/images/logo.png';
@@ -72,7 +71,6 @@ export default function LoginPage() {
         login(trimmedName);
         setSubmitting(false);
         setSuccess(true);
-        toast.success(t('login.successToast'));
         timerRef.current.push(window.setTimeout(() => navigate('/dashboard'), 900));
       }, 800),
     );
@@ -94,11 +92,6 @@ export default function LoginPage() {
             <em>{t('login.heroTitleEm')}</em>
             {t('login.heroTitle2')}
           </h1>
-          <p className="hero-sub">
-            {t('login.heroSub1')}
-            <br />
-            {t('login.heroSub2')}
-          </p>
         </div>
 
         <div
@@ -232,7 +225,6 @@ export default function LoginPage() {
                       name="username"
                       type="text"
                       maxLength={30}
-                      placeholder={t('login.usernamePlaceholder')}
                       autoComplete="username"
                       value={username}
                       aria-invalid={errorField === 'username' ? true : undefined}
@@ -270,7 +262,6 @@ export default function LoginPage() {
                       name="password"
                       type={showPassword ? 'text' : 'password'}
                       maxLength={30}
-                      placeholder={t('login.passwordPlaceholder')}
                       autoComplete="current-password"
                       value={password}
                       style={{ paddingRight: '52px' }}

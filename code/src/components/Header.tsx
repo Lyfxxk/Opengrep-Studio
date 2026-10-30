@@ -2,7 +2,6 @@ import { Fragment } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { LogOut } from 'lucide-react';
-import { toast } from 'sonner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Breadcrumb,
@@ -68,9 +67,9 @@ export default function Header() {
     }
   }
 
+  // 登出后立刻离开工作台进登录页，"已退出登录"提示既无信息量也无处安放
   const handleLogout = () => {
     logout();
-    toast.success(t('header.logoutToast'));
     navigate('/login');
   };
 
