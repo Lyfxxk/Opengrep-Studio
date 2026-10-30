@@ -29,6 +29,12 @@ import { asyncHandler, MAX_RULE_YAML_BYTES, MAX_SAMPLE_BYTES, newId } from './sh
 
 export const miscRoutes = Router();
 
+/** 配置描述上限（与前端 ConfigFormDialog 的 maxLength 同一口径） */
+const MAX_CONFIG_DESCRIPTION_LENGTH = 200;
+/** include/exclude 条目上限与单项长度（与前端 TagPathInput 同一口径；直接调 API 也必须有闸） */
+const MAX_PATH_FILTER_ENTRIES = 20;
+const MAX_PATH_FILTER_LENGTH = 200;
+
 miscRoutes.get('/api/health', asyncHandler(async (_req, res) => {
   const engineReady = engineAvailable();
   // 引擎文件存在也可能跑不起来（损坏/被杀软拦截，Windows 同步抛 spawn EFTYPE）：
@@ -85,6 +91,14 @@ function requireValidConfigValues(body: Record<string, unknown>, existingId?: st
   );
   if (duplicated) throw new HttpError(400, '配置名称已存在', { code: 'srv.configNameExists' });
 
+  const description = String(body?.description ?? '').trim();
+  if (description.length > MAX_CONFIG_DESCRIPTION_LENGTH) {
+    throw new HttpError(400, `配置描述不能超过 ${MAX_CONFIG_DESCRIPTION_LENGTH} 个字符`, {
+      code: 'srv.configDescriptionTooLong',
+      params: { limit: MAX_CONFIG_DESCRIPTION_LENGTH },
+    });
+  }
+
   const rulePackIds = Array.isArray(body?.rulePackIds) ? body.rulePackIds.map(String) : [];
   if (rulePackIds.length === 0) throw new HttpError(400, '请至少勾选 1 个规则包', { code: 'srv.packsRequired' });
   for (const packId of rulePackIds) {
@@ -97,6 +111,23 @@ function requireValidConfigValues(body: Record<string, unknown>, existingId?: st
   }
   const asStringArray = (value: unknown) =>
     Array.isArray(value) ? value.map((item) => String(item).trim()).filter(Boolean) : [];
+  // 条目数与单项长度都要与前端一致：这些条目最终会成为引擎 --include/--exclude 参数，
+  // 无界数组会拼出超过操作系统 argv 上限的命令行，引擎侧只报含糊的启动失败
+  const assertPathFilterLimits = (entries: string[]) => {
+    if (entries.length > MAX_PATH_FILTER_ENTRIES) {
+      throw new HttpError(400, `路径过滤条目不能超过 ${MAX_PATH_FILTER_ENTRIES} 条`, {
+        code: 'srv.pathFiltersTooMany',
+        params: { limit: MAX_PATH_FILTER_ENTRIES },
+      });
+    }
+    const tooLong = entries.find((item) => item.length > MAX_PATH_FILTER_LENGTH);
+    if (tooLong !== undefined) {
+      throw new HttpError(400, `路径过滤条目不能超过 ${MAX_PATH_FILTER_LENGTH} 个字符`, {
+        code: 'srv.pathFilterTooLong',
+        params: { limit: MAX_PATH_FILTER_LENGTH, item: tooLong },
+      });
+    }
+  };
   // 与前端 TagPathInput 同一拦截：顿号/逗号在 glob 里非法，整串入库会静默匹配不到任何文件。
   // 前端只拦新输入、不拦存量回显，服务端必须兜底，否则直连 API 仍能把脏数据写进配置下发给引擎
   const assertNoGlobSeparator = (entries: string[]) => {
@@ -110,6 +141,8 @@ function requireValidConfigValues(body: Record<string, unknown>, existingId?: st
   };
   const excludes = asStringArray(body?.excludes);
   const includes = asStringArray(body?.includes);
+  assertPathFilterLimits(excludes);
+  assertPathFilterLimits(includes);
   assertNoGlobSeparator(excludes);
   assertNoGlobSeparator(includes);
   // Number() 会把 true/[8]/"30" 强转成合法数值绕过整数校验，先只认 JSON number，
@@ -129,7 +162,7 @@ function requireValidConfigValues(body: Record<string, unknown>, existingId?: st
   }
   return {
     name,
-    description: String(body?.description ?? '').trim() || undefined,
+    description: description || undefined,
     rulePackIds: [...new Set(rulePackIds)],
     excludes,
     includes,
