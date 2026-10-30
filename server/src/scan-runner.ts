@@ -482,15 +482,20 @@ async function runScan(scanId: string, plan: ScanPlan): Promise<void> {
         extractTaintFlow(finding.extra.dataflow_trace),
         (p) => relativizeToRoot(p, srcDir),
       );
+      // 引擎路径已 relativize 到本次快照：兜底指纹必须用相对路径，否则每次扫描快照根目录
+      // 都不同（workspace/<项目>/<扫描id>/src），同一问题在两次扫描里会得到不同指纹，
+      // 基线对比的 remaining/fixed 判定全部失真
+      const relativePath = relativizeToRoot(finding.path, srcDir);
       return {
         id: '',
         scanId,
-        fingerprint: finding.extra.fingerprint ?? `${finding.check_id}:${finding.path}:${finding.start.line}`,
+        fingerprint:
+          finding.extra.fingerprint ?? `${finding.check_id}:${relativePath}:${finding.start.line}`,
         ruleId,
         severity: mapSeverity(finding),
         comparisonStatus: 'remaining',
         message: finding.extra.message,
-        filePath: relativizeToRoot(finding.path, srcDir),
+        filePath: relativePath,
         startLine: finding.start.line,
         endLine: finding.end.line,
         matchedLines: finding.extra.lines,
