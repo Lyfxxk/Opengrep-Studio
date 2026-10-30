@@ -342,6 +342,32 @@ const fullConfig = await createConfig({
 });
 assert(fullConfig.id.startsWith('cfg-'), '创建扫描配置成功');
 
+// include 的中间 **/ 段按组数指数展开成引擎参数：写入侧必须有段数闸，否则
+// 200 字符内可构造约 40 组 → 2^40 变体，扫描时同步展开冻结事件循环直至 OOM
+const globstarReject = await api('POST', '/api/configs', {
+  name: 'E2E-globstar上限配置',
+  rulePackIds: [packJs.id],
+  excludes: [],
+  includes: ['a/**/b/**/c/**/d/**/e/**/f/x.py'],
+  timeoutSeconds: 30,
+  jobs: 4,
+  maxTargetBytes: 5000000,
+});
+assert(
+  globstarReject.status === 400 && globstarReject.json?.error?.code === 'srv.pathFilterGlobstarsTooMany',
+  'include 的 **/ 段超过上限被拒绝', JSON.stringify(globstarReject.json));
+// 上限内（4 段）仍可正常入库
+const globstarEdge = await createConfig({
+  name: 'E2E-globstar边界配置',
+  rulePackIds: [packJs.id],
+  excludes: [],
+  includes: ['a/**/b/**/c/**/d/**/e/x.py'],
+  timeoutSeconds: 30,
+  jobs: 4,
+  maxTargetBytes: 5000000,
+});
+await api('DELETE', `/api/configs/${globstarEdge.id}`);
+
 console.log('== 4. 创建项目 ==');
 const created = await api('POST', '/api/projects', {
   name: 'E2E演示项目',

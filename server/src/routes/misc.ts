@@ -22,6 +22,7 @@ import {
   type ScanConfig,
 } from '../db.js';
 import { getRuleKnowledge } from '../knowledge.js';
+import { MAX_PATH_FILTER_GLOBSTARS } from '../scan-runner.js';
 import { runRuleLab } from '../rule-lab.js';
 import { engineUpgradeRunning } from '../engine-update.js';
 import { isEngineJobBusy, setEngineJobBusy } from '../engine-job.js';
@@ -125,6 +126,18 @@ function requireValidConfigValues(body: Record<string, unknown>, existingId?: st
       throw new HttpError(400, `路径过滤条目不能超过 ${MAX_PATH_FILTER_LENGTH} 个字符`, {
         code: 'srv.pathFilterTooLong',
         params: { limit: MAX_PATH_FILTER_LENGTH, item: tooLong },
+      });
+    }
+    // include 的中间 **/ 段按组数指数展开成引擎参数：200 字符内可构造约 40 组 → 2^40 变体，
+    // 扫描时同步展开会冻结事件循环直至 OOM（见 scan-runner expandGlobstarSegments）。
+    // exclude 虽只做折叠，但折叠后多段本就同义，同一闸收紧并不损失合法用法
+    const tooManyGlobstars = entries.find(
+      (item) => (item.match(/\*\*\//g)?.length ?? 0) > MAX_PATH_FILTER_GLOBSTARS,
+    );
+    if (tooManyGlobstars !== undefined) {
+      throw new HttpError(400, `路径过滤条目最多 ${MAX_PATH_FILTER_GLOBSTARS} 个 **/ 段`, {
+        code: 'srv.pathFilterGlobstarsTooMany',
+        params: { limit: MAX_PATH_FILTER_GLOBSTARS, item: tooManyGlobstars },
       });
     }
   };

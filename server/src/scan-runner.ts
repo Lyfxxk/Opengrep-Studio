@@ -261,9 +261,22 @@ export function applyBaselineComparison(
  * 因此 include 把一条 globstar 展开成「零层 + 一层以上」两种引擎能正确执行的模式；
  * exclude 保持保守近似（`**​/` 折叠为 basename/前缀，末尾 `/**` 折叠为目录名）。
  */
+// 单条路径过滤条目的 **/ 段上限：每个中间段让 include 展开变体数翻倍（2^k），
+// 写入侧 routes/misc.ts 与展开侧共用同一闸（说明用行注释，块注释里写不下 **/ 字面量）
+export const MAX_PATH_FILTER_GLOBSTARS = 4;
+
 function expandGlobstarSegments(pattern: string): string[] {
   const idx = pattern.indexOf('**/');
   if (idx === -1) return [pattern];
+  // 写入校验（misc.ts）之前入库的历史脏数据可能带大量 **/ 段：指数展开会冻结事件循环直至 OOM。
+  // 宁可扫描显式失败也不静默跳过展开——跳过会让引擎按错误的 glob 语义漏扫文件
+  if ((pattern.match(/\*\*\//g)?.length ?? 0) > MAX_PATH_FILTER_GLOBSTARS) {
+    throw new ScanError(
+      'scan.includeGlobstarsTooMany',
+      `单条 include 的 **/ 段超过 ${MAX_PATH_FILTER_GLOBSTARS} 个：段数按指数展开，请简化扫描配置的路径过滤后重试`,
+      { limit: MAX_PATH_FILTER_GLOBSTARS },
+    );
+  }
   const head = pattern.slice(0, idx);
   const tail = pattern.slice(idx + 3);
   const out: string[] = [];

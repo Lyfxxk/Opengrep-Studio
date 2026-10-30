@@ -773,6 +773,7 @@ const en: typeof zh = {
       configDescriptionTooLong: 'Config description cannot exceed {{limit}} characters',
       pathFiltersTooMany: 'At most {{limit}} path filter entries are allowed',
       pathFilterTooLong: 'A path filter entry cannot exceed {{limit}} characters ({{item}})',
+      pathFilterGlobstarsTooMany: 'A path filter entry can contain at most {{limit}} **/ segments ({{item}})',
       timeoutInvalid: 'Per-file timeout must be an integer between 1 and 600',
       jobsInvalid: 'Concurrency must be an integer between 1 and 16',
       sizeInvalid: 'Max file size must be between 0.1 and 100 MB',
@@ -880,6 +881,8 @@ const en: typeof zh = {
     scan: {
       snapshotMissing: 'The scan source snapshot cannot be found',
       noRuleFiles: 'No usable rule files',
+      includeGlobstarsTooMany:
+        'An include pattern has more than {{limit}} **/ segments — they expand exponentially; simplify the path filters in the scan config and retry',
       timedOut: 'The scan was aborted after {{minutes}} minutes — narrow the source scope and retry.',
       outputTruncated:
         'Engine output exceeded the 64MB limit and was truncated; narrow the source scope or reduce rules and retry.',
