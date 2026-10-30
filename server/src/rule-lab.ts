@@ -186,7 +186,17 @@ export async function runPackCheck(packDir: string): Promise<PackCheckResult> {
   const rulesByFile: Array<{ file: string; rules: Array<Record<string, unknown>> }> = [];
   for (const file of ruleFiles) {
     const text = fs.readFileSync(file, 'utf8');
-    for (const id of parseRuleYaml(text).ruleIds) knownIds.add(id);
+    try {
+      for (const id of parseRuleYaml(text).ruleIds) knownIds.add(id);
+    } catch (error) {
+      // 包内文件被手工改坏（漂移）时给 400 业务错误，而不是让路由落进通用 500
+      const name = path.relative(packDir, file).replace(/\\/g, '/');
+      const reason = error instanceof Error ? error.message : String(error);
+      throw new HttpError(400, `规则文件 ${name} 不合法：${reason}`, {
+        code: 'srv.ruleFileInvalidDetail',
+        params: { name, reason },
+      });
+    }
     const doc = yamlLoad(text) as { rules?: Array<Record<string, unknown>> } | null;
     rulesByFile.push({ file, rules: Array.isArray(doc?.rules) ? doc!.rules! : [] });
   }
