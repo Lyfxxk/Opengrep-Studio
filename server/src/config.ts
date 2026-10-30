@@ -47,6 +47,7 @@ export function resolveEngineBin(deps?: {
     try {
       if (fs.statSync(candidate).isFile()) return { bin: candidate, source: 'path' };
     } catch {
+      // 目录不可读/无权限：跳过，继续看下一个 PATH 目录
     }
   }
   return { bin: bundled, source: 'missing' };

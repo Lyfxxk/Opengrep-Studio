@@ -15,9 +15,6 @@ import { ALWAYS_SKIP_DIR_NAMES } from './fs-walk.js';
  * - 模式按各规则文件所在目录解析（.gitignore 只影响其所在目录及以下）。
  */
 
-/** 无论规则如何都强制排除的目录（口径与扫描引擎 --exclude 一致，见 fs-walk.ts 的共享常量） */
-const ALWAYS_IGNORED_DIRS = ALWAYS_SKIP_DIR_NAMES;
-
 /** 每层目录会读取的忽略规则文件，靠后的优先级更高（同目录内覆盖靠前的） */
 const IGNORE_FILE_NAMES = ['.gitignore', '.opengrepignore'];
 
@@ -109,7 +106,7 @@ export async function pruneIgnoredFiles(rootDir: string): Promise<PruneResult> {
         continue;
       }
       if (entry.isDirectory()) {
-        if (ALWAYS_IGNORED_DIRS.has(entry.name)) {
+        if (ALWAYS_SKIP_DIR_NAMES.has(entry.name)) {
           await fs.promises.rm(full, { recursive: true, force: true });
           continue;
         }
