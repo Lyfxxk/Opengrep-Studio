@@ -138,7 +138,6 @@ export default function ScanConfigTab() {
       } else {
         await api.createConfig(values);
       }
-      toast.success(t('configs.savedToast'));
       setDialogOpen(false);
       setTarget(null);
       await loadAll();
@@ -156,11 +155,10 @@ export default function ScanConfigTab() {
     if (!deleteTarget) return;
     try {
       await api.deleteConfig(deleteTarget.id);
-      toast.success(
-        deleteBoundCount > 0
-          ? t('configs.deletedUnboundToast', { count: deleteBoundCount })
-          : t('configs.deletedToast'),
-      );
+      // 解绑后果删除前已在确认框告知，只有真解绑了项目才需要再报数
+      if (deleteBoundCount > 0) {
+        toast.success(t('configs.deletedUnboundToast', { count: deleteBoundCount }));
+      }
       setDeleteTarget(null);
       await loadAll();
     } catch (error) {
@@ -191,14 +189,12 @@ export default function ScanConfigTab() {
     setBatchDeleting(false);
     selection.clear();
     await loadAll();
-    if (failed === 0) toast.success(t('configs.batchDeleted', { count: ids.length }));
-    else toast.warning(t('configs.batchPartial', { count: ids.length - failed, failed }));
+    if (failed > 0) toast.warning(t('configs.batchPartial', { count: ids.length - failed, failed }));
   };
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <p className="text-sm text-muted-foreground">{t('configs.tabSubtitle')}</p>
+      <div className="flex justify-end">
         <Button className="gap-1" onClick={handleCreate}>
           <Plus className="size-4" />
           {t('configs.newConfig')}

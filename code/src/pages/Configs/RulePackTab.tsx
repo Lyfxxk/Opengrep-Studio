@@ -157,11 +157,6 @@ export default function RulePackTab() {
   const performToggle = async (pack: IRulePack, enabled: boolean) => {
     try {
       await api.toggleRulePack(pack.id, enabled);
-      toast.success(
-        t(enabled ? 'rulePacks.toggleEnabledToast' : 'rulePacks.toggleDisabledToast', {
-          name: packDisplayName(pack.name, pack.id),
-        }),
-      );
       await loadAll();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t('rulePacks.updateFailed'));
@@ -228,7 +223,6 @@ export default function RulePackTab() {
     setSubmitting(true);
     try {
       await api.uploadRulePack(uploadFile, trimmed, uploadLanguage);
-      toast.success(t('rulePacks.uploadedToast', { name: trimmed }));
       setUploadOpen(false);
       await loadAll();
     } catch (error) {
@@ -265,7 +259,8 @@ export default function RulePackTab() {
     api
       .importRulePack(file)
       .then((pack) => {
-        toast.success(pack.message ?? t('rulePacks.importedToast', { name: pack.name }));
+        // 服务端可能附带跳过/告警信息，有话才弹；导入结果列表里已经可见
+        if (pack.message) toast.success(pack.message);
         return loadAll();
       })
       .catch((error) => {
@@ -301,7 +296,6 @@ export default function RulePackTab() {
     if (!deleteTarget) return;
     try {
       await api.deleteRulePack(deleteTarget.id);
-      toast.success(t('rulePacks.deletedToast', { name: deleteTarget.name }));
       setDeleteTarget(null);
       await loadAll();
     } catch (error) {
@@ -350,8 +344,7 @@ export default function RulePackTab() {
     setBatchDeleting(false);
     selection.clear();
     await loadAll();
-    if (failed === 0) toast.success(t('rulePacks.batchDeleted', { count: ids.length }));
-    else toast.warning(t('rulePacks.batchPartial', { count: ids.length - failed, failed }));
+    if (failed > 0) toast.warning(t('rulePacks.batchPartial', { count: ids.length - failed, failed }));
   };
 
   const renderTableHeader = (
@@ -478,8 +471,7 @@ export default function RulePackTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <p className="text-sm text-muted-foreground">{t('rulePacks.tabSubtitle')}</p>
+      <div className="flex justify-end">
         <div className="flex shrink-0 items-center gap-2">
           <Button className="gap-1" onClick={() => setCreateOpen(true)}>
             {t('rulePacks.createBtn')}
@@ -547,9 +539,6 @@ export default function RulePackTab() {
               <Badge variant="secondary" className="shrink-0 font-normal">
                 {t('rulePacks.packCount', { count: customPacks.length })}
               </Badge>
-              <span className="ml-auto hidden truncate text-xs text-muted-foreground/80 sm:inline">
-                {t('rulePacks.customSectionHint')}
-              </span>
             </div>
             <CardContent className="p-0">
               {customPacks.length === 0 ? (
@@ -595,9 +584,6 @@ export default function RulePackTab() {
               </Badge>
               <span className="shrink-0 text-xs text-muted-foreground">
                 {t('rulePacks.builtinRulesTotal', { count: builtinRuleTotal })}
-              </span>
-              <span className="ml-auto hidden truncate text-xs text-muted-foreground/80 sm:inline">
-                {t('rulePacks.builtinReadOnlyHint')}
               </span>
               <ChevronDown
                 className={cn(

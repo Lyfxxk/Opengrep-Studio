@@ -6,10 +6,7 @@ export default function ConfigsPage() {
   const { t } = useTranslation();
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold">{t('configs.pageTitle')}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{t('configs.pageSubtitle')}</p>
-      </div>
+      <h1 className="text-xl font-semibold">{t('configs.pageTitle')}</h1>
       <ScanConfigTab />
     </div>
   );
