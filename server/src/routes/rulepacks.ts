@@ -571,7 +571,14 @@ rulepackRoutes.post(
         const destDir = customPackDir(packId);
         fs.mkdirSync(config.customRulesDir, { recursive: true });
         // zip 顶层文件夹名不可控（可能含中文），必须用安全复制（见 copyDirectory 注释）
-        await copyDirectory(root, destDir);
+        try {
+          await copyDirectory(root, destDir);
+        } catch (error) {
+          // 复制中途失败（磁盘满/超长文件名/杀软拦截）会把半成品残留在 customRulesDir：
+          // 记录尚未落库，只有启动漂移警告能看到它，直接清掉（与 finally 清 tmpDir 同口径）
+          fs.rmSync(destDir, { recursive: true, force: true });
+          throw error;
+        }
         const pack: RulePack = {
           id: packId,
           name: manifest.name,

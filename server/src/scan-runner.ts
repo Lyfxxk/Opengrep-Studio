@@ -183,22 +183,26 @@ const STALE_SCAN_GRACE_MS = 2 * 60 * 1000;
  * 判据不能是「所有 scanning」——dev.mjs 允许第二个实例共用同一个数据目录（AI 改代码时
  * 也会起项目，两边必须互不干扰），无判据会把另一个实例正在跑的扫描直接打成失败。
  * 超过超时仍在 scanning 的行，任何存活进程都不可能产生（引擎侧到点必终止），只可能是崩溃残骸。
+ *
+ * 排队中的行（queued_at 有值）不参与清理：槽位只有 2 个、每扫描硬超时 10 分钟，深队列的
+ * 合法等待可以远超「超时 + 宽限」，时间戳证明不了排队扫描已死。另一实例排队是正常状态，
+ * 本实例崩溃残留的排队行由用户在界面手动取消（取消路由对排队行直接落库失败）。
  */
 export function markStaleScansFailed(): void {
   const cutoff = new Date(Date.now() - (config.scanTimeoutMs + STALE_SCAN_GRACE_MS)).toISOString();
   const rows = db.prepare(
     `SELECT id FROM scans
-     WHERE status = 'scanning' AND COALESCE(started_at, queued_at, scanned_at) < ?`,
+     WHERE status = 'scanning' AND queued_at IS NULL
+       AND COALESCE(started_at, scanned_at) < ?`,
   ).all(cutoff) as Array<{ id: string }>;
   for (const row of rows) {
+    // 覆盖两类残骸：引擎已开跑（started_at 判据）+ 快照复制/哈希准备中断（无 started_at，
+    // 按发起时间判据——快照上限 1GB，超时 + 宽限足够复制完）
     updateScan(row.id, {
       status: 'failed',
       finishedAt: new Date().toISOString(),
       message: '服务重启导致扫描中断，请重新发起',
       errorCode: 'scan.interrupted',
-      // 排队标记的契约是"status 仍 scanning 且有值 = 排队中"（见 db.ts ScanRecord.queuedAt）；
-      // 重启后不再有槽位轮转来清它，这里必须一并置 null，否则失败记录永久残留排队标记
-      queuedAt: null,
     });
   }
 }

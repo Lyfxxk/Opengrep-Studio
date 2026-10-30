@@ -47,8 +47,17 @@ test('超过引擎超时仍在 scanning 的残骸被标记失败并带上可翻�
   const orphan = getScan('scan-orphan');
   assert.equal(orphan.status, 'failed');
   assert.equal(orphan.errorCode, 'scan.interrupted');
-  assert.equal(orphan.queuedAt, undefined, '排队标记必须随失败一并清除');
   assert.ok(orphan.finishedAt, '失败记录要有结束时间');
+});
+
+test('长时间排队的扫描不被启动清理误杀（另一实例可能只是队列深、排得久）', () => {
+  seedScanning('scan-queued-long', { queuedAt: hoursAgo(3), scannedAt: hoursAgo(3) });
+  markStaleScansFailed();
+  assert.equal(
+    getScan('scan-queued-long').status,
+    'scanning',
+    '排队等待可以合法超过超时+宽限（2 槽位 × 硬超时），不能按时间判死',
+  );
 });
 
 test('失败错误码与插值参数落库后可原样回读', () => {

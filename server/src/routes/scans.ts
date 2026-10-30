@@ -196,11 +196,20 @@ scanRoutes.post('/api/projects/:id/scans', asyncHandler(async (req, res) => {
 
   const scanDir = scanSourceDir(project.id, scan.id);
   fs.mkdirSync(path.dirname(scanDir), { recursive: true });
-  // 异步逐文件复制，快照复制（上限 1GB）期间事件循环不再冻结；不用 fs.cpSync：
-  // Node 22 在 Windows 上源路径含非 ASCII 字符时会直接终止进程（见 copyDirectory 注释）
-  await copyDirectory(pendingDir, scanDir);
-
+  // 先落库再复制快照：复制可能耗时数秒到数十秒，期间升级/删项目等互斥方查的都是 DB 里的
+  // scanning 行，后置落库会让整个复制窗口对所有互斥检查不可见（升级能溜进去替换引擎、
+  // 删项目能连 pending 目录一起删掉）。且插入前的代码全同步，升级检查与落库之间不存在
+  // 异步交错窗口。复制失败时清掉半成品快照并删除记录，对外仍按本次请求报错。
   insertScan(scan);
+  try {
+    // 异步逐文件复制，快照复制（上限 1GB）期间事件循环不再冻结；不用 fs.cpSync：
+    // Node 22 在 Windows 上源路径含非 ASCII 字符时会直接终止进程（见 copyDirectory 注释）
+    await copyDirectory(pendingDir, scanDir);
+  } catch (error) {
+    fs.rmSync(scanSnapshotRoot(project.id, scan.id), { recursive: true, force: true });
+    deleteScan(scan.id);
+    throw error;
+  }
   enqueueScan(scan.id, plan);
   res.status(201).json(scan);
 }));

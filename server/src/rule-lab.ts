@@ -405,6 +405,11 @@ export async function runRuleLab(
     return result;
   } finally {
     result.durationMs = Date.now() - startedAt;
-    fs.rmSync(scratchDir, { recursive: true, force: true });
+    try {
+      fs.rmSync(scratchDir, { recursive: true, force: true });
+    } catch {
+      // Windows 上引擎子进程刚退出、文件句柄短暂未释放（或杀软扫描占用）时会抛 EPERM/EBUSY：
+      // 清理失败不该把一次已成功的运行变成 500，残留的 scratch 目录在 dataDir/rulelab 下可手动清
+    }
   }
 }

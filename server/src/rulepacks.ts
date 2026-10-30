@@ -43,7 +43,12 @@ export function packRuleFiles(pack: { id: string; builtin: boolean }): string[] 
     return fs.existsSync(file) ? [file] : [];
   }
   const dir = customPackDir(pack.id);
-  if (fs.existsSync(dir)) return collectRuleFiles(path.join(dir, 'rules'));
+  if (fs.existsSync(dir)) {
+    // rules/ 子目录缺失或变成普通文件按「无规则文件」处理（漂移只报不删的口径）：
+    // 直接 readdirSync 抛 ENOENT/ENOTDIR 会把启动漂移报告和扫描创建一起炸掉
+    const rulesStat = fs.statSync(path.join(dir, 'rules'), { throwIfNoEntry: false });
+    return rulesStat?.isDirectory() ? collectRuleFiles(path.join(dir, 'rules')) : [];
+  }
   const file = customPackPath(pack.id);
   return fs.existsSync(file) ? [file] : [];
 }
