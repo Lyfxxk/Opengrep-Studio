@@ -882,10 +882,11 @@ assert(manifest.engine?.name === 'opengrep' && Boolean(manifest.engine?.version)
   'manifest 引擎版本', JSON.stringify(manifest.engine));
 const scanRecord = (await api('GET', `/api/scans/${packScanDone.id}`)).json;
 assert(scanRecord.srcHash === manifest.source.sha256, '扫描记录与 manifest 哈希一致');
-const projectScanList = (await api('GET', `/api/projects/${pid}/scans`)).json;
+const projectScanList = (await api('GET', `/api/projects/${packScanDone.projectId}/scans`)).json;
 assert(
-  projectScanList.every((s) => !('configSnapshot' in s) && !('commandLine' in s) && !('srcHash' in s)),
-  '项目扫描列表省略只用于报告/清单的重型字段');
+  Array.isArray(projectScanList)
+    && projectScanList.every((s) => !('configSnapshot' in s) && !('commandLine' in s) && !('srcHash' in s)),
+  '项目扫描列表省略只用于报告/清单的重型字段', JSON.stringify(projectScanList).slice(0, 120));
 assert(typeof scanRecord.engineVersion === 'string' && scanRecord.engineVersion.length > 0,
   '扫描记录保存了扫描时的引擎版本', scanRecord.engineVersion);
 assert(manifest.engine.version === scanRecord.engineVersion,
