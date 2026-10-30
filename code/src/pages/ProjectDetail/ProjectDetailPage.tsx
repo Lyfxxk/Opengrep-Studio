@@ -43,6 +43,8 @@ export default function ProjectDetailPage() {
   const pollErrorShownRef = useRef(false);
   // 竞态守卫：id 切换/组件卸载后丢弃 in-flight 响应
   const requestSeqRef = useRef(0);
+  // 上传/克隆在途时 :id 可能已切走：回调按发起时的 id 比对，避免把旧项目的结果写进新项目页
+  const activeIdRef = useRef(id);
   const loadedOnceRef = useRef(false);
 
   const refresh = useCallback(async () => {
@@ -102,12 +104,15 @@ export default function ProjectDetailPage() {
 
   // 路由 :id 切换会复用同一组件实例：先重置上一个项目留下的状态，避免旧数据在新 URL 下闪现甚至误操作
   useEffect(() => {
+    activeIdRef.current = id;
     setProject(null);
     setScans([]);
     setLoadFailed(false);
     loadedOnceRef.current = false;
     prevScansRef.current = [];
     pollErrorShownRef.current = false;
+    // upload 也要清：陈旧的「源码已导入」会让无源码项目页误开扫描按钮（真有源码的项目由 refresh 恢复）
+    setUpload({ status: 'idle' });
   }, [id]);
 
   useEffect(() => {
@@ -176,6 +181,7 @@ export default function ProjectDetailPage() {
     options: { respectGitignore: boolean },
   ) => {
     if (!id) return;
+    const requestId = id;
     const label =
       items.length === 1
         ? items[0].file.name
@@ -194,11 +200,13 @@ export default function ProjectDetailPage() {
       const result = await api.uploadSource(id, items, {
         respectGitignore: options.respectGitignore,
         onProgress: (progress) => {
+          if (activeIdRef.current !== requestId) return;
           setUpload((prev) =>
             prev.status === 'uploading' ? { ...prev, progress } : prev,
           );
         },
       });
+      if (activeIdRef.current !== requestId) return;
       setUpload({
         status: 'uploaded',
         fileName: label,
@@ -212,6 +220,7 @@ export default function ProjectDetailPage() {
         );
       }
     } catch (error) {
+      if (activeIdRef.current !== requestId) return;
       // 与克隆失败同口径：上传失败只清服务端临时目录、不动既有源码。回到 idle 后交给
       // refresh 的 hasSource 恢复逻辑找回「源码已导入」态，扫描按钮不至于被误禁用
       setUpload({ status: 'idle' });
@@ -222,6 +231,7 @@ export default function ProjectDetailPage() {
 
   const handleCloneSource = async (url: string, ref: string) => {
     if (!id) return;
+    const requestId = id;
     setUpload({
       status: 'uploading',
       sourceType: 'clone',
@@ -229,6 +239,7 @@ export default function ProjectDetailPage() {
     });
     try {
       const result = await api.cloneSource(id, url, ref || undefined);
+      if (activeIdRef.current !== requestId) return;
       setUpload({ status: 'uploaded', sourceType: 'clone', fileName: url });
       if (result.languageStats) {
         setProject((prev) =>
@@ -236,6 +247,7 @@ export default function ProjectDetailPage() {
         );
       }
     } catch (error) {
+      if (activeIdRef.current !== requestId) return;
       setUpload({ status: 'idle' });
       // 服务端克隆失败只清临时目录、不动既有源码；toast 明说这一点，避免用户误以为要重新上传
       const message = error instanceof Error ? error.message : String(error);
