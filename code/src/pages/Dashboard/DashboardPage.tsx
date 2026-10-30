@@ -252,10 +252,12 @@ export default function DashboardPage() {
             <CardContent className="flex min-h-0 flex-1 flex-col justify-center gap-3 overflow-y-auto">
               {aggregated.total === 0 ? (
                 <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-                  {hasData
-                    ? t('dashboard.riskDistEmpty')
-                    : projects === null
-                      ? t('dashboard.loadingData')
+                  {risks === null
+                    ? loadFailed
+                      ? t('common.loadFailedHint')
+                      : t('dashboard.loadingData')
+                    : hasData
+                      ? t('dashboard.riskDistEmpty')
                       : t('dashboard.riskDistEmptyProject')}
                 </p>
               ) : (
