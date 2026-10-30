@@ -195,6 +195,10 @@ export default function RulePackTab() {
   };
 
   const handleFileChange = (file: File | undefined) => {
+    // 先清空选择：非法文件被拒后用户重选同一个文件时，input 不清空不会再触发 change
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
     if (!file) return;
     const yamlExt = /\.ya?ml$/i;
     if (!yamlExt.test(file.name)) {
@@ -209,9 +213,6 @@ export default function RulePackTab() {
     setUploadLanguage('Java');
     setUploadFile(file);
     setUploadOpen(true);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
   };
 
   const handleUploadConfirm = async () => {
@@ -247,6 +248,10 @@ export default function RulePackTab() {
   };
 
   const handleImportZip = (file: File | undefined) => {
+    // 与上传入口同口径：先清空 input，非法 zip 被拒后还能重新选中同一个文件
+    if (importInputRef.current) {
+      importInputRef.current.value = '';
+    }
     if (!file) return;
     if (!/\.zip$/i.test(file.name)) {
       toast.error(t('rulePacks.zipOnly'));
@@ -255,9 +260,6 @@ export default function RulePackTab() {
     if (file.size > MAX_IMPORT_BYTES) {
       toast.error(t('rulePacks.zipTooLarge'));
       return;
-    }
-    if (importInputRef.current) {
-      importInputRef.current.value = '';
     }
     setSubmitting(true);
     api

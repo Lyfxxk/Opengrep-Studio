@@ -726,7 +726,8 @@ export const api = {
   },
 
   async countConfigsUsingRulePack(rulePackId: string): Promise<number> {
-    const configs = await this.listConfigs();
+    // 用 api.listConfigs 而不是 this：调用方一旦解构方法，this 绑定就丢了
+    const configs = await api.listConfigs();
     return configs.filter((config) => config.rulePackIds.includes(rulePackId)).length;
   },
 
