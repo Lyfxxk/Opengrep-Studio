@@ -430,6 +430,10 @@ async function runScan(scanId: string, plan: ScanPlan): Promise<void> {
     });
     // runEngine resolve 即引擎已退出（close/error 任一路径都会 resolve）：从登记表移除，取消接口不再对其生效
     runningEngines.delete(scanId);
+    // 引擎运行期间另一实例可能已把取消落库（requestScanCancel 只查本进程登记表，跨实例时
+    // 取消路由直接落 failed）：与排队复查同款，状态不是 scanning 就退出，
+    // 否则收尾会把 completed 盖到取消记录上，留下 completed + scan.cancelled 的矛盾数据
+    if (getScan(scanId)?.status !== 'scanning') return;
     // 引擎被手动取消：按取消语义落库，而不是把 kill 后的空输出/非零退出码报成引擎故障
     if (cancelRequested.has(scanId)) {
       throw new ScanError('scan.cancelled', '已被手动取消');
