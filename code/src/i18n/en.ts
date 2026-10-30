@@ -719,7 +719,7 @@ const en: typeof zh = {
     confirmSave: 'Save',
     confirmExampleTitle: 'Loading an example will overwrite current content',
     confirmExampleDesc:
-      'The current rule YAML differs from every built-in example; loading one replaces the rule and test samples, and cannot be undone.',
+      'Your current content differs from every built-in example; loading one replaces the rule and test samples, and cannot be undone.',
     confirmContinue: 'Load anyway',
   },
   // Backend error-code contract (HttpError codes across server modules), translated per language

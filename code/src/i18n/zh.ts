@@ -698,7 +698,7 @@ const zh = {
     overwriteWarning: '将用当前编辑器中的 YAML 替换该规则包的全部内容，且不可撤销。内置规则包不可覆盖。',
     confirmSave: '确认保存',
     confirmExampleTitle: '载入示例将覆盖当前内容',
-    confirmExampleDesc: '当前规则 YAML 与所有内置示例都不同，载入示例会替换规则和测试样本，且不可撤销。',
+    confirmExampleDesc: '当前内容与所有内置示例都不同，载入示例会替换规则和测试样本，且不可撤销。',
     confirmContinue: '继续载入',
   },
   // 后端错误码契约（server/src 各模块 HttpError 的 code），前端按 apiErrors.<code> 翻译
