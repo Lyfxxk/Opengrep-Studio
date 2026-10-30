@@ -150,15 +150,20 @@ export async function diffSnapshots(beforeDir: string, afterDir: string): Promis
     if (entryBefore.sha256 === entryAfter.sha256) continue;
     // 与 added/removed 同口径：超过上限不再追加，否则大仓库会把响应撑到全部文件量级
     if (modified.length >= DIFF_LIST_CAP) continue;
-    let lineStats: { added: number; removed: number } | null = null;
+    let lineStatsRaw: { added: number; removed: number } | null = null;
     try {
-      lineStats = countLineDiff(
+      lineStatsRaw = countLineDiff(
         await readForDiff(path.join(beforeDir, rel)),
         await readForDiff(path.join(afterDir, rel)),
       );
     } catch {
-      lineStats = null;
+      lineStatsRaw = null;
     }
+    // 行级统计读出 0/0 但文件哈希不同 = 差异落在读取窗口（2MB / 2 万行）之外，
+    // 与 LCS 超限同口径返回 null，界面按「内容有变但无法逐行统计」呈现而不是「+0 / -0」
+    const lineStats = lineStatsRaw && (lineStatsRaw.added > 0 || lineStatsRaw.removed > 0)
+      ? lineStatsRaw
+      : null;
     modified.push({
       path: rel,
       addedLines: lineStats?.added ?? null,

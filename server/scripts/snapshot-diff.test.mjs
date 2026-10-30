@@ -47,6 +47,26 @@ test('added/removed 与行级统计相对 before→after', async () => {
   }
 });
 
+test('差异落在行级读取窗口之外：标记为不可逐行统计，而不是 +0 / -0', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'og-diff-window-'));
+  const before = path.join(root, 'before');
+  const after = path.join(root, 'after');
+  try {
+    const prefix = 'a'.repeat(2 * 1024 * 1024);
+    writeTree(before, { 'big.txt': `${prefix}tail-old\n` });
+    writeTree(after, { 'big.txt': `${prefix}tail-new\n` });
+
+    const diff = await diffSnapshots(before, after);
+    const changed = diff.modified.find((file) => file.path === 'big.txt');
+    assert.ok(changed, 'big.txt 应进入 modified');
+    assert.equal(changed.diffable, false, '读取窗口外的差异不能声称逐行可统计');
+    assert.equal(changed.addedLines, null);
+    assert.equal(changed.removedLines, null);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('modified 列表超过 500 条时截断（防大仓库撑爆响应）', async () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'og-diff-cap-'));
   const before = path.join(root, 'before');
