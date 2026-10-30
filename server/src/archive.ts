@@ -176,7 +176,7 @@ export async function extractZipSafely(buffer: Buffer, destDir: string): Promise
 }
 
 /** TAR / TAR.GZ / TGZ（bz2/xz 不在支持清单里，入口 isArchiveFileName 已提前拒绝） */
-function extractTarArchive(buffer: Buffer, destDir: string, fileName: string): void {
+async function extractTarArchive(buffer: Buffer, destDir: string, fileName: string): Promise<void> {
   const lower = fileName.toLowerCase();
   fs.rmSync(destDir, { recursive: true, force: true });
   fs.mkdirSync(destDir, { recursive: true });
@@ -184,15 +184,15 @@ function extractTarArchive(buffer: Buffer, destDir: string, fileName: string): v
     os.tmpdir(),
     `ogsrc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.tar`,
   );
-  fs.writeFileSync(tmpFile, buffer);
+  // 异步写/解压：1GB 快照的同步 tar.x 会把事件循环整段冻住，health 等接口全程无响应
+  await fs.promises.writeFile(tmpFile, buffer);
   // tar 头自带每个条目的原始体积：边解压边计数，炸弹在写盘前就被拦下
   let entries = 0;
   let bytes = 0;
   try {
-    tar.x({
+    await tar.x({
       file: tmpFile,
       cwd: destDir,
-      sync: true,
       gzip: lower.endsWith('.tar.gz') || lower.endsWith('.tgz'),
       filter: (_entryPath, stat) => {
         entries += 1;
@@ -378,7 +378,7 @@ export async function extractArchive(
       return await extractZipSafely(buffer, destDir);
     }
     if (TAR_RE.test(lower)) {
-      extractTarArchive(buffer, destDir, fileName);
+      await extractTarArchive(buffer, destDir, fileName);
       return enforceExtractLimits(destDir, 'tar');
     }
     await extractSevenZ(buffer, destDir, fileName);
