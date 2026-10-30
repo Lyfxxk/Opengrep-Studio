@@ -47,7 +47,8 @@ export default function EngineCard({ health, scanRunning, onUpgraded }: EngineCa
     if (ready && managed) void check(false);
   }, [ready, managed, check]);
 
-  // 升级完成后提示并刷新 health；失败只提示，现有引擎不受影响
+  // 升级完成后刷新 health 让卡片显示新版本；成功/失败结果本身就渲染在卡片里，
+  // 再弹一条 toast 只是把同一句话说两遍
   useEffect(() => {
     if (!running) return;
     let cancelled = false;
@@ -58,11 +59,8 @@ export default function EngineCard({ health, scanRunning, onUpgraded }: EngineCa
           if (cancelled) return;
           setUpgrade(next);
           if (next.state === 'done') {
-            toast.success(next.message ?? t('engine.upgradedToast'));
             void check(true);
             onUpgraded();
-          } else if (next.state === 'error') {
-            toast.error(next.message ?? t('engine.upgradeFailedToast'));
           }
         } catch {
           // 轮询失败忽略：升级在服务端继续，下一轮再取状态
@@ -73,7 +71,7 @@ export default function EngineCard({ health, scanRunning, onUpgraded }: EngineCa
       cancelled = true;
       clearInterval(timer);
     };
-  }, [running, check, onUpgraded, t]);
+  }, [running, check, onUpgraded]);
 
   const startUpgrade = async () => {
     setUpgrade({ state: 'running', phase: 'downloading', percent: 0 });
@@ -97,7 +95,6 @@ export default function EngineCard({ health, scanRunning, onUpgraded }: EngineCa
               className="h-7 gap-1 px-2 text-xs"
               disabled={checking || running}
               onClick={() => void check(true)}
-              title={t('engine.checkUpdateTitle')}
             >
               {checking ? <Loader2 className="size-3.5 animate-spin" /> : <RefreshCw className="size-3.5" />}
               {t('engine.checkUpdate')}
@@ -132,7 +129,6 @@ export default function EngineCard({ health, scanRunning, onUpgraded }: EngineCa
                 source: health.engineSourceLabel ?? health.engineSource ?? t('engine.sourceUnknown'),
               })}
             </p>
-
             <div className="space-y-2 py-3">
               {!managed && (
                 <p className="text-xs text-muted-foreground">{t('engine.selfManaged')}</p>
@@ -169,7 +165,6 @@ export default function EngineCard({ health, scanRunning, onUpgraded }: EngineCa
                     className="h-7 gap-1 px-2 text-xs"
                     disabled={!update.canUpgrade || scanRunning || running}
                     onClick={() => void startUpgrade()}
-                    title={scanRunning ? t('engine.upgradeBlockedTitle') : undefined}
                   >
                     <DownloadCloud className="size-3.5" />
                     {t('engine.upgrade')}
