@@ -284,7 +284,6 @@ for (const sql of [
   }
 }
 
-
 type SqlRow = Record<string, null | string | number | bigint>;
 
 function str(value: string | null | undefined): string | undefined {
@@ -464,7 +463,6 @@ export function deleteScan(id: string): void {
   }
 }
 
-
 export function getScan(id: string): ScanRecord | undefined {
   const row = db.prepare('SELECT * FROM scans WHERE id = ?').get(id) as SqlRow | undefined;
   return row ? rowToScan(row) : undefined;
@@ -533,7 +531,6 @@ export function updateScan(id: string, patch: Partial<Omit<ScanRecord, 'id' | 'p
   values.push(id);
   db.prepare(`UPDATE scans SET ${sets.join(', ')} WHERE id = ?`).run(...values);
 }
-
 
 const SEVERITY_RANK: Record<Severity, number> = { critical: 0, high: 1, medium: 2, low: 3 };
 
@@ -807,7 +804,6 @@ export function deleteRulePack(id: string): void {
     }
   }
 }
-
 
 function rowToReview(row: SqlRow): Review {
   return {
