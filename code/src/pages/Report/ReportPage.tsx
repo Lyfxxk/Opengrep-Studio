@@ -260,7 +260,7 @@ export default function ReportPage() {
     return () => {
       mounted = false;
     };
-  }, [scanId, t]);
+  }, [id, scanId, t]);
 
   /** 文件级聚合（行动清单）与规则级聚合（附录），口径与离线 HTML 报告一致 */
   const { fileList, ruleList } = useMemo(() => {
