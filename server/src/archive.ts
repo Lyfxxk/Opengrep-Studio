@@ -116,9 +116,18 @@ export async function extractZipSafely(buffer: Buffer, destDir: string): Promise
     );
   }
 
+  // 预检通过条目名只校验一次并缓存：第二遍落盘时若再解析一遍，两处逻辑容易漂移
+  const names: string[] = [];
   let totalBytes = 0;
   for (const entry of fileEntries) {
     const name = safeRelativePath(entry.entryName);
+    if (!name) {
+      throw new HttpError(
+        400,
+        `ZIP 包内含不安全的路径条目：${entry.entryName}`,
+        { code: 'archive.zipUnsafePath', params: { entry: entry.entryName } },
+      );
+    }
     // 声明体积为 0 却带压缩数据 = 骗过预检的炸弹条目：adm-zip 对声明 0 的条目解压不设上限
     if (entry.header.size === 0 && entry.header.compressedSize > 0) {
       throw new HttpError(
@@ -135,19 +144,14 @@ export async function extractZipSafely(buffer: Buffer, destDir: string): Promise
         { code: 'archive.zipTooLarge', params: { gb: config.maxExtractedBytes / 1024 ** 3 } },
       );
     }
-    if (!name) {
-      throw new HttpError(
-        400,
-        `ZIP 包内含不安全的路径条目：${entry.entryName}`,
-        { code: 'archive.zipUnsafePath', params: { entry: entry.entryName } },
-      );
-    }
+    names.push(name);
   }
 
   await fs.promises.rm(destDir, { recursive: true, force: true });
   let extractedBytes = 0;
-  for (const entry of fileEntries) {
-    const target = path.join(destDir, safeRelativePath(entry.entryName));
+  for (let index = 0; index < fileEntries.length; index += 1) {
+    const entry = fileEntries[index];
+    const target = path.join(destDir, names[index]);
     if (!isPathWithin(destDir, target)) {
       throw new HttpError(
         400,
