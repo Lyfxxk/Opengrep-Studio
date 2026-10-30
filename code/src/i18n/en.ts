@@ -234,8 +234,7 @@ const en: typeof zh = {
     cloning: 'Cloning the repository (shallow clone of the latest commit) — may take a minute or more depending on repo size…',
     uploading: 'Uploading…',
     dropTitle: 'Drag a source folder or archive here, or click to pick an archive',
-    dropHint:
-      'ZIP / 7Z / RAR / TAR·GZ archives, or drop a whole folder · Max {{limit}}MB per file · Path-traversal protection enabled',
+    dropHint: 'ZIP / 7Z / RAR / TAR·GZ, or a whole folder · Max {{limit}}MB per file',
     respectIgnoreTitle: 'Ignore files per .gitignore (recommended)',
     ignoreOn:
       'Uploaded content is filtered by .gitignore / .opengrepignore, matching direct repo scans; ignored files like .env never enter the scan.',
@@ -243,8 +242,6 @@ const en: typeof zh = {
       'Scan everything you upload, including ignored files like .env — for deep hunts for hardcoded secrets.',
     branchPlaceholder: 'Branch / tag (optional)',
     cloneButton: 'Clone & import',
-    cloneHint:
-      'You can also paste a Git URL (GitHub / GitLab / Gitee and other public repos); the server shallow-clones the latest commit — equivalent to uploading source.',
   },
   projects: {
     newProject: 'New project',
@@ -375,26 +372,14 @@ const en: typeof zh = {
     scanFailedToast: 'Scan failed: {{reason}}',
     unknownReason: 'unknown reason',
     loadFailedToast: 'Failed to load project: {{error}}',
-    configUpdatedToast: 'Scan config updated',
     sourceRestored: 'Source imported',
     uploadFallback: 'Upload',
     multiFileLabel: '{{dir}} ({{count}} files)',
     cloneLabelWithRef: '{{url}} ({{ref}})',
-    uploadOkPlain: 'Source uploaded — ready to scan',
-    uploadOkFiles: 'Source uploaded — {{files}} files in total — ready to scan',
-    uploadOkIgnored: 'Source uploaded — {{ignored}} files ignored via .gitignore — ready to scan',
-    uploadOkBoth: 'Source uploaded — {{files}} files in total, {{ignored}} ignored via .gitignore — ready to scan',
-    cloneSuccessToast: 'Repository cloned — {{count}} files — ready to scan',
     // 克隆失败只清临时目录，既有源码不受影响；前导空格用于与错误消息拼接
     cloneFailedSourceKept: ' (previously uploaded source remains unchanged)',
-    scanSubmittedToast: 'Scan submitted — up to 2 scans run in parallel, extra ones are queued…',
-    baselineSetToast: 'Baseline set — future scans will compare against it automatically',
-    baselineUnsetToast: 'Baseline cleared — future scans will no longer compare automatically',
-    sarifImportedBase: 'SARIF imported: {{count}} issues — see the scan history',
-    sarifImportedCompared: 'SARIF imported: {{count}} issues, compared against the baseline — see the scan history',
     notFound: 'Project not found or deleted',
     baselineBadge: 'Baseline {{id}}',
-    noDescription: 'No description',
     createdAt: 'created {{time}}',
     configLabel: 'Scan config',
     configUnboundPlaceholder: 'Unbound (auto-created on one-click scan)',
@@ -402,8 +387,6 @@ const en: typeof zh = {
     configSummaryWithDisabled:
       '{{packs}} rule packs ({{disabled}} disabled and skipped in scans) · {{excludes}} exclude paths',
     viewConfigs: 'View configs',
-    unboundWarning:
-      'No scan config bound: a one-click scan auto-creates a "Default scan config" (all enabled built-in rule packs) and binds it to this project.',
     noConfigsPrefix:
       'No scan configs exist yet. You can hit "Scan with all built-in rule packs" on the right — a "Default scan config" will be created and bound automatically; or create one in ',
     noConfigsMiddle: ' and bind it (rule packs are managed in ',
@@ -413,7 +396,6 @@ const en: typeof zh = {
     scanningBtn: 'Scanning…',
     startScanUnboundTitle:
       'No config bound: a "Default scan config" (all enabled built-in rule packs) will be created automatically and used for this scan.',
-    importSourceTitle: 'Import source',
     scanHistoryTitle: 'Scan history',
     sarifHint: 'Scan results from external tools (SARIF 2.x) can be imported for unified viewing and comparison.',
     importSarif: 'Import SARIF',

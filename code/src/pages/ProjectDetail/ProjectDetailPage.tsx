@@ -135,7 +135,6 @@ export default function ProjectDetailPage() {
     try {
       const updated = await api.updateProject(id, { configId });
       setProject(updated);
-      toast.success(t('projectDetail.configUpdatedToast'));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : String(error));
     }
@@ -207,17 +206,6 @@ export default function ProjectDetailPage() {
         progress: 100,
         ignoredCount: result.ignoredCount,
       });
-      const uploadToastKey =
-        result.fileCount > 0
-          ? result.ignoredCount
-            ? 'projectDetail.uploadOkBoth'
-            : 'projectDetail.uploadOkFiles'
-          : result.ignoredCount
-            ? 'projectDetail.uploadOkIgnored'
-            : 'projectDetail.uploadOkPlain';
-      toast.success(
-        t(uploadToastKey, { files: result.fileCount, ignored: result.ignoredCount ?? 0 }),
-      );
       if (result.languageStats) {
         setProject((prev) =>
           prev ? { ...prev, languageStats: result.languageStats, hasSource: true } : prev,
@@ -242,7 +230,6 @@ export default function ProjectDetailPage() {
     try {
       const result = await api.cloneSource(id, url, ref || undefined);
       setUpload({ status: 'uploaded', sourceType: 'clone', fileName: url });
-      toast.success(t('projectDetail.cloneSuccessToast', { count: result.fileCount }));
       if (result.languageStats) {
         setProject((prev) =>
           prev ? { ...prev, languageStats: result.languageStats, hasSource: true } : prev,
@@ -264,7 +251,6 @@ export default function ProjectDetailPage() {
       });
       setScans((prev) => [record, ...prev]);
       setUpload({ status: 'idle' });
-      toast.info(t('projectDetail.scanSubmittedToast'));
       // 服务端可能在提交时自动绑定了「默认扫描配置」，立即刷新让按钮与配置选择器同步
       void refresh();
     } catch (error) {
@@ -277,7 +263,6 @@ export default function ProjectDetailPage() {
     try {
       const updated = await api.updateProject(id, { baselineScanId: scanId });
       setProject(updated);
-      toast.info(t('projectDetail.baselineSetToast'));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : String(error));
     }
@@ -288,7 +273,6 @@ export default function ProjectDetailPage() {
     try {
       const updated = await api.updateProject(id, { baselineScanId: null });
       setProject(updated);
-      toast.info(t('projectDetail.baselineUnsetToast'));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : String(error));
     }
@@ -303,12 +287,8 @@ export default function ProjectDetailPage() {
     if (!id) return;
     setImportingSarif(true);
     try {
-      const scan = await api.importSarif(id, file, project?.baselineScanId ?? undefined);
-      toast.success(
-        project?.baselineScanId
-          ? t('projectDetail.sarifImportedCompared', { count: scan.issueCount })
-          : t('projectDetail.sarifImportedBase', { count: scan.issueCount }),
-      );
+      // 导入结果就是扫描历史里多出的一行，不再另弹提示
+      await api.importSarif(id, file, project?.baselineScanId ?? undefined);
       await refresh();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : String(error));
@@ -356,7 +336,7 @@ export default function ProjectDetailPage() {
             )}
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
-            {project.description || t('projectDetail.noDescription')} ·{' '}
+            {project.description ? `${project.description} · ` : ''}
             {t('projectDetail.createdAt', { time: formatDateTime(project.createdAt) })}
           </p>
           {configs.length > 0 ? (
@@ -394,9 +374,6 @@ export default function ProjectDetailPage() {
               <Link to="/configs" className="text-xs text-primary hover:underline">
                 {t('projectDetail.viewConfigs')}
               </Link>
-              {!project.configId && (
-                <span className="text-xs text-warning">{t('projectDetail.unboundWarning')}</span>
-              )}
             </div>
           ) : (
             <p className="mt-3 text-xs text-warning">
@@ -434,10 +411,7 @@ export default function ProjectDetailPage() {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base">{t('projectDetail.importSourceTitle')}</CardTitle>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <UploadZone
             state={upload}
             languageStats={project.languageStats}

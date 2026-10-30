@@ -342,7 +342,6 @@ export default function UploadZone({
           {t('upload.cloneButton')}
         </Button>
       </form>
-      <p className="mt-2 text-xs text-muted-foreground">{t('upload.cloneHint')}</p>
     </div>
   );
 }
