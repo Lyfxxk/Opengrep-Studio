@@ -130,7 +130,15 @@ projectRoutes.delete('/api/projects/:id', asyncHandler(async (req, res) => {
   }
   // 级联删除（扫描/问题/复核）在 db 层 deleteProject 内完成，路由不再重复调用
   deleteProject(project.id);
-  fs.rmSync(projectWorkspace(project.id), { recursive: true, force: true });
+  try {
+    fs.rmSync(projectWorkspace(project.id), { recursive: true, force: true });
+  } catch (error) {
+    // 记录已删，目录清不掉（Windows 文件占用/杀软扫描）只告警：回 500 会让界面误以为删除失败
+    console.warn(
+      `[projects] 项目 ${project.id} 工作区清理失败，可手动删除 ${projectWorkspace(project.id)}：` +
+        (error instanceof Error ? error.message : String(error)),
+    );
+  }
   res.status(204).end();
 }));
 
