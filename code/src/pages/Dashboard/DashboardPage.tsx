@@ -203,7 +203,6 @@ export default function DashboardPage() {
           icon={FolderOpen}
           label={t('dashboard.statsProjects')}
           value={projects?.length ?? '—'}
-          sub={projects === null ? undefined : hasData ? undefined : t('dashboard.noProjectsYet')}
         />
         <StatCard
           icon={Radar}
@@ -255,7 +254,7 @@ export default function DashboardPage() {
                   {risks === null
                     ? loadFailed
                       ? t('common.loadFailedHint')
-                      : t('dashboard.loadingData')
+                      : t('common.loading')
                     : hasData
                       ? t('dashboard.riskDistEmpty')
                       : t('dashboard.riskDistEmptyProject')}
