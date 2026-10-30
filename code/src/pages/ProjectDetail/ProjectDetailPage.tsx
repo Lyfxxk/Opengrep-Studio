@@ -37,6 +37,9 @@ export default function ProjectDetailPage() {
   // 规则包启用态：配置摘要需要区分「勾选了 N 个」和「实际生效 N 个」，停用包扫描时会被静默跳过
   const [rulePacks, setRulePacks] = useState<IRulePack[]>([]);
   const [upload, setUpload] = useState<UploadZoneState>({ status: 'idle' });
+  // 创建扫描的 POST 要等服务端复制完快照才返回（可达数十秒），期间 isScanning 仍为 false、
+  // 按钮照常可点：照 importingSarif 加 in-flight 守卫，防双击重复发创建请求
+  const [startingScan, setStartingScan] = useState(false);
   const pollTimerRef = useRef<number | null>(null);
   const prevScansRef = useRef<IScanResult[]>([]);
   // 轮询期间后端瞬断只弹一次错误，恢复后重置（避免每 1.5s 轰炸 toast）
@@ -113,6 +116,8 @@ export default function ProjectDetailPage() {
     pollErrorShownRef.current = false;
     // upload 也要清：陈旧的「源码已导入」会让无源码项目页误开扫描按钮（真有源码的项目由 refresh 恢复）
     setUpload({ status: 'idle' });
+    // 在途的创建请求不随 :id 切换取消，守卫标记同样不能带到新项目页
+    setStartingScan(false);
   }, [id]);
 
   useEffect(() => {
@@ -161,7 +166,7 @@ export default function ProjectDetailPage() {
   // 用户点「重新选择」回到 idle、或导入进行中时，不能把已存在的源码误判成不可扫描
   const sourceReady =
     upload.status === 'uploading' ? false : project?.hasSource === true || upload.status === 'uploaded';
-  const canStartScan = sourceReady && !isScanning;
+  const canStartScan = sourceReady && !isScanning && !startingScan;
 
   useEffect(() => {
     if (!isScanning) return;
@@ -257,6 +262,7 @@ export default function ProjectDetailPage() {
 
   const handleStartScan = async () => {
     if (!id || !project) return;
+    setStartingScan(true);
     try {
       const record = await api.startScan(id, {
         baselineScanId: project.baselineScanId ?? null,
@@ -267,6 +273,8 @@ export default function ProjectDetailPage() {
       void refresh();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : String(error));
+    } finally {
+      setStartingScan(false);
     }
   };
 
@@ -406,12 +414,12 @@ export default function ProjectDetailPage() {
           disabled={!canStartScan}
           onClick={() => void handleStartScan()}
         >
-          {isScanning ? (
+          {isScanning || startingScan ? (
             <Loader2 className="size-4 animate-spin" />
           ) : (
             <Play className="size-4" />
           )}
-          {isScanning
+          {isScanning || startingScan
             ? t('projectDetail.scanningBtn')
             : project.configId
               ? t('projectDetail.startScanBtn')
