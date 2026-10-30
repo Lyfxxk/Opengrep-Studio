@@ -178,6 +178,10 @@ export default function ConfigFormDialog({
       nextErrors.size = t('configs.sizeError');
     }
     setErrors(nextErrors);
+    // 高级参数默认折叠：超时/并发/体积校验失败时必须展开，否则错误提示看不见、点保存像没反应
+    if (nextErrors.timeout || nextErrors.jobs || nextErrors.size) {
+      setAdvancedOpen(true);
+    }
     if (Object.values(nextErrors).some(Boolean) || submitting) {
       return;
     }
