@@ -44,7 +44,7 @@ const en: typeof zh = {
     edit: 'Edit',
     delete: 'Delete',
     actions: 'Actions',
-    loadFailedHint: 'Load failed. Check the backend service and refresh to retry.',
+    loadFailedHint: 'Load failed. Check the backend service.',
     retry: 'Retry',
     backToProjects: 'Back to projects',
     close: 'Close',
@@ -271,8 +271,6 @@ const en: typeof zh = {
     createSubmit: 'Create project',
   },
   scans: {
-    subtitle:
-      'Overview of every project scan: jump straight to results and reports, and diff any two completed scans (even across projects).',
     emptyPrefix: 'No scan records yet. Head to ',
     emptySuffix: ' to create a project, upload source, and run your first scan.',
     selectAllAria: 'Select all scans',
@@ -285,11 +283,7 @@ const en: typeof zh = {
     colTime: 'Scanned at',
     actionResult: 'Results',
     actionReport: 'Report',
-    actionReportTitle: 'Open the test report',
     actionCompare: 'Compare',
-    actionCompareTitle: 'Two-snapshot diff against another completed scan',
-    batchDeleted_one: 'Deleted {{count}} scan',
-    batchDeleted_other: 'Deleted {{count}} scans',
     batchPartial_one: 'Deleted {{count}} scan; {{failed}} failed (it may have just started scanning)',
     batchPartial_other: 'Deleted {{count}} scans; {{failed}} failed (they may have just started scanning)',
     batchExtra:
@@ -627,7 +621,6 @@ const en: typeof zh = {
     legacyRulesetTitle: 'Legacy ruleset directory scan',
   },
   reports: {
-    subtitle: 'Test reports for every completed scan: view online, download a self-contained offline HTML, or export a reproducible manifest.',
     emptyPrefix: 'No scans to report on yet. Head to the ',
     emptySuffix: ' and finish a scan to generate a test report.',
     colProject: 'Project',
@@ -638,7 +631,6 @@ const en: typeof zh = {
     colDeliverables: 'Deliverables',
     actionOnline: 'Online report',
     actionHtml: 'Offline HTML',
-    actionHtmlTitle: 'Self-contained offline HTML report (printable to PDF / archivable)',
     actionManifest: 'manifest',
     actionManifestTitle: 'Reproducible manifest: source SHA-256 + engine command line + rule hashes',
     filterProjectPlaceholder: 'Filter by project',
