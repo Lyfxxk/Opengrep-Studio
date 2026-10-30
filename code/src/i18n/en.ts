@@ -93,8 +93,6 @@ const en: typeof zh = {
   },
   compare: {
     title: 'Two-snapshot diff',
-    subtitle:
-      'Compare the current scan with any completed scan (even from another project): issues are matched by fingerprint, files by snapshot content.',
     targetPlaceholder: 'Pick a scan to compare against…',
     targetItem: '{{id}} ({{time}})',
     runBtn: 'Run diff',
@@ -127,7 +125,6 @@ const en: typeof zh = {
     summaryNew: 'New issues',
     summaryFixed: 'Fixed',
     summaryRemaining: 'Remaining issues',
-    vsBaseline: 'vs baseline {{id}}',
   },
   reviewStatus: {
     pending: 'Pending review',
@@ -391,7 +388,6 @@ const en: typeof zh = {
     setBaseline: 'Set as baseline',
   },
   snippet: {
-    pickHint: 'Select an issue on the left to view its code snippet',
     knowledgeBtn: 'Rule knowledge',
     reReview: 'Re-review',
     review: 'Review',
@@ -406,7 +402,6 @@ const en: typeof zh = {
   },
   knowledge: {
     title: 'Rule knowledge · {{ruleId}}',
-    subtitle: 'Rule knowledge base: explanation, fix suggestion, and hit stats',
     loading: 'Aggregating rule knowledge…',
     empty: 'No data',
     zhMessageTitle: 'Explanation',
@@ -426,7 +421,6 @@ const en: typeof zh = {
     sampleNegatives: 'Negative (should not match)',
     upstreamLink: 'View the upstream rule source file',
     notFound: 'No rule definition found in installed rule packs; showing explanation and hit stats only.',
-    linkTitle: 'View rule knowledge (explanation / CWE / fix suggestion)',
   },
   configs: {
     pageTitle: 'Scan Configs',

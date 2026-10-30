@@ -93,7 +93,6 @@ const zhHant: typeof zh = {
   },
   compare: {
     title: '雙快照對比',
-    subtitle: '任選一次已完成掃描與目前掃描對比（可跨專案來源）：問題級按指紋比對，檔案級按快照內容比對。',
     targetPlaceholder: '選擇要對比的掃描…',
     targetItem: '{{id}}（{{time}}）',
     runBtn: '開始對比',
@@ -125,7 +124,6 @@ const zhHant: typeof zh = {
     summaryNew: '新增問題',
     summaryFixed: '已修復',
     summaryRemaining: '遺留問題',
-    vsBaseline: '對比基線 {{id}}',
   },
   reviewStatus: {
     pending: '待複核',
@@ -381,7 +379,6 @@ const zhHant: typeof zh = {
     setBaseline: '設為基線',
   },
   snippet: {
-    pickHint: '從左側選擇一個問題，檢視對應程式碼片段',
     knowledgeBtn: '規則知識',
     reReview: '重新複核',
     review: '人工複核',
@@ -396,7 +393,6 @@ const zhHant: typeof zh = {
   },
   knowledge: {
     title: '規則知識 · {{ruleId}}',
-    subtitle: '中文規則知識庫：規則解釋、修復建議與命中統計',
     loading: '正在聚合規則知識…',
     empty: '暫無資料',
     zhMessageTitle: '中文說明',
@@ -416,7 +412,6 @@ const zhHant: typeof zh = {
     sampleNegatives: '反例（不應命中）',
     upstreamLink: '檢視上游規則原始檔',
     notFound: '未在已安裝的規則包中找到該規則的定義，僅展示中文說明與命中統計。',
-    linkTitle: '檢視規則知識（中文說明 / CWE / 修復建議）',
   },
   configs: {
     pageTitle: '掃描設定',

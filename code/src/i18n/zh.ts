@@ -92,7 +92,6 @@ const zh = {
   },
   compare: {
     title: '双快照对比',
-    subtitle: '任选一次已完成扫描与当前扫描对比（可跨项目来源）：问题级按指纹比对，文件级按快照内容比对。',
     targetPlaceholder: '选择要对比的扫描…',
     targetItem: '{{id}}（{{time}}）',
     runBtn: '开始对比',
@@ -124,7 +123,6 @@ const zh = {
     summaryNew: '新增问题',
     summaryFixed: '已修复',
     summaryRemaining: '遗留问题',
-    vsBaseline: '对比基线 {{id}}',
   },
   reviewStatus: {
     pending: '待复核',
@@ -380,7 +378,6 @@ const zh = {
     setBaseline: '设为基线',
   },
   snippet: {
-    pickHint: '从左侧选择一个问题，查看对应代码片段',
     knowledgeBtn: '规则知识',
     reReview: '重新复核',
     review: '人工复核',
@@ -395,7 +392,6 @@ const zh = {
   },
   knowledge: {
     title: '规则知识 · {{ruleId}}',
-    subtitle: '中文规则知识库：规则解释、修复建议与命中统计',
     loading: '正在聚合规则知识…',
     empty: '暂无数据',
     zhMessageTitle: '中文说明',
@@ -415,7 +411,6 @@ const zh = {
     sampleNegatives: '反例（不应命中）',
     upstreamLink: '查看上游规则源文件',
     notFound: '未在已安装的规则包中找到该规则的定义，仅展示中文说明与命中统计。',
-    linkTitle: '查看规则知识（中文说明 / CWE / 修复建议）',
   },
   configs: {
     pageTitle: '扫描配置',
