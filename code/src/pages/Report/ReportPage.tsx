@@ -237,7 +237,15 @@ export default function ReportPage() {
     api
       .getScanReport(scanId)
       .then((data) => {
-        if (mounted) setReport(data);
+        if (!mounted) return;
+        // 路由 :id 与报告归属不一致（手改 URL 或记录被挪项目）时按不可用处理，
+        // 否则页头/返回链接会把报告挂到不相干的项目下
+        if (id && data.meta.projectId !== id) {
+          setNotFound(true);
+          setFailReason(t('report.unavailableProjectMismatch'));
+          return;
+        }
+        setReport(data);
       })
       .catch((error) => {
         if (!mounted) return;

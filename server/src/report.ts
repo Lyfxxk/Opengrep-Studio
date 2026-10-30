@@ -12,6 +12,7 @@ import type {
 } from './db.js';
 
 interface ReportMeta {
+  projectId: string;
   projectName: string;
   projectDescription?: string;
   language: string;
@@ -524,6 +525,7 @@ export function buildReportData(
       : undefined;
 
   const meta: ReportMeta = {
+    projectId: project.id,
     projectName: project.name,
     projectDescription: project.description,
     language: project.language,

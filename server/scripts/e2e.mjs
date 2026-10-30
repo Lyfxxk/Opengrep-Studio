@@ -543,6 +543,7 @@ assert(report.json.totals.byComparison.new === by('new')
   && report.json.totals.byComparison.remaining === by('remaining'), '报告对比计数一致');
 assert(report.json.issues.length === issues2.length, '报告明细条数与 issues 接口一致');
 assert(report.json.topFiles.length > 0, 'Top 文件统计存在');
+assert(report.json.meta?.projectId === pid, '报告 meta 标注扫描所属项目', report.json.meta?.projectId);
 assert((report.json.conclusion ?? '').includes(s1.id), '结论文本含基线编号');
 assert(typeof report.json.meta?.engineVersion === 'string' && report.json.meta.engineVersion.length > 0,
   '报告标注扫描时的引擎版本', report.json.meta?.engineVersion);

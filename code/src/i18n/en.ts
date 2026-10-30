@@ -698,6 +698,7 @@ const en: typeof zh = {
     unavailable: 'Report unavailable',
     unavailableReasonSuffix: ': {{reason}}',
     unavailableNoReason: ': the scan record does not exist or has not finished',
+    unavailableProjectMismatch: ': this scan does not belong to the current project',
     backToScan: 'Back to scan result',
     printBtn: 'Print / Export PDF',
     downloadHtml: 'Download HTML report',
