@@ -257,7 +257,7 @@ export default function DashboardPage() {
                       : t('common.loading')
                     : hasData
                       ? t('dashboard.riskDistEmpty')
-                      : t('dashboard.riskDistEmptyProject')}
+                      : t('dashboard.noProjects')}
                 </p>
               ) : (
                 SEVERITY_ORDER.map((severity) => {
@@ -340,7 +340,6 @@ export default function DashboardPage() {
                         <Link
                           to={`/projects/${project.id}/scans/${latestScan.id}`}
                           className="flex shrink-0 items-center gap-1.5 text-xs tabular-nums"
-                          title={t('dashboard.viewScanResult', { id: latestScan.id })}
                         >
                           {critical > 0 && (
                             <Badge className="bg-destructive/15 px-1.5 font-normal text-destructive">

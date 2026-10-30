@@ -182,7 +182,6 @@ const en: typeof zh = {
     riskDistTitle: 'Risk Distribution',
     riskDistScope: 'Scope: latest completed scan per project',
     riskDistEmpty: 'The latest scan found no issues, or no scan has completed yet',
-    riskDistEmptyProject: 'Shown after a project completes its first scan',
     topRulesTitle: 'Top Matched Rules',
     topRulesEmpty: 'No matches yet',
     hits: '{{count}} hits',
@@ -190,7 +189,6 @@ const en: typeof zh = {
     noProjects: 'No projects',
     totalCount: '{{count}} total',
     unscanned: 'Not scanned',
-    viewScanResult: 'View scan result · {{id}}',
   },
   engine: {
     title: 'Engine Status',

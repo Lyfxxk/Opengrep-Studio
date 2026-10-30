@@ -180,7 +180,6 @@ const zh = {
     riskDistTitle: '风险分布',
     riskDistScope: '口径：各项目最近一次已完成扫描',
     riskDistEmpty: '最近一轮扫描未检出问题，或尚无已完成的扫描',
-    riskDistEmptyProject: '创建项目并完成一次扫描后展示',
     topRulesTitle: '高频命中规则',
     topRulesEmpty: '暂无命中数据',
     hits: '{{count}} 次',
@@ -188,7 +187,6 @@ const zh = {
     noProjects: '暂无项目',
     totalCount: '共 {{count}}',
     unscanned: '未扫描',
-    viewScanResult: '查看扫描结果 · {{id}}',
   },
   engine: {
     title: '引擎状态',
