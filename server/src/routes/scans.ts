@@ -236,8 +236,16 @@ scanRoutes.delete('/api/scans/:scanId', asyncHandler(async (req, res) => {
   }
   deleteScan(scan.id);
   // 连快照根目录（workspace/<项目id>/<扫描id>/）一起删：只删 src 会让父目录成为随删除次数
-  // 累积的永久空壳；force 兜底根目录从未落盘的情况（如 SARIF 导入的扫描没有快照）
-  fs.rmSync(scanSnapshotRoot(scan.projectId, scan.id), { recursive: true, force: true });
+  // 累积的永久空壳；force 兜底根目录从未落盘的情况（如 SARIF 导入的扫描没有快照）。
+  // 记录已删，目录清不掉只告警：回 500 会让界面误以为删除失败
+  try {
+    fs.rmSync(scanSnapshotRoot(scan.projectId, scan.id), { recursive: true, force: true });
+  } catch (error) {
+    console.warn(
+      `[scans] 扫描 ${scan.id} 快照清理失败，可手动删除 ${scanSnapshotRoot(scan.projectId, scan.id)}：` +
+        (error instanceof Error ? error.message : String(error)),
+    );
+  }
   res.status(204).end();
 }));
 
