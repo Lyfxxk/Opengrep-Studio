@@ -669,8 +669,16 @@ export function setConfigProtected(id: string): void {
 }
 
 export function deleteConfig(id: string): void {
-  db.prepare('DELETE FROM configs WHERE id = ?').run(id);
-  db.prepare('UPDATE projects SET config_id = NULL WHERE config_id = ?').run(id);
+  // 两步（删配置 + 解绑项目）必须是原子的：中途失败留下「项目仍绑定已删配置」的悬空引用
+  db.exec('BEGIN');
+  try {
+    db.prepare('DELETE FROM configs WHERE id = ?').run(id);
+    db.prepare('UPDATE projects SET config_id = NULL WHERE config_id = ?').run(id);
+    db.exec('COMMIT');
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
 }
 
 function parseJsonObject(value: unknown): Record<string, unknown> | null {
@@ -794,14 +802,23 @@ export function updateRulePack(
 }
 
 export function deleteRulePack(id: string): void {
-  db.prepare('DELETE FROM rulepacks WHERE id = ?').run(id);
-  const configs = listConfigs();
-  for (const config of configs) {
-    if (config.rulePackIds.includes(id)) {
-      updateConfig(config.id, {
-        rulePackIds: config.rulePackIds.filter((item) => item !== id),
-      });
+  // 删记录 + 从各配置里摘掉引用必须是原子的：中途失败会让配置继续引用一个不存在的包，
+  // 扫描时被静默跳过，只在结果里少扫一批规则
+  db.exec('BEGIN');
+  try {
+    db.prepare('DELETE FROM rulepacks WHERE id = ?').run(id);
+    const configs = listConfigs();
+    for (const config of configs) {
+      if (config.rulePackIds.includes(id)) {
+        updateConfig(config.id, {
+          rulePackIds: config.rulePackIds.filter((item) => item !== id),
+        });
+      }
     }
+    db.exec('COMMIT');
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
   }
 }
 
