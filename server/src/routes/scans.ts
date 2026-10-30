@@ -37,7 +37,11 @@ import { parseSarifImport } from '../sarif-import.js';
 import { buildReportData, renderReportHtml, type ReportLang } from '../report.js';
 import { applyBaselineComparison, enqueueScan, requestScanCancel, type ScanPlan } from '../scan-runner.js';
 import { asyncHandler, decodeUploadFileName, limit400, requireProject, requireValidBaseline } from './shared.js';
-import { isProjectImporting } from './projects.js';
+import {
+  isProjectImporting,
+  markProjectImporting,
+  unmarkProjectImporting,
+} from './projects.js';
 
 export const scanRoutes = Router();
 
@@ -210,6 +214,10 @@ scanRoutes.post('/api/projects/:id/scans', asyncHandler(async (req, res) => {
   // 删项目能连 pending 目录一起删掉）。且插入前的代码全同步，升级检查与落库之间不存在
   // 异步交错窗口。复制失败时清掉半成品快照并删除记录，对外仍按本次请求报错。
   insertScan(scan);
+  // 复制快照期间登记导入互斥：此刻到 copyDirectory 之间全同步、无事件循环让出点，
+  // 放在这里与放在开头导入检查后等价，且免去为中间几处 400 出口补释放；无论复制
+  // 成败都经 finally 释放，否则扫描一次失败就永久挡住该项目的上传/克隆
+  markProjectImporting(project.id);
   try {
     // 异步逐文件复制，快照复制（上限 1GB）期间事件循环不再冻结；不用 fs.cpSync：
     // Node 22 在 Windows 上源路径含非 ASCII 字符时会直接终止进程（见 copyDirectory 注释）
@@ -218,6 +226,8 @@ scanRoutes.post('/api/projects/:id/scans', asyncHandler(async (req, res) => {
     fs.rmSync(scanSnapshotRoot(project.id, scan.id), { recursive: true, force: true });
     deleteScan(scan.id);
     throw error;
+  } finally {
+    unmarkProjectImporting(project.id);
   }
   enqueueScan(scan.id, plan);
   res.status(201).json(scan);

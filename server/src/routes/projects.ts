@@ -176,6 +176,19 @@ export function isProjectImporting(projectId: string): boolean {
   return importingProjects.has(projectId);
 }
 
+/**
+ * 导入互斥的登记/释放：扫描创建复制快照期间同样占住 pending/src——异步复制可达数十秒，
+ * 不登记则并发上传/克隆的整树替换（commitStaging/cloneRepo 的 rmSync+rename）会让复制
+ * 拿到已删路径或新旧混合的源码。上传/克隆与扫描复制由此双向互斥。
+ */
+export function markProjectImporting(projectId: string): void {
+  importingProjects.add(projectId);
+}
+
+export function unmarkProjectImporting(projectId: string): void {
+  importingProjects.delete(projectId);
+}
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: config.maxUploadBytes },
