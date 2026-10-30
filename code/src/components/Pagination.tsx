@@ -68,7 +68,6 @@ export default function Pagination({ page, pageCount, onPage, className }: Pagin
           type="text"
           inputMode="numeric"
           defaultValue={page}
-          title={t('pagination.jumpHint')}
           aria-label={t('pagination.pageOf', { page, total: pageCount })}
           style={{ width: `calc(${Math.max(1, String(pageCount).length)}ch + 0.75rem)` }}
           className="h-7 rounded-md border border-input bg-muted/40 px-1 text-center tabular-nums text-foreground outline-none transition-colors hover:bg-muted focus:border-primary focus:bg-background focus:ring-2 focus:ring-ring/30"

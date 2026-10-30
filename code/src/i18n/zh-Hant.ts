@@ -56,7 +56,6 @@ const zhHant: typeof zh = {
     aria: '分頁',
     first: '首頁',
     last: '末頁',
-    jumpHint: '輸入頁碼後按 Enter 跳轉',
     pageOf: '第 {{page}} / {{total}} 頁',
     pagePrefix: '第',
     pageSuffix: '/ {{total}} 頁',
