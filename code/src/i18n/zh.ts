@@ -838,6 +838,7 @@ const zh = {
       packNameTooLong: '规则包名称不能超过 50 个字符',
       projectNameRequired: '项目名称不能为空',
       projectNameTooLong: '项目名称不能超过 50 个字符',
+      projectDescriptionTooLong: '项目描述不能超过 {{limit}} 个字符',
       configNotFound: '扫描配置不存在或已被删除',
       packNotFound: '规则包不存在或已被删除',
       packContentRequired: '请输入规则包 YAML 内容',
