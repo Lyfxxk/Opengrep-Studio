@@ -277,7 +277,6 @@ const zh = {
     batchPartial_one: '已删除 {{count}} 条扫描，{{failed}} 条失败（可能刚进入扫描中）',
     batchPartial_other: '已删除 {{count}} 条扫描，{{failed}} 条失败（可能刚进入扫描中）',
     batchExtra: '扫描的问题明细与源码快照将一并移除；其他扫描指向它的基线对比会自动解除。',
-    filterProjectPlaceholder: '按项目筛选',
     filterProjectAll: '全部项目',
     filterKeywordPlaceholder: '按扫描编号或项目名搜索',
     filterCount: '{{count}} 条扫描',
