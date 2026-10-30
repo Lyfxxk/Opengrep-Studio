@@ -104,8 +104,10 @@ export function enqueueScan(scanId: string, plan: ScanPlan): void {
       // 否则槽位轮到时会把已取消的扫描跑完并覆盖回 completed，取消形同无效
       const current = getScan(scanId);
       if (!current || current.status !== 'scanning') return;
-      // 轮到本扫描开跑：清掉排队标记，前端从"排队中"切回"扫描中"
-      if (slot.queued) updateScan(scanId, { queuedAt: null });
+      // 轮到本扫描开跑：清掉排队标记，前端从"排队中"切回"扫描中"；
+      // 同时落下队时间锚点——到 started_at 之间是引擎版本探测/文件数/哈希的分钟级准备窗口，
+      // 启动清理判残骸不能回落到含排队等待的发起时间，否则深队列后正常开跑的扫描会被误杀
+      if (slot.queued) updateScan(scanId, { queuedAt: null, dequeuedAt: new Date().toISOString() });
       return runScan(scanId, plan);
     })
     .catch((error) => {
@@ -186,17 +188,20 @@ const STALE_SCAN_GRACE_MS = 2 * 60 * 1000;
  * 排队中的行（queued_at 有值）不参与清理：槽位只有 2 个、每扫描硬超时 10 分钟，深队列的
  * 合法等待可以远超「超时 + 宽限」，时间戳证明不了排队扫描已死。另一实例排队是正常状态，
  * 本实例崩溃残留的排队行由用户在界面手动取消（取消路由对排队行直接落库失败）。
+ * 已出队的行同理不能按发起时间判：等待攒下的时长与存活与否无关，改锚定出队时间判
+ * 「出队 → 引擎启动」的准备窗口（时间锚点 started_at → dequeued_at → scanned_at 逐级回落）。
  */
 export function markStaleScansFailed(): void {
   const cutoff = new Date(Date.now() - (config.scanTimeoutMs + STALE_SCAN_GRACE_MS)).toISOString();
   const rows = db.prepare(
     `SELECT id FROM scans
      WHERE status = 'scanning' AND queued_at IS NULL
-       AND COALESCE(started_at, scanned_at) < ?`,
+       AND COALESCE(started_at, dequeued_at, scanned_at) < ?`,
   ).all(cutoff) as Array<{ id: string }>;
   for (const row of rows) {
-    // 覆盖两类残骸：引擎已开跑（started_at 判据）+ 快照复制/哈希准备中断（无 started_at，
-    // 按发起时间判据——快照上限 1GB，超时 + 宽限足够复制完）
+    // 覆盖三类残骸：引擎已开跑（started_at）；已出队但没开跑（dequeued_at，出队后还有引擎
+    // 版本探测/文件数/哈希的分钟级准备）；从未排队的快照复制/哈希中断（回落发起时间——
+    // 复制紧随落库开始，快照上限 1GB，超时 + 宽限足够复制完）
     updateScan(row.id, {
       status: 'failed',
       finishedAt: new Date().toISOString(),

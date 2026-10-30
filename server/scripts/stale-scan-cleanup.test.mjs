@@ -19,7 +19,7 @@ trackTempDir(tempDataDir, closeDatabase);
 
 const hoursAgo = (h) => new Date(Date.now() - h * 3600 * 1000).toISOString();
 
-function seedScanning(id, { startedAt, queuedAt, scannedAt }) {
+function seedScanning(id, { startedAt, queuedAt, dequeuedAt, scannedAt }) {
   insertProject({ id: `proj-${id}`, name: id, language: 'python', createdAt: scannedAt });
   insertScan({
     id,
@@ -30,6 +30,7 @@ function seedScanning(id, { startedAt, queuedAt, scannedAt }) {
     fileCount: 0,
   });
   if (queuedAt) updateScan(id, { queuedAt });
+  if (dequeuedAt) updateScan(id, { dequeuedAt });
   if (startedAt) updateScan(id, { startedAt });
 }
 
@@ -58,6 +59,27 @@ test('长时间排队的扫描不被启动清理误杀（另一实例可能只�
     'scanning',
     '排队等待可以合法超过超时+宽限（2 槽位 × 硬超时），不能按时间判死',
   );
+});
+
+test('已出队进入准备阶段的扫描不被启动清理误杀（出队时刻要晚于含排队等待的发起时间）', () => {
+  // 复刻真实时序：深队列等到槽位（queued_at 被清）后进入引擎版本探测/文件数/哈希的
+  // 分钟级准备窗口，此行 queued_at=NULL 且 started_at=NULL——判残骸只能锚定出队时间，
+  // 回落到发起时间会把另一实例活着的扫描打成 failed 'scan.interrupted'
+  seedScanning('scan-dequeued-fresh', { dequeuedAt: new Date().toISOString(), scannedAt: hoursAgo(3) });
+  markStaleScansFailed();
+  assert.equal(
+    getScan('scan-dequeued-fresh').status,
+    'scanning',
+    '发起时间含排队等待，出队后的准备窗口要按出队时间判，不能按发起时间判死',
+  );
+});
+
+test('出队后长时间停在准备阶段的真残骸仍被清理', () => {
+  seedScanning('scan-dequeued-orphan', { dequeuedAt: hoursAgo(3), scannedAt: hoursAgo(3) });
+  markStaleScansFailed();
+  const orphan = getScan('scan-dequeued-orphan');
+  assert.equal(orphan.status, 'failed');
+  assert.equal(orphan.errorCode, 'scan.interrupted');
 });
 
 test('失败错误码与插值参数落库后可原样回读', () => {
