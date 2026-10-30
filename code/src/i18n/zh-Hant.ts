@@ -576,7 +576,6 @@ const zhHant: typeof zh = {
     hint: '支援 glob（* / **），按 Enter 逐條新增，相對於專案根，最多 {{limit}} 條',
   },
   rulesCenter: {
-    subtitle: '管理規則包（內建 / 自建 / 匯入匯出 / 品質檢查），或在規則實驗室線上驗證規則正反例',
     tabPacks: '規則包',
     tabLab: '規則實驗室',
   },

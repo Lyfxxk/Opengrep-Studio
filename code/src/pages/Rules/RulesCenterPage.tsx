@@ -12,10 +12,7 @@ export default function RulesCenterPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold">{t('nav.rules')}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{t('rulesCenter.subtitle')}</p>
-      </div>
+      <h1 className="text-xl font-semibold">{t('nav.rules')}</h1>
 
       <Tabs
         value={tab}

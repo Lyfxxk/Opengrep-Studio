@@ -575,7 +575,6 @@ const zh = {
     hint: '支持 glob（* / **），回车逐条添加，相对于项目根，最多 {{limit}} 条',
   },
   rulesCenter: {
-    subtitle: '管理规则包（内置 / 自建 / 导入导出 / 质量检查），或在规则实验室在线验证规则正反例',
     tabPacks: '规则包',
     tabLab: '规则实验室',
   },
