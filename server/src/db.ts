@@ -99,6 +99,8 @@ export interface ScanRecord {
   engineVersion?: string;
   /** 排队等待并发槽位的标记（status 仍 scanning 且有值 = 排队中；开跑时经 updateScan 传 null 清除），供前端区分"排队中/扫描中" */
   queuedAt?: string | null;
+  /** 出队时间（轮到槽位清排队标记时落库）：启动清理判「已出队未开跑」残骸的锚点，发起时间含排队等待不可用作判据 */
+  dequeuedAt?: string;
 }
 
 /** 扫描发起时的规则与引擎参数快照（manifest.json 的组成部分） */
@@ -270,6 +272,8 @@ for (const sql of [
   'ALTER TABLE scans ADD COLUMN queued_at TEXT',
   // 实际开跑时间（修正排队时间被计入「引擎耗时」）
   'ALTER TABLE scans ADD COLUMN started_at TEXT',
+  // 出队时间锚点：启动清理判「已出队未开跑」残骸用——发起时间含排队等待，会把深队列后正常开跑的扫描误杀
+  'ALTER TABLE scans ADD COLUMN dequeued_at TEXT',
   // 扫描失败的语言无关标识（供前端按界面语言翻译；message 仍是中文兜底）
   'ALTER TABLE scans ADD COLUMN error_code TEXT',
   'ALTER TABLE scans ADD COLUMN error_params TEXT',
@@ -357,6 +361,7 @@ function rowToScan(row: SqlRow): ScanRecord {
     configSnapshot: snapshotRaw ? (snapshotRaw as unknown as ScanConfigSnapshot) : undefined,
     engineVersion: str(row.engine_version as string | null),
     queuedAt: str(row.queued_at as string | null),
+    dequeuedAt: str(row.dequeued_at as string | null),
   };
 }
 
@@ -523,6 +528,7 @@ export function updateScan(id: string, patch: Partial<Omit<ScanRecord, 'id' | 'p
   if (patch.commandLine !== undefined) { sets.push('command_line = ?'); values.push(patch.commandLine ?? null); }
   if (patch.engineVersion !== undefined) { sets.push('engine_version = ?'); values.push(patch.engineVersion ?? null); }
   if (patch.queuedAt !== undefined) { sets.push('queued_at = ?'); values.push(patch.queuedAt ?? null); }
+  if (patch.dequeuedAt !== undefined) { sets.push('dequeued_at = ?'); values.push(patch.dequeuedAt ?? null); }
   if (patch.configSnapshot !== undefined) {
     sets.push('config_snapshot = ?');
     values.push(patch.configSnapshot ? JSON.stringify(patch.configSnapshot) : null);
