@@ -153,6 +153,11 @@ export default function ProjectDetailPage() {
     : 0;
 
   const isScanning = scans.some((scan) => scan.status === 'scanning');
+  // 源码可用性以服务端 hasSource 为准，upload 状态只补足「本次会话刚上传」的场景：
+  // 用户点「重新选择」回到 idle、或导入进行中时，不能把已存在的源码误判成不可扫描
+  const sourceReady =
+    upload.status === 'uploading' ? false : project?.hasSource === true || upload.status === 'uploaded';
+  const canStartScan = sourceReady && !isScanning;
 
   useEffect(() => {
     if (!isScanning) return;
@@ -214,7 +219,9 @@ export default function ProjectDetailPage() {
         t(uploadToastKey, { files: result.fileCount, ignored: result.ignoredCount ?? 0 }),
       );
       if (result.languageStats) {
-        setProject((prev) => (prev ? { ...prev, languageStats: result.languageStats } : prev));
+        setProject((prev) =>
+          prev ? { ...prev, languageStats: result.languageStats, hasSource: true } : prev,
+        );
       }
     } catch (error) {
       // 与克隆失败同口径：上传失败只清服务端临时目录、不动既有源码。回到 idle 后交给
@@ -237,7 +244,9 @@ export default function ProjectDetailPage() {
       setUpload({ status: 'uploaded', sourceType: 'clone', fileName: url });
       toast.success(t('projectDetail.cloneSuccessToast', { count: result.fileCount }));
       if (result.languageStats) {
-        setProject((prev) => (prev ? { ...prev, languageStats: result.languageStats } : prev));
+        setProject((prev) =>
+          prev ? { ...prev, languageStats: result.languageStats, hasSource: true } : prev,
+        );
       }
     } catch (error) {
       setUpload({ status: 'idle' });
@@ -405,7 +414,7 @@ export default function ProjectDetailPage() {
         </div>
         <Button
           className="gap-1"
-          disabled={upload.status !== 'uploaded' || isScanning}
+          disabled={!canStartScan}
           title={
             project.configId ? undefined : t('projectDetail.startScanUnboundTitle')
           }
