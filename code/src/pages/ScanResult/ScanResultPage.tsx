@@ -63,6 +63,15 @@ export default function ScanResultPage() {
     try {
       const scanData = await api.getScan(scanId);
       if (requestSeqRef.current !== seq) return;
+      // 路由 :id 与扫描归属必须一致：URL 手改成别的项目 id 时，复核会以错误项目落库
+      // （复核键是 projectId + fingerprint），页面也会把扫描挂到不相干的项目下
+      if (id && scanData.projectId !== id) {
+        setScan(null);
+        setProject(null);
+        setLoadFailed(false);
+        loadedOnceRef.current = true;
+        return;
+      }
       setScan(scanData);
       const settled = scanData.status === 'completed';
       // 项目列表与基线记录在扫描期间不会变化：只在首次加载与扫描完成时取，避免轮询每 1.5s 白拉两个接口
