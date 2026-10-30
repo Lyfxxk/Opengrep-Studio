@@ -343,9 +343,8 @@ export default function LabPage() {
         negative: draft.negative,
       });
       setResult(res);
-      if (res.verdict === 'pass') {
-        toast.success(t('lab.runPassToast', { count: res.positive.matches.length }));
-      } else if (res.verdict === 'fail') {
+      // 通过与否的结果卡已完整展示，只在失败/出错时弹提示
+      if (res.verdict === 'fail') {
         toast.warning(t('lab.runFailToast', { reasons: res.failReasons.join('；') }));
       } else {
         toast.error(t('lab.runErrorToast', { error: res.error ?? t('lab.engineFailedFallback') }));
@@ -613,7 +612,6 @@ export default function LabPage() {
           <Button
             className="gap-1"
             disabled={running || !canRun}
-            title={canRun ? undefined : t('lab.runDisabledTitle')}
             onClick={() => void run()}
           >
             {running ? <Loader2 className="size-4 animate-spin" /> : <Play className="size-4" />}
