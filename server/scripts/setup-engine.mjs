@@ -25,6 +25,7 @@ import {
   INSTALLED_MANIFEST_NAME,
   compareVersions,
   installEngineAsset,
+  normalizeVersion,
   platformKey,
   readInstalledManifest,
   resolveTarget,
@@ -60,7 +61,10 @@ function flagValue(flag, pattern, expect) {
   return value;
 }
 
-const explicitVersion = flagValue('--version', /^v?\d+\.\d+\.\d+$/, '形如 v1.33.0 的版本号');
+const explicitVersionInput = flagValue('--version', /^v?\d+\.\d+\.\d+$/, '形如 v1.33.0 的版本号');
+// GitHub release tag 一律带 v 前缀：允许输入省略 v（1.33.1），下载与提示统一按 v1.33.1 处理。
+// 否则三条下载通道都按 <base>/1.33.1/<资产> 拼 404，报错还误导为「该版本没有此平台的资产」
+const explicitVersion = explicitVersionInput ? `v${normalizeVersion(explicitVersionInput)}` : undefined;
 const explicitSha = flagValue('--sha256', /^[0-9a-fA-F]{64}$/, '64 位十六进制 SHA-256');
 
 /** 安装名取自脚本侧唯一源头（engine-name.mjs，与 server/src/config.ts 的 engineNameFor 同步维护） */
