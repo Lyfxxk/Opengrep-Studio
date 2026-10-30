@@ -14,6 +14,11 @@ const tempDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'og-rulelab-cleanup-')
 process.env.DATA_DIR = tempDataDir;
 
 const { cleanupRuleLabScratch } = await import('../src/rule-lab.ts');
+// rule-lab → rulepacks → db 的导入链会在模块加载时打开 SQLite：退出回收必须先关库，
+// 否则 Windows 上句柄未释放、rmSync 删不掉临时目录（EPERM 被 trackTempDir 吞掉又攒残目录）
+const { closeDatabase } = await import('../src/db.ts');
+const { trackTempDir } = await import('./temp-dir.mjs');
+trackTempDir(tempDataDir, closeDatabase);
 
 const scratchRoot = path.join(tempDataDir, 'rulelab');
 
