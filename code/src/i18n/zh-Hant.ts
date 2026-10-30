@@ -278,7 +278,6 @@ const zhHant: typeof zh = {
     batchPartial_one: '已刪除 {{count}} 條掃描，{{failed}} 條失敗（可能剛進入掃描中）',
     batchPartial_other: '已刪除 {{count}} 條掃描，{{failed}} 條失敗（可能剛進入掃描中）',
     batchExtra: '掃描的問題明細與原始碼快照將一併移除；其他掃描指向它的基線對比會自動解除。',
-    filterProjectPlaceholder: '按專案篩選',
     filterProjectAll: '全部專案',
     filterKeywordPlaceholder: '按掃描編號或專案名稱搜尋',
     filterCount: '{{count}} 條掃描',

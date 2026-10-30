@@ -283,7 +283,6 @@ const en: typeof zh = {
     batchPartial_other: 'Deleted {{count}} scans; {{failed}} failed (they may have just started scanning)',
     batchExtra:
       'Issue details and source snapshots of these scans will be removed; baseline comparisons pointing to them are released automatically.',
-    filterProjectPlaceholder: 'Filter by project',
     filterProjectAll: 'All projects',
     filterKeywordPlaceholder: 'Search by scan ID or project name',
     filterCount: '{{count}} scans',
