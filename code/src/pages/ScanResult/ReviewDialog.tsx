@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { REVIEW_BADGE_CLASS, type IIssue, type ReviewStatus } from '@/data/issues';
+import { type IIssue, type ReviewStatus } from '@/data/issues';
 import { getCurrentUsername } from '@/lib/auth';
 import { api } from '@/lib/api';
 

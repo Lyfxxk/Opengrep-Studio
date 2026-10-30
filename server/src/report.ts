@@ -770,7 +770,7 @@ export function renderReportHtml(
   lang: ReportLang = 'zh',
   messages?: Record<string, string>,
 ): string {
-  const { meta, totals, topFiles, reviewStats } = data;
+  const { meta, totals, reviewStats } = data;
   const text = REPORT_TEXT[lang];
   // 复核结论由 buildReportData 以 issue.id 挂在 data.issues 上；本函数的 issues 参数是原始行
   // （需要 matchedLines 取代码片段），这里按 id 回填 review，否则明细条目里的复核标签永远不显示

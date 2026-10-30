@@ -7,7 +7,6 @@ import {
   scanSourceDir,
 } from './config.js';
 import { engineInstallHint, engineNotRunnableHint, getEngineVersion, runEngine } from './engine.js';
-import { HttpError } from './errors.js';
 import { relativizeToRoot, stripRuleIdPrefix } from './engine-output.js';
 import { extractTaintFlow, relativizeTaintFlow } from './taint.js';
 import {
