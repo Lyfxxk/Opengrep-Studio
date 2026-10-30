@@ -124,8 +124,8 @@ export default function IssueFilterList({
     selection.clear();
     setBatchReason('');
     onReviewed?.();
-    if (failed === 0) toast.success(t('issueFilter.batchReviewed', { count: selectedIssues.length }));
-    else toast.warning(t('issueFilter.batchPartial', { count: selectedIssues.length - failed, failed }));
+    // 复核徽章在列表里立刻刷新，全部成功无需再弹一条；只有部分失败要报出来
+    if (failed > 0) toast.warning(t('issueFilter.batchPartial', { count: selectedIssues.length - failed, failed }));
   };
 
   /** ↑/↓ 在筛选后列表中逐条移动选中项；输入框内不劫持方向键 */
@@ -305,7 +305,6 @@ export default function IssueFilterList({
                     <Badge
                       variant="outline"
                       className="min-w-0 shrink-0 px-1.5 text-xs font-normal text-muted-foreground"
-                      title={t('issueFilter.packSourceTitle', { name: issue.rulepackName })}
                     >
                       {packDisplayName(issue.rulepackName, issue.rulepackId)}
                     </Badge>
