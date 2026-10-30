@@ -8,6 +8,20 @@ import {
 } from './config.js';
 import { engineInstallHint, engineNotRunnableHint, getEngineVersion, runEngine } from './engine.js';
 import { HttpError } from './errors.js';
+import { relativizeToRoot, stripRuleIdPrefix } from './engine-output.js';
+import { extractTaintFlow, relativizeTaintFlow } from './taint.js';
+import {
+  db,
+  getScan,
+  isActiveIssue,
+  listIssues,
+  replaceIssues,
+  updateScan,
+  type IssueRow,
+  type ScanConfigSnapshot,
+  type ScanRecord,
+  type Severity,
+} from './db.js';
 
 /**
  * 扫描失败错误：message 落库并作为兜底文案（语言切换后旧记录仍是原文，属可接受折衷），
@@ -23,20 +37,6 @@ export class ScanError extends Error {
     super(message);
   }
 }
-import { relativizeToRoot, stripRuleIdPrefix } from './engine-output.js';
-import { extractTaintFlow, relativizeTaintFlow } from './taint.js';
-import {
-  db,
-  getScan,
-  isActiveIssue,
-  listIssues,
-  replaceIssues,
-  updateScan,
-  type IssueRow,
-  type ScanConfigSnapshot,
-  type ScanRecord,
-  type Severity,
-} from './db.js';
 
 export interface ScanPlan {
   rulesLabel: string;
