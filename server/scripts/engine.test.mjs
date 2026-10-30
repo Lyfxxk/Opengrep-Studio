@@ -63,6 +63,11 @@ test('全部落空时返回安装位并标记 missing（bin 指向 setup:engine 
   assert.equal(resolved.bin, bundled);
 });
 
+test('注入平台时安装位默认文件名跟随该平台，而不是进程平台', () => {
+  const resolved = resolveEngineBin({ platform: 'win32', pathEnv: '' });
+  assert.match(resolved.bin, /opengrep\.exe$/);
+});
+
 test('PATH 中的目录必须是普通文件，目录同名不算命中', () => {
   const dirNamedEngine = makeTempDir('engine-dir-');
   // 造一个名字与引擎相同的目录（statSync.isFile 为 false，应跳过）

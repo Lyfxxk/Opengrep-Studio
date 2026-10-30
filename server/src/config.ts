@@ -38,7 +38,7 @@ export function resolveEngineBin(deps?: {
   const envBin = deps?.envBin ?? process.env.OPENGREP_BIN?.trim();
   if (envBin) return { bin: envBin, source: 'env' };
   const bundled =
-    deps?.bundledPath ?? path.join(serverRoot, '..', 'opengrep-tool', engineExecutableName);
+    deps?.bundledPath ?? path.join(serverRoot, '..', 'opengrep-tool', executableName);
   if (fs.existsSync(bundled)) return { bin: bundled, source: 'bundled-dir' };
   const pathEnv = deps?.pathEnv ?? process.env.PATH ?? '';
   for (const dir of pathEnv.split(path.delimiter)) {
