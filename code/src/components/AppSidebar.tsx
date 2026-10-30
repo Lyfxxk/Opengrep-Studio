@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/sidebar';
 
 /** 一级导航 label 的合法 i18n 键（约束 NAV_ITEMS 与 Header 面包屑的取值） */
-export type NavKey =
+type NavKey =
   | 'nav.dashboard'
   | 'nav.projects'
   | 'nav.scans'
