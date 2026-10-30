@@ -26,7 +26,7 @@ import {
   type Review,
 } from '../db.js';
 import { cloneRepo } from '../git-clone.js';
-import { asyncHandler, newId, requireProject, requireValidBaseline } from './shared.js';
+import { asyncHandler, decodeUploadFileName, newId, requireProject, requireValidBaseline } from './shared.js';
 
 export const projectRoutes = Router();
 
@@ -209,21 +209,23 @@ projectRoutes.post(
 
       // 形态一：单个压缩包（ZIP / 7Z / RAR / TAR / TAR.GZ），按扩展名分发解压
       if (archive) {
-        if (!isArchiveFileName(archive.originalname)) {
+        // 浏览器发的是 UTF-8 文件名，busboy 默认按 latin1 解码，中文文件名会乱码进回显与日志
+        const archiveName = decodeUploadFileName(archive.originalname);
+        if (!isArchiveFileName(archiveName)) {
           throw new HttpError(
             400,
             '仅支持 ZIP / 7Z / RAR / TAR / TAR.GZ 压缩包，或直接拖入文件夹上传',
             { code: 'srv.archiveTypeUnsupported' },
           );
         }
-        const extracted = await extractArchive(archive.buffer, stagingDir, archive.originalname);
+        const extracted = await extractArchive(archive.buffer, stagingDir, archiveName);
         const { fileCount, ignoredCount } = await applyIgnoreFilter(stagingDir, extracted, respectGitignore);
         const languageStats = await collectLanguageStats(stagingDir);
         commitStaging();
         updateProject(project.id, { languageStats });
         const ignoreNote = ignoredCount > 0 ? `，已按 .gitignore 忽略 ${ignoredCount} 个文件` : '';
         res.json({
-          fileName: archive.originalname,
+          fileName: archiveName,
           fileSize: archive.size,
           fileCount,
           ignoredCount,
@@ -262,7 +264,9 @@ projectRoutes.post(
         }
         try {
           looseFiles.forEach((file, index) => {
-            const rel = safeRelativePath(relPaths[index] || file.originalname);
+            const rel = safeRelativePath(
+              relPaths[index] || decodeUploadFileName(file.originalname),
+            );
             if (!rel) throw new HttpError(400, '文件路径不能为空', { code: 'srv.pathRequired' });
             const target = path.join(stagingDir, rel);
             if (!isPathWithin(stagingDir, target)) {

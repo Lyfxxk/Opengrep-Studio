@@ -34,7 +34,7 @@ import {
 } from '../pack-format.js';
 import { engineUpgradeRunning } from '../engine-update.js';
 import { isEngineJobBusy, setEngineJobBusy } from '../engine-job.js';
-import { asyncHandler, limit400, MAX_RULE_YAML_BYTES, MAX_SAMPLE_BYTES, newId } from './shared.js';
+import { asyncHandler, decodeUploadFileName, limit400, MAX_RULE_YAML_BYTES, MAX_SAMPLE_BYTES, newId } from './shared.js';
 
 export const rulepackRoutes = Router();
 
@@ -302,7 +302,8 @@ rulepackRoutes.post(
     const language = String(req.body?.language ?? '').trim() || 'Java';
     const content = req.file.buffer.toString('utf8');
     try {
-      res.status(201).json(saveNewRulePack(name, language, content, req.file.originalname));
+      // 上传来源只用于日志；中文文件名按 UTF-8 还原，否则日志里是一串 latin1 乱码
+      res.status(201).json(saveNewRulePack(name, language, content, decodeUploadFileName(req.file.originalname)));
     } catch (error) {
       if (error instanceof HttpError) throw error;
       throw new HttpError(400, error instanceof Error ? error.message : String(error));
@@ -505,7 +506,8 @@ rulepackRoutes.post(
         code: 'srv.fileRequired',
       });
     }
-    const zipName = req.file.originalname.replace(/\.zip$/i, '');
+    const originalName = decodeUploadFileName(req.file.originalname);
+    const zipName = originalName.replace(/\.zip$/i, '');
     const tmpDir = path.join(os.tmpdir(), `ogpack-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
     fs.rmSync(tmpDir, { recursive: true, force: true });
     fs.mkdirSync(tmpDir, { recursive: true });
@@ -629,7 +631,7 @@ rulepackRoutes.post(
           { code: 'srv.ruleFileInvalid', params: { name: looseFiles[0].name } },
         );
       }
-      const pack = saveNewRulePack(name, language || 'Other', content, req.file.originalname);
+      const pack = saveNewRulePack(name, language || 'Other', content, originalName);
       res.status(201).json({ ...pack, message: '导入成功（单文件包，无样本，basic 档）' });
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
