@@ -243,6 +243,14 @@ rulepackRoutes.post('/api/rulepacks', asyncHandler(async (req, res) => {
   if (!content.trim()) {
     throw new HttpError(400, '请输入规则包 YAML 内容', { code: 'srv.packContentRequired' });
   }
+  // body 解析放宽到 5MB 不代表业务上没有闸：与上传/Y 实验室共用同一 YAML 体积上限
+  if (content.length > MAX_RULE_YAML_BYTES) {
+    throw new HttpError(
+      400,
+      `规则 YAML 超过 ${MAX_RULE_YAML_BYTES / 1024 / 1024}MB 上限`,
+      { code: 'srv.ruleYamlTooLarge', params: { mb: MAX_RULE_YAML_BYTES / 1024 / 1024 } },
+    );
+  }
   const samples = {
     positive: String(req.body?.samples?.positive ?? ''),
     negative: String(req.body?.samples?.negative ?? ''),
@@ -344,6 +352,12 @@ rulepackRoutes.put('/api/rulepacks/:id/content', asyncHandler(async (req, res) =
   const content = String(req.body?.content ?? '');
   if (!content.trim()) {
     throw new HttpError(400, '请输入规则包 YAML 内容', { code: 'srv.packContentRequired' });
+  }
+  if (content.length > MAX_RULE_YAML_BYTES) {
+    throw new HttpError(400, `规则 YAML 超过 ${MAX_RULE_YAML_BYTES / 1024 / 1024}MB 上限`, {
+      code: 'srv.ruleYamlTooLarge',
+      params: { mb: MAX_RULE_YAML_BYTES / 1024 / 1024 },
+    });
   }
   let ruleCount: number;
   try {
