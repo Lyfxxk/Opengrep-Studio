@@ -79,10 +79,7 @@ export default function ReportsCenterPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold">{t('nav.reports')}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{t('reports.subtitle')}</p>
-        </div>
+        <h1 className="text-xl font-semibold">{t('nav.reports')}</h1>
       </div>
 
       {(rows?.length ?? 0) > 0 && (
@@ -188,7 +185,6 @@ export default function ReportsCenterPage() {
                             <a
                               href={api.scanReportHtmlUrl(scan.id)}
                               download
-                              title={t('reports.actionHtmlTitle')}
                             >
                               <FileCode2 className="size-3.5" />
                               {t('reports.actionHtml')}

@@ -116,17 +116,14 @@ export default function ScansCenterPage() {
     setBatchDeleting(false);
     selection.clear();
     await load();
-    if (failed === 0) toast.success(t('scans.batchDeleted', { count: ids.length }));
-    else toast.warning(t('scans.batchPartial', { count: ids.length - failed, failed }));
+    // 全部成功时表格已经少了一整批，只有部分失败需要报出来
+    if (failed > 0) toast.warning(t('scans.batchPartial', { count: ids.length - failed, failed }));
   };
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold">{t('nav.scans')}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{t('scans.subtitle')}</p>
-        </div>
+        <h1 className="text-xl font-semibold">{t('nav.scans')}</h1>
       </div>
 
       <BatchDeleteBar
@@ -272,7 +269,6 @@ export default function ScansCenterPage() {
                           size="sm"
                           className="gap-1"
                           disabled={!done}
-                          title={t('scans.actionReportTitle')}
                           onClick={() =>
                             navigate(`/projects/${scan.projectId}/scans/${scan.id}/report`)
                           }
@@ -285,7 +281,6 @@ export default function ScansCenterPage() {
                           size="sm"
                           className="gap-1"
                           disabled={!done}
-                          title={t('scans.actionCompareTitle')}
                           onClick={() => setCompareScanId(scan.id)}
                         >
                           <GitCompareArrows className="size-3.5" />
