@@ -71,7 +71,7 @@ export default function ReviewDialog({ projectId, issue, onClose, onSaved }: Rev
         ...(reason.trim() ? { reason: reason.trim() } : {}),
         reviewer: reviewer.trim() || undefined,
       });
-      toast.success(t('review.savedToast'));
+      // 复核结论会立刻回写到列表与片段区的徽章上，不再弹成功提示
       onSaved();
       onClose();
     } catch (error) {
@@ -87,7 +87,6 @@ export default function ReviewDialog({ projectId, issue, onClose, onSaved }: Rev
     setSubmitting(true);
     try {
       await api.clearReview(projectId, issue.fingerprint);
-      toast.success(t('review.resetToast'));
       onSaved();
       onClose();
     } catch (error) {
