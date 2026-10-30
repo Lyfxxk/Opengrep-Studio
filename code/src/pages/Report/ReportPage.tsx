@@ -116,7 +116,7 @@ function IssueEntry({
   issue: IIssue;
   messageMap: Record<string, string>;
 }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const lineRange =
     issue.endLine && issue.endLine !== issue.startLine
       ? `${issue.startLine}\u2013${issue.endLine}`
