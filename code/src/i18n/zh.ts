@@ -373,6 +373,7 @@ const zh = {
     setBaseline: '设为基线',
   },
   snippet: {
+    pickHint: '从左侧选择一个问题，查看对应代码片段',
     knowledgeBtn: '规则知识',
     reReview: '重新复核',
     review: '人工复核',
@@ -663,7 +664,7 @@ const zh = {
     createdWithSamplesToast: '规则包「{{name}}」已创建（{{rules}} 条规则、{{samples}} 个样本）',
     overwriteSavedToast: '已覆盖保存到规则包「{{name}}」',
     engineRunning: '引擎运行中，正在对样本做匹配…',
-    idleHint: '尚未运行实验',
+    idleHint: '尚未运行实验 · Ctrl+Enter 运行',
     passPositives: '正例命中 {{count}} 处',
     passNegatives: '反例 {{count}} 处误报',
     passMeta: '规则 {{count}} 条 · 引擎耗时 {{duration}}s',

@@ -587,7 +587,7 @@ export default function RulePackTab() {
               </span>
               <ChevronDown
                 className={cn(
-                  'size-4 shrink-0 text-muted-foreground transition-transform',
+                  'ml-auto size-4 shrink-0 text-muted-foreground transition-transform',
                   builtinOpen && 'rotate-180',
                 )}
               />

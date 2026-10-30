@@ -382,6 +382,7 @@ const en: typeof zh = {
     setBaseline: 'Set as baseline',
   },
   snippet: {
+    pickHint: 'Select an issue on the left to view its code snippet',
     knowledgeBtn: 'Rule knowledge',
     reReview: 'Re-review',
     review: 'Review',
@@ -680,7 +681,7 @@ const en: typeof zh = {
     createdWithSamplesToast: 'Rule pack "{{name}}" created ({{rules}} rules, {{samples}} samples)',
     overwriteSavedToast: 'Saved over rule pack "{{name}}"',
     engineRunning: 'Engine running — matching samples…',
-    idleHint: 'Not run yet',
+    idleHint: 'Not run yet · Ctrl+Enter to run',
     passPositives: '{{count}} positive matches',
     passNegatives: '{{count}} false positives in negatives',
     passMeta: '{{count}} rules · engine took {{duration}}s',
