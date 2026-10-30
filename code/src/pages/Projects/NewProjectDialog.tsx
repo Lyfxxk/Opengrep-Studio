@@ -19,7 +19,7 @@ interface NewProjectDialogProps {
   onSubmit: (
     values: { name: string; description: string },
     projectId?: string,
-  ) => void;
+  ) => void | Promise<void>;
   project?: IProject | null;
 }
 
@@ -33,6 +33,7 @@ export default function NewProjectDialog({
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const isEditing = Boolean(project);
 
@@ -41,10 +42,12 @@ export default function NewProjectDialog({
       setName(project?.name ?? '');
       setDescription(project?.description ?? '');
       setError('');
+      setSubmitting(false);
     }
   }, [open, project]);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    if (submitting) return;
     const trimmed = name.trim();
     if (!trimmed) {
       setError(t('projects.nameRequired'));
@@ -54,7 +57,13 @@ export default function NewProjectDialog({
       setError(t('projects.nameTooLong'));
       return;
     }
-    onSubmit({ name: trimmed, description: description.trim() }, project?.id);
+    // 等父组件保存完成再复位：否则双击会发出两次创建请求
+    setSubmitting(true);
+    try {
+      await onSubmit({ name: trimmed, description: description.trim() }, project?.id);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -94,7 +103,9 @@ export default function NewProjectDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {t('common.cancel')}
           </Button>
-          <Button onClick={handleSubmit}>{isEditing ? t('projects.save') : t('projects.createSubmit')}</Button>
+          <Button onClick={() => void handleSubmit()} disabled={submitting}>
+            {isEditing ? t('projects.save') : t('projects.createSubmit')}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
