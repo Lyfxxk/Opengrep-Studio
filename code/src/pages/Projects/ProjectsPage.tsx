@@ -51,11 +51,9 @@ export default function ProjectsPage() {
   const [editingProject, setEditingProject] = useState<IProject | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<IProject | null>(null);
   const [keyword, setKeyword] = useState('');
-  const selection = useRowSelection(projects.map((project) => project.id));
   const [batchConfirmOpen, setBatchConfirmOpen] = useState(false);
   const [batchDeleting, setBatchDeleting] = useState(false);
 
-  // 页码夹取：删除 / 新建后不落在空页上
   const filteredProjects = useMemo(() => {
     const trimmed = keyword.trim().toLowerCase();
     if (trimmed === '') return projects;
@@ -66,6 +64,10 @@ export default function ProjectsPage() {
     );
   }, [projects, keyword]);
 
+  // 批量操作范围与当前筛选结果一致：搜索状态下「全选」不能把看不见的项目一起删掉
+  const selection = useRowSelection(filteredProjects.map((project) => project.id));
+
+  // 页码夹取：删除 / 新建后不落在空页上
   const { page: safePage, setPage, pageCount, slice: pagedProjects } = usePagedList(
     filteredProjects,
     LIST_PAGE_SIZE,

@@ -65,7 +65,6 @@ export default function IssueFilterList({
   const packDisplayName = usePackDisplayName();
 
   // 批量复核：勾选框用 issue.id 作为键，提交时从中反查 fingerprint
-  const selection = useRowSelection(issues.map((issue) => issue.id));
   const [batchDialog, setBatchDialog] = useState<{ status: 'confirmed' | 'false_positive' } | null>(null);
   const [batchReason, setBatchReason] = useState('');
   const [batchSubmitting, setBatchSubmitting] = useState(false);
@@ -88,6 +87,9 @@ export default function IssueFilterList({
     [issues, severity, status, keyword, messageMap],
   );
 
+  // 批量复核范围 = 当前筛选结果：列表只展示筛选后的条目，勾选与批量提交也必须同一范围
+  const selection = useRowSelection(filtered.map((issue) => issue.id));
+
   // 有问题但被筛选条件滤空 ≠ 扫描本身没发现问题，两种空态要分开表述
   const hasActiveFilter =
     severity !== 'all' || status !== 'all' || keyword.trim() !== '';
@@ -105,7 +107,7 @@ export default function IssueFilterList({
     if (!batchDialog) return;
     const { status } = batchDialog;
     const reason = batchReason.trim() || undefined;
-    const selectedIssues = issues.filter(
+    const selectedIssues = filtered.filter(
       (issue) => selection.selected.has(issue.id) && issue.fingerprint,
     );
     setBatchDialog(null);
