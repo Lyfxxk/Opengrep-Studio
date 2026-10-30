@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -133,10 +132,12 @@ export default function CompareDialog({ scanId, onClose }: CompareDialogProps) {
 
   return (
     <Dialog open onOpenChange={(open) => (!open ? onClose() : undefined)}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl">
+      <DialogContent
+        aria-describedby={undefined}
+        className="max-h-[85vh] overflow-y-auto sm:max-w-3xl"
+      >
         <DialogHeader>
           <DialogTitle>{t('compare.title')}</DialogTitle>
-          <DialogDescription>{t('compare.subtitle')}</DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-wrap items-center gap-2">

@@ -13,7 +13,6 @@ import { Badge } from '@/components/ui/badge';
 import {
   Sheet,
   SheetContent,
-  SheetDescription,
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
@@ -83,13 +82,16 @@ export default function KnowledgeSheet({ ruleId, onClose }: KnowledgeSheetProps)
 
   return (
     <Sheet open={ruleId !== null} onOpenChange={(open) => (!open ? onClose() : undefined)}>
-      <SheetContent side="right" className="flex w-full flex-col gap-4 overflow-y-auto sm:max-w-md">
+      <SheetContent
+        side="right"
+        aria-describedby={undefined}
+        className="flex w-full flex-col gap-4 overflow-y-auto sm:max-w-md"
+      >
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2 text-base">
             <BookOpen className="size-4 text-primary" />
             {t('knowledge.title', { ruleId })}
           </SheetTitle>
-          <SheetDescription>{t('knowledge.subtitle')}</SheetDescription>
         </SheetHeader>
 
         {loading ? (
@@ -223,13 +225,11 @@ export default function KnowledgeSheet({ ruleId, onClose }: KnowledgeSheetProps)
  * 键盘可达性由 tabIndex + onKeyDown 补齐。
  */
 export function KnowledgeLink({ issue, onOpen }: { issue: IIssue; onOpen: (ruleId: string) => void }) {
-  const { t } = useTranslation();
   return (
     // min-w-0 + truncate：规则 ID 可能很长，卡片窄时收缩省略，防止把问题列表撑出横向滚动
     <span
       role="button"
       tabIndex={0}
-      title={t('knowledge.linkTitle')}
       onClick={(event) => {
         event.stopPropagation();
         onOpen(issue.ruleId);

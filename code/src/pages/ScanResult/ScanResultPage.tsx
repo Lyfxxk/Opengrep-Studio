@@ -356,9 +356,8 @@ export default function ScanResultPage() {
                   </dt>
                   <dd className="min-w-0 text-right text-xs leading-5">
                     {scan.rulepacks?.length ? (
-                      <span title={scan.rulepacks.map((pack) => packDisplayName(pack.name, pack.id)).join('、')}>
-                        {scan.rulepacks.map((pack) => packDisplayName(pack.name, pack.id)).join('、')}
-                      </span>
+                      // 包名全文直接可见（放不下会换行），不再挂重复内容的 title
+                      scan.rulepacks.map((pack) => packDisplayName(pack.name, pack.id)).join('、')
                     ) : (
                       <span className="text-muted-foreground">—</span>
                     )}
@@ -423,10 +422,7 @@ export default function ScanResultPage() {
                 <GitCompare className="size-4 text-primary" />
                 {t('scanResult.vsBaseline', { id: scan.baselineScanId })}
               </div>
-              <ComparisonSummary
-                issues={issues}
-                baselineScanId={scan.baselineScanId}
-              />
+              <ComparisonSummary issues={issues} />
             </div>
           )}
 

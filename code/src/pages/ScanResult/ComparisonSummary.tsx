@@ -6,12 +6,10 @@ import { COMPARISON_VISUALS } from '@/data/constants';
 
 interface ComparisonSummaryProps {
   issues: IIssue[];
-  baselineScanId: string;
 }
 
 export default function ComparisonSummary({
   issues,
-  baselineScanId,
 }: ComparisonSummaryProps) {
   const { t } = useTranslation();
   const stats = useMemo(
@@ -47,8 +45,9 @@ export default function ComparisonSummary({
                 <div className={`text-2xl font-bold tabular-nums ${item.tone}`}>
                   {item.value}
                 </div>
+                {/* 基线 ID 已在上方标题里出现，三张卡不再各复述一遍 */}
                 <div className="truncate text-xs text-muted-foreground">
-                  {t(`comparison.${item.key}`)} · {t('comparison.vsBaseline', { id: baselineScanId })}
+                  {t(`comparison.${item.key}`)}
                 </div>
               </div>
             </CardContent>
