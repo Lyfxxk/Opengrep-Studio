@@ -590,8 +590,6 @@ const en: typeof zh = {
     hint: 'Globs supported (* / **); press Enter to add one at a time, relative to the project root, up to {{limit}} entries',
   },
   rulesCenter: {
-    subtitle:
-      'Manage rule packs (built-in / custom / import-export / quality checks), or verify rule positives and negatives online in the Lab.',
     tabPacks: 'Rule packs',
     tabLab: 'Rule Lab',
   },
