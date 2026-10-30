@@ -1,6 +1,6 @@
 
 export type ReviewStatus = 'pending' | 'confirmed' | 'false_positive' | 'accepted';
-export type TaintRole = 'source' | 'intermediate' | 'sink';
+type TaintRole = 'source' | 'intermediate' | 'sink';
 
 interface IIssueReview {
   status: ReviewStatus;

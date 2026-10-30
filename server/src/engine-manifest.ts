@@ -36,7 +36,7 @@ export interface EngineTarget {
 let catalogCache: EngineCatalog | undefined;
 
 /** engines.json 只读且很小，进程内缓存一次即可（升级只改 installed.json） */
-export function engineCatalog(): EngineCatalog {
+function engineCatalog(): EngineCatalog {
   catalogCache ??= JSON.parse(fs.readFileSync(catalogPath, 'utf8')) as EngineCatalog;
   return catalogCache;
 }

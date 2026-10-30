@@ -4,7 +4,7 @@ import type { IScanResult } from '@/data/scanresults';
 import i18n from '@/i18n';
 import { SEVERITY_ORDER } from '@/lib/severity';
 
-export interface IReportMeta {
+interface IReportMeta {
   projectName: string;
   projectDescription?: string;
   language: string;
@@ -40,7 +40,7 @@ interface IReportFileAgg {
 }
 
 /** 服务端结论的结构化载荷：code 对应 i18n 键 reportConclusion.<code>，message 为中文兜底 */
-export interface IReportConclusionCode {
+interface IReportConclusionCode {
   code: string;
   params: Record<string, unknown>;
   message: string;

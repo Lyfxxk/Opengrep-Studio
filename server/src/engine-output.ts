@@ -3,7 +3,7 @@
  */
 
 /** 反斜杠路径分隔符统一为正斜杠（引擎在 Windows 上返回反斜杠路径） */
-export function normalizePath(p: string): string {
+function normalizePath(p: string): string {
   return p.replace(/\\/g, '/');
 }
 
