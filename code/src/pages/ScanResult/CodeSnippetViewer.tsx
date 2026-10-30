@@ -68,6 +68,7 @@ export default function CodeSnippetViewer({
       <Card className="flex h-full min-h-[320px] items-center justify-center">
         <div className="flex flex-col items-center gap-3 text-center text-muted-foreground">
           <MousePointerClick className="size-8" />
+          <p className="text-sm">{t('snippet.pickHint')}</p>
         </div>
       </Card>
     );

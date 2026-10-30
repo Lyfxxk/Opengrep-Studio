@@ -374,6 +374,7 @@ const zhHant: typeof zh = {
     setBaseline: '設為基線',
   },
   snippet: {
+    pickHint: '從左側選擇一個問題，檢視對應程式碼片段',
     knowledgeBtn: '規則知識',
     reReview: '重新複核',
     review: '人工複核',
@@ -664,7 +665,7 @@ const zhHant: typeof zh = {
     createdWithSamplesToast: '規則包「{{name}}」已建立（{{rules}} 條規則、{{samples}} 個樣本）',
     overwriteSavedToast: '已覆寫儲存到規則包「{{name}}」',
     engineRunning: '引擎執行中，正在對樣本做匹配…',
-    idleHint: '尚未執行實驗',
+    idleHint: '尚未執行實驗 · Ctrl+Enter 執行',
     passPositives: '正例命中 {{count}} 處',
     passNegatives: '反例 {{count}} 處誤報',
     passMeta: '規則 {{count}} 條 · 引擎耗時 {{duration}}s',
