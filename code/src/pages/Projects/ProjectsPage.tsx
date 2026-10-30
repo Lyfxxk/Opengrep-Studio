@@ -18,7 +18,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import BatchDeleteBar from '@/components/BatchDeleteBar';
 import BatchDeleteConfirm from '@/components/BatchDeleteConfirm';
@@ -92,12 +92,11 @@ export default function ProjectsPage() {
     projectId?: string,
   ) => {
     try {
+      // 增删改的结果列表里立刻可见，不再额外弹成功提示
       if (projectId) {
         await api.updateProject(projectId, values);
-        toast.success(t('projects.updateSuccess'));
       } else {
         await api.createProject(values);
-        toast.success(t('projects.createSuccess'));
       }
       setCreateOpen(false);
       // 程序化关闭不触发 onOpenChange，这里必须同步清空，否则下次“新建项目”会带出旧编辑态
@@ -118,7 +117,6 @@ export default function ProjectsPage() {
     try {
       await api.deleteProject(deleteTarget.id);
       setDeleteTarget(null);
-      toast.success(t('projects.deleteSuccess'));
       await refresh();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : String(error));
@@ -141,8 +139,8 @@ export default function ProjectsPage() {
     setBatchDeleting(false);
     selection.clear();
     await refresh();
-    if (failed === 0) toast.success(t('projects.batchDeleted', { count: ids.length }));
-    else
+    // 全部成功时列表已经少了一整批，只有部分失败需要报出来
+    if (failed > 0)
       toast.warning(
         t('projects.batchPartial', { count: ids.length - failed, failed }),
       );
@@ -151,10 +149,7 @@ export default function ProjectsPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-semibold">{t('nav.projects')}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{t('projects.subtitle')}</p>
-        </div>
+        <h1 className="text-xl font-semibold">{t('nav.projects')}</h1>
         <Button className="gap-1" onClick={() => setCreateOpen(true)}>
           <Plus className="size-4" />
           {t('projects.newProject')}
@@ -184,9 +179,6 @@ export default function ProjectsPage() {
       />
 
       <Card className="overflow-hidden">
-        <CardHeader>
-          <CardTitle className="text-base">{t('projects.listTitle')}</CardTitle>
-        </CardHeader>
         <CardContent className="p-0">
           {loading ? (
             <div className="space-y-3 px-6 py-8">
