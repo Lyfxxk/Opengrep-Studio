@@ -217,7 +217,10 @@ export default function ProjectDetailPage() {
         setProject((prev) => (prev ? { ...prev, languageStats: result.languageStats } : prev));
       }
     } catch (error) {
+      // 与克隆失败同口径：上传失败只清服务端临时目录、不动既有源码。回到 idle 后交给
+      // refresh 的 hasSource 恢复逻辑找回「源码已导入」态，扫描按钮不至于被误禁用
       setUpload({ status: 'idle' });
+      void refresh();
       toast.error(error instanceof Error ? error.message : String(error));
     }
   };
