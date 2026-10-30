@@ -346,7 +346,7 @@ export default function LabPage() {
       // 通过与否的结果卡已完整展示，只在失败/出错时弹提示
       if (res.verdict === 'fail') {
         toast.warning(t('lab.runFailToast', { reasons: res.failReasons.join('；') }));
-      } else {
+      } else if (res.verdict === 'error') {
         toast.error(t('lab.runErrorToast', { error: res.error ?? t('lab.engineFailedFallback') }));
       }
     } catch (error) {
