@@ -136,9 +136,12 @@ export default function IssueFilterList({
         currentIndex === -1
           ? 0
           : Math.min(filtered.length - 1, Math.max(0, currentIndex + offset));
+      // 越过分页边界时同步翻页：列表只渲染当前页切片，只改选中会让高亮落到
+      // 渲染不出来的条目上，看起来像键盘失灵
+      setPage(Math.floor(nextIndex / LIST_PAGE_SIZE) + 1);
       onSelect(filtered[nextIndex].id);
     },
-    [filtered, selectedIssueId, onSelect],
+    [filtered, selectedIssueId, onSelect, setPage],
   );
 
   useEffect(() => {

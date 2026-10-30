@@ -397,8 +397,8 @@ const en: typeof zh = {
     multiFileLabel: '{{dir}} ({{count}} files)',
     cloneLabelWithRef: '{{url}} ({{ref}})',
     uploadOkPlain: 'Source uploaded — ready to scan',
-    uploadOkFiles: 'Source uploaded — {{count}} files in total — ready to scan',
-    uploadOkIgnored: 'Source uploaded — {{count}} files ignored via .gitignore — ready to scan',
+    uploadOkFiles: 'Source uploaded — {{files}} files in total — ready to scan',
+    uploadOkIgnored: 'Source uploaded — {{ignored}} files ignored via .gitignore — ready to scan',
     uploadOkBoth: 'Source uploaded — {{files}} files in total, {{ignored}} ignored via .gitignore — ready to scan',
     cloneSuccessToast: 'Repository cloned — {{count}} files — ready to scan',
     // 克隆失败只清临时目录，既有源码不受影响；前导空格用于与错误消息拼接

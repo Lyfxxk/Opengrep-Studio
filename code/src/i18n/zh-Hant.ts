@@ -385,8 +385,8 @@ const zhHant: typeof zh = {
     multiFileLabel: '{{dir}}（{{count}} 個檔案）',
     cloneLabelWithRef: '{{url}}（{{ref}}）',
     uploadOkPlain: '原始碼上傳成功，可以開始掃描',
-    uploadOkFiles: '原始碼上傳成功，共 {{count}} 個檔案，可以開始掃描',
-    uploadOkIgnored: '原始碼上傳成功，已按 .gitignore 忽略 {{count}} 個檔案，可以開始掃描',
+    uploadOkFiles: '原始碼上傳成功，共 {{files}} 個檔案，可以開始掃描',
+    uploadOkIgnored: '原始碼上傳成功，已按 .gitignore 忽略 {{ignored}} 個檔案，可以開始掃描',
     uploadOkBoth: '原始碼上傳成功，共 {{files}} 個檔案，已按 .gitignore 忽略 {{ignored}} 個檔案，可以開始掃描',
     cloneSuccessToast: '儲存庫克隆成功，共 {{count}} 個檔案，可以開始掃描',
     // 克隆失敗只清臨時目錄，既有原始碼不受影響；toast 附帶說明，避免使用者誤以為要重新上傳
