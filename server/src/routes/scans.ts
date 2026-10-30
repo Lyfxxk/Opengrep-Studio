@@ -129,6 +129,15 @@ function requireScan(id: string): ScanRecord {
 }
 
 /**
+ * 列表/轮询专用的扫描摘要：命令行、规则哈希快照、源码哈希只在报告/可复现清单里读取，
+ * 留在列表响应里会让前端每 1.5–5 秒一次的轮询白白搬运成百上千 KB。
+ */
+function toScanSummary(scan: ScanRecord): Omit<ScanRecord, 'srcHash' | 'commandLine' | 'configSnapshot'> {
+  const { srcHash: _srcHash, commandLine: _commandLine, configSnapshot: _configSnapshot, ...rest } = scan;
+  return rest;
+}
+
+/**
  * 扫描产物的引擎版本：优先用记录里落库的版本；旧记录没落 engine_version 时，
  * 只有引擎扫描（有 commandLine）才兜底探测当前版本——SARIF 导入没有 commandLine，
  * 用本机 opengrep 版本兜底会把外部工具的结果标错来源。
@@ -216,12 +225,12 @@ scanRoutes.post('/api/projects/:id/scans', asyncHandler(async (req, res) => {
 
 scanRoutes.get('/api/projects/:id/scans', asyncHandler(async (req, res) => {
   requireProject(req.params.id);
-  res.json(listScans(req.params.id));
+  res.json(listScans(req.params.id).map(toScanSummary));
 }));
 
 /** 全量扫描列表（跨项目对比的候选池） */
 scanRoutes.get('/api/scans', asyncHandler(async (_req, res) => {
-  res.json(listAllScans());
+  res.json(listAllScans().map(toScanSummary));
 }));
 
 scanRoutes.get('/api/scans/:scanId', asyncHandler(async (req, res) => {
