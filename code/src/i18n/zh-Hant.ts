@@ -23,7 +23,6 @@ const zhHant: typeof zh = {
   },
   header: {
     logout: '登出',
-    logoutToast: '已登出',
     avatarAlt: '管理員頭像',
     language: '切換語言',
     theme: '切換主題',
@@ -985,8 +984,6 @@ const zhHant: typeof zh = {
     heroTitle1: '讓隱患，先於攻擊者',
     heroTitleEm: '現形',
     heroTitle2: '。',
-    heroSub1: '從匯入原始碼到交付測試報告，規則引擎逐條比對，',
-    heroSub2: '風險直達檔案與行號，四步完成一次完整稽核。',
     termAria: '稽核流程示範：新增專案、匯入原始碼、掃描標記風險、產生測試報告',
     termTitle: 'opengrep · scan — 範例資料',
     termEngineLoaded: '引擎就緒 · 已載入',
@@ -1009,8 +1006,6 @@ const zhHant: typeof zh = {
     step4Desc: '彙總風險等級，產生測試報告。',
     username: '帳號',
     password: '密碼',
-    usernamePlaceholder: '請輸入管理員帳號',
-    passwordPlaceholder: '請輸入密碼',
     showPassword: '顯示密碼',
     hidePassword: '隱藏密碼',
     errorUsername: '請輸入帳號',
@@ -1020,7 +1015,6 @@ const zhHant: typeof zh = {
     submitting: '登入中…',
     successTitle: '身分已確認',
     successDesc: '正在進入工作台…',
-    successToast: '登入成功，歡迎回來',
   },
 };
 

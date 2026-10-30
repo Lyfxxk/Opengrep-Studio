@@ -23,7 +23,6 @@ const en: typeof zh = {
   },
   header: {
     logout: 'Sign out',
-    logoutToast: 'Signed out',
     avatarAlt: 'Admin avatar',
     language: 'Switch language',
     theme: 'Switch theme',
@@ -1025,8 +1024,6 @@ const en: typeof zh = {
     heroTitle1: 'See risks ',
     heroTitleEm: 'before',
     heroTitle2: ' attackers do.',
-    heroSub1: 'From source import to test report, the rule engine compares line by line,',
-    heroSub2: 'pinning risks to files and line numbers — a full audit in four steps.',
     termAria: 'Audit workflow demo: create a project, import source, scan for risks, generate a test report',
     termTitle: 'opengrep · scan — sample data',
     termEngineLoaded: 'engine ready · loaded',
@@ -1049,8 +1046,6 @@ const en: typeof zh = {
     step4Desc: 'Summarize severity levels into a test report.',
     username: 'Username',
     password: 'Password',
-    usernamePlaceholder: 'Enter admin username',
-    passwordPlaceholder: 'Enter password',
     showPassword: 'Show password',
     hidePassword: 'Hide password',
     errorUsername: 'Please enter your username',
@@ -1060,7 +1055,6 @@ const en: typeof zh = {
     submitting: 'Signing in…',
     successTitle: 'Identity confirmed',
     successDesc: 'Entering the workspace…',
-    successToast: 'Signed in, welcome back',
   },
 };
 
