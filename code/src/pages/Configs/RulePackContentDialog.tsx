@@ -63,7 +63,6 @@ export default function RulePackContentDialog({
     setSaving(true);
     try {
       await api.updateRulePackContent(pack.id, content);
-      toast.success(t('rulePacks.savedToast', { name: pack.name }));
       setEditing(false);
       onSaved();
       onOpenChange(false);
