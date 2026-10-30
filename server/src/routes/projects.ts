@@ -30,6 +30,20 @@ import { asyncHandler, newId, requireProject, requireValidBaseline } from './sha
 
 export const projectRoutes = Router();
 
+/** 项目描述上限（与前端 NewProjectDialog 的 maxLength 200 同一口径；列表接口会带回全部描述） */
+const MAX_PROJECT_DESCRIPTION_LENGTH = 200;
+
+function normalizeProjectDescription(value: unknown): string {
+  const text = String(value ?? '').trim();
+  if (text.length > MAX_PROJECT_DESCRIPTION_LENGTH) {
+    throw new HttpError(400, `项目描述不能超过 ${MAX_PROJECT_DESCRIPTION_LENGTH} 个字符`, {
+      code: 'srv.projectDescriptionTooLong',
+      params: { limit: MAX_PROJECT_DESCRIPTION_LENGTH },
+    });
+  }
+  return text;
+}
+
 projectRoutes.get('/api/projects', (_req, res) => {
   // hasSource 让前端在刷新/从其他页返回时恢复「源码已导入」的扫描按钮可用态
   res.json(
@@ -49,7 +63,7 @@ projectRoutes.post('/api/projects', asyncHandler(async (req, res) => {
   const project: Project = {
     id: newId('p'),
     name,
-    description: String(req.body?.description ?? '').trim() || undefined,
+    description: normalizeProjectDescription(req.body?.description) || undefined,
     language: String(req.body?.language ?? '').trim(),
     createdAt: new Date().toISOString(),
   };
@@ -69,7 +83,7 @@ projectRoutes.patch('/api/projects/:id', asyncHandler(async (req, res) => {
     patch.name = name;
   }
   if (req.body?.description !== undefined) {
-    patch.description = String(req.body.description).trim() || null;
+    patch.description = normalizeProjectDescription(req.body.description) || null;
   }
   if (req.body?.language !== undefined) patch.language = String(req.body.language);
   if (req.body?.baselineScanId !== undefined) {

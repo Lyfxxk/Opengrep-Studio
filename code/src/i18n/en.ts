@@ -870,6 +870,7 @@ const en: typeof zh = {
       packNameTooLong: 'Rule pack name cannot exceed 50 characters',
       projectNameRequired: 'Project name cannot be empty',
       projectNameTooLong: 'Project name cannot exceed 50 characters',
+      projectDescriptionTooLong: 'Project description cannot exceed {{limit}} characters',
       configNotFound: 'Scan config not found or deleted',
       packNotFound: 'Rule pack not found or deleted',
       packContentRequired: 'Please enter the rule pack YAML content',

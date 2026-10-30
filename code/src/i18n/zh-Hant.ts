@@ -839,6 +839,7 @@ const zhHant: typeof zh = {
       packNameTooLong: '規則包名稱不能超過 50 個字元',
       projectNameRequired: '專案名稱不能為空',
       projectNameTooLong: '專案名稱不能超過 50 個字元',
+      projectDescriptionTooLong: '專案描述不能超過 {{limit}} 個字元',
       configNotFound: '掃描設定不存在或已被刪除',
       packNotFound: '規則包不存在或已被刪除',
       packContentRequired: '請輸入規則包 YAML 內容',
