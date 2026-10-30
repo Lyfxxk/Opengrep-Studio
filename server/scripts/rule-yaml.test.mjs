@@ -42,6 +42,11 @@ test('缺少 id / languages / pattern 表达式：逐条报原因', () => {
   );
 });
 
+test('非对象规则条目：按缺少 id 报业务错误而不是 TypeError', () => {
+  assert.throws(() => parseRuleYaml('rules:\n  - null\n'), /第 1 条：缺少 id/);
+  assert.throws(() => parseRuleYaml('rules:\n  - 42\n'), /第 1 条：缺少 id/);
+});
+
 test('taint 模式无需 pattern 前缀键', () => {
   const parsed = parseRuleYaml(`rules:
   - id: taint-eval

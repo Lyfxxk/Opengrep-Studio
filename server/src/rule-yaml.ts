@@ -25,7 +25,11 @@ export function parseRuleYaml(text: string): {
   let firstLanguage = '';
   const issues: RuleYamlIssue[] = [];
   rules.forEach((rule, index) => {
-    const item = rule as Record<string, unknown>;
+    // YAML 里 `rules: [null]`、`- 42` 这类条目不是对象：直接读 item.id 会抛 TypeError
+    // （"Cannot read properties of null"），报错既不像业务错误也不带条目位置
+    const item = (
+      typeof rule === 'object' && rule !== null ? rule : {}
+    ) as Record<string, unknown>;
     const id = typeof item.id === 'string' ? item.id : '';
     if (!id) {
       issues.push({ index, reason: '缺少 id' });
