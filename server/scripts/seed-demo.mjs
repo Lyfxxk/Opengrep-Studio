@@ -3,10 +3,10 @@
  * 产物全部落在 server/data/ 与 server/rules/custom/（均在 .gitignore 中，不会入库）。
  * 用法：node server/scripts/seed-demo.mjs [--skip-clone]
  */
-import { execSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readFileSync, rmSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import * as tar from 'tar';
 
 // 与 e2e.mjs / dirty-test.mjs 一致：默认钉死 IPv4 回环，可用 BASE_URL 覆盖
 const BASE = process.env.BASE_URL ?? 'http://127.0.0.1:8787';
@@ -134,10 +134,16 @@ const PACKS = [
   },
 ];
 
-function makeTar(dirName) {
+/**
+ * 现场打包演示源码。用 Node 的 tar 实现而不是 `tar czf`：后者依赖系统里存在 bash/tar，
+ * Windows 没装 Git Bash 时 npm run seed 会直接失败。产物路径不变（始终是 seed-src/*.tgz）。
+ */
+async function makeTar(dirName) {
   const tarName = `${dirName}.tgz`;
-  execSync(`tar czf "${tarName}" -C "${dirName}" .`, { cwd: SEED_DIR, shell: 'bash' });
-  return path.join(SEED_DIR, tarName);
+  const tarPath = path.join(SEED_DIR, tarName);
+  rmSync(tarPath, { force: true });
+  await tar.create({ gzip: true, cwd: path.join(SEED_DIR, dirName), file: tarPath }, ['.']);
+  return tarPath;
 }
 
 async function uploadSource(projectId, tarPath) {
@@ -217,12 +223,12 @@ async function main() {
   let p1 = projects.find((p) => p.name === 'demo-nodejs-payment');
   if (!p1) p1 = await j('/api/projects', post({ name: 'demo-nodejs-payment', description: '种子数据：Node.js 支付服务演示（故意包含硬编码密钥 / MD5 / eval / SQL 拼接）' }));
   await j(`/api/projects/${p1.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ configId: config.id }) });
-  const tar1 = makeTar('nodejs-v1');
+  const tar1 = await makeTar('nodejs-v1');
   log(`  上传 v1 源码：${(await uploadSource(p1.id, tar1)).fileCount} 个文件`);
   const s1 = await scanAndWait(p1.id, 'v1 基线扫描');
   await j(`/api/projects/${p1.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ baselineScanId: s1.id }) });
   log('  已设为项目基线');
-  const tar2 = makeTar('nodejs-v2');
+  const tar2 = await makeTar('nodejs-v2');
   log(`  上传 v2 源码（修复 eval、新增 backupApiKey / csrfToken）：${(await uploadSource(p1.id, tar2)).fileCount} 个文件`);
   const s2 = await scanAndWait(p1.id, 'v2 对比扫描');
 
@@ -257,7 +263,7 @@ async function main() {
   let p2 = projects.find((p) => p.name === 'demo-python-flask-blog');
   if (!p2) p2 = await j('/api/projects', post({ name: 'demo-python-flask-blog', description: '种子数据：Flask 博客演示（SQL 拼接 / pickle 反序列化 / eval / 弱哈希）' }));
   await j(`/api/projects/${p2.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ configId: config.id }) });
-  const tar3 = makeTar('python-v1');
+  const tar3 = await makeTar('python-v1');
   log(`  上传源码：${(await uploadSource(p2.id, tar3)).fileCount} 个文件`);
   await scanAndWait(p2.id, 'flask 扫描');
 
