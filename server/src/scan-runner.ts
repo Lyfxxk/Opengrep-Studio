@@ -294,11 +294,10 @@ export function normalizeGlob(pattern: string, mode: 'include' | 'exclude'): str
       .replace(/\*\*/g, '*');
     return normalized ? [normalized] : [];
   }
+  // 末尾 /** 的前缀里也可能有中间 **/（如 src/**/generated/**）：先按中间 **/ 补零层变体，
+  // 再对每个变体套 [prefix/*, prefix/**/*]，否则两个产物都要求中间至少隔一层，直接子文件静默漏扫
   const expanded = pattern.endsWith('/**')
-    ? (() => {
-        const prefix = pattern.slice(0, -3);
-        return [`${prefix}/*`, `${prefix}/**/*`];
-      })()
+    ? expandGlobstarSegments(pattern.slice(0, -3)).flatMap((prefix) => [`${prefix}/*`, `${prefix}/**/*`])
     : expandGlobstarSegments(pattern);
   return [...new Set(
     expanded

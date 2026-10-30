@@ -29,6 +29,16 @@ test('include：末尾 /** 覆盖整棵子树，而不是只剩目录名', () =>
   assert.deepEqual(normalizeGlob('vendor/**', 'include'), ['vendor/*', 'vendor/**/*']);
 });
 
+test('include：末尾 /** 与中间 **/ 组合同样补零层变体', () => {
+  // 两个产物若都只留中间 **/，src/generated/ 的直接子文件两个都匹配不到
+  assert.deepEqual(normalizeGlob('src/**/generated/**', 'include'), [
+    'src/generated/*',
+    'src/generated/**/*',
+    'src/**/generated/*',
+    'src/**/generated/**/*',
+  ]);
+});
+
 test('include：普通 * 与单段 ** 写法保持可用', () => {
   assert.deepEqual(normalizeGlob('*.py', 'include'), ['*.py']);
   assert.deepEqual(normalizeGlob('src/**.py', 'include'), ['src/*.py']);
