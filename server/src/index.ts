@@ -36,7 +36,7 @@ function isLocalHost(hostname: string): boolean {
 // 防 DNS 重绑定与跨站盲写：攻击页把自己的域名解析到 127.0.0.1 后，浏览器会带着攻击域名的
 // Host 头访问本服务并视为同源（可读取扫描结果与源码片段）。因此 Host 必须是 localhost 或
 // IP 字面量；带 Origin 的变更请求必须来自本机。经 IP 直连的局域网访问不受影响。
-app.use((req, res, next) => {
+app.use((req, _res, next) => {
   let hostOk = false;
   if (typeof req.headers.host === 'string') {
     try {

@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 import multer from 'multer';
-import { getProject, getScan, type Project, type ScanRecord } from '../db.js';
+import { getProject, getScan, type Project } from '../db.js';
 import { HttpError } from '../errors.js';
 
 /** 规则包 YAML 上传与实验室运行的体积上限（同一策略，报错文案从这里取数） */
