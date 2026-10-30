@@ -295,16 +295,13 @@ const zhHant: typeof zh = {
     title: '掃描結果 · {{id}}',
     scannedAt: '掃描於 {{time}}',
     compareBtn: '對比掃描',
-    compareBtnTitle: '任選另一次已完成掃描（可跨專案）做問題級 + 檔案級對比',
     exportSarif: '匯出 SARIF',
-    exportSarifTitle: 'SARIF 2.1.0，可匯入 GitHub Code Scanning / DefectDojo 等工具鏈',
     genReport: '產生測試報告',
     packsBtn: '本次掃描規則包',
     packsUnit: ' 個',
     rulesetDir: '規則集目錄：{{rules}}',
     failedTitle: '本次掃描執行失敗',
     failedHint: '原始碼快照仍在，返回專案詳情頁可直接重新發起掃描，無需重新上傳',
-    scanningHint: '掃描進行中，完成後此處將展示問題列表',
     // 並行池排隊中（第 3 路及以後）的提示：與 scanningHint 區分，避免排隊掃描被誤讀為卡死
     queuedHint: '排隊等待中，其他掃描完成後自動開始',
     // 心跳進度：原始碼快照檔案數在引擎啟動前落庫，掃描中即可見
@@ -312,7 +309,6 @@ const zhHant: typeof zh = {
     cancelBtn: '取消掃描',
     cancelRequestedToast: '已請求取消掃描',
     summaryTitle: '掃描概要',
-    zeroIssues: '0 問題',
     dtFiles: '檢查檔案',
     filesCount: '{{count}} 個',
     dtRuleset: '規則集',
@@ -322,8 +318,6 @@ const zhHant: typeof zh = {
     engineVersionDiffTitle: '基線 v{{baseline}} · 本次 v{{current}}，新增/修復項可能來自引擎升級',
     baselineNotSet: '未設定',
     allClearTitle: '掃描完成，未發現問題',
-    allClearDesc: '本次掃描共檢查 {{count}} 個原始碼檔案，未命中任何已啟用規則。',
-    allClearDescBaseline: '本次掃描共檢查 {{count}} 個原始碼檔案，未命中任何已啟用規則，與基線相比無新增、無遺留問題。',
     vsBaseline: '與基線掃描 {{id}} 對比',
   },
   issueFilter: {

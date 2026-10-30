@@ -301,9 +301,7 @@ const en: typeof zh = {
     title: 'Scan result · {{id}}',
     scannedAt: 'Scanned {{time}}',
     compareBtn: 'Compare scans',
-    compareBtnTitle: 'Diff against any other completed scan (even across projects) at issue and file level',
     exportSarif: 'Export SARIF',
-    exportSarifTitle: 'SARIF 2.1.0 — importable into GitHub Code Scanning / DefectDojo and other toolchains',
     genReport: 'Generate test report',
     packsBtn: 'Rule packs of this scan',
     packsUnit: '',
@@ -311,7 +309,6 @@ const en: typeof zh = {
     failedTitle: 'This scan failed',
     failedHint:
       'The source snapshot is still available — go back to the project detail page and start a new scan directly, no re-upload needed.',
-    scanningHint: 'Scan in progress — the issue list appears here once it finishes.',
     // 并发池排队中（第 3 路及以后）的提示：与 scanningHint 区分，避免排队扫描被误读为卡死
     queuedHint: 'Queued — waiting for a free slot; it starts automatically.',
     // 心跳进度：源码快照文件数在引擎启动前落库，扫描中即可见
@@ -319,7 +316,6 @@ const en: typeof zh = {
     cancelBtn: 'Cancel scan',
     cancelRequestedToast: 'Cancellation requested',
     summaryTitle: 'Scan summary',
-    zeroIssues: '0 issues',
     dtFiles: 'Files checked',
     filesCount: '{{count}}',
     dtRuleset: 'Ruleset',
@@ -329,9 +325,6 @@ const en: typeof zh = {
     engineVersionDiffTitle: 'Baseline v{{baseline}} · this scan v{{current}} — new/fixed items may come from an engine upgrade',
     baselineNotSet: 'Not set',
     allClearTitle: 'Scan completed — no issues found',
-    allClearDesc: 'This scan checked {{count}} source files and matched no enabled rules.',
-    allClearDescBaseline:
-      'This scan checked {{count}} source files and matched no enabled rules, with no new or remaining issues versus the baseline.',
     vsBaseline: 'Diff vs baseline scan {{id}}',
   },
   issueFilter: {

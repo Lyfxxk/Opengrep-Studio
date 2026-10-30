@@ -294,16 +294,13 @@ const zh = {
     title: '扫描结果 · {{id}}',
     scannedAt: '扫描于 {{time}}',
     compareBtn: '对比扫描',
-    compareBtnTitle: '任选另一次已完成扫描（可跨项目）做问题级 + 文件级对比',
     exportSarif: '导出 SARIF',
-    exportSarifTitle: 'SARIF 2.1.0，可导入 GitHub Code Scanning / DefectDojo 等工具链',
     genReport: '生成测试报告',
     packsBtn: '本次扫描规则包',
     packsUnit: ' 个',
     rulesetDir: '规则集目录：{{rules}}',
     failedTitle: '本次扫描执行失败',
     failedHint: '源码快照仍在，返回项目详情页可直接重新发起扫描，无需重新上传',
-    scanningHint: '扫描进行中，完成后此处将展示问题列表',
     // 并发池排队中（第 3 路及以后）的提示：与 scanningHint 区分，避免排队扫描被误读为卡死
     queuedHint: '排队等待中，其他扫描完成后自动开始',
     // 心跳进度：源码快照文件数在引擎启动前落库，扫描中即可见
@@ -311,7 +308,6 @@ const zh = {
     cancelBtn: '取消扫描',
     cancelRequestedToast: '已请求取消扫描',
     summaryTitle: '扫描概要',
-    zeroIssues: '0 问题',
     dtFiles: '检查文件',
     filesCount: '{{count}} 个',
     dtRuleset: '规则集',
@@ -321,8 +317,6 @@ const zh = {
     engineVersionDiffTitle: '基线 v{{baseline}} · 本次 v{{current}}，新增/修复项可能来自引擎升级',
     baselineNotSet: '未设置',
     allClearTitle: '扫描完成，未发现问题',
-    allClearDesc: '本次扫描共检查 {{count}} 个源码文件，未命中任何已启用规则。',
-    allClearDescBaseline: '本次扫描共检查 {{count}} 个源码文件，未命中任何已启用规则，与基线相比无新增、无遗留问题。',
     vsBaseline: '与基线扫描 {{id}} 对比',
   },
   issueFilter: {
