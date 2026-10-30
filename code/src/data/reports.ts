@@ -5,6 +5,7 @@ import i18n from '@/i18n';
 import { SEVERITY_ORDER } from '@/lib/severity';
 
 interface IReportMeta {
+  projectId: string;
   projectName: string;
   projectDescription?: string;
   language: string;
@@ -111,6 +112,7 @@ export function buildMockReport(scan: IScanResult, projectName: string): IReport
 
   return {
     meta: {
+      projectId: scan.projectId,
       projectName,
       language: 'TypeScript',
       scanId: scan.id,

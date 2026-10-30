@@ -670,6 +670,7 @@ const zh = {
     unavailable: '报告不可用',
     unavailableReasonSuffix: '：{{reason}}',
     unavailableNoReason: '：扫描记录不存在或尚未完成',
+    unavailableProjectMismatch: '：该扫描不属于当前项目',
     backToScan: '返回扫描结果',
     printBtn: '打印 / 导出 PDF',
     downloadHtml: '下载 HTML 报告',

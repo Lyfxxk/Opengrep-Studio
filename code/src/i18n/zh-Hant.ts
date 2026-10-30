@@ -671,6 +671,7 @@ const zhHant: typeof zh = {
     unavailable: '報告不可用',
     unavailableReasonSuffix: '：{{reason}}',
     unavailableNoReason: '：掃描記錄不存在或尚未完成',
+    unavailableProjectMismatch: '：該掃描不屬於目前專案',
     backToScan: '返回掃描結果',
     printBtn: '列印 / 匯出 PDF',
     downloadHtml: '下載 HTML 報告',
