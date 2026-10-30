@@ -375,11 +375,17 @@ export default function LabPage() {
       .catch(() => setCustomPacks([]));
   }, []);
 
-  // P4：示例会不会覆盖用户已编辑的内容？当前 YAML 与所有内置示例都不同且非空 → 视为有编辑，需要确认
+  // P4：示例会不会覆盖用户已编辑的内容？只比对 YAML 会漏掉仅改正/反例样本的情况，这里整份草稿（含样本）都参与比对
   const pickExample = (example: LabDraft) => {
+    const hasContent = Boolean(draft.yaml.trim() || draft.positive.trim() || draft.negative.trim());
     const edited =
-      draft.yaml.trim() !== '' &&
-      !LAB_EXAMPLES.some((item) => item.draft.yaml === draft.yaml);
+      hasContent &&
+      !LAB_EXAMPLES.some(
+        (item) =>
+          item.draft.yaml === draft.yaml &&
+          item.draft.positive === draft.positive &&
+          item.draft.negative === draft.negative,
+      );
     if (edited) {
       setConfirmExample(example);
     } else {

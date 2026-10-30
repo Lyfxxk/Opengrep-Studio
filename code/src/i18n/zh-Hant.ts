@@ -699,7 +699,7 @@ const zhHant: typeof zh = {
     overwriteWarning: '將用目前編輯器中的 YAML 替換該規則包的全部內容，且無法復原。內建規則包不可覆寫。',
     confirmSave: '確認儲存',
     confirmExampleTitle: '載入範例將覆寫目前內容',
-    confirmExampleDesc: '目前規則 YAML 與所有內建範例都不同，載入範例會替換規則和測試樣本，且無法復原。',
+    confirmExampleDesc: '目前內容與所有內建範例都不同，載入範例會替換規則和測試樣本，且無法復原。',
     confirmContinue: '繼續載入',
   },
   // 後端錯誤碼契約（server/src 各模組 HttpError 的 code），前端按 apiErrors.<code> 翻譯
