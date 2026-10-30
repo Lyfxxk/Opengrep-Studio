@@ -18,6 +18,16 @@ export function newId(prefix: string): string {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+/**
+ * 还原 multipart 文件名：busboy 按默认 defParamCharset（latin1）解码 filename 参数，
+ * 浏览器实际发的是 UTF-8 字节，中文文件名会变成「è§åè§å.yaml」这类乱码并原样进日志/落库/回显。
+ * 只在按 latin1 取回的字节序列能完整解码为 UTF-8 时才还原，已是正常 UTF-8 的名字原样返回。
+ */
+export function decodeUploadFileName(name: string): string {
+  const decoded = Buffer.from(name, 'latin1').toString('utf8');
+  return decoded.includes('\uFFFD') ? name : decoded;
+}
+
 export function requireProject(id: string): Project {
   const project = getProject(id);
   if (!project) throw new HttpError(404, '项目不存在或已被删除', { code: 'srv.projectNotFound' });

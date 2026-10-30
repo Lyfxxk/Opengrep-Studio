@@ -36,7 +36,7 @@ import { buildSarifReport } from '../sarif.js';
 import { parseSarifImport } from '../sarif-import.js';
 import { buildReportData, renderReportHtml, type ReportLang } from '../report.js';
 import { applyBaselineComparison, enqueueScan, requestScanCancel, type ScanPlan } from '../scan-runner.js';
-import { asyncHandler, limit400, requireProject, requireValidBaseline } from './shared.js';
+import { asyncHandler, decodeUploadFileName, limit400, requireProject, requireValidBaseline } from './shared.js';
 import { isProjectImporting } from './projects.js';
 
 export const scanRoutes = Router();
@@ -495,7 +495,7 @@ scanRoutes.post(
       throw error;
     }
     console.log(
-      `[sarif-import] 项目 ${project.id} 导入 ${req.file.originalname}（${toolName}）：` +
+      `[sarif-import] 项目 ${project.id} 导入 ${decodeUploadFileName(req.file.originalname)}（${toolName}）：` +
         `${scan.issueCount} 个问题`,
     );
     res.status(201).json(scan);
