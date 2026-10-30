@@ -100,6 +100,13 @@ projectRoutes.patch('/api/projects/:id', asyncHandler(async (req, res) => {
 
 projectRoutes.delete('/api/projects/:id', asyncHandler(async (req, res) => {
   const project = requireProject(req.params.id);
+  // 导入进行中（上传解压/剪枝或克隆）时工作区正被写入：放行删除会让导入任务在已删项目上
+  // 留下孤儿工作区，并把 success 响应发给一个已经不存在的项目
+  if (isProjectImporting(project.id)) {
+    throw new HttpError(409, '该项目正在导入源码（上传/克隆）中，请等待完成后再删除', {
+      code: 'srv.projectImportBusy',
+    });
+  }
   // 进行中/排队中的扫描还在用项目工作区与 DB 行：放行删除会让引擎把 issue 写回已删的扫描，
   // Windows 上还会撞上被占用的目录（rmSync 抛 EPERM 但 DB 已删，留下自相矛盾的状态）
   if (listScans(project.id).some((scan) => scan.status === 'scanning')) {
