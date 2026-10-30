@@ -147,8 +147,16 @@ export default function IssueFilterList({
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
       if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+      // 组合框/下拉/页签/对话框自己要用方向键：拦下来会把选择器的键盘导航换成问题列表跳转
+      if (event.defaultPrevented) return;
       const target = event.target as HTMLElement | null;
-      if (target?.closest('input, textarea, [contenteditable]')) return;
+      if (
+        target?.closest(
+          'input, textarea, select, [contenteditable], [role="combobox"], [role="listbox"], [role="menu"], [role="tablist"], [role="dialog"], [role="alertdialog"]',
+        )
+      ) {
+        return;
+      }
       event.preventDefault();
       moveSelection(event.key === 'ArrowDown' ? 1 : -1);
     };
