@@ -775,8 +775,15 @@ export function renderReportHtml(
 ): string {
   const { meta, totals, topFiles, reviewStats } = data;
   const text = REPORT_TEXT[lang];
-  const current = issues.filter(isActiveIssue);
-  const fixed = issues.filter((issue) => issue.comparisonStatus === 'fixed');
+  // 复核结论由 buildReportData 以 issue.id 挂在 data.issues 上；本函数的 issues 参数是原始行
+  // （需要 matchedLines 取代码片段），这里按 id 回填 review，否则明细条目里的复核标签永远不显示
+  const reviewById = new Map(
+    data.issues.filter((issue) => issue.review).map((issue) => [issue.id, issue.review!]),
+  );
+  const withReview = (rows: IssueRow[]): ReportIssue[] =>
+    rows.map((issue) => ({ ...issue, review: reviewById.get(issue.id) }));
+  const current = withReview(issues.filter(isActiveIssue));
+  const fixed = withReview(issues.filter((issue) => issue.comparisonStatus === 'fixed'));
   const lookup = buildMessageLookup(messages);
 
   const snippets = new Map<string, string>();
