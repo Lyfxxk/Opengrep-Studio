@@ -209,7 +209,6 @@ export default function ScanResultPage() {
               variant="outline"
               className="ml-auto h-8"
               onClick={() => setCompareOpen(true)}
-              title={t('scanResult.compareBtnTitle')}
             >
               <GitCompare className="size-4" />
               {t('scanResult.compareBtn')}
@@ -219,7 +218,6 @@ export default function ScanResultPage() {
                 <a
                   href={api.scanSarifUrl(scan.id)}
                   download
-                  title={t('scanResult.exportSarifTitle')}
                 >
                   <FileDown className="size-4" />
                   {t('scanResult.exportSarif')}
@@ -301,7 +299,6 @@ export default function ScanResultPage() {
               <p className="text-sm text-muted-foreground">{t('scanResult.queuedHint')}</p>
             ) : (
               <>
-                <p className="text-sm text-muted-foreground">{t('scanResult.scanningHint')}</p>
                 {/* 心跳进度：countFiles 落库后即可见；排队中恒为 0 不展示 */}
                 {scan.fileCount ? (
                   <p className="text-xs text-muted-foreground">
@@ -329,9 +326,6 @@ export default function ScanResultPage() {
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base">
                 {t('scanResult.summaryTitle')}
-                <Badge className="ml-auto border-transparent bg-success/10 text-xs font-normal text-success">
-                  {t('scanResult.zeroIssues')}
-                </Badge>
               </CardTitle>
             </CardHeader>
             <CardContent className="flex-1">
@@ -415,15 +409,7 @@ export default function ScanResultPage() {
             <span className="flex size-14 items-center justify-center rounded-full bg-success/10">
               <CheckCircle2 className="size-8 text-success" />
             </span>
-            <div className="space-y-1">
-              <p className="text-lg font-semibold">{t('scanResult.allClearTitle')}</p>
-              <p className="mx-auto max-w-[520px] text-sm text-muted-foreground">
-                {t(
-                  scan.baselineScanId ? 'scanResult.allClearDescBaseline' : 'scanResult.allClearDesc',
-                  { count: scan.fileCount || '—' },
-                )}
-              </p>
-            </div>
+            <p className="text-lg font-semibold">{t('scanResult.allClearTitle')}</p>
             <Button variant="outline" asChild>
               <Link to={`/projects/${scan.projectId}`}>{t('common.backToProjects')}</Link>
             </Button>
