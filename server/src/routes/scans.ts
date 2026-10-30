@@ -272,6 +272,8 @@ scanRoutes.delete('/api/scans/:scanId', asyncHandler(async (req, res) => {
  * 取消进行中的扫描（与 DELETE 语义区分：取消保留记录与快照，落 failed 供查看原因；DELETE 才清数据）。
  * - 引擎运行中：终止引擎进程（走 runEngine 既有 kill 链），runScan 收尾按"已被手动取消"落库后记录才变 failed；
  *   期间 hasRunningScan 仍为 true，升级闸保持关闭，确保 Windows 上不会替换运行中的引擎 exe
+ * - 引擎已退出但登记未删（exit → close 窗口）：已无可终止的进程，仍按"取消中"应答但不置取消标记，
+ *   runScan 按实际结果收尾（已完成的扫描落 completed，结果不丢）
  * - 排队中/引擎尚未启动：没有可杀的进程，直接落库失败，槽位轮到时 runScan 复查状态自动退出
  */
 scanRoutes.post('/api/scans/:scanId/cancel', asyncHandler(async (req, res) => {
