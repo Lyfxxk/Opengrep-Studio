@@ -104,3 +104,21 @@ test('零命中结论句按语言渲染', () => {
     'en 零命中结论句缺失',
   );
 });
+
+test('HTML 明细带人工复核标签（复核需按 issue.id 回填到原始行）', () => {
+  const issues = [issue('c', 'critical')];
+  const reviews = [
+    {
+      projectId: 'p-1',
+      fingerprint: 'fp-c',
+      status: 'confirmed',
+      reason: '真实漏洞',
+      reviewer: 'lyf',
+      updatedAt: '2026-10-29T00:00:00.000Z',
+    },
+  ];
+  const data = buildReportData(SCAN, PROJECT, issues, '1.33.0', reviews);
+  const html = renderReportHtml(data, issues, { includeSnippets: false }, 'zh');
+  assert.ok(html.includes('tag-review'), '明细缺少复核标签');
+  assert.ok(html.includes('已确认'), '复核标签文案缺失');
+});
