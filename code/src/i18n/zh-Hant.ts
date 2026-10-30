@@ -753,6 +753,7 @@ const zhHant: typeof zh = {
       configDescriptionTooLong: '設定描述不能超過 {{limit}} 個字元',
       pathFiltersTooMany: '路徑過濾條目不能超過 {{limit}} 條',
       pathFilterTooLong: '路徑過濾條目不能超過 {{limit}} 個字元（{{item}}）',
+      pathFilterGlobstarsTooMany: '路徑過濾條目最多 {{limit}} 個 **/ 段（{{item}}）',
       timeoutInvalid: '單檔案逾時須為 1–600 的整數',
       jobsInvalid: '並行數須為 1–16 的整數',
       sizeInvalid: '檔案體積上限須在 0.1–100 MB 之間',
@@ -853,6 +854,7 @@ const zhHant: typeof zh = {
     scan: {
       snapshotMissing: '找不到掃描原始碼快照',
       noRuleFiles: '沒有可用的規則檔案',
+      includeGlobstarsTooMany: '單條 include 的 **/ 段超過 {{limit}} 個：段數按指數展開，請簡化掃描設定的路徑過濾後重試',
       timedOut: '掃描超過 {{minutes}} 分鐘被終止，請縮小原始碼範圍後重試',
       outputTruncated: '引擎輸出超過 64MB 上限被截斷，無法解析結果；請縮小原始碼範圍或減少規則後重試',
       engineFailed: '引擎執行失敗（exit={{code}}）{{detail}}',

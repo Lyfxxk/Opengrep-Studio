@@ -752,6 +752,7 @@ const zh = {
       configDescriptionTooLong: '配置描述不能超过 {{limit}} 个字符',
       pathFiltersTooMany: '路径过滤条目不能超过 {{limit}} 条',
       pathFilterTooLong: '路径过滤条目不能超过 {{limit}} 个字符（{{item}}）',
+      pathFilterGlobstarsTooMany: '路径过滤条目最多 {{limit}} 个 **/ 段（{{item}}）',
       timeoutInvalid: '单文件超时须为 1–600 的整数',
       jobsInvalid: '并发数须为 1–16 的整数',
       sizeInvalid: '文件体积上限须在 0.1–100 MB 之间',
@@ -851,6 +852,7 @@ const zh = {
     scan: {
       snapshotMissing: '找不到扫描源码快照',
       noRuleFiles: '没有可用的规则文件',
+      includeGlobstarsTooMany: '单条 include 的 **/ 段超过 {{limit}} 个：段数按指数展开，请简化扫描配置的路径过滤后重试',
       timedOut: '扫描超过 {{minutes}} 分钟被终止，请缩小源码范围后重试',
       outputTruncated: '引擎输出超过 64MB 上限被截断，无法解析结果；请缩小源码范围或减少规则后重试',
       engineFailed: '引擎执行失败（exit={{code}}）{{detail}}',

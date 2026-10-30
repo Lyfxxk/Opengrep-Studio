@@ -11,7 +11,7 @@ import assert from 'node:assert/strict';
 const tempDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'og-glob-'));
 process.env.DATA_DIR = tempDataDir;
 
-const { normalizeGlob } = await import('../src/scan-runner.ts');
+const { normalizeGlob, ScanError } = await import('../src/scan-runner.ts');
 const { closeDatabase } = await import('../src/db.ts');
 const { trackTempDir } = await import('./temp-dir.mjs');
 trackTempDir(tempDataDir, closeDatabase);
@@ -32,6 +32,15 @@ test('include：末尾 /** 覆盖整棵子树，而不是只剩目录名', () =>
 test('include：普通 * 与单段 ** 写法保持可用', () => {
   assert.deepEqual(normalizeGlob('*.py', 'include'), ['*.py']);
   assert.deepEqual(normalizeGlob('src/**.py', 'include'), ['src/*.py']);
+});
+
+test('include：**/ 段数有上限，超限显式失败而不是指数展开', () => {
+  // 每个中间 **/ 段让变体翻倍：上限 4 段时 2^4 = 16 个变体（写入侧 misc.ts 共用同一常量）
+  assert.equal(normalizeGlob('a/**/b/**/c/**/d/**/e/*.py', 'include').length, 16);
+  assert.throws(
+    () => normalizeGlob('a/**/b/**/c/**/d/**/e/**/f/*.py', 'include'),
+    (error) => error instanceof ScanError && error.code === 'scan.includeGlobstarsTooMany',
+  );
 });
 
 test('exclude：保持保守近似（引擎不支持带通配符的路径模式）', () => {
