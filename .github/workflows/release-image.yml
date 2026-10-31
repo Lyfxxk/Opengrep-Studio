@@ -1,0 +1,50 @@
+# 发布 Docker 镜像到 ghcr.io：只在 tag 推送时触发（npm version 打的 vX.Y.Z），
+# 日常代码 push 不跑本 workflow——镜像产出频率 = 发版频率。
+# 首次发布后需在 GitHub → Packages → 本镜像 → Package settings 手动设为 public
+# （一次性；public 包无存储/带宽配额，之后一直生效）。
+name: 发布镜像到 ghcr.io
+
+on:
+  push:
+    tags: ['v*']
+
+# 同一 tag 重复推送（重打 tag 触发重构建）只保留最新一次
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  push:
+    name: 构建并推送镜像
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      # v0.1.8 → 0.1.8 + latest；latest 永远跟随最新 tag
+      - name: 计算镜像 tag
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=raw,value=latest
+      # 引擎二进制在构建期内自动下载并 SHA256 校验（与 ci.yml 的 Docker job 同一 Dockerfile）
+      - name: 构建并推送
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
