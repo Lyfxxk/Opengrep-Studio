@@ -32,13 +32,11 @@ import { cn } from '@/lib/utils';
 
 type Severity = IIssue['severity'];
 
-/** 明细条目的一句话说明：取中文说明/引擎消息首句，与离线 HTML 报告同口径 */
 function firstSentence(value: string): string {
   const cut = value.trim().split(/(?<=[。！？])/)[0] || value;
   return cut.length > 64 ? `${cut.slice(0, 64)}…` : cut;
 }
 
-/** 路径拆「目录 + 文件名」：目录允许断行，文件名不折断，避免按字符断词 */
 function splitPath(path: string) {
   const cut = path.lastIndexOf('/') + 1;
   return { dir: path.slice(0, cut), name: path.slice(cut) };
@@ -108,7 +106,6 @@ interface RuleAgg {
   maxSev: Severity;
 }
 
-/** 明细条目：位置行（行号 + 规则）+ 一句话说明 + 状态标签 */
 function IssueEntry({
   issue,
   messageMap,
@@ -121,7 +118,6 @@ function IssueEntry({
     issue.endLine && issue.endLine !== issue.startLine
       ? `${issue.startLine}\u2013${issue.endLine}`
       : `${issue.startLine}`;
-  // 中文语境优先规则说明（未命中回落引擎原文首句），英文直接引擎原文
   const note = lookupRuleMessage(messageMap, issue.ruleId, firstSentence(issue.message));
   return (
     <div className="border-b py-1.5 print:break-inside-avoid">
@@ -158,7 +154,6 @@ function IssueEntry({
   );
 }
 
-/** 明细组：按严重度（或"已修复"）一组，组内按文件归并，同一文件的 N 条只写一次路径 */
 function DetailGroup({
   title,
   sub,
@@ -213,7 +208,6 @@ function DetailGroup({
   );
 }
 
-/** 打印下让表格在纸宽内折行：覆盖 TableCell/TableHead 的 nowrap 与内层滚动容器 */
 const PRINT_TABLE_FIX =
   '[&_[data-slot=table-container]]:print:overflow-visible [&_td]:print:whitespace-normal [&_th]:print:whitespace-normal [&_table]:print:table-fixed [&_td]:print:break-words';
 
@@ -224,7 +218,6 @@ export default function ReportPage() {
   const [report, setReport] = useState<IReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  /** 报告不可用的具体原因（记录缺失 / 未完成 / 加载失败），直接展示而不是猜一个空态文案 */
   const [failReason, setFailReason] = useState('');
   const messageMap = useRuleMessageMap();
 
@@ -238,8 +231,6 @@ export default function ReportPage() {
       .getScanReport(scanId)
       .then((data) => {
         if (!mounted) return;
-        // 路由 :id 与报告归属不一致（手改 URL 或记录被挪项目）时按不可用处理，
-        // 否则页头/返回链接会把报告挂到不相干的项目下
         if (id && data.meta.projectId !== id) {
           setNotFound(true);
           setFailReason(t('report.unavailableProjectMismatch'));
@@ -262,7 +253,6 @@ export default function ReportPage() {
     };
   }, [id, scanId, t]);
 
-  /** 文件级聚合（行动清单）与规则级聚合（附录），口径与离线 HTML 报告一致 */
   const { fileList, ruleList } = useMemo(() => {
     if (!report) return { fileList: [] as FileAgg[], ruleList: [] as RuleAgg[] };
     const rank: Record<Severity, number> = { critical: 0, high: 1, medium: 2, low: 3 };
@@ -340,8 +330,6 @@ export default function ReportPage() {
   }
 
   const { meta, totals, conclusion, conclusionCode, issues, reviewStats } = report;
-  // 结论按语言重拼；载荷缺失（演示模式/旧缓存）回落服务端原文。
-  // urgent=0 时没有可"优先处理"的对象，切到 NoUrgent 键，与服务端 buildConclusion 的中低危兜底句口径一致
   const conclusionKey =
     conclusionCode?.code === 'summary'
       ? `${conclusionCode.params.baseline ? 'summaryBaseline' : 'summary'}${
@@ -366,7 +354,7 @@ export default function ReportPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-[860px] flex-col gap-4">
-      {/* 动作条不随报告打印 */}
+      {}
       <div className="no-print flex flex-wrap items-center gap-2 print:hidden">
         <Button variant="outline" asChild>
           <Link to={`/projects/${id}/scans/${scanId}`}>
@@ -394,9 +382,9 @@ export default function ReportPage() {
         </div>
       </div>
 
-      {/* 报告正文（纸张样式，打印时铺满页面） */}
+      {}
       <article className="report-paper rounded-xl border bg-card px-6 py-8 shadow-sm sm:px-10 print:max-w-none print:rounded-none print:border-0 print:p-0 print:shadow-none">
-        {/* P1 结论：决策者 30 秒看完的一页 */}
+        {}
         <section className="mb-8">
           <header className="mb-5 flex flex-wrap items-start justify-between gap-3 border-b-2 pb-4">
             <div className="min-w-0">
@@ -540,7 +528,7 @@ export default function ReportPage() {
 
         </section>
 
-        {/* P2 行动清单：按文件归并，研发负责人自上而下安排修复 */}
+        {}
         <section className="mb-8 print:break-before-page">
           <SectionTitle>{t('report.sectionActions')}</SectionTitle>
           <p className="mb-2 text-xs text-muted-foreground">
@@ -591,7 +579,7 @@ export default function ReportPage() {
           </div>
         </section>
 
-        {/* P3 明细：按严重度分组、组内按文件归并的条目式；附录规则说明紧随其后不分页 */}
+        {}
         <section className="mb-8 print:break-before-page">
           <SectionTitle>{t('report.sectionDetails')}</SectionTitle>
           {current.length === 0 ? (
@@ -669,7 +657,7 @@ export default function ReportPage() {
           </div>
         </section>
 
-        {/* P4 方法与证据 */}
+        {}
         <section className="mb-4 print:break-before-page">
           <SectionTitle>{t('report.sectionMethod')}</SectionTitle>
 

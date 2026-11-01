@@ -3,18 +3,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { ALWAYS_SKIP_DIR_NAMES } from './fs-walk.js';
 
-/**
- * 无 Git 双快照 diff：对两次扫描的不可变源码快照做文件级 + 行级对比。
- * - 方向固定为 before（旧快照）→ after（新快照）：added = 只在 after、removed = 只在 before，
- *   行级 addedLines/removedLines 同样相对 before→after
- * - 文件级：sha256（大文件只哈希前 5MB + 体积）分类为 added / removed / modified
- * - 行级：modified 文件做"前后缀裁剪 + LCS"行差异统计；中段过大时放弃行级计数（diffable=false）
- */
 
 const HASH_READ_CAP = 5 * 1024 * 1024;
-/** 行级 LCS 的规模上限（行列乘积），超过则不做行级统计 */
 const DIFF_MATRIX_CAP = 1_000_000;
-/** 三个差异列表（added/removed/modified）各自的条数上限，防大仓库撑爆响应 */
 const DIFF_LIST_CAP = 500;
 
 interface FileEntry {
@@ -24,7 +15,6 @@ interface FileEntry {
 
 interface FileDiffEntry {
   path: string;
-  /** 行级统计（diffable=false 时为 null） */
   addedLines: number | null;
   removedLines: number | null;
   diffable: boolean;
@@ -34,12 +24,10 @@ export interface SnapshotDiff {
   added: string[];
   removed: string[];
   modified: FileDiffEntry[];
-  /** 与扫描一致的可比文件总数（不含 node_modules/.git） */
   filesA: number;
   filesB: number;
 }
 
-/** 流式哈希：大于 5MB 的文件只读前 5MB 参与哈希，size 一起进哈希避免不同大文件碰撞 */
 async function hashFile(file: string): Promise<FileEntry> {
   const hash = createHash('sha256');
   const stat = await fs.promises.stat(file);
@@ -55,7 +43,6 @@ async function hashFile(file: string): Promise<FileEntry> {
   return { sha256: hash.digest('hex'), size: stat.size };
 }
 
-/** 遍历快照目录：跳过 node_modules/.git 与符号链接，返回 相对路径 → 文件信息 */
 async function hashSnapshot(dir: string): Promise<Map<string, FileEntry>> {
   const map = new Map<string, FileEntry>();
   const walk = async (current: string) => {
@@ -84,7 +71,6 @@ async function hashSnapshot(dir: string): Promise<Map<string, FileEntry>> {
   return map;
 }
 
-/** 行级差异：裁掉公共前后缀后对中段做 LCS（超限返回 null） */
 function countLineDiff(a: string, b: string): { added: number; removed: number } | null {
   const aLines = a.split(/\r?\n/);
   const bLines = b.split(/\r?\n/);
@@ -102,7 +88,6 @@ function countLineDiff(a: string, b: string): { added: number; removed: number }
   if (midB.length === 0) return { added: 0, removed: midA.length };
   if (midA.length * midB.length > DIFF_MATRIX_CAP) return null;
 
-  // LCS 长度表（滚动行，省内存）
   const prev = new Uint32Array(midB.length + 1);
   const curr = new Uint32Array(midB.length + 1);
   for (let i = 1; i <= midA.length; i += 1) {
@@ -134,7 +119,6 @@ async function readForDiff(file: string): Promise<string> {
   }
 }
 
-/** 对比两份源码快照（before 旧、after 新；调用方需保证两目录存在且属于已完成扫描） */
 export async function diffSnapshots(beforeDir: string, afterDir: string): Promise<SnapshotDiff> {
   const [before, after] = [await hashSnapshot(beforeDir), await hashSnapshot(afterDir)];
   const added: string[] = [];
@@ -148,7 +132,6 @@ export async function diffSnapshots(beforeDir: string, afterDir: string): Promis
       continue;
     }
     if (entryBefore.sha256 === entryAfter.sha256) continue;
-    // 与 added/removed 同口径：超过上限不再追加，否则大仓库会把响应撑到全部文件量级
     if (modified.length >= DIFF_LIST_CAP) continue;
     let lineStatsRaw: { added: number; removed: number } | null = null;
     try {
@@ -159,8 +142,6 @@ export async function diffSnapshots(beforeDir: string, afterDir: string): Promis
     } catch {
       lineStatsRaw = null;
     }
-    // 行级统计读出 0/0 但文件哈希不同 = 差异落在读取窗口（2MB / 2 万行）之外，
-    // 与 LCS 超限同口径返回 null，界面按「内容有变但无法逐行统计」呈现而不是「+0 / -0」
     const lineStats = lineStatsRaw && (lineStatsRaw.added > 0 || lineStatsRaw.removed > 0)
       ? lineStatsRaw
       : null;

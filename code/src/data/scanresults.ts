@@ -4,26 +4,19 @@ export interface IScanResult {
   status: 'scanning' | 'completed' | 'failed'
   issueCount: number
   scannedAt: string
-  /** 实际开跑时间（排队结束后落库；旧记录没有，耗时回落到 scannedAt） */
   startedAt?: string
   finishedAt?: string
-  /** 本次扫描覆盖的源码文件数（旧记录可能没有） */
   fileCount?: number
   baselineScanId?: string
   rules?: string
-  /** 发起扫描时实际生效的规则包快照（旧记录 / 旧式目录扫描没有） */
   rulepacks?: Array<{ id: string; name: string }>
-  /** 发起扫描时的引擎版本（升级引擎后旧记录仍是当日版本） */
   engineVersion?: string
-  /** 排队等待并发槽位的标记（status 为 scanning 且有值 = 排队中，开跑后清除），用于区分"排队中/扫描中" */
   queuedAt?: string
   message?: string
-  /** 失败原因的语言无关标识（如 scan.timedOut），有值时前端按界面语言重拼，message 作兜底 */
   errorCode?: string
   errorParams?: Record<string, unknown>
 }
 
-// issueCount 口径与服务端一致：不含基线对比产生的"已修复"项（见 data/issues.ts 的种子明细）
 export const MOCK_SCAN_RESULTS: IScanResult[] = [
   {
     id: '1',

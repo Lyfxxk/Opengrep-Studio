@@ -35,12 +35,10 @@ import { formatDateTime } from '@/lib/format';
 import type { IProject } from '@/data/projects';
 import { api } from '@/lib/api';
 
-/** 扫描中心：全部项目的扫描总览，双快照对比的固定入口 */
 export default function ScansCenterPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [scans, setScans] = useState<ScanWithProject[] | null>(null);
-  /** 加载失败与"确实一条都没有"必须区分：失败时给可操作的重试入口，而不是假的空态 */
   const [loadFailed, setLoadFailed] = useState(false);
   const [projects, setProjects] = useState<IProject[]>([]);
   const [filterProjectId, setFilterProjectId] = useState('all');
@@ -67,7 +65,6 @@ export default function ScansCenterPage() {
 
   const hasScanning = useMemo(() => (scans ?? []).some((scan) => scan.status === 'scanning'), [scans]);
 
-  /** 筛选：项目下拉 + 关键字（匹配扫描编号 / 项目名） */
   const filteredScans = useMemo(() => {
     const trimmed = keyword.trim().toLowerCase();
     return (scans ?? []).filter((scan) => {
@@ -80,18 +77,14 @@ export default function ScansCenterPage() {
     });
   }, [scans, filterProjectId, keyword]);
 
-  // 进行中的扫描还在被引擎写入，禁止勾选删除；全选范围同样只覆盖当前筛选结果里的可删除行，
-  // 否则「先按项目筛选、再全选删除」会把其他项目的扫描一起删掉
   const deletableIds = useMemo(
     () => filteredScans.filter((scan) => scan.status !== 'scanning').map((scan) => scan.id),
     [filteredScans],
   );
   const selection = useRowSelection(deletableIds);
 
-  // 分页：扫描进行中的轮询会频繁重刷列表，页码夹取保证删行 / 新增后不落在空页上
   const { page: safePage, setPage, pageCount, slice: pagedScans } = usePagedList(filteredScans, LIST_PAGE_SIZE);
 
-  // 有扫描进行中时轮询刷新，全部落定后停止
   useEffect(() => {
     if (!hasScanning) return;
     const timer = setInterval(() => void load(), 3000);
@@ -100,7 +93,6 @@ export default function ScansCenterPage() {
 
   const viewScan = (scan: ScanWithProject) => navigate(`/projects/${scan.projectId}/scans/${scan.id}`);
 
-  // 逐个调用单删接口：某一项失败（如刚好进入扫描中）不影响其余项，最后汇总报数
   const handleBatchDelete = async () => {
     const ids = [...selection.selected];
     setBatchConfirmOpen(false);
@@ -116,7 +108,6 @@ export default function ScansCenterPage() {
     setBatchDeleting(false);
     selection.clear();
     await load();
-    // 全部成功时表格已经少了一整批，只有部分失败需要报出来
     if (failed > 0) toast.warning(t('scans.batchPartial', { count: ids.length - failed, failed }));
   };
 
@@ -218,7 +209,6 @@ export default function ScansCenterPage() {
             <TableBody>
               {pagedScans.map((scan) => {
                 const done = scan.status === 'completed';
-                // 失败扫描也开放查看：结果页的失败卡片是失败原因唯一展示点，不放行就零入口
                 const viewable = done || scan.status === 'failed';
                 return (
                   <TableRow

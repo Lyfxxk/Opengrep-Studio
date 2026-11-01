@@ -1,6 +1,3 @@
-// 双快照文件级 diff 方向回归（node --test 运行，`npm test` 统一驱动）
-// 历史 bug：路由把「当前扫描」当 before 传给 diffSnapshots，added/removed 与行级 +/- 全部反向，
-// 界面把新增文件显示成删除文件。这里锁住 before（旧）→ after（新）的方向约定。
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

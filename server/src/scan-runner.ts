@@ -22,11 +22,6 @@ import {
   type Severity,
 } from './db.js';
 
-/**
- * 扫描失败错误：message 落库并作为兜底文案（语言切换后旧记录仍是原文，属可接受折衷），
- * code + params 同时落库（scans.error_code / error_params），前端按界面语言重拼——
- * 英文界面看到中文失败原因才是问题，兜底只在未带 code 的意外异常时生效。
- */
 export class ScanError extends Error {
   constructor(
     public code: string,
@@ -40,9 +35,7 @@ export class ScanError extends Error {
 export interface ScanPlan {
   rulesLabel: string;
   configFiles: string[];
-  /** 本次实际生效的规则包快照（旧式目录扫描没有） */
   rulepacks?: Array<{ id: string; name: string }>;
-  /** 规则文件 → 规则包映射，用于把命中结果归属到来源包 */
   filePacks?: Record<string, { id: string; name: string }>;
   timeoutSeconds: number;
   jobs: number;
@@ -52,12 +45,10 @@ export interface ScanPlan {
 }
 
 
-/** 最多同时运行 2 个扫描（opengrep 自身已用 -j 并行，2 个扫描足以利用多核又不会撑爆内存） */
 const MAX_CONCURRENT_SCANS = 2;
 let activeScans = 0;
 const scanWaitQueue: Array<() => void> = [];
 
-/** 占用扫描槽位；无空闲槽位时返回 queued=true，调用方需先给扫描打"排队中"标记，轮到时再清除 */
 function acquireScanSlot(): { queued: boolean; ready: Promise<void> } {
   if (activeScans < MAX_CONCURRENT_SCANS) {
     activeScans += 1;
@@ -72,26 +63,13 @@ function releaseScanSlot(): void {
   else activeScans -= 1;
 }
 
-/** 运行中扫描的引擎子进程登记（scanId → child）：取消接口据此终止引擎 */
 const runningEngines = new Map<string, ChildProcess>();
 
-/** 已请求取消且引擎正在运行的扫描：runEngine 返回后据此落"已被手动取消"，而不是引擎原始退出码 */
 const cancelRequested = new Set<string>();
 
-/**
- * 取消扫描：引擎运行中则终止进程（复用 runEngine 既有 kill 链：温和终止 → 5s SIGKILL → 15s 兜底），
- * runScan 收尾按"已被手动取消"落库；返回 false 表示引擎尚未启动（排队中/快照准备阶段），
- * 此时由调用方直接落库失败（槽位轮到时 runScan 复查状态会自动退出，不会覆盖取消结果）。
- * 引擎已退出但登记未删的窗口（exit → close）也返回 true 供调用方按"取消中"应答，
- * 但不置取消标记也不杀进程：结果已产出，runScan 按实际结果收尾。
- */
 export function requestScanCancel(scanId: string): boolean {
   const child = runningEngines.get(scanId);
   if (!child) return false;
-  // 引擎已退出（exit/signal 码置位）而 close 未触发、登记未删的窗口里，结果已完整产出，
-  // kill 只是 no-op；若置取消标记，runScan 会把刚成功的扫描误打成"已被手动取消"并丢弃全部结果。
-  // 照常受理返回 true 让路由应答"取消中"即可，收尾交给 runScan（已完成的落 completed）；
-  // 若此处返回 false，调用方会按"引擎未启动"直落 failed，反而复刻同一误标
   if (child.exitCode !== null || child.signalCode !== null) return true;
   cancelRequested.add(scanId);
   child.kill();
@@ -101,19 +79,12 @@ export function requestScanCancel(scanId: string): boolean {
 export function enqueueScan(scanId: string, plan: ScanPlan): void {
   const slot = acquireScanSlot();
   if (slot.queued) {
-    // 排队标记立刻落库（status 仍 scanning）：列表/结果页据此区分"排队中"与"扫描中"
     updateScan(scanId, { queuedAt: new Date().toISOString() });
   }
   void slot.ready
     .then(() => {
-      // 排队期间用户可能已取消（取消路由直接把记录落成 failed，且此时引擎还没起，
-      // requestScanCancel 无从介入）：状态不是 scanning 就什么也别做，
-      // 否则槽位轮到时会把已取消的扫描跑完并覆盖回 completed，取消形同无效
       const current = getScan(scanId);
       if (!current || current.status !== 'scanning') return;
-      // 轮到本扫描开跑：清掉排队标记，前端从"排队中"切回"扫描中"；
-      // 同时落下队时间锚点——到 started_at 之间是引擎版本探测/文件数/哈希的分钟级准备窗口，
-      // 启动清理判残骸不能回落到含排队等待的发起时间，否则深队列后正常开跑的扫描会被误杀
       if (slot.queued) updateScan(scanId, { queuedAt: null, dequeuedAt: new Date().toISOString() });
       return runScan(scanId, plan);
     })
@@ -175,7 +146,6 @@ function collectRuleIdsByFile(configFiles: string[]): Map<string, Set<string>> {
 }
 
 
-/** 是否有扫描在跑（引擎升级要等扫描结束：Windows 不允许替换运行中的 exe） */
 export function hasRunningScan(): boolean {
   const row = db.prepare("SELECT COUNT(*) AS count FROM scans WHERE status = 'scanning'").get() as
     | { count: number }
@@ -183,21 +153,8 @@ export function hasRunningScan(): boolean {
   return Number(row?.count ?? 0) > 0;
 }
 
-/** 判定「不可能还在跑」的宽限：引擎到点必 kill（温和 5s、兜底 15s），再留 2 分钟吸收时钟与调度抖动 */
 const STALE_SCAN_GRACE_MS = 2 * 60 * 1000;
 
-/**
- * 服务启动时清理中断在 scanning 的记录：只处理已超过「引擎硬超时 + 宽限」的行。
- * 判据不能是「所有 scanning」——dev.mjs 允许第二个实例共用同一个数据目录（AI 改代码时
- * 也会起项目，两边必须互不干扰），无判据会把另一个实例正在跑的扫描直接打成失败。
- * 超过超时仍在 scanning 的行，任何存活进程都不可能产生（引擎侧到点必终止），只可能是崩溃残骸。
- *
- * 排队中的行（queued_at 有值）不参与清理：槽位只有 2 个、每扫描硬超时 10 分钟，深队列的
- * 合法等待可以远超「超时 + 宽限」，时间戳证明不了排队扫描已死。另一实例排队是正常状态，
- * 本实例崩溃残留的排队行由用户在界面手动取消（取消路由对排队行直接落库失败）。
- * 已出队的行同理不能按发起时间判：等待攒下的时长与存活与否无关，改锚定出队时间判
- * 「出队 → 引擎启动」的准备窗口（时间锚点 started_at → dequeued_at → scanned_at 逐级回落）。
- */
 export function markStaleScansFailed(): void {
   const cutoff = new Date(Date.now() - (config.scanTimeoutMs + STALE_SCAN_GRACE_MS)).toISOString();
   const rows = db.prepare(
@@ -206,9 +163,6 @@ export function markStaleScansFailed(): void {
        AND COALESCE(started_at, dequeued_at, scanned_at) < ?`,
   ).all(cutoff) as Array<{ id: string }>;
   for (const row of rows) {
-    // 覆盖三类残骸：引擎已开跑（started_at）；已出队但没开跑（dequeued_at，出队后还有引擎
-    // 版本探测/文件数/哈希的分钟级准备）；从未排队的快照复制/哈希中断（回落发起时间——
-    // 复制紧随落库开始，快照上限 1GB，超时 + 宽限足够复制完）
     updateScan(row.id, {
       status: 'failed',
       finishedAt: new Date().toISOString(),
@@ -218,7 +172,6 @@ export function markStaleScansFailed(): void {
   }
 }
 
-/** 统计快照内的源码文件数（跳过扫描时本就排除的 node_modules / .git）；异步遍历避免大快照冻结事件循环 */
 async function countFiles(dir: string): Promise<number> {
   let count = 0;
   const walk = async (current: string) => {
@@ -233,10 +186,6 @@ async function countFiles(dir: string): Promise<number> {
   return count;
 }
 
-/**
- * 基线对比：命中=遗留、未命中=新增、基线独有=已修复（fixed 项追加进 issues 一起落库）。
- * 引擎扫描与 SARIF 导入共用同一套口径，原地修改传入的 issues。
- */
 export function applyBaselineComparison(
   issues: IssueRow[],
   scanId: string,
@@ -263,25 +212,11 @@ export function applyBaselineComparison(
   }
 }
 
-/**
- * 引擎 glob 语义与标准 globstar 有出入（opengrep 1.33 实测）：
- * - 中间 `src/**​/f` 只匹配「一层及以上」目录，不含 src 的直接子文件；
- * - 末尾 `dir/**` 只匹配直接子文件（等价 dir/*），深层文件扫不到；
- * - 仅起步的 `**​/` 是零层及以上；
- * - `--exclude` 对带通配符的路径模式基本不可用（`src/*` 甚至会产出重复结果），
- *   只能可靠匹配文件名或精确相对路径。
- * 因此 include 把一条 globstar 展开成「零层 + 一层以上」两种引擎能正确执行的模式；
- * exclude 保持保守近似（`**​/` 折叠为 basename/前缀，末尾 `/**` 折叠为目录名）。
- */
-// 单条路径过滤条目的 **/ 段上限：每个中间段让 include 展开变体数翻倍（2^k），
-// 写入侧 routes/misc.ts 与展开侧共用同一闸（说明用行注释，块注释里写不下 **/ 字面量）
 export const MAX_PATH_FILTER_GLOBSTARS = 4;
 
 function expandGlobstarSegments(pattern: string): string[] {
   const idx = pattern.indexOf('**/');
   if (idx === -1) return [pattern];
-  // 写入校验（misc.ts）之前入库的历史脏数据可能带大量 **/ 段：指数展开会冻结事件循环直至 OOM。
-  // 宁可扫描显式失败也不静默跳过展开——跳过会让引擎按错误的 glob 语义漏扫文件
   if ((pattern.match(/\*\*\//g)?.length ?? 0) > MAX_PATH_FILTER_GLOBSTARS) {
     throw new ScanError(
       'scan.includeGlobstarsTooMany',
@@ -306,8 +241,6 @@ export function normalizeGlob(pattern: string, mode: 'include' | 'exclude'): str
       .replace(/\*\*/g, '*');
     return normalized ? [normalized] : [];
   }
-  // 末尾 /** 的前缀里也可能有中间 **/（如 src/**/generated/**）：先按中间 **/ 补零层变体，
-  // 再对每个变体套 [prefix/*, prefix/**/*]，否则两个产物都要求中间至少隔一层，直接子文件静默漏扫
   const expanded = pattern.endsWith('/**')
     ? expandGlobstarSegments(pattern.slice(0, -3)).flatMap((prefix) => [`${prefix}/*`, `${prefix}/**/*`])
     : expandGlobstarSegments(pattern);
@@ -324,11 +257,6 @@ function sha256File(file: string): string {
   return hash.digest('hex');
 }
 
-/**
- * 源码快照的 SHA-256 可复现指纹：对"排序后的相对路径 + \0 + 文件内容 + \0"序列计算。
- * 路径参与哈希保证增删文件会改变结果；排序保证遍历顺序跨平台稳定。
- * 异步逐文件读：大快照哈希期间事件循环保持响应。
- */
 async function hashDirectory(dir: string): Promise<string> {
   const files: string[] = [];
   const walk = async (current: string) => {
@@ -351,13 +279,11 @@ async function hashDirectory(dir: string): Promise<string> {
   return hash.digest('hex');
 }
 
-/** 规则文件路径转为相对 rules/ 目录的稳定展示路径（绝对路径兜底） */
 function rulesRelativePath(file: string): string {
   const rel = path.relative(config.rulesDir, file).replace(/\\/g, '/');
   return rel.startsWith('..') ? file : rel;
 }
 
-/** 可复现清单：完整命令行 + 规则文件哈希 + 引擎参数快照 + 引擎版本，扫描引擎运行前落库 */
 async function buildReproducibilityRecord(
   scanId: string,
   srcDir: string,
@@ -385,7 +311,6 @@ async function buildReproducibilityRecord(
     srcHash: await hashDirectory(srcDir),
     commandLine,
     configSnapshot,
-    // 记录"这次扫描用的是哪版引擎"：升级后重新生成报告时不能按当前版本标注
     ...(engineVersion ? { engineVersion } : {}),
   });
 }
@@ -399,24 +324,16 @@ async function runScan(scanId: string, plan: ScanPlan): Promise<void> {
     if (!fs.existsSync(srcDir)) throw new ScanError('scan.snapshotMissing', '找不到扫描源码快照');
     if (plan.configFiles.length === 0) throw new ScanError('scan.noRuleFiles', '没有可用的规则文件');
     if (!fs.existsSync(config.opengrepBin)) throw new Error(engineInstallHint());
-    // 引擎文件在但探测不到版本（损坏/被杀软拦截，Windows 同步抛 spawn EFTYPE）= 跑不起来：
-    // 在发起引擎前挡下，落库可执行的修复指引而不是裸 spawn 报错；
-    // 版本本来就要探测（复现清单需要），这里复用同一份结果，不增加探测次数
     const engineVersion = await getEngineVersion();
     if (!engineVersion) throw new Error(engineNotRunnableHint());
     const fileCount = await countFiles(srcDir);
-    // 心跳进度：文件数尽早落库，结果页扫描中即可展示"已扫 N 文件"而不是纯转圈
-    //（完成时同值还会再落一次，无副作用；写库频率只有这一次，远低于 1 秒一次的共享连接约束）
     updateScan(scanId, { fileCount });
 
     const args = [
       'scan',
       ...plan.configFiles.flatMap((file) => ['--config', file]),
       '--json',
-      // taint 规则附带污点传播链（extra.dataflow_trace），供结果页可视化
       '--dataflow-traces',
-      // 上传的源码快照不是 git 工作区：跳过 gitignore/git 跟踪过滤，保证确定性全量扫描
-      // （排除项由扫描配置的 excludes 显式下发）
       '--no-git-ignore',
       '--exclude', 'node_modules',
       '--exclude', '.git',
@@ -429,24 +346,15 @@ async function runScan(scanId: string, plan: ScanPlan): Promise<void> {
     ];
     console.log(`[scan-runner] 扫描 ${scanId} 使用规则: ${plan.rulesLabel}（${plan.configFiles.length} 个规则文件）`);
     await buildReproducibilityRecord(scanId, srcDir, plan, args, engineVersion);
-    // 引擎启动前复查：排队或快照准备阶段被取消的扫描已被取消接口落库失败，
-    // 这里直接退出，避免取消之后仍把引擎拉起来或用最终结果覆盖取消记录
     if (getScan(scanId)?.status !== 'scanning') return;
-    // 实际开跑时间：排队等待与快照哈希/复现清单落库都在此之前，不应计入「引擎耗时」
     updateScan(scanId, { startedAt: new Date().toISOString() });
     const { code, stdout, stderr, timedOut, stdoutTruncated } = await runEngine(args, srcDir, {
       timeoutMs: config.scanTimeoutMs,
       logLabel: 'scan-runner',
-      // 登记本次引擎子进程：取消接口按 scanId 找到它并终止（复用 runEngine 的 kill 链）
       onSpawn: (child) => runningEngines.set(scanId, child),
     });
-    // runEngine resolve 即引擎已退出（close/error 任一路径都会 resolve）：从登记表移除，取消接口不再对其生效
     runningEngines.delete(scanId);
-    // 引擎运行期间另一实例可能已把取消落库（requestScanCancel 只查本进程登记表，跨实例时
-    // 取消路由直接落 failed）：与排队复查同款，状态不是 scanning 就退出，
-    // 否则收尾会把 completed 盖到取消记录上，留下 completed + scan.cancelled 的矛盾数据
     if (getScan(scanId)?.status !== 'scanning') return;
-    // 引擎被手动取消：按取消语义落库，而不是把 kill 后的空输出/非零退出码报成引擎故障
     if (cancelRequested.has(scanId)) {
       throw new ScanError('scan.cancelled', '已被手动取消');
     }
@@ -466,7 +374,6 @@ async function runScan(scanId: string, plan: ScanPlan): Promise<void> {
     }
 
     let output: OpengrepOutput;
-    // 结论与 message 同形（不带额外冒号），保证前端按 code 重拼的结果与落库兜底文案一致
     const stderrBrief = stderr.slice(0, 300);
     try {
       output = JSON.parse(stdout) as OpengrepOutput;
@@ -492,7 +399,6 @@ async function runScan(scanId: string, plan: ScanPlan): Promise<void> {
     for (const ids of ruleIdsByFile.values()) {
       for (const id of ids) knownRuleIds.add(id);
     }
-    // 规则 ID → 来源规则包：同一个规则文件里的所有规则都归属该文件对应的包
     const ruleIdToPack = new Map<string, { id: string; name: string }>();
     for (const [file, ids] of ruleIdsByFile) {
       const pack = plan.filePacks?.[file];
@@ -510,9 +416,6 @@ async function runScan(scanId: string, plan: ScanPlan): Promise<void> {
         extractTaintFlow(finding.extra.dataflow_trace),
         (p) => relativizeToRoot(p, srcDir),
       );
-      // 引擎路径已 relativize 到本次快照：兜底指纹必须用相对路径，否则每次扫描快照根目录
-      // 都不同（workspace/<项目>/<扫描id>/src），同一问题在两次扫描里会得到不同指纹，
-      // 基线对比的 remaining/fixed 判定全部失真
       const relativePath = relativizeToRoot(finding.path, srcDir);
       return {
         id: '',
@@ -550,7 +453,6 @@ async function runScan(scanId: string, plan: ScanPlan): Promise<void> {
       status: 'failed',
       finishedAt: new Date().toISOString(),
       message: message.slice(0, 1000),
-      // 带 code 的已知失败连同参数一起落库，前端按界面语言重拼；意外异常只留兜底文案
       ...(error instanceof ScanError
         ? { errorCode: error.code, errorParams: error.params }
         : {}),

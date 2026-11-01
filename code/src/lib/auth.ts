@@ -1,11 +1,8 @@
 const AUTH_KEY = '__global_opengrep_auth';
 const USERNAME_KEY = '__global_opengrep_username';
 
-// sessionStorage 仅在当前标签页内有效：关掉页面/重开浏览器即失效，每次启动都需重新登录
 const store = sessionStorage;
 
-// 固定本地账号：仅为防误触的前端门禁，不是安全机制（后端接口无鉴权，服务只监听本机）。
-// 登录页已显著标注此声明；若要接入鉴权请另行设计，不要简单替换这里的常量。
 const LOCAL_ACCOUNT = { username: 'admin', password: '123456' } as const;
 
 export function validateCredentials(username: string, password: string): boolean {

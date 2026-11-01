@@ -9,7 +9,6 @@ const ROLE_STYLES: Record<ITaintStep['role'], { icon: typeof Zap; badgeClass: st
   sink: { icon: Zap, badgeClass: 'bg-destructive/10 text-destructive border-destructive/30' },
 };
 
-/** 污点传播链：source → 传播… → sink 的垂直步骤视图（结果页与规则实验室共用） */
 export default function TaintFlow({ steps }: { steps: ITaintStep[] }) {
   const { t } = useTranslation();
   if (steps.length === 0) return null;

@@ -22,7 +22,6 @@ export default function LoginPage() {
   const passwordRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<number[]>([]);
 
-  // 登录成功态的两个延时（800ms 校验 + 900ms 跳转）必须在卸载时清掉
   useEffect(() => () => {
     for (const timer of timerRef.current) window.clearTimeout(timer);
   }, []);
@@ -64,8 +63,6 @@ export default function LoginPage() {
 
     clearError();
     setSubmitting(true);
-    // 本地账号校验即登录接口：写入登录态后展示成功态，再进入工作台
-    // 定时器登记到 ref 并在卸载时清掉：用户在 800+900ms 窗口内手动离开时，不能被拽回工作台
     timerRef.current.push(
       window.setTimeout(() => {
         login(trimmedName);
@@ -83,7 +80,7 @@ export default function LoginPage() {
 
   return (
     <div className="login-shell">
-      {/* 左侧：暗色展示面板 */}
+      {}
       <section className="brand-panel" aria-label={t('login.introPanel')}>
         <div className="brand-hero">
           <p className="hero-eyebrow">// LOCAL-FIRST CODE AUDIT</p>
@@ -179,9 +176,9 @@ export default function LoginPage() {
         </div>
       </section>
 
-      {/* 右侧：登录表单 */}
+      {}
       <section className="form-panel" aria-label={t('login.formPanel')}>
-        {/* 未登录用户唯一可见的语言切换入口（应用内切换在 Header） */}
+        {}
         <LanguageMenu className="lang-switch" />
         <div className="form-col">
           <div className="form-brand">

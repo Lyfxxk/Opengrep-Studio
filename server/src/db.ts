@@ -8,7 +8,6 @@ export type Severity = 'critical' | 'high' | 'medium' | 'low';
 export type ComparisonStatus = 'new' | 'fixed' | 'remaining';
 type ScanStatus = 'scanning' | 'completed' | 'failed';
 
-/** 规则包引用快照（扫描发起时落库，之后配置变更不影响历史展示） */
 export interface RulePackRef {
   id: string;
   name: string;
@@ -22,7 +21,6 @@ export interface Project {
   createdAt: string;
   baselineScanId?: string;
   configId?: string;
-  /** 最近一次上传源码的语言分布（语言 → 字节数），上传时覆盖 */
   languageStats?: Record<string, number>;
 }
 
@@ -37,7 +35,6 @@ export interface ScanConfig {
   jobs: number;
   maxTargetBytes: number;
   createdAt: string;
-  /** 兜底配置：所有未绑定配置（或绑定已失效）的项目扫描时自动使用，不可删除 */
   isProtected?: boolean;
 }
 
@@ -49,14 +46,10 @@ export interface RulePack {
   enabled: boolean;
   ruleCount: number;
   createdAt: string;
-  /** 可移植格式清单（目录包必有；单文件包为空） */
   version?: string;
   manifest?: PackManifest | null;
-  /** 样本文件总数（正例 + 反例） */
   sampleCount?: number;
-  /** 目录式包（可移植格式），单文件包为 false */
   isDir?: boolean;
-  /** 最近一次质量检查结果摘要 */
   lastCheck?: PackCheckSummary | null;
 }
 
@@ -75,35 +68,23 @@ export interface ScanRecord {
   status: ScanStatus;
   issueCount: number;
   scannedAt: string;
-  /** 实际开跑时间（排队/快照准备结束后、引擎启动前落库；旧记录没有，报告耗时回落到 scannedAt） */
   startedAt?: string;
   finishedAt?: string;
   baselineScanId?: string;
   rules?: string;
-  /** 本次扫描实际生效的规则包快照（旧记录 / 旧式目录扫描无此字段） */
   rulepacks?: RulePackRef[];
-  /** 本次扫描覆盖的源码文件数（不含 node_modules / .git） */
   fileCount: number;
   message?: string;
-  /** 失败原因的语言无关标识（如 scan.timedOut），前端据此按界面语言翻译；无值时回落 message */
   errorCode?: string;
-  /** 翻译所需的插值参数（分钟数、引擎退出码等） */
   errorParams?: Record<string, unknown>;
-  /** 源码快照 SHA-256（对排序后的"相对路径\0文件内容"序列计算），可复现清单用 */
   srcHash?: string;
-  /** 发起扫描时的完整引擎命令行（不含引擎二进制绝对路径以外的环境） */
   commandLine?: string;
-  /** 发起扫描时的规则/配置快照（规则文件哈希 + 引擎参数），可复现清单用 */
   configSnapshot?: ScanConfigSnapshot;
-  /** 发起扫描时的引擎版本（升级引擎后旧记录仍保留当日版本，报告与可复现清单不失真） */
   engineVersion?: string;
-  /** 排队等待并发槽位的标记（status 仍 scanning 且有值 = 排队中；开跑时经 updateScan 传 null 清除），供前端区分"排队中/扫描中" */
   queuedAt?: string | null;
-  /** 出队时间（轮到槽位清排队标记时落库）：启动清理判「已出队未开跑」残骸的锚点，发起时间含排队等待不可用作判据 */
   dequeuedAt?: string;
 }
 
-/** 扫描发起时的规则与引擎参数快照（manifest.json 的组成部分） */
 export interface ScanConfigSnapshot {
   rulesLabel: string;
   rulepacks: RulePackRef[];
@@ -125,10 +106,8 @@ export interface Issue {
   filePath: string;
   startLine: number;
   endLine: number;
-  /** 命中规则所属的规则包（快照，旧记录可能没有） */
   rulepackId?: string;
   rulepackName?: string;
-  /** 污点传播链（taint 规则命中才有，JSON 序列化的 TaintStep[]，旧记录没有） */
   dataflowTrace?: string;
 }
 
@@ -137,14 +116,12 @@ export interface IssueRow extends Issue {
   matchedLines?: string;
 }
 
-/** 「当前存在」问题的统一口径：已修复（fixed）不计入现存统计（issueCount / 报告 / 列表共用） */
 export function isActiveIssue(issue: IssueRow): boolean {
   return issue.comparisonStatus !== 'fixed';
 }
 
 export type ReviewStatus = 'pending' | 'confirmed' | 'false_positive' | 'accepted';
 
-/** 人工复核记录：以 (project_id, fingerprint) 为键，跨扫描继承 */
 export interface Review {
   projectId: string;
   fingerprint: string;
@@ -157,10 +134,6 @@ export interface Review {
 fs.mkdirSync(path.dirname(dbPath), { recursive: true });
 export const db = new DatabaseSync(dbPath);
 
-/**
- * 关闭数据句柄。仅测试用：单测把 DATA_DIR 指到临时目录，Windows 上句柄不关就删不掉整个目录
- * （rmSync 抛 EPERM），跑一次留一份临时库。服务进程不需要它——进程退出时由系统回收。
- */
 export function closeDatabase(): void {
   db.close();
 }
@@ -256,30 +229,22 @@ CREATE TABLE IF NOT EXISTS rulepacks (
 );
 `);
 
-// 旧库平滑迁移：为 rulepacks 补可移植格式相关列（列已存在时报错忽略）
 for (const sql of [
   'ALTER TABLE rulepacks ADD COLUMN version TEXT',
   'ALTER TABLE rulepacks ADD COLUMN manifest TEXT',
   'ALTER TABLE rulepacks ADD COLUMN sample_count INTEGER NOT NULL DEFAULT 0',
   'ALTER TABLE rulepacks ADD COLUMN is_dir INTEGER NOT NULL DEFAULT 0',
   'ALTER TABLE rulepacks ADD COLUMN last_check TEXT',
-  // 扫描可复现清单（8.10）：源码哈希 / 引擎命令行 / 配置快照
   'ALTER TABLE scans ADD COLUMN src_hash TEXT',
   'ALTER TABLE scans ADD COLUMN command_line TEXT',
   'ALTER TABLE scans ADD COLUMN config_snapshot TEXT',
   'ALTER TABLE scans ADD COLUMN engine_version TEXT',
-  // 扫描排队标记（并发池 2 路后排队可区分）：CREATE TABLE IF NOT EXISTS 不给旧库加列，走 ALTER 兜底
   'ALTER TABLE scans ADD COLUMN queued_at TEXT',
-  // 实际开跑时间（修正排队时间被计入「引擎耗时」）
   'ALTER TABLE scans ADD COLUMN started_at TEXT',
-  // 出队时间锚点：启动清理判「已出队未开跑」残骸用——发起时间含排队等待，会把深队列后正常开跑的扫描误杀
   'ALTER TABLE scans ADD COLUMN dequeued_at TEXT',
-  // 扫描失败的语言无关标识（供前端按界面语言翻译；message 仍是中文兜底）
   'ALTER TABLE scans ADD COLUMN error_code TEXT',
   'ALTER TABLE scans ADD COLUMN error_params TEXT',
-  // 兜底扫描配置标记（旧库补列；见 fallback-config.ts）
   'ALTER TABLE configs ADD COLUMN is_protected INTEGER NOT NULL DEFAULT 0',
-  // 污点路径可视化（P1-6）：taint 命中的 source→sink 传播链快照
   'ALTER TABLE issues ADD COLUMN dataflow_trace TEXT',
 ]) {
   try {
@@ -436,7 +401,6 @@ export function updateProject(
   db.prepare(`UPDATE projects SET ${sets.join(', ')} WHERE id = ?`).run(...values);
 }
 
-// 删除跨 issues / scans / reviews / projects 多张表，包事务保证中途失败可整体回滚，不留孤儿数据
 export function deleteProject(id: string): void {
   db.exec('BEGIN');
   try {
@@ -451,14 +415,11 @@ export function deleteProject(id: string): void {
   }
 }
 
-/** 删除单条扫描及其问题明细；scans 与 projects 里指向它的基线引用一并置空 */
-// 删除跨 issues / scans / projects 三张表，包事务保证中途失败可整体回滚，不留孤儿 issues 或悬空基线
 export function deleteScan(id: string): void {
   db.exec('BEGIN');
   try {
     db.prepare('DELETE FROM issues WHERE scan_id = ?').run(id);
     db.prepare('UPDATE scans SET baseline_scan_id = NULL WHERE baseline_scan_id = ?').run(id);
-    // 项目级基线引用不清的话，前端发扫描会恒带这个死 ID 被 400 卡死，且界面无解除入口
     db.prepare('UPDATE projects SET baseline_scan_id = NULL WHERE baseline_scan_id = ?').run(id);
     db.prepare('DELETE FROM scans WHERE id = ?').run(id);
     db.exec('COMMIT');
@@ -480,7 +441,6 @@ export function listScans(projectId: string): ScanRecord[] {
   return rows.map(rowToScan);
 }
 
-/** 全量扫描列表（双快照对比的候选池，含跨项目来源）；分页由调用方在本地完成 */
 export function listAllScans(): ScanRecord[] {
   const rows = db
     .prepare('SELECT * FROM scans ORDER BY scanned_at DESC, id DESC')
@@ -647,7 +607,6 @@ export function insertConfig(config: ScanConfig): void {
 
 export function updateConfig(
   id: string,
-  /** isProtected 只能由 setConfigProtected 改写：配置编辑接口拿到它就能把兜底配置变成可删除的普通配置 */
   patch: Partial<Omit<ScanConfig, 'id' | 'createdAt' | 'isProtected'>>,
 ): void {
   const existing = getConfig(id);
@@ -669,13 +628,11 @@ export function updateConfig(
   );
 }
 
-/** 受保护标记的唯一写入口（兜底配置的身份位，见 fallback-config.ts） */
 export function setConfigProtected(id: string): void {
   db.prepare('UPDATE configs SET is_protected = 1 WHERE id = ?').run(id);
 }
 
 export function deleteConfig(id: string): void {
-  // 两步（删配置 + 解绑项目）必须是原子的：中途失败留下「项目仍绑定已删配置」的悬空引用
   db.exec('BEGIN');
   try {
     db.prepare('DELETE FROM configs WHERE id = ?').run(id);
@@ -808,8 +765,6 @@ export function updateRulePack(
 }
 
 export function deleteRulePack(id: string): void {
-  // 删记录 + 从各配置里摘掉引用必须是原子的：中途失败会让配置继续引用一个不存在的包，
-  // 扫描时被静默跳过，只在结果里少扫一批规则
   db.exec('BEGIN');
   try {
     db.prepare('DELETE FROM rulepacks WHERE id = ?').run(id);

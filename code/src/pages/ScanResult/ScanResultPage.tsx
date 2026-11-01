@@ -38,20 +38,16 @@ export default function ScanResultPage() {
   const { id, scanId } = useParams();
   const [project, setProject] = useState<IProject | null>(null);
   const [scan, setScan] = useState<IScanResult | null>(null);
-  /** 基线扫描记录：只用来比对引擎版本，跨版本基线对比会给标识 */
   const [baselineScan, setBaselineScan] = useState<IScanResult | null>(null);
   const [issues, setIssues] = useState<IIssue[]>([]);
   const [loading, setLoading] = useState(true);
-  /** 首次加载即失败（区别于"记录不存在"：网络/后端异常时给出可重试的提示） */
   const [loadFailed, setLoadFailed] = useState(false);
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
   const [reviewTarget, setReviewTarget] = useState<IIssue | null>(null);
   const [compareOpen, setCompareOpen] = useState(false);
   const [knowledgeRuleId, setKnowledgeRuleId] = useState<string | null>(null);
-  /** 规则包悬浮面板的展开态（悬浮开合，点击面板内链接跳转规则中心） */
   const [packsOpen, setPacksOpen] = useState(false);
   const packDisplayName = usePackDisplayName();
-  // 轮询期间后端瞬断只弹一次错误；序号守卫丢弃切换扫描后晚到的旧响应
   const pollErrorShownRef = useRef(false);
   const requestSeqRef = useRef(0);
   const loadedOnceRef = useRef(false);
@@ -63,8 +59,6 @@ export default function ScanResultPage() {
     try {
       const scanData = await api.getScan(scanId);
       if (requestSeqRef.current !== seq) return;
-      // 路由 :id 与扫描归属必须一致：URL 手改成别的项目 id 时，复核会以错误项目落库
-      // （复核键是 projectId + fingerprint），页面也会把扫描挂到不相干的项目下
       if (id && scanData.projectId !== id) {
         setScan(null);
         setProject(null);
@@ -74,7 +68,6 @@ export default function ScanResultPage() {
       }
       setScan(scanData);
       const settled = scanData.status === 'completed';
-      // 项目列表与基线记录在扫描期间不会变化：只在首次加载与扫描完成时取，避免轮询每 1.5s 白拉两个接口
       const needMeta = settled || !loadedOnceRef.current;
       const [projects, issueList, baseline] = await Promise.all([
         needMeta && id ? api.listProjects() : Promise.resolve([]),
@@ -110,9 +103,6 @@ export default function ScanResultPage() {
     void load();
   }, [load]);
 
-  // 路由 :id/:scanId 变化复用同一组件实例：先清掉上一个扫描留下的状态。
-  // 不重置时 loadedOnceRef 仍为 true，新扫描在 scanning 期间不会重取 project，
-  // 复核对话框会拿着旧项目的 id 提交（复核按 projectId + fingerprint 落库，直接写错归属）。
   useEffect(() => {
     setProject(null);
     setScan(null);
@@ -135,7 +125,6 @@ export default function ScanResultPage() {
     return () => window.clearInterval(timer);
   }, [isScanning, load]);
 
-  /** 取消请求进行中：按钮短暂禁用防连点（运行中的取消要等引擎退出才落 failed，期间仍可看到扫描中） */
   const [cancelling, setCancelling] = useState(false);
 
   const handleCancel = async () => {
@@ -144,7 +133,6 @@ export default function ScanResultPage() {
     try {
       await api.cancelScan(scanId);
       toast.success(t('scanResult.cancelRequestedToast'));
-      // 排队中的取消后端已直接落 failed，刷新即见；运行中的会稍后在轮询里翻转为失败
       await load();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : String(error));
@@ -156,10 +144,8 @@ export default function ScanResultPage() {
   const selectedIssue =
     issues.find((issue) => issue.id === selectedIssueId) ?? issues[0] ?? null;
 
-  // 扫描完成 + 0 问题：这是审计的"绿色结论"，用专门的成功态呈现而不是"搜索无结果"
   const durationLabel = (() => {
     if (!scan?.finishedAt) return null;
-    // 排队等待与快照准备不算引擎耗时；旧记录无 startedAt 时回落到 scannedAt
     return formatDuration(
       Math.round(
         (new Date(scan.finishedAt).getTime() - new Date(scan.startedAt ?? scan.scannedAt).getTime()) /
@@ -234,8 +220,7 @@ export default function ScanResultPage() {
         )}
       </div>
 
-      {/* 本次扫描规则包：收纳为一个悬浮按钮（不再占两行高度），悬浮展开面板列出各包，
-          点击跳转规则中心；无规则包快照的旧扫描回落为纯文本说明 */}
+      {}
       {scan.status !== 'failed' && (scan.rulepacks?.length || scan.rules) && (
         <div
           className="relative"
@@ -295,11 +280,10 @@ export default function ScanResultPage() {
           <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
             <Loader2 className="size-8 animate-spin text-primary" />
             {scan.queuedAt ? (
-              // 并发池排队中（第 3 路及以后）：与"扫描中"区分，开跑后后端会清掉排队标记
               <p className="text-sm text-muted-foreground">{t('scanResult.queuedHint')}</p>
             ) : (
               <>
-                {/* 心跳进度：countFiles 落库后即可见；排队中恒为 0 不展示 */}
+                {}
                 {scan.fileCount ? (
                   <p className="text-xs text-muted-foreground">
                     {t('scanResult.scannedFiles', { count: scan.fileCount })}
@@ -320,7 +304,6 @@ export default function ScanResultPage() {
           </CardContent>
         </Card>
       ) : issues.length === 0 ? (
-        // 与"有问题"状态共用同一套双栏骨架：左列承载扫描概要，右列是绿色结论
         <div className="grid flex-1 grid-cols-1 gap-6 lg:min-h-0 lg:grid-cols-3 lg:grid-rows-[minmax(0,1fr)]">
           <Card className="flex flex-col">
             <CardHeader className="pb-3">
@@ -345,7 +328,7 @@ export default function ScanResultPage() {
                     {t('scanResult.dtRuleset')}
                   </dt>
                   <dd className="min-w-0 truncate font-medium">
-                    {/* 旧扫描曾把配置内部 ID（cfg-xxx）当规则集落库：内部标识对用户无意义，按无信息占位 */}
+                    {}
                     {scan.rules && !scan.rules.startsWith('cfg-') ? scan.rules : '—'}
                   </dd>
                 </div>
@@ -356,7 +339,6 @@ export default function ScanResultPage() {
                   </dt>
                   <dd className="min-w-0 text-right text-xs leading-5">
                     {scan.rulepacks?.length ? (
-                      // 包名全文直接可见（放不下会换行），不再挂重复内容的 title
                       scan.rulepacks.map((pack) => packDisplayName(pack.name, pack.id)).join('、')
                     ) : (
                       <span className="text-muted-foreground">—</span>

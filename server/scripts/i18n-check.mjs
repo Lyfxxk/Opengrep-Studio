@@ -1,11 +1,3 @@
-/**
- * i18n 资源一致性校验：
- *   1. UI 三份语言包（zh / en / zh-Hant）的叶子键必须完全一致；
- *   2. 服务端简繁 JSON（规则说明 messages-zh[-Hant].json、CWE 知识库 cwe-zh[-Hant].json）必须同键。
- *
- * 任一不一致即退出码 1，CI 与本地都跑同一份口径。
- * 用法：npm --prefix server run i18n:check
- */
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -42,8 +34,6 @@ for (const lang of langs) {
 const readJson = (file) =>
   JSON.parse(fs.readFileSync(path.join(root, 'server', 'rules', file), 'utf8'));
 
-// 服务端简繁 JSON 共用同一段键集校验：file 取简体文件名（报错文案即形如 "cwe-zh-Hant 缺少 …"），
-// display 是汇总行里的展示名
 const checkPair = (file, display) => {
   const zh = readJson(`${file}.json`);
   const hant = readJson(`${file}-Hant.json`);

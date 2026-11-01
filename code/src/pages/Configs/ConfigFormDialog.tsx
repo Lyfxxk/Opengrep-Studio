@@ -40,7 +40,6 @@ interface ConfigFormDialogProps {
   onSubmit: (values: ConfigFormValues, configId?: string) => void | Promise<void>;
 }
 
-// 占位符只放单个示例：多例塞一框会被整串照抄入库，顿号串到引擎侧静默匹配不到任何文件
 const EXCLUDE_PLACEHOLDER = 'dist/**';
 
 function bytesToMb(bytes: number): string {
@@ -83,7 +82,6 @@ export default function ConfigFormDialog({
       setJobs(String(target.values.jobs));
       setMaxSizeMb(bytesToMb(target.values.maxTargetBytes));
       setAdvancedOpen(false);
-      // 编辑时若已勾选内置包，自动展开内置区让用户看到当前选择
       setBuiltinOpen(
         target.values.rulePackIds.some((packId) =>
           rulePacks.some((pack) => pack.id === packId && pack.builtin),
@@ -178,14 +176,12 @@ export default function ConfigFormDialog({
       nextErrors.size = t('configs.sizeError');
     }
     setErrors(nextErrors);
-    // 高级参数默认折叠：超时/并发/体积校验失败时必须展开，否则错误提示看不见、点保存像没反应
     if (nextErrors.timeout || nextErrors.jobs || nextErrors.size) {
       setAdvancedOpen(true);
     }
     if (Object.values(nextErrors).some(Boolean) || submitting) {
       return;
     }
-    // 等待父组件保存完成后再复位按钮，避免双击发出两次创建请求
     setSubmitting(true);
     try {
       await onSubmit(
@@ -278,7 +274,7 @@ export default function ConfigFormDialog({
                 </p>
               )}
 
-              {/* 内置包收纳进折叠区，与自定义勾选行区分父子层级 */}
+              {}
               <button
                 type="button"
                 aria-expanded={builtinOpen}

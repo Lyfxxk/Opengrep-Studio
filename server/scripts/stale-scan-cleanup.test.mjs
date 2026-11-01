@@ -1,8 +1,3 @@
-// scanning 状态清理与失败错误码落库回归（node --test 运行，`npm test` 统一驱动）
-// 历史 bug：启动清理无判据地把所有 status='scanning' 打成失败，而 dev.mjs 明确允许第二个实例
-// 共用同一数据目录（AI 改代码时起项目不能杀正在用的实例）——另一实例正在跑的扫描会被误杀。
-// 顺带锁住 error_code/error_params 的落库回读：前端按界面语言翻译失败原因全靠这两列。
-// DATA_DIR 必须在动态导入 config/db 之前指向临时目录，单测不碰 server/data/ 的真实库。
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -62,9 +57,6 @@ test('长时间排队的扫描不被启动清理误杀（另一实例可能只�
 });
 
 test('已出队进入准备阶段的扫描不被启动清理误杀（出队时刻要晚于含排队等待的发起时间）', () => {
-  // 复刻真实时序：深队列等到槽位（queued_at 被清）后进入引擎版本探测/文件数/哈希的
-  // 分钟级准备窗口，此行 queued_at=NULL 且 started_at=NULL——判残骸只能锚定出队时间，
-  // 回落到发起时间会把另一实例活着的扫描打成 failed 'scan.interrupted'
   seedScanning('scan-dequeued-fresh', { dequeuedAt: new Date().toISOString(), scannedAt: hoursAgo(3) });
   markStaleScansFailed();
   assert.equal(

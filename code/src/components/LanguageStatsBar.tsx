@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-/** 各语言的品牌色（GitHub Linguist 风格），未收录的语言按名称哈希取备用色 */
 const LANG_COLORS: Record<string, string> = {
   TypeScript: '#3178c6',
   JavaScript: '#f1e05a',
@@ -39,11 +38,9 @@ function colorOf(language: string, index: number): string {
   return LANG_COLORS[language] ?? FALLBACK_COLORS[index % FALLBACK_COLORS.length];
 }
 
-/** 图例展示的语言数上限（其余聚合为 Other） */
 const TOP_N = 6;
 
 interface LanguageStatsBarProps {
-  /** 语言 → 字节数（后端实测统计） */
   stats: Record<string, number>;
 }
 

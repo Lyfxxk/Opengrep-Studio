@@ -1,4 +1,3 @@
-// SARIF 导入解析单测（node --test 运行，`npm test` 统一驱动）
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parseSarifImport } from '../src/sarif-import.ts';

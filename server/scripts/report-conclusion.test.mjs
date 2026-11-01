@@ -1,9 +1,3 @@
-// 报告结论句回归（node --test 运行，`npm test` 统一驱动）
-// 历史 bug：繁体/英文 HTML 报告走 localizedConclusion，只有 urgent>0 一个分支，
-// 丢掉了中文实现里的「无严重/高危」那句；中文与三语拼装两套实现因此长期漂移。
-// 现在只有一份 composeConclusion：这里同时锁住「中文文案逐字不变」与「三种语言分支齐全」。
-// DATA_DIR 必须在动态导入之前指向临时目录：report.ts 值导入 db.ts，静态 import 会打开并迁移
-// server/data/ 里的真实库（单测绝不能碰开发者数据）。
 import os from 'node:os';
 import fs from 'node:fs';
 import path from 'node:path';

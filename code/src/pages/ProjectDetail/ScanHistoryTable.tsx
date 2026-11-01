@@ -56,7 +56,6 @@ export default function ScanHistoryTable({
         <TableBody>
           {scans.map((scan) => {
             const isBaseline = scan.id === baselineScanId;
-            // 失败扫描也开放查看：结果页的失败卡片是失败原因唯一展示点，不放行就零入口
             const viewable = scan.status === 'completed' || scan.status === 'failed';
             return (
               <TableRow

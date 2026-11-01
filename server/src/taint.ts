@@ -1,20 +1,9 @@
-/**
- * taint 规则命中的 dataflow_trace 提取（引擎需带 --dataflow-traces 参数）。
- * 实测结构（opengrep v1.31.0；v1.33.0 下 e2e 的「source→intermediate→sink」传播链断言复验通过）：
- *   { taint_source: ["CliLoc", [{path,start,end}, "req.query"]],
- *     intermediate_vars: [{location: {path,start,end}, content: "code"}, ...],
- *     taint_sink: ["CliLoc", [{path,start,end}, "eval(middle)"]] }
- * 解析必须防御式：字段缺失/形态不符时返回 undefined，绝不抛错影响主流程。
- */
 
 export interface TaintStep {
-  /** source | intermediate | sink */
   role: 'source' | 'intermediate' | 'sink';
-  /** 相对源码根的文件路径（由调用方做 relativize） */
   path: string;
   line: number;
   col?: number;
-  /** 该步的代码文本（变量名 / 表达式），截断到 120 字符 */
   text?: string;
 }
 
@@ -41,7 +30,6 @@ function parseLocation(loc: unknown): { path: string; line: number; col?: number
 }
 
 function parseEndpoint(endpoint: unknown): { loc: { path: string; line: number; col?: number }; text?: string } | undefined {
-  // 端点形态为 [tag, [location, text?]]，tag 无业务含义（"CliLoc"）
   if (!Array.isArray(endpoint) || endpoint.length < 2 || !Array.isArray(endpoint[1])) {
     return undefined;
   }
@@ -59,7 +47,6 @@ function toStep(
   return { role, path: loc.path, line: loc.line, ...(loc.col !== undefined ? { col: loc.col } : {}), ...(text ? { text } : {}) };
 }
 
-/** 提取污点传播链（source → intermediates → sink），路径由调用方 relativize */
 export function extractTaintFlow(raw: unknown): TaintStep[] | undefined {
   if (typeof raw !== 'object' || raw === null) return undefined;
   const trace = raw as {
@@ -89,7 +76,6 @@ export function extractTaintFlow(raw: unknown): TaintStep[] | undefined {
   return steps.slice(0, MAX_STEPS);
 }
 
-/** 把提取出的链路路径 relativize 到源码根，并限制总大小（防超长链撑爆存储） */
 export function relativizeTaintFlow(
   steps: TaintStep[] | undefined,
   relativize: (path: string) => string,

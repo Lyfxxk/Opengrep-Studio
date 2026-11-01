@@ -81,7 +81,6 @@ const DIFF_SECTIONS: Array<{ key: 'new' | 'fixed' | 'remaining'; labelKey: 'comp
   { key: 'remaining', labelKey: 'compare.sectionRemaining', icon: CircleDot, tone: 'text-warning' },
 ];
 
-/** 双快照对比对话框：任选两次已完成扫描（含跨项目），问题级 + 文件级差异 */
 export default function CompareDialog({ scanId, onClose }: CompareDialogProps) {
   const { t } = useTranslation();
   const [candidates, setCandidates] = useState<ScanWithProject[] | null>(null);
@@ -110,7 +109,6 @@ export default function CompareDialog({ scanId, onClose }: CompareDialogProps) {
     };
   }, [scanId]);
 
-  // 请求序号：切换对比对象时晚到的旧结果不得覆盖新选择（大仓库 diff 可达数秒）
   const diffSeqRef = useRef(0);
 
   const runDiff = useCallback(async () => {
@@ -145,7 +143,6 @@ export default function CompareDialog({ scanId, onClose }: CompareDialogProps) {
             value={againstId}
             onValueChange={(id) => {
               setAgainstId(id);
-              // 换对比目标后上一次的对比结果立即失效，避免旧结果被误读为新目标的结论
               setDiff(null);
             }}
           >
@@ -155,7 +152,6 @@ export default function CompareDialog({ scanId, onClose }: CompareDialogProps) {
             <SelectContent>
               {Object.entries(
                 (candidates ?? []).reduce<Record<string, ScanWithProject[]>>((acc, scan) => {
-                  // 接口按时间倒序返回，这里保持遇到顺序即可：组按最近扫描排前，组内时间倒序
                   (acc[scan.projectName ?? scan.projectId] ??= []).push(scan);
                   return acc;
                 }, {}),
@@ -180,7 +176,7 @@ export default function CompareDialog({ scanId, onClose }: CompareDialogProps) {
           </Button>
         </div>
 
-        {/* 跨引擎版本的基线对比有噪音：新引擎会新增检测、修复误报，先提示再让人看差异 */}
+        {}
         {diff?.engine?.mismatch && (
           <p className="flex items-start gap-1.5 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
             <CircleAlert className="mt-0.5 size-3.5 shrink-0" />

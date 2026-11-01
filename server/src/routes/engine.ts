@@ -7,13 +7,10 @@ import { asyncHandler } from './shared.js';
 
 export const engineRoutes = Router();
 
-// ---------- 引擎版本检查与一键升级 ----------
-
 engineRoutes.get('/api/engine/update', asyncHandler(async (req, res) => {
   res.json(await checkEngineUpdate(req.query.refresh === '1'));
 }));
 
-// 升级在后台跑，前端轮询这个接口拿进度（50MB 下载不能让请求一直挂着）
 engineRoutes.get('/api/engine/upgrade', (_req, res) => {
   res.json(engineUpgradeState());
 });

@@ -3,7 +3,6 @@ import { execSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// 本文件位于 <repo>/server/scripts/，向上两级取仓库根
 const rootDir = path.dirname(path.dirname(path.dirname(fileURLToPath(import.meta.url))));
 const subPkgs = ['code', 'server'];
 

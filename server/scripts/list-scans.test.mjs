@@ -1,7 +1,3 @@
-// 全量扫描列表回归（node --test 运行，`npm test` 统一驱动）
-// 历史 bug：listAllScans 固定 LIMIT 200，扫描超过 200 条后更早的记录在扫描中心、
-// 报告中心与双快照对比候选池里静默消失（前端分页只是在这 200 条内翻页）。
-// DATA_DIR 必须在动态导入 config/db 之前指向临时目录，单测不碰 server/data/ 的真实库。
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

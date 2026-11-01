@@ -18,7 +18,6 @@ import { cn } from '@/lib/utils';
 import { api, type HealthInfo } from '@/lib/api';
 import EngineCard from '@/pages/Dashboard/EngineCard';
 
-/** 项目维度的最新风险快照：最近一次已完成扫描及其问题明细 */
 interface ProjectRisk {
   project: IProject;
   latestScan?: IScanResult;
@@ -54,7 +53,6 @@ function StatCard({
   );
 }
 
-/** 仪表看盘：项目 / 扫描 / 风险分布 / 规则资产的全局概览（自动刷新，无手动刷新入口） */
 export default function DashboardPage() {
   const { t } = useTranslation();
   const [projects, setProjects] = useState<IProject[] | null>(null);
@@ -62,12 +60,9 @@ export default function DashboardPage() {
   const [packs, setPacks] = useState<IRulePack[] | null>(null);
   const [health, setHealth] = useState<HealthInfo | null>(null);
   const [risks, setRisks] = useState<ProjectRisk[] | null>(null);
-  // 任一核心接口失败置位：失败要显式提示，不能把"加载失败"伪装成零数据
   const [loadFailed, setLoadFailed] = useState(false);
 
-  // 序号守卫：interval 与 visibilitychange 可能并发触发 load，慢的旧响应后到不能覆盖新数据
   const loadSeqRef = useRef(0);
-  // 风险速览拉取键：记录上次重拉 issues 时的输入签名，键不变就跳过重拉
   const riskKeyRef = useRef<string | null>(null);
 
   const load = useCallback(async () => {
@@ -80,11 +75,9 @@ export default function DashboardPage() {
     ]);
     if (seq !== loadSeqRef.current) return;
     setLoadFailed([projectRes, scanRes, packRes].some((res) => res.status === 'rejected'));
-    // 失败保持 null（未加载态）：渲染成空数组会把失败伪装成"零数据/尚未建档"
     setProjects(projectRes.status === 'fulfilled' ? projectRes.value : null);
     setScans((prev) => {
       if (scanRes.status !== 'fulfilled') return null;
-      // 基础数据未变时保留旧引用：轮询每轮换新数组会连锁重算 latestByProject 等下游 memo 与渲染
       return JSON.stringify(prev) === JSON.stringify(scanRes.value) ? prev : scanRes.value;
     });
     setPacks(packRes.status === 'fulfilled' ? packRes.value : null);
@@ -100,7 +93,6 @@ export default function DashboardPage() {
     [scans],
   );
 
-  // 自动刷新：常态每分钟一次；有扫描进行中时 5 秒一次（扫描落定立即反映）；切回本页时即时刷一次
   useEffect(() => {
     const timer = setInterval(() => void load(), hasScanning ? 5000 : 60_000);
     return () => clearInterval(timer);
@@ -114,7 +106,6 @@ export default function DashboardPage() {
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, [load]);
 
-  /** 每个项目最近一次已完成扫描（风险口径以此为准） */
   const latestByProject = useMemo(() => {
     const map = new Map<string, IScanResult>();
     for (const scan of scans ?? []) {
@@ -129,9 +120,6 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!projects) return;
-    // 拉取键 = 项目集合 + 项目名 + 各项目最新已完成扫描 id：速览条目的渲染输入只有这三样，
-    // issues 内容只随最新扫描 id 变化，键不变就跳过重拉（needMeta 思路，参照 ScanResultPage），
-    // 避免轮询带来的新数组引用让每个项目每轮都白发一次 listIssues
     const key = JSON.stringify(
       projects.map((project) => [
         project.id,
@@ -147,14 +135,11 @@ export default function DashboardPage() {
           const latest = latestByProject.get(project.id);
           const issues = latest
             ? (await api.listIssues(latest.id).catch(() => [] as IIssue[]))
-                // 与报告口径一致：基线对比产生的"已修复"项不算当前风险
                 .filter((issue) => issue.comparisonStatus !== 'fixed')
             : [];
           return { project, latestScan: latest, issues };
         }),
       );
-      // 键守卫代替组件挂载标记：慢的旧响应后到时键已过期不能覆盖新数据（与 loadSeqRef 同型）；
-      // 同键的并发重跑产生等价结果，后到覆盖无害，因此不做"仅挂载期生效"的丢弃
       if (riskKeyRef.current === key) setRisks(entries);
     })();
   }, [projects, latestByProject]);
@@ -164,7 +149,6 @@ export default function DashboardPage() {
     [scans],
   );
 
-  /** 全部项目"最近一次扫描"口径下的聚合（与项目风险速览一致，不含已修复项） */
   const aggregated = useMemo(() => {
     const allIssues = (risks ?? []).flatMap((risk) => risk.issues);
     const severityCounts = Object.fromEntries(
@@ -191,7 +175,6 @@ export default function DashboardPage() {
   const hasData = (projects ?? []).length > 0;
 
   return (
-    // 整页锁定在视口内（lg 及以上）：统计卡固定行，主体卡片 flex 撑满剩余高度，内容超出走卡片内滚动
     <div className="flex flex-col gap-4 lg:h-full">
       {loadFailed && (
         <p className="shrink-0 rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-2 text-xs text-destructive">
@@ -220,8 +203,6 @@ export default function DashboardPage() {
         <StatCard
           icon={ShieldAlert}
           label={t('dashboard.statsIssues')}
-          // 口径与下方 sub / 风险分布一致：只算每个项目最近一次已完成扫描，
-          // 否则同一项目反复扫描会把历史问题数重复累加
           value={Array.from(latestByProject.values()).reduce((sum, scan) => sum + scan.issueCount, 0)}
           sub={
             risks

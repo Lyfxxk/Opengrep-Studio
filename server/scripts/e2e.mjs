@@ -5,7 +5,6 @@ import path from 'node:path';
 import * as tar from 'tar';
 import * as sevenzz from '7z-wasm';
 
-// 默认钉死 IPv4 回环：服务端只绑 127.0.0.1，localhost 在部分机器上解析为 ::1 会被拦（EACCES）
 const BASE = process.env.BASE_URL ?? 'http://127.0.0.1:8787';
 let failures = 0;
 const failedLabels = [];
@@ -33,10 +32,8 @@ async function api(method, path, body) {
   return { status: res.status, json };
 }
 
-/** 单个请求的最长等待：后端卡死时 CI 要失败并报错，而不是挂到 6 小时任务上限 */
 const REQUEST_TIMEOUT_MS = 60_000;
 
-/** Windows 下 undici 与服务端 keep-alive 存在偶发 ECONNRESET 竞态，失败重试 2 次 */
 async function fetchRetry(url, init, tries = 3) {
   let lastError;
   for (let attempt = 0; attempt < tries; attempt += 1) {
@@ -260,7 +257,6 @@ assert(
     || (updateInfo.json.updateAvailable === true && Boolean(updateInfo.json.assetName)),
   '可升级时必须同时满足"有新版本 + 资产就绪"', JSON.stringify(updateInfo.json),
 );
-// 断网环境下 error 字段承载原因，同样算"给了人话说明"
 assert(
   Boolean(updateInfo.json?.reason) || Boolean(updateInfo.json?.error) || updateInfo.json?.canUpgrade === true,
   '不可升级或查不到上游时给出人话说明', JSON.stringify(updateInfo.json),
@@ -292,7 +288,6 @@ for (const rp of (await api('GET', '/api/rulepacks')).json ?? []) {
   if (rp.builtin || !isE2eName(rp.name)) continue;
   await api('DELETE', `/api/rulepacks/${rp.id}`);
 }
-// 只断言 E2E 自身残留已清空；库中用户数据原样保留
 const e2eLeftover = [
   ...((await api('GET', '/api/projects')).json ?? []).filter((p) => isE2eName(p.name)),
   ...((await api('GET', '/api/configs')).json ?? []).filter((c) => isE2eName(c.name)),
@@ -317,8 +312,6 @@ const badOnline = await api('POST', '/api/rulepacks', {
   content: 'rules: [ { broken',
 });
 assert(badOnline.status === 400, '在线创建的非法 YAML 被拒绝', JSON.stringify(badOnline.json));
-// 历史 bug：express.json 默认 100kb，规则 YAML 明明允许 1MB，却在路由校验前被 413 拦掉。
-// 这里用 >100kb 的合法包锁住 body 上限已放宽（注释行计入 YAML 但不算规则）。
 const bigBodyPack = await api('POST', '/api/rulepacks', {
   name: 'E2E-大包体规则包',
   language: 'Python',
@@ -342,8 +335,6 @@ const fullConfig = await createConfig({
 });
 assert(fullConfig.id.startsWith('cfg-'), '创建扫描配置成功');
 
-// include 的中间 **/ 段按组数指数展开成引擎参数：写入侧必须有段数闸，否则
-// 200 字符内可构造约 40 组 → 2^40 变体，扫描时同步展开冻结事件循环直至 OOM
 const globstarReject = await api('POST', '/api/configs', {
   name: 'E2E-globstar上限配置',
   rulePackIds: [packJs.id],
@@ -356,7 +347,6 @@ const globstarReject = await api('POST', '/api/configs', {
 assert(
   globstarReject.status === 400 && globstarReject.json?.error?.code === 'srv.pathFilterGlobstarsTooMany',
   'include 的 **/ 段超过上限被拒绝', JSON.stringify(globstarReject.json));
-// 上限内（4 段）仍可正常入库
 const globstarEdge = await createConfig({
   name: 'E2E-globstar边界配置',
   rulePackIds: [packJs.id],
@@ -384,19 +374,15 @@ form.append('file', new Blob([makeZip()], { type: 'application/zip' }), 'sample-
 const up = await api('POST', `/api/projects/${pid}/source`, form);
 assert(up.status === 200 && up.json.fileCount === 4, `上传解压 4 个文件 (got ${up.json?.fileCount})`);
 
-// 未绑定配置时服务端自动创建/复用「默认扫描配置」（全部启用的内置规则包）并绑定项目后扫描
 const noConfigScan = await api('POST', `/api/projects/${pid}/scans`, {});
 assert(noConfigScan.status === 201, '未绑定配置时自动绑定默认配置并扫描', JSON.stringify(noConfigScan.json));
 assert((noConfigScan.json.rulepacks ?? []).length >= 1, '默认配置解析到可用规则包', JSON.stringify(noConfigScan.json.rulepacks));
 const rebound = ((await api('GET', '/api/projects')).json ?? []).find((p) => p.id === pid);
-// 扫描记录的 rules 落配置名而非 cfg- 内部 id（routes/scans.ts 的 rulesLabel），项目绑定的是 id：
-// 经配置列表把 configId 换算回名字再比对，验证「扫的就是项目被自动绑定的那份默认配置」
 const reboundConfig = ((await api('GET', '/api/configs')).json ?? []).find((c) => c.id === rebound?.configId);
 assert(reboundConfig?.name === noConfigScan.json.rules, '项目已自动绑定默认配置', JSON.stringify(rebound));
 const s0 = await pollScan(noConfigScan.json.id);
 assert(s0.status === 'completed', '一键扫描完成', JSON.stringify(s0));
 
-// 兜底扫描配置：常驻受保护、删不掉；未绑定或绑定失效的项目都回落到它并重新绑定
 assert(reboundConfig?.isProtected === true, '自动绑定的默认配置即受保护兜底配置', JSON.stringify(reboundConfig));
 const fallbackDel = await api('DELETE', `/api/configs/${reboundConfig.id}`);
 assert(
@@ -430,7 +416,6 @@ await api('PATCH', `/api/projects/${pid}`, { configId: fullConfig.id });
 
 const scan1 = await api('POST', `/api/projects/${pid}/scans`, {});
 assert(scan1.status === 201 && scan1.json.status === 'scanning', '扫描已提交');
-// rules 与配置名比对（同上）：E2E 前缀资源开场已清场，一轮内配置名唯一，名字比对即可锚定绑定关系
 assert(scan1.json.rules === fullConfig.name, '扫描使用绑定的配置', JSON.stringify(scan1.json));
 const s1 = await pollScan(scan1.json.id);
 assert(s1.status === 'completed', 'v1 扫描完成', JSON.stringify(s1));
@@ -471,8 +456,6 @@ assert(by('fixed') >= 1, '检测到已修复问题（eval 被移除）');
 assert(s2.issueCount === by('new') + by('remaining'), 'issueCount 不含已修复');
 
 console.log('== 7a. 上传失败不丢弃已导入源码 ==');
-// 历史 bug：解压/校验失败时直接删 pending/src，用户重新上传一个损坏包就会丢掉此前源码。
-// 现在上传先落临时目录，失败只清临时目录，这里锁住「失败后 hasSource 仍为 true」。
 const brokenUpload = new FormData();
 brokenUpload.append('file', new Blob([Buffer.from('not a zip')], { type: 'application/zip' }), 'broken.zip');
 const brokenUp = await api('POST', `/api/projects/${pid}/source`, brokenUpload);
@@ -504,7 +487,6 @@ const igForm = new FormData();
 igForm.append('file', new Blob([makeIgnoreZip()], { type: 'application/zip' }), 'ig.zip');
 const igUp = await api('POST', `/api/projects/${igProject.id}/source`, igForm);
 assert(igUp.status === 200, '忽略过滤上传成功', JSON.stringify(igUp.json));
-// 保留：.gitignore + api.ts；忽略：secret.env + dist/ + debug.log（node_modules 强制剪除但不计数）
 assert(igUp.json.fileCount === 2 && igUp.json.ignoredCount === 3,
   `默认过滤 fileCount=2 ignoredCount=3 (got ${igUp.json.fileCount}/${igUp.json.ignoredCount})`);
 const igFormOff = new FormData();
@@ -529,7 +511,6 @@ fs.writeFileSync(path.join(arcTmp, 'src', 'main.ts'), SAMPLE_TS_V1, 'utf8');
 fs.writeFileSync(path.join(arcTmp, 'src', 'Util.java'), 'public class Util { }\n', 'utf8');
 const arcProject = (await api('POST', '/api/projects', { name: 'E2E-压缩包通道', language: 'TypeScript' })).json;
 try {
-  // tar.gz：tar 头自带条目体积，走"边解压边限额"通道
   const tgzPath = path.join(arcTmp, 'src.tar.gz');
   tar.c({ z: true, cwd: arcTmp, sync: true, file: tgzPath, portable: true }, ['src']);
   const tgzForm = new FormData();
@@ -538,7 +519,6 @@ try {
   assert(tgzUp.status === 200 && tgzUp.json?.fileCount === 2,
     `tar.gz 上传解压 2 个文件 (got ${tgzUp.status}/${tgzUp.json?.fileCount})`, JSON.stringify(tgzUp.json));
 
-  // 7z：走 worker 解压通道；归档用 7z-wasm 在进程内现做（MEMFS + NODEFS 挂载临时目录）
   const init7z = typeof sevenzz === 'function' ? sevenzz : sevenzz.default;
   const seven = await init7z({});
   seven.FS.mkdir('/in');
@@ -581,8 +561,6 @@ assert(reportHtml.includes('风险分布') && reportHtml.includes('行动清单'
 assert(reportHtml.includes('class="num crit"'), 'HTML 报告行动清单含严重等级列');
 assert(reportHtml.includes('已修复'), 'HTML 报告含基线已修复分组');
 assert((reportHtmlRes.headers.get('content-disposition') ?? '').includes('attachment'), 'HTML 以附件形式下载');
-// 命令行里的规则路径与快照目录都是本机绝对路径：对外报告必须折叠成 <repo>/，
-// 不能只脱敏带引号的参数（无空格的快照路径是裸参数，历史 bug 会原样泄漏）
 assert(!/[A-Za-z]:[\\/]/.test(reportHtml), 'HTML 报告不含 Windows 盘符绝对路径');
 assert(!/[\\/]workspace[\\/]/.test(reportHtml), 'HTML 报告不泄漏源码快照目录');
 assert(reportHtml.includes('&lt;repo&gt;/'), 'HTML 报告的命令行路径已折叠为 <repo>/');
@@ -600,17 +578,14 @@ const patched = await api('PATCH', `/api/projects/${pid}`, { baselineScanId: s1.
 assert(patched.json.baselineScanId === s1.id, '项目基线已更新');
 const badPatch = await api('PATCH', `/api/projects/${pid}`, { baselineScanId: 'scan-不存在' });
 assert(badPatch.status === 400, '非法基线被拒绝');
-// 创建与前端输入框都限 50 字符，PATCH 早期漏了同一校验（直连 API 可写入超长名称）
 const longNamePatch = await api('PATCH', `/api/projects/${pid}`, { name: 'E'.repeat(51) });
 assert(
   longNamePatch.status === 400 && longNamePatch.json?.error?.code === 'srv.projectNameTooLong',
   'PATCH 项目名超过 50 字符被拒绝', JSON.stringify(longNamePatch.json));
 
 console.log('== 10. 未完成扫描拒绝生成报告 ==');
-// pid 已绑定配置（第 5 节）且有源码，直接走配置通道发起扫描
 const scanning = await api('POST', `/api/projects/${pid}/scans`, {});
 assert(scanning.status === 201 && scanning.json.id, '扫描已发起', JSON.stringify(scanning.json));
-// 引擎启动需要数秒，紧接着的报表请求必然落在 scanning 窗口内
 const earlyReport = await api('GET', `/api/scans/${scanning.json.id}/report`);
 assert(earlyReport.status === 400, '未完成扫描拒绝生成报告', JSON.stringify(earlyReport.json));
 const doneScan = await pollScan(scanning.json.id);
@@ -629,7 +604,6 @@ console.log('== 11a. 取消扫描：两种取消路径都要落成 failed + 可�
 {
   const cancelPid = await makeProjectWithSource('E2E-取消扫描');
   const submitted = [];
-  // 全局并发池 2 路，连发 5 个保证尾部还在排队（排队中的引擎还没起，取消走"直接落 failed"分支）
   for (let i = 0; i < 5; i += 1) {
     const r = await api('POST', `/api/projects/${cancelPid}/scans`, {});
     assert(r.status === 201 && r.json.id, `第 ${i + 1} 个扫描已受理`, JSON.stringify(r.json));
@@ -651,7 +625,6 @@ console.log('== 11a. 取消扫描：两种取消路径都要落成 failed + 可�
     '列表接口同样回传错误码（详情页失败提示按语言重拼要用）',
     JSON.stringify(listed.json?.map?.((item) => [item.id, item.status, item.errorCode])),
   );
-  // 等其余扫描跑完释放槽位：被取消的那条不得被复活成 completed
   for (const id of submitted.slice(0, 4)) await pollScan(id);
   const afterSlotsFreed = await api('GET', `/api/scans/${target}`);
   assert(afterSlotsFreed.json.status === 'failed', '槽位轮转不会复活已取消的扫描', JSON.stringify(afterSlotsFreed.json));
@@ -669,7 +642,6 @@ const badRef = await api('POST', `/api/projects/${p2.json.id}/clone`, {
 assert(badRef.status === 400, '注入式分支名被拒绝', JSON.stringify(badRef.json));
 const emptyBody = await api('POST', `/api/projects/${p2.json.id}/clone`, {});
 assert(emptyBody.status === 400, '缺少仓库地址被拒绝');
-// URL 内嵌百分号编码密码：git 报错会原样回显命令行 URL，脱敏必须按编码后的形态匹配
 const unreachable = await api('POST', `/api/projects/${p2.json.id}/clone`, {
   url: 'http://robot:p%40ssword@127.0.0.1:9/no-repo.git',
 });
@@ -740,7 +712,6 @@ assert(cfgAfter && !cfgAfter.rulePackIds.includes(onlinePack.json.id), '删除�
 await api('DELETE', `/api/configs/${boundCfg.id}`);
 
 console.log('== 15. 删除项目 ==');
-// 与进行中扫描的互斥：扫描未完成时删除必须 409
 const delScan = await api('POST', `/api/projects/${pid}/scans`, {});
 assert(delScan.status === 201, '删除互斥用扫描已发起');
 const delBlocked = await api('DELETE', `/api/projects/${pid}`);
@@ -757,7 +728,6 @@ console.log('== 16. 收尾清理（测试自建的规则包与配置全部移除
 await api('DELETE', `/api/rulepacks/${packJs.id}`);
 await api('DELETE', `/api/rulepacks/${packJava.id}`);
 await api('DELETE', `/api/configs/${fullConfig.id}`);
-// 只断言 E2E 自建资源已清空；库中用户已有的配置/规则包原样保留
 const finalConfigs = ((await api('GET', '/api/configs')).json ?? []).filter((c) => isE2eName(c.name));
 const finalCustomPacks = ((await api('GET', '/api/rulepacks')).json ?? []).filter(
   (rp) => !rp.builtin && isE2eName(rp.name),
@@ -858,7 +828,6 @@ assert(
 assert(imported.json.manifest?.frameworks?.[0] === 'express' && imported.json.manifest?.cwe?.[0] === 'CWE-95',
   '清单字段入库', JSON.stringify(imported.json.manifest));
 
-// 目录包参与扫描：绑定配置 → 扫描 demo 源码 → 应有命中
 const packProject = await makeProjectWithSource('E2E-目录包扫描项目');
 const packCfg = await createConfig({
   name: 'E2E-目录包配置',
@@ -900,8 +869,6 @@ assert(
 assert(
   typeof manifest.commandLine === 'string' && manifest.commandLine.includes(' scan '),
   'manifest 引擎命令行', manifest.commandLine);
-// 隐私护栏：清单是对外交付物，本机绝对路径（连带账户名与目录层级）必须折叠成 <repo>/xxx。
-// 判定口径与 report.ts 的 isAbsolutePathToken 一致：裸 token 或带引号 token 以 盘符: / \ 开头
 const absToken = /(?:^|\s)(?:"|')?(?:[A-Za-z]:[\\/]|[\\/])/;
 assert(
   manifest.commandLine.includes('<repo>/') && !absToken.test(manifest.commandLine),
@@ -953,8 +920,6 @@ assert(importedIssues[0].severity === sarifIssue.severity,
   `severity 往返无损 (${sarifIssue.severity})`, importedIssues[0].severity);
 assert(importedIssues[0].filePath === sarifIssue.filePath && importedIssues[0].startLine === sarifIssue.startLine,
   '路径与行号往返无损', `${importedIssues[0].filePath}:${importedIssues[0].startLine}`);
-// SARIF 导入没有 commandLine/engineVersion：报告与清单不能用本机 opengrep 版本兜底，
-// 否则外部工具（CodeQL/Semgrep 等）的结果被标成当前引擎产出
 const importedReport = await api('GET', `/api/scans/${importedScan.json.id}/report`);
 assert(
   importedReport.status === 200 && importedReport.json.meta?.engineVersion === undefined,
@@ -1014,7 +979,6 @@ assert(
   badImported.status === 400 && badImported.json?.error?.code === 'pack.manifestInvalid'
     && (badImported.json?.error?.message ?? '').includes('pack.yaml'),
   '坏 pack.yaml 被拒绝且保留 pack.manifestInvalid 错误码', JSON.stringify(badImported.json));
-// 名称上限统一为 50：创建/上传入口早就限 50，导入通道原先放宽到 60，同一约束不应因入口不同而异
 const longNamePack = new AdmZip();
 longNamePack.addFile('pack.yaml', Buffer.from(`name: ${'N'.repeat(51)}\nversion: 1.0.0\n`, 'utf8'));
 longNamePack.addFile('rules/r.yaml', Buffer.from(LAB_EVAL_RULE, 'utf8'));
@@ -1030,7 +994,6 @@ const multiImported = await api('POST', '/api/rulepacks/import', packZipForm(mul
 assert(multiImported.status === 400 && (multiImported.json?.error?.message ?? '').includes('pack.yaml'),
   '无清单多 YAML 被拒绝并提示格式', JSON.stringify(multiImported.json));
 
-// Windows 右键"压缩文件夹"的产物：单个 YAML 被包在一层目录里，应能导入为单文件包
 const nestedYaml = new AdmZip();
 nestedYaml.addFile('my-rules/eval.yaml', Buffer.from(LAB_EVAL_RULE, 'utf8'));
 const nestedImported = await api('POST', '/api/rulepacks/import', packZipForm(nestedYaml, 'nested.zip'));
@@ -1051,7 +1014,6 @@ const basicZip = new AdmZip(Buffer.from(await basicExport.arrayBuffer()));
 assert(basicZip.getEntries().some((entry) => /\/?README\.md$/i.test(entry.entryName)),
   '单文件包导出也注入 README.md', basicZip.getEntries().map((e) => e.entryName).join(' | '));
 
-// 收尾：删除本节自建的项目 / 配置 / 规则包
 await api('DELETE', `/api/projects/${packProject}`);
 await api('DELETE', `/api/configs/${packCfg.id}`);
 for (const id of [imported.json.id, reImported.json.id, basicImported.json.id, nestedImported.json.id]) {
@@ -1103,7 +1065,6 @@ await api('PATCH', `/api/projects/${p20proj}`, { configId: p20cfg.id });
 const p20scanA = await pollScan((await api('POST', `/api/projects/${p20proj}/scans`, {})).json.id);
 assert(p20scanA.status === 'completed' && p20scanA.issueCount > 0, 'P1 项目扫描 A 完成', JSON.stringify(p20scanA));
 
-// 20.1 人工复核：设置 → 问题接口带回 → 第二次扫描自动继承（fingerprint 键）→ 报告统计
 const { json: issuesA } = await api('GET', `/api/scans/${p20scanA.id}/issues`);
 const reviewTarget = issuesA[0];
 assert(Boolean(reviewTarget.fingerprint), 'issues 返回 fingerprint', JSON.stringify(reviewTarget));
@@ -1133,7 +1094,6 @@ assert(
   '报告含复核统计', JSON.stringify(p20report.json?.reviewStats));
 assert((p20report.json?.conclusion ?? '').includes('人工复核'), '报告结论含复核句');
 
-// 20.2 双快照对比：同源对比 + 版本演进对比（含跨扫描指纹与文件行级统计）
 const diffSame = await api('GET', `/api/scans/${p20scanB.id}/diff?against=${p20scanA.id}`);
 assert(diffSame.status === 200, '同源对比可用', JSON.stringify(diffSame.json));
 assert(diffSame.json.engine?.mismatch === false
@@ -1151,10 +1111,6 @@ const diffV2 = await api('GET', `/api/scans/${p20scanC.id}/diff?against=${p20sca
 assert(diffV2.json.issueDiff.new.count >= 1 && diffV2.json.issueDiff.fixed.count >= 1,
   '版本演进对比：检测到新增与修复', JSON.stringify(diffV2.json.issueDiff));
 const modifiedApi = diffV2.json.fileDiff.modified.find((file) => file.path.endsWith('api.ts'));
-// V2 相对 V1 删掉 runDynamic 三行、新增一行 slack token：方向必须按「基线→本次」统计，
-// 反向会把新增/删除行数对调（历史 bug），因此这里同时锁住两个计数而不是只看 addedLines >= 1
-// V2 = V1 删掉 runDynamic 三行 + 追加「空行 + slack token 一行」，故正确方向是 +2/-3；
-// 方向反转时会是 +3/-2，因此两个计数都要精确断言
 assert(
   Boolean(modifiedApi) && modifiedApi.diffable
     && modifiedApi.addedLines === 2 && modifiedApi.removedLines === 3,
@@ -1164,7 +1120,6 @@ assert(diffSelf.status === 400, '对比自身被拒绝');
 const diffMissing = await api('GET', `/api/scans/${p20scanC.id}/diff?against=scan-不存在`);
 assert(diffMissing.status === 404, '对比目标不存在返回 404');
 
-// 20.3 规则知识库：CWE 中文名 + 修复建议 + 命中统计 + 内置规则中文说明与溯源
 const kb = await api('GET', '/api/rules/knowledge/js-hardcoded-secret');
 assert(kb.status === 200 && kb.json.found === true && kb.json.matchedRuleId === 'js-hardcoded-secret',
   '知识库命中自定义规则', JSON.stringify(kb.json));
@@ -1181,7 +1136,6 @@ assert(
   kbUpstream.json?.cwe?.some((item) => (item.name ?? '').length > 0) === true,
   '内置规则 CWE 中文名', JSON.stringify(kbUpstream.json?.cwe));
 
-// 20.4 污点链：实验室 taint 命中带传播链
 const labTaintFlow = await api('POST', '/api/rulelab/run', {
   yaml: `rules:
   - id: p1-taint-eval
@@ -1208,7 +1162,6 @@ assert(
   '实验室命中带污点传播链（source→intermediate→sink）', JSON.stringify(taintMatch.taintFlow));
 
 console.log('== 21. 扫描删除（单删 + 基线引用置空） ==');
-// 建一条以扫描 A 为基线的新扫描：删掉 A 后，它的基线引用应被自动置空而不是悬空
 const p21scan = await pollScan(
   (await api('POST', `/api/projects/${p20proj}/scans`, { baselineScanId: p20scanA.id })).json.id,
 );
@@ -1229,7 +1182,6 @@ const listAfterDel = await api('GET', '/api/scans');
 const deletedIds = [p20scanA.id, p20scanB.id, p20scanC.id, p21scan.id];
 assert(!listAfterDel.json.some((scan) => deletedIds.includes(scan.id)), '扫描列表已不含被删扫描');
 
-// 收尾
 await api('DELETE', `/api/projects/${p20proj}`);
 await api('DELETE', `/api/configs/${p20cfg.id}`);
 await api('DELETE', `/api/rulepacks/${p20pack.id}`);

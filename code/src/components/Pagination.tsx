@@ -4,26 +4,19 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 interface PaginationProps {
-  /** 当前页（1 起） */
   page: number;
   pageCount: number;
   onPage: (page: number) => void;
   className?: string;
 }
 
-/** 首页/末页是纯图标按钮，尺寸与带文字的上下页按钮对齐 */
 const EDGE_BUTTON = 'h-7 w-7 shrink-0 p-0';
 const STEP_BUTTON = 'h-7 shrink-0 gap-1 px-2';
 
-/**
- * 分页条：首页 / 上一页 / 页码（可直接输入跳转）/ 下一页 / 末页，整组居中。
- * 列表页与问题明细共用；总页数 ≤ 1 时整条不渲染，调用方无需再加长度闸。
- */
 export default function Pagination({ page, pageCount, onPage, className }: PaginationProps) {
   const { t } = useTranslation();
   if (pageCount <= 1) return null;
 
-  // 结算手输页码：合法即翻页并返回 true；空 / 0 / 超界返回 false，由调用方把输入回落回当前页
   const jumpTo = (raw: string): boolean => {
     const target = Number(raw);
     if (!Number.isInteger(target) || target < 1 || target > pageCount) return false;
@@ -59,10 +52,7 @@ export default function Pagination({ page, pageCount, onPage, className }: Pagin
       </Button>
       <span className="flex shrink-0 items-center gap-1 px-1 text-muted-foreground">
         <span>{t('pagination.pagePrefix')}</span>
-        {/* 非受控 + key={page}：外部翻页（首页/末页、筛选后页码夹取）时重挂载回显新页码，
-            不与 onPage 双向打抖；回车当帧结算，不依赖元素是否真的拿到焦点。
-            宽度只随总页数位数变（翻页不跳动），且 Tailwind preflight 是 border-box，
-            必须把内边距和边框算进去，否则 1 位数字就被挤到看不见。 */}
+        {}
         <input
           key={page}
           type="text"

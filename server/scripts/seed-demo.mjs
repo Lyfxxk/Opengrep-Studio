@@ -1,14 +1,8 @@
-/**
- * 测试数据种子脚本：通过真实 REST API 造一套完整演示数据。
- * 产物全部落在 server/data/ 与 server/rules/custom/（均在 .gitignore 中，不会入库）。
- * 用法：node server/scripts/seed-demo.mjs [--skip-clone]
- */
 import { readFileSync, rmSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import * as tar from 'tar';
 
-// 与 e2e.mjs / dirty-test.mjs 一致：默认钉死 IPv4 回环，可用 BASE_URL 覆盖
 const BASE = process.env.BASE_URL ?? 'http://127.0.0.1:8787';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const SEED_DIR = path.join(HERE, 'seed-src');
@@ -134,10 +128,6 @@ const PACKS = [
   },
 ];
 
-/**
- * 现场打包演示源码。用 Node 的 tar 实现而不是 `tar czf`：后者依赖系统里存在 bash/tar，
- * Windows 没装 Git Bash 时 npm run seed 会直接失败。产物路径不变（始终是 seed-src/*.tgz）。
- */
 async function makeTar(dirName) {
   const tarName = `${dirName}.tgz`;
   const tarPath = path.join(SEED_DIR, tarName);
@@ -172,8 +162,6 @@ async function scanAndWait(projectId, label) {
 const log = (msg) => console.log(msg);
 
 async function main() {
-  // ① 健康检查：ok 恒为 true 只表示服务存活，不能作为预检依据；
-  // 引擎缺失（engine === 'MISSING'）或存在但探测不到版本（跑不起来）都算不可用，继续跑只会逐条扫描失败
   const health = await j('/api/health');
   if (health.engine === 'MISSING' || !health.engineVersion) {
     throw new Error(
@@ -183,7 +171,6 @@ async function main() {
   }
   log(`引擎就绪：v${health.engineVersion}（${health.engineSource}）`);
 
-  // ② 自定义规则包
   log('\n== 创建自定义规则包 ==');
   const existingPacks = await j('/api/rulepacks');
   for (const pack of PACKS) {
@@ -195,7 +182,6 @@ async function main() {
     log(`  创建：${created.name}（${created.ruleCount} 条规则）`);
   }
 
-  // ③ 扫描配置：内置（启用中）+ 全部自定义包
   const packs = await j('/api/rulepacks');
   const rulePackIds = packs.filter((p) => p.builtin ? p.enabled : true).map((p) => p.id);
   const CONFIG_NAME = '全量审计-内置与企业内检';
@@ -217,7 +203,6 @@ async function main() {
     log(`\n== 扫描配置已存在：${config.name} ==`);
   }
 
-  // ④ 项目一：nodejs 支付演示（两轮扫描，验证基线对比）
   log('\n== 项目一：demo-nodejs-payment ==');
   let projects = await j('/api/projects');
   let p1 = projects.find((p) => p.name === 'demo-nodejs-payment');
@@ -232,7 +217,6 @@ async function main() {
   log(`  上传 v2 源码（修复 eval、新增 backupApiKey / csrfToken）：${(await uploadSource(p1.id, tar2)).fileCount} 个文件`);
   const s2 = await scanAndWait(p1.id, 'v2 对比扫描');
 
-  // ⑤ 人工复核证据（在 v2 扫描结果上留三种结论）
   const issues2 = await j(`/api/scans/${s2.id}/issues`);
   const pick = (regex) => issues2.find((issue) => regex.test(issue.ruleId) && issue.fingerprint);
   const confirmIssue = pick(/hardcoded/i);
@@ -257,7 +241,6 @@ async function main() {
     log(`  复核-有条件接受：${acceptIssue.ruleId}`);
   }
 
-  // ⑥ 项目二：python flask 演示
   log('\n== 项目二：demo-python-flask-blog ==');
   projects = await j('/api/projects');
   let p2 = projects.find((p) => p.name === 'demo-python-flask-blog');
@@ -267,7 +250,6 @@ async function main() {
   log(`  上传源码：${(await uploadSource(p2.id, tar3)).fileCount} 个文件`);
   await scanAndWait(p2.id, 'flask 扫描');
 
-  // ⑦ 项目三：GitHub 真实仓库
   if (!SKIP_CLONE) {
     log('\n== 项目三：真实开源仓库克隆 ==');
     projects = await j('/api/projects');
@@ -297,7 +279,6 @@ async function main() {
     }
   }
 
-  // ⑧ 汇总
   const [finalProjects, finalScans] = await Promise.all([j('/api/projects'), j('/api/scans')]);
   log('\n== 种子数据汇总 ==');
   log(`项目 ${finalProjects.length} 个：${finalProjects.map((p) => p.name).join('、')}`);

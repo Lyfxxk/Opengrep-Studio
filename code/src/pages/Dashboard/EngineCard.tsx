@@ -10,20 +10,12 @@ import { api, type HealthInfo, type IEngineUpgradeState, type IEngineUpdateInfo 
 
 interface EngineCardProps {
   health: HealthInfo | null;
-  /** 有扫描在跑：Windows 不允许替换运行中的 exe，此时禁用升级 */
   scanRunning: boolean;
-  /** 升级完成后重新拉取 health，让卡片显示新版本 */
   onUpgraded: () => void;
 }
 
-/**
- * 引擎状态卡片：实际版本 + 来源 + 检查更新 + 一键升级。
- * 升级在服务端后台跑（50MB 下载），这里只负责发起与轮询进度。
- */
 export default function EngineCard({ health, scanRunning, onUpgraded }: EngineCardProps) {
   const { t } = useTranslation();
-  // 引擎文件在但探测不到版本（health.engineVersion 为空）同样按不可用处理：
-  // 显示「就绪」却没有版本徽章会误导用户以为引擎可正常扫描
   const ready = Boolean(health?.engine && health.engine !== 'MISSING' && health.engineVersion);
   const managed = health?.engineManaged === true;
   const [update, setUpdate] = useState<IEngineUpdateInfo | null>(null);
@@ -42,13 +34,10 @@ export default function EngineCard({ health, scanRunning, onUpgraded }: EngineCa
     }
   }, []);
 
-  // 进入看板自动查一次：服务端有 30 分钟缓存，不会把 GitHub 匿名配额打光
   useEffect(() => {
     if (ready && managed) void check(false);
   }, [ready, managed, check]);
 
-  // 升级完成后刷新 health 让卡片显示新版本；成功/失败结果本身就渲染在卡片里，
-  // 再弹一条 toast 只是把同一句话说两遍
   useEffect(() => {
     if (!running) return;
     let cancelled = false;
@@ -63,7 +52,6 @@ export default function EngineCard({ health, scanRunning, onUpgraded }: EngineCa
             onUpgraded();
           }
         } catch {
-          // 轮询失败忽略：升级在服务端继续，下一轮再取状态
         }
       })();
     }, 1000);
@@ -107,7 +95,7 @@ export default function EngineCard({ health, scanRunning, onUpgraded }: EngineCa
           <p className="text-muted-foreground">{t('common.loading')}</p>
         ) : ready ? (
           <>
-            {/* 行式版式（与扫描概要一致）：状态 / 来源 / 更新 各占一行，填满卡片高度不显空洞 */}
+            {}
             <div className="flex flex-wrap items-center gap-2 border-b py-3">
               <CheckCircle2 className="size-4 text-success" />
               <span className="font-medium">{t('engine.ready')}</span>

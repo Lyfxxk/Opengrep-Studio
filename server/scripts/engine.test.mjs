@@ -1,4 +1,3 @@
-// 引擎三级解析（resolveEngineBin）单测（node --test 运行，`npm test` 统一驱动）
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -8,14 +7,12 @@ import { engineExecutableName, resolveEngineBin } from '../src/config.ts';
 
 const { trackTempDir } = await import('./temp-dir.mjs');
 
-/** 建一个退出时自动回收的临时目录（一次跑留出四五个，不清就是 %TEMP% 里的几百个） */
 function makeTempDir(prefix) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
   trackTempDir(dir);
   return dir;
 }
 
-/** 造一个含指定文件的临时目录，返回其路径 */
 function makeDirWith(fileName) {
   const dir = makeTempDir('engine-test-');
   fs.writeFileSync(path.join(dir, fileName), 'fake-binary', 'utf8');
@@ -40,7 +37,7 @@ test('安装位存在时使用安装位（来源 bundled-dir）', () => {
   const bundled = makeDirWith('opengrep');
   const resolved = resolveEngineBin({
     bundledPath: path.join(bundled, 'opengrep'),
-    pathEnv: '', // 排除 PATH 干扰
+    pathEnv: '',
   });
   assert.equal(resolved.source, 'bundled-dir');
   assert.equal(resolved.bin, path.join(bundled, 'opengrep'));
@@ -70,7 +67,6 @@ test('注入平台时安装位默认文件名跟随该平台，而不是进程�
 
 test('PATH 中的目录必须是普通文件，目录同名不算命中', () => {
   const dirNamedEngine = makeTempDir('engine-dir-');
-  // 造一个名字与引擎相同的目录（statSync.isFile 为 false，应跳过）
   fs.mkdirSync(path.join(dirNamedEngine, engineExecutableName));
   const resolved = resolveEngineBin({
     bundledPath: path.join(os.tmpdir(), `engine-missing-${Date.now()}-2`, 'opengrep'),

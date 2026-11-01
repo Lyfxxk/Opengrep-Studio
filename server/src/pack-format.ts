@@ -3,14 +3,6 @@ import path from 'node:path';
 import { load as yamlLoad, dump as yamlDump } from 'js-yaml';
 import { HttpError } from './errors.js';
 
-/**
- * 可移植规则包格式（目录约定 + 清单，与 opengrep/semgrep 生态保持互操作）：
- *   pack.yaml            清单（必填 name / version，其余推荐）
- *   rules/*.yaml         普通 opengrep 规则文件，零转换可传给引擎
- *   samples/<rule-id>/   该规则的正例 positive.<ext> 与反例 negative.<ext>
- * 测试结果是 CI / 质量检查派生的，不入包。
- */
-
 export interface PackManifest {
   name: string;
   version: string;
@@ -37,7 +29,6 @@ function asStringArray(value: unknown, max = 20): string[] {
     .slice(0, max);
 }
 
-/** 解析并校验 pack.yaml 清单，失败抛 Error（由调用方决定映射成什么响应） */
 export function parsePackManifest(text: string): PackManifest {
   let doc: unknown;
   try {
@@ -55,7 +46,6 @@ export function parsePackManifest(text: string): PackManifest {
   const raw = doc as Record<string, unknown>;
   const name = String(raw.name ?? '').trim();
   if (!name) throw new HttpError(400, 'pack.yaml 缺少 name 字段', { code: 'pack.nameMissing' });
-  // 与创建/上传入口的 50 字符上限统一：同一规则包不应因为导入通道不同而放宽命名约束
   if (name.length > 50) {
     throw new HttpError(400, 'pack.yaml 的 name 不能超过 50 个字符', { code: 'pack.nameTooLong' });
   }
@@ -89,17 +79,11 @@ export function parsePackManifest(text: string): PackManifest {
   return manifest;
 }
 
-
-/** 样本归属的唯一口径（`positive.*` / `negative.*`）：质量检查与知识库展示共用，避免两套判断漂移 */
 export function isSampleKind(basename: string, kind: 'positive' | 'negative'): boolean {
   const firstToken = basename.split('.')[0].toLowerCase();
   return firstToken === kind;
 }
 
-/**
- * 扫描包的 samples/ 目录，按规则 id 归组样本文件。
- * 只有目录名命中已知规则 id 的样本才计入（未知目录忽略）。
- */
 export function scanPackSamples(
   packDir: string,
   knownRuleIds: Set<string>,
@@ -142,7 +126,6 @@ export function scanPackSamples(
   return { byRule, sampleCount };
 }
 
-/** 读取一个样本文件内容（超限截断，防止单样本拖垮引擎） */
 export function readSampleText(file: string): string {
   const stat = fs.statSync(file);
   const maxBytes = 200 * 1024;
@@ -159,7 +142,6 @@ export function readSampleText(file: string): string {
   return fs.readFileSync(file, 'utf8');
 }
 
-/** 旧式单文件包导出时自动生成清单（无样本，basic 档） */
 export function buildLegacyManifestYaml(pack: {
   name: string;
   createdAt: string;
@@ -173,7 +155,6 @@ export function buildLegacyManifestYaml(pack: {
   });
 }
 
-/** 包 README 的清单/规则信息（结构化入参，避免与 db 类型耦合） */
 export interface PackReadmeInput {
   name: string;
   version?: string;
@@ -187,7 +168,6 @@ export interface PackReadmeInput {
   changelog?: string;
   language?: string;
   ruleCount: number;
-  /** 逐规则的样本计数（单文件包/无样本包传空数组） */
   inventory: Array<{ ruleId: string; positiveCount: number; negativeCount: number }>;
   lastCheck?: {
     tier: 'verified' | 'basic';
@@ -204,11 +184,6 @@ function orDash(items: string[] | undefined): string {
   return clean.length > 0 ? clean.join('、') : '—';
 }
 
-/**
- * 生成贡献规范风格的包 README（P1-7）：
- * 清单摘要 + 规则清单（含样本数）+ 引擎用法 + 质量状态 + 来源/许可声明。
- * 导出 zip 时若包内没有手写 README 则注入，手写的优先。
- */
 export function buildPackReadme(pack: PackReadmeInput): string {
   const lines: string[] = [];
   lines.push(`# ${pack.name}`);

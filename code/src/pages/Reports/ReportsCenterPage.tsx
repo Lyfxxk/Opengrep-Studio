@@ -29,11 +29,9 @@ import { formatDateTime } from '@/lib/format';
 import type { IProject } from '@/data/projects';
 import { api } from '@/lib/api';
 
-/** 报告中心：全部已完成扫描的测试报告总览（在线报告 / 自包含 HTML / 可复现清单） */
 export default function ReportsCenterPage() {
   const { t } = useTranslation();
   const [rows, setRows] = useState<ScanWithProject[] | null>(null);
-  /** 加载失败与"确实一份报告都没有"必须区分：失败时给可操作的重试入口，而不是假的空态 */
   const [loadFailed, setLoadFailed] = useState(false);
   const [projects, setProjects] = useState<IProject[]>([]);
   const [filterProjectId, setFilterProjectId] = useState('all');
@@ -60,7 +58,6 @@ export default function ReportsCenterPage() {
     void load();
   }, [load]);
 
-  /** 筛选：项目下拉 + 关键字（匹配扫描编号 / 项目名） */
   const filteredRows = useMemo(() => {
     const trimmed = keyword.trim().toLowerCase();
     return (rows ?? []).filter((scan) => {
@@ -73,7 +70,6 @@ export default function ReportsCenterPage() {
     });
   }, [rows, filterProjectId, keyword]);
 
-  // 页码夹取：删除 / 新增行后不落在空页上
   const { page: safePage, setPage, pageCount, slice: pagedRows } = usePagedList(filteredRows, LIST_PAGE_SIZE);
 
   return (

@@ -1,4 +1,3 @@
-// pruneIgnoredFiles 的 gitignore 语义单测（node --test 运行，`npm test` 统一驱动）
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -6,7 +5,6 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { pruneIgnoredFiles } from '../src/ignore-filter.ts';
 
-/** @param {Record<string, string | null>} files */
 function makeFixture(files) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'igtest-'));
   for (const [rel, content] of Object.entries(files)) {
@@ -17,8 +15,6 @@ function makeFixture(files) {
   }
   return dir;
 }
-
-// 规则文件本身（.gitignore 等）是快照的一部分，计入 keptFiles——与扫描时 countFiles 口径一致。
 
 test('目录整棵剪除且否定规则不复活', async () => {
   const dir = makeFixture({

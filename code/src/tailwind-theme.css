@@ -2,10 +2,8 @@
   --button-outline: rgba(0,0,0, .10);
   --badge-outline: rgba(0,0,0, .05);
 
-  /* Automatic computation of border around primary / danger buttons */
-  --opaque-button-border-intensity: -8; /* In terms of percentages */
+  --opaque-button-border-intensity: -8;
 
-  /* Backgrounds applied on top of other backgrounds when hovered/active */
   --elevate-1: rgba(0,0,0, .03);
   --elevate-2: rgba(0,0,0, .08);
 
@@ -48,9 +46,6 @@
   --sidebar-border: hsl(213 22% 32%);
   --sidebar-ring: hsl(210 100% 62%);
 
-  /* Computed borders using hsl relative color syntax。
-     用 var(--x) 而不是字面量：深色主题覆盖 --primary 等值后，这里会自动重算，
-     否则按钮描边会残留浅色主题的色相 */
   --primary-border: hsl(from var(--primary) h s calc(l + var(--opaque-button-border-intensity)));
   --secondary-border: hsl(from var(--secondary) h s calc(l + var(--opaque-button-border-intensity)));
   --destructive-border: hsl(from var(--destructive) h s calc(l + var(--opaque-button-border-intensity)));
@@ -87,22 +82,14 @@
   --spacing: 0.25rem;
 }
 
-/**
- * 深色主题：只覆盖颜色与阴影令牌，组件里全部走语义类，无需逐个改类名。
- * 类名挂在 <html>（:root）上——--primary-border 等派生变量声明在 :root，
- * 依赖同一元素上的 --primary 重算，挂到 body 上会拿不到新的色值。
- */
 :root.dark {
-  /* 让滚动条、表单原生控件跟随深色 */
   color-scheme: dark;
 
   --button-outline: rgba(255, 255, 255, .14);
   --badge-outline: rgba(255, 255, 255, .10);
 
-  /* 深色下描边要靠提亮才看得见，与浅色的压暗方向相反 */
   --opaque-button-border-intensity: 8;
 
-  /* 叠加层同理：浅色用黑、深色用白 */
   --elevate-1: rgba(255, 255, 255, .06);
   --elevate-2: rgba(255, 255, 255, .12);
 
@@ -112,7 +99,6 @@
   --card-foreground: hsl(220 13% 91%);
   --popover: hsl(220 15% 15%);
   --popover-foreground: hsl(220 13% 91%);
-  /* 主色提亮以保证深底上的文字/图标对比度；实心按钮改用深色前景 */
   --primary: hsl(210 100% 62%);
   --primary-foreground: hsl(220 45% 9%);
   --secondary: hsl(220 12% 19%);
@@ -137,7 +123,6 @@
   --chart-3: hsl(36 92% 60%);
   --chart-4: hsl(262 70% 70%);
   --chart-5: hsl(340 70% 66%);
-  /* 侧栏在浅色主题下本就是深色，这里压得比正文更沉，靠边框区分层次 */
   --sidebar: hsl(221 26% 9%);
   --sidebar-foreground: hsl(220 13% 82%);
   --sidebar-primary: hsl(210 100% 68%);
@@ -147,7 +132,6 @@
   --sidebar-border: hsl(220 14% 20%);
   --sidebar-ring: hsl(210 100% 68%);
 
-  /* 浅色主题的 2% 阴影在深底上等于不可见，加深后才撑得起卡片层级 */
   --shadow-color: #000000;
   --shadow-2xs: 0px 2px 12px 0px hsl(0 0% 0% / 0.24);
   --shadow-xs: 0px 2px 12px 0px hsl(0 0% 0% / 0.24);
@@ -223,75 +207,39 @@
   --shadow-2xl: var(--shadow-2xl);
 }
 
-/**
- * Using the elevate system.
- * Automatic contrast adjustment.
- *
- * <element className="hover-elevate" />
- * <element className="active-elevate-2" />
- *
- * // Using the tailwind utility when a data attribute is "on"
- * <element className="toggle-elevate data-[state=on]:toggle-elevated" />
- * // Or manually controlling the toggle state
- * <element className="toggle-elevate toggle-elevated" />
- *
- * Elevation systems have to handle many states.
- * - not-hovered, vs. hovered vs. active  (three mutually exclusive states)
- * - toggled or not
- * - focused or not (this is not handled with these utilities)
- *
- * Even without handling focused or not, this is six possible combinations that
- * need to be distinguished from eachother visually.
- */
 @layer utilities {
-  /* Hide ugly search cancel button in Chrome until we can style it properly */
   input[type="search"]::-webkit-search-cancel-button {
     @apply hidden;
   }
 
-  /* Placeholder styling for contentEditable div */
   [contenteditable][data-placeholder]:empty::before {
     content: attr(data-placeholder);
     color: var(--muted-foreground);
     pointer-events: none;
   }
 
-  /* .no-default-hover-elevate/no-default-active-elevate is an escape hatch so consumers of
-   * buttons/badges can remove the automatic brightness adjustment on interactions
-   * and program their own. */
   .no-default-hover-elevate {}
   .no-default-active-elevate {}
 
 
-  /**
-   * Toggleable backgrounds go behind the content. Hoverable/active goes on top.
-   * This way they can stack/compound. Both will overlap the parent's borders!
-   * So borders will be automatically adjusted both on toggle, and hover/active,
-   * and they will be compounded.
-   */
   .toggle-elevate::before,
   .toggle-elevate-2::before {
     content: "";
     pointer-events: none;
     position: absolute;
     inset: 0px;
-    /*border-radius: inherit;   match rounded corners */
     border-radius: inherit;
     z-index: -1;
-    /* sits behind content but above backdrop */
   }
 
   .toggle-elevate.toggle-elevated::before {
     background-color: var(--elevate-2);
   }
 
-  /* If there's a 1px border, adjust the inset so that it covers that parent's border */
   .border.toggle-elevate::before {
     inset: -1px;
   }
 
-  /* Does not work on elements with overflow:hidden!
-   * Wrap in :where() to zero out specificity so Tailwind position utilities (absolute/fixed/sticky) can override */
   :where(.hover-elevate:not(.no-default-hover-elevate)),
   :where(.active-elevate:not(.no-default-active-elevate)),
   :where(.hover-elevate-2:not(.no-default-hover-elevate)),
@@ -308,10 +256,8 @@
     pointer-events: none;
     position: absolute;
     inset: 0px;
-    /*border-radius: inherit;   match rounded corners */
     border-radius: inherit;
     z-index: 999;
-    /* sits in front of content */
   }
 
   .hover-elevate:hover:not(.no-default-hover-elevate)::after,
@@ -324,7 +270,6 @@
     background-color: var(--elevate-2);
   }
 
-  /* If there's a 1px border, adjust the inset so that it covers that parent's border */
   .border.hover-elevate:not(.no-hover-interaction-elevate)::after,
   .border.active-elevate:not(.no-active-interaction-elevate)::after,
   .border.hover-elevate-2:not(.no-hover-interaction-elevate)::after,
@@ -334,7 +279,6 @@
   }
 }
 
-/* 繁体界面优先 TC 字形：按 :lang 作用域覆盖，简体与英文保持原字体栈 */
 :root:lang(zh-Hant) {
   --font-sans:
     '-apple-system', 'BlinkMacSystemFont', 'Helvetica Neue', 'Tahoma',

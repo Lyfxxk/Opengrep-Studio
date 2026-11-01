@@ -1,12 +1,3 @@
-// 规则包一键回归（P1-1）：校验内置 + 自定义规则包的 YAML 结构，
-// 对随包样本（samples/<rule-id>/）逐规则跑正反例回归（复用质量检查链路，spawn 真实引擎）。
-//
-// 用法：
-//   npm run test-packs            # 人读输出；任何结构错误或样本回归 fail/error 时非零退出
-//   npm run test-packs -- --json  # 机器可读输出（CI 用）
-//
-// 说明：内置包（server/rules/security/）当前不随仓库分发样本，只做结构校验（basic 档）；
-// 自定义目录包（server/rules/custom/<id>/）带样本时才 spawn 引擎，无引擎且无样本也能跑完。
 
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -17,7 +8,7 @@ import { parsePackManifest } from '../src/pack-format.ts';
 import { collectRuleFiles } from '../src/rulepacks.ts';
 
 const builtinDir = path.join(config.rulesDir, 'security');
-const customDir = config.customRulesDir; // 尊重 CUSTOM_RULES_DIR（Docker 数据卷）配置
+const customDir = config.customRulesDir;
 const asJson = process.argv.includes('--json');
 
 function collectPacks() {
@@ -49,7 +40,6 @@ function collectPacks() {
 }
 
 function structuralCheck(pack) {
-  // 返回 { ruleCount, errors: string[] }
   const errors = [];
   let ruleCount = 0;
   if (pack.kind === 'dir') {
@@ -63,8 +53,6 @@ function structuralCheck(pack) {
         errors.push(`pack.yaml 不合法：${error instanceof Error ? error.message : String(error)}`);
       }
     }
-    // collectRuleFiles 对不存在/不是目录的 rules/ 会直接抛 ENOENT/ENOTDIR：
-    // 目录包漂移（用户手工删了 rules/）时这里要报成结构错误，而不是让整个回归脚本崩掉
     let ruleFiles = [];
     try {
       ruleFiles = collectRuleFiles(path.join(pack.dir, 'rules'));
@@ -117,7 +105,6 @@ for (const pack of packs) {
   record.structuralErrors = structural.errors;
   totalRules += structural.ruleCount;
 
-  // 只有可移植目录包带逐规则样本；内置/单文件包只做结构校验（无样本 → unverified/basic）
   if (pack.kind === 'dir' && structural.errors.length === 0) {
     try {
       const check = await runPackCheck(pack.dir);

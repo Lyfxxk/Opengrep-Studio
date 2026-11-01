@@ -1,7 +1,4 @@
 #!/usr/bin/env node
-// npm run dev 前的引擎预检：只提示、不联网下载（下载交给一键启动脚本或 npm run setup:engine）。
-// 与 server/src/config.ts 的解析规则保持一致（env → opengrep-tool 安装位 → PATH）；
-// 版本信息优先读 opengrep-tool/installed.json（界面一键升级会写它），否则回落到 engines.json。
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -14,7 +11,6 @@ const toolDir = path.join(repoRoot, 'opengrep-tool');
 const envBin = process.env.OPENGREP_BIN?.trim();
 const bundled = path.join(toolDir, engineExecutableName);
 
-/** 安装位引擎的版本（读取失败时返回 undefined，不影响预检结论） */
 function bundledVersion() {
   try {
     const installed = readInstalledManifest(toolDir);

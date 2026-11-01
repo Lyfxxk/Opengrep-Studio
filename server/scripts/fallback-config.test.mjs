@@ -1,7 +1,3 @@
-// 兜底扫描配置回归（node --test 运行，`npm test` 统一驱动）
-// 锁住三件事：未绑定配置的项目扫描永远有配置可用（创建/接管/掏空自愈）、它是幂等的且不改主键、
-// 没有任何可用内置包时如实返回 undefined（而不是建一条扫不出结果的空配置）。
-// DATA_DIR 必须在动态导入 config/db 之前指向临时目录，单测不碰 server/data/ 的真实库。
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -30,7 +26,6 @@ function seedPack(id, { builtin = true, enabled = true } = {}) {
   });
 }
 
-/** 每个用例从空表开始：兜底配置的身份由 configs 表内容决定，残留会串味 */
 function resetTables() {
   for (const config of db.listConfigs()) db.deleteConfig(config.id);
   for (const pack of db.listRulePacks()) db.deleteRulePack(pack.id);
@@ -46,7 +41,6 @@ test('首启创建兜底配置：只收已启用的内置包、带保护标记�
   const config = ensureFallbackScanConfig();
   assert.equal(config?.id, 'cfg-fallback');
   assert.equal(config?.isProtected, true);
-  // listRulePacks 按 builtin/created_at/id 排序，断言只关心集合本身
   assert.deepEqual([...config.rulePackIds].sort(), ['rp-a', 'rp-b'], '停用的内置包与自定义包都不该进兜底规则集');
 
   const again = ensureFallbackScanConfig();
@@ -116,16 +110,13 @@ test('兜底配置的规则包被删空后自愈补回，全停用则不凭空�
   const config = ensureFallbackScanConfig();
   assert.equal(config?.rulePackIds.length, 3);
 
-  // 内置包文件消失被清理掉两个，第三个被用户在规则包页停用 → 规则集实际可用项归零
   db.deleteRulePack('rp-a');
   db.deleteRulePack('rp-b');
   db.updateRulePack('rp-c', { enabled: false });
   assert.deepEqual(db.getConfig('cfg-fallback')?.rulePackIds, ['rp-c']);
 
-  // 一个可用内置包都没有：兜底配置保持原样，由调用方给出「先启用规则包」的指引
   assert.deepEqual(ensureFallbackScanConfig()?.rulePackIds, ['rp-c']);
 
-  // 重新启用内置包后再解析：兜底配置补回可用规则集并落库，未绑定配置的项目才扫得动
   db.updateRulePack('rp-c', { enabled: true });
   const healed = ensureFallbackScanConfig();
   assert.deepEqual(healed?.rulePackIds, ['rp-c'], '仍有可用项时不改动用户的勾选');

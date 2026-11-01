@@ -1,4 +1,3 @@
-// parseRuleYaml 结构校验单测（node --test 运行，`npm test` 统一驱动）
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parseRuleYaml } from '../src/rule-yaml.ts';

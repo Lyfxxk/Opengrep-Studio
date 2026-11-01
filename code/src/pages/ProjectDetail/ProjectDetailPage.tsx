@@ -30,23 +30,16 @@ export default function ProjectDetailPage() {
   const navigate = useNavigate();
   const [project, setProject] = useState<IProject | null>(null);
   const [projectsLoaded, setProjectsLoaded] = useState(false);
-  /** 首次加载即失败（区别于"项目不存在"：网络/后端异常时提示重试而不是误报已删除） */
   const [loadFailed, setLoadFailed] = useState(false);
   const [scans, setScans] = useState<IScanResult[]>([]);
   const [configs, setConfigs] = useState<IConfig[]>([]);
-  // 规则包启用态：配置摘要需要区分「勾选了 N 个」和「实际生效 N 个」，停用包扫描时会被静默跳过
   const [rulePacks, setRulePacks] = useState<IRulePack[]>([]);
   const [upload, setUpload] = useState<UploadZoneState>({ status: 'idle' });
-  // 创建扫描的 POST 要等服务端复制完快照才返回（可达数十秒），期间 isScanning 仍为 false、
-  // 按钮照常可点：照 importingSarif 加 in-flight 守卫，防双击重复发创建请求
   const [startingScan, setStartingScan] = useState(false);
   const pollTimerRef = useRef<number | null>(null);
   const prevScansRef = useRef<IScanResult[]>([]);
-  // 轮询期间后端瞬断只弹一次错误，恢复后重置（避免每 1.5s 轰炸 toast）
   const pollErrorShownRef = useRef(false);
-  // 竞态守卫：id 切换/组件卸载后丢弃 in-flight 响应
   const requestSeqRef = useRef(0);
-  // 上传/克隆在途时 :id 可能已切走：回调按发起时的 id 比对，避免把旧项目的结果写进新项目页
   const activeIdRef = useRef(id);
   const loadedOnceRef = useRef(false);
 
@@ -62,7 +55,6 @@ export default function ProjectDetailPage() {
       if (requestSeqRef.current !== seq) return;
       const found = projects.find((item) => item.id === id) ?? null;
       setProject(found);
-      // 从后端恢复源码上传态：API 上传或页面刷新后扫描按钮不再丢失可用态
       if (found?.hasSource) {
         setUpload((prev) =>
           prev.status === 'idle'
@@ -105,7 +97,6 @@ export default function ProjectDetailPage() {
     }
   }, [id, t]);
 
-  // 路由 :id 切换会复用同一组件实例：先重置上一个项目留下的状态，避免旧数据在新 URL 下闪现甚至误操作
   useEffect(() => {
     activeIdRef.current = id;
     setProject(null);
@@ -114,9 +105,7 @@ export default function ProjectDetailPage() {
     loadedOnceRef.current = false;
     prevScansRef.current = [];
     pollErrorShownRef.current = false;
-    // upload 也要清：陈旧的「源码已导入」会让无源码项目页误开扫描按钮（真有源码的项目由 refresh 恢复）
     setUpload({ status: 'idle' });
-    // 在途的创建请求不随 :id 切换取消，守卫标记同样不能带到新项目页
     setStartingScan(false);
   }, [id]);
 
@@ -131,7 +120,6 @@ export default function ProjectDetailPage() {
       .catch(() => {
         setConfigs([]);
       });
-    // 启用态拉取失败按空表处理：摘要退回原计数，不因次要数据阻塞页面
     api
       .listRulePacks()
       .then(setRulePacks)
@@ -154,7 +142,6 @@ export default function ProjectDetailPage() {
     (config) => config.id === project?.configId,
   );
 
-  // 已勾选但已停用的规则包数：这些包在扫描时会被静默跳过，摘要按原样报个数会让审阅者误信「已扫过」
   const activeConfigDisabledPacks = activeConfig
     ? activeConfig.rulePackIds.filter(
         (packId) => rulePacks.find((pack) => pack.id === packId)?.enabled === false,
@@ -162,8 +149,6 @@ export default function ProjectDetailPage() {
     : 0;
 
   const isScanning = scans.some((scan) => scan.status === 'scanning');
-  // 源码可用性以服务端 hasSource 为准，upload 状态只补足「本次会话刚上传」的场景：
-  // 用户点「重新选择」回到 idle、或导入进行中时，不能把已存在的源码误判成不可扫描
   const sourceReady =
     upload.status === 'uploading' ? false : project?.hasSource === true || upload.status === 'uploaded';
   const canStartScan = sourceReady && !isScanning && !startingScan;
@@ -226,8 +211,6 @@ export default function ProjectDetailPage() {
       }
     } catch (error) {
       if (activeIdRef.current !== requestId) return;
-      // 与克隆失败同口径：上传失败只清服务端临时目录、不动既有源码。回到 idle 后交给
-      // refresh 的 hasSource 恢复逻辑找回「源码已导入」态，扫描按钮不至于被误禁用
       setUpload({ status: 'idle' });
       void refresh();
       toast.error(error instanceof Error ? error.message : String(error));
@@ -254,7 +237,6 @@ export default function ProjectDetailPage() {
     } catch (error) {
       if (activeIdRef.current !== requestId) return;
       setUpload({ status: 'idle' });
-      // 服务端克隆失败只清临时目录、不动既有源码；toast 明说这一点，避免用户误以为要重新上传
       const message = error instanceof Error ? error.message : String(error);
       toast.error(`${message}${t('projectDetail.cloneFailedSourceKept')}`);
     }
@@ -269,7 +251,6 @@ export default function ProjectDetailPage() {
       });
       setScans((prev) => [record, ...prev]);
       setUpload({ status: 'idle' });
-      // 服务端可能在提交时自动绑定了「默认扫描配置」，立即刷新让按钮与配置选择器同步
       void refresh();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : String(error));
@@ -298,8 +279,6 @@ export default function ProjectDetailPage() {
     }
   };
 
-  // SARIF 导入：把外部工具（Semgrep / CodeQL / 其他 Studio 实例）的结果引入为一条已完成扫描，
-  // 默认对项目当前基线做对比，让外源结果也能参与 new/remaining/fixed
   const [importingSarif, setImportingSarif] = useState(false);
   const sarifInputRef = useRef<HTMLInputElement>(null);
 
@@ -307,7 +286,6 @@ export default function ProjectDetailPage() {
     if (!id) return;
     setImportingSarif(true);
     try {
-      // 导入结果就是扫描历史里多出的一行，不再另弹提示
       await api.importSarif(id, file, project?.baselineScanId ?? undefined);
       await refresh();
     } catch (error) {
@@ -442,7 +420,7 @@ export default function ProjectDetailPage() {
       <Card className="overflow-hidden">
         <CardHeader className="flex-row items-center justify-between space-y-0">
           <CardTitle className="text-base">{t('projectDetail.scanHistoryTitle')}</CardTitle>
-          {/* 演示模式无后端：SARIF 导入没有 mock 实现，隐藏入口避免点了必失败 */}
+          {}
           {!api.isMockMode && (
             <div className="flex items-center gap-2">
               <span className="hidden text-xs text-muted-foreground sm:inline">

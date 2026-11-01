@@ -8,7 +8,6 @@ interface RuleYamlIssue {
 export function parseRuleYaml(text: string): {
   ruleCount: number;
   ruleIds: string[];
-  /** 第一条规则的 languages[0]（无法推断时为空串） */
   firstLanguage: string;
 } {
   let doc: unknown;
@@ -25,8 +24,6 @@ export function parseRuleYaml(text: string): {
   let firstLanguage = '';
   const issues: RuleYamlIssue[] = [];
   rules.forEach((rule, index) => {
-    // YAML 里 `rules: [null]`、`- 42` 这类条目不是对象：直接读 item.id 会抛 TypeError
-    // （"Cannot read properties of null"），报错既不像业务错误也不带条目位置
     const item = (
       typeof rule === 'object' && rule !== null ? rule : {}
     ) as Record<string, unknown>;

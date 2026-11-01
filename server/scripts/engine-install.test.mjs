@@ -1,4 +1,3 @@
-// 引擎安装/升级共用逻辑单测（node --test 运行，`npm test` 统一驱动）
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

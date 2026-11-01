@@ -57,7 +57,6 @@ export default function NewProjectDialog({
       setError(t('projects.nameTooLong'));
       return;
     }
-    // 等父组件保存完成再复位：否则双击会发出两次创建请求
     setSubmitting(true);
     try {
       await onSubmit({ name: trimmed, description: description.trim() }, project?.id);
