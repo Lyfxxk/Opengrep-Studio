@@ -646,7 +646,7 @@ function isAbsolutePathToken(token: string): boolean {
 }
 
 /** 命令行含本机绝对路径：对外交付泄露目录结构且撑坏版面，逐个折叠成 <repo>/<文件名> */
-function sanitizeCommand(cmd: string): string {
+export function sanitizeCommand(cmd: string): string {
   // 不能只处理带引号的参数：参数只有在含空白时才会被加引号，无空格的快照路径
   // （Docker /data、/opt/... 等）会以裸参数出现；改为同时扫描引号内与裸 token
   return cmd.replace(/"([^"]*)"|(\S+)/g, (match: string, quoted?: string, bare?: string) => {

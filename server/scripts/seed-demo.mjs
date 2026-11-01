@@ -242,7 +242,7 @@ async function main() {
     j(`/api/projects/${p1.id}/reviews`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fingerprint: issue.fingerprint, reviewer: 'lyf', ...payload }),
+      body: JSON.stringify({ fingerprint: issue.fingerprint, reviewer: 'admin', ...payload }),
     });
   if (confirmIssue) {
     await review(confirmIssue, { status: 'confirmed', reason: '密钥硬编码属实，需接入 KMS 重构' });

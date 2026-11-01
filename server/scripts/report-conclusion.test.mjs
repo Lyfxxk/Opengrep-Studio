@@ -113,7 +113,7 @@ test('HTML 明细带人工复核标签（复核需按 issue.id 回填到原始�
       fingerprint: 'fp-c',
       status: 'confirmed',
       reason: '真实漏洞',
-      reviewer: 'lyf',
+      reviewer: 'admin',
       updatedAt: '2026-10-29T00:00:00.000Z',
     },
   ];

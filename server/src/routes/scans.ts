@@ -34,7 +34,7 @@ import { diffSnapshots } from '../snapshot-diff.js';
 import { packRuleFiles } from '../rulepacks.js';
 import { buildSarifReport } from '../sarif.js';
 import { parseSarifImport } from '../sarif-import.js';
-import { buildReportData, renderReportHtml, type ReportLang } from '../report.js';
+import { buildReportData, renderReportHtml, sanitizeCommand, type ReportLang } from '../report.js';
 import { applyBaselineComparison, enqueueScan, requestScanCancel, type ScanPlan } from '../scan-runner.js';
 import { asyncHandler, decodeUploadFileName, limit400, requireProject, requireValidBaseline } from './shared.js';
 import {
@@ -536,7 +536,7 @@ function parseProductLang(value: unknown): ReportLang {
   return value === 'zh-Hant' ? 'zh-Hant' : value === 'en' ? 'en' : 'zh';
 }
 
-/** 扫描可复现清单：源码哈希 + 完整引擎命令行 + 规则文件哈希 + 引擎参数快照 */
+/** 扫描可复现清单：引擎命令行 + 规则文件哈希 + 引擎参数快照 + 引擎版本，本机绝对路径按报告同口径折叠 */
 scanRoutes.get('/api/scans/:scanId/manifest', asyncHandler(async (req, res) => {
   const scan = requireScan(req.params.scanId);
   const project = getProject(scan.projectId);
@@ -552,7 +552,8 @@ scanRoutes.get('/api/scans/:scanId/manifest', asyncHandler(async (req, res) => {
     engine: {
       name: 'opengrep',
       version: engineVersion ?? null,
-      binary: path.resolve(config.opengrepBin),
+      // 清单是对外交付物：只留引擎文件名，绝对路径会把使用者的账户名与目录层级一起带出去
+      binary: path.basename(config.opengrepBin),
     },
     source: {
       algorithm:
@@ -564,7 +565,7 @@ scanRoutes.get('/api/scans/:scanId/manifest', asyncHandler(async (req, res) => {
       sha256: scan.srcHash ?? null,
       fileCount: scan.fileCount,
     },
-    commandLine: scan.commandLine ?? null,
+    commandLine: scan.commandLine ? sanitizeCommand(scan.commandLine) : null,
     config: scan.configSnapshot ?? null,
     baselineScanId: scan.baselineScanId ?? null,
   });
