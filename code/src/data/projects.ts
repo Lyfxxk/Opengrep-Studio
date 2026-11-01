@@ -2,14 +2,11 @@ export interface IProject {
   id: string
   name: string
   description?: string
-  /** 兼容旧数据；新建项目不再采集，界面不展示 */
   language?: string
-  /** 最近一次上传源码的语言分布（语言 → 字节数），由后端实测统计 */
   languageStats?: Record<string, number>
   createdAt: string
   baselineScanId?: string
   configId?: string
-  /** 服务端 pending/src 目录是否存在（源码已上传），用于页面刷新后恢复扫描按钮可用态 */
   hasSource?: boolean
 }
 

@@ -1,4 +1,3 @@
-// 中文资源：界面文案的中文源头（en.ts 以 typeof zh 锁定键结构，两文件必须同步增删键）
 const zh = {
   app: {
     tagline: '码审工作台',
@@ -30,7 +29,6 @@ const zh = {
     zhHant: '繁體中文',
     en: 'English',
   },
-  // 主题模式文案：light/dark 是手动锁定，system 跟随操作系统明暗
   theme: {
     light: '浅色',
     dark: '深色',
@@ -134,7 +132,6 @@ const zh = {
     intermediate: '传播',
     sink: '汇聚点',
   },
-  // 实体名词带复数后缀：英文里按 count 取单复数（zh 仅用 _other，_one 为键结构对齐保留）
   entity: {
     project_one: '项目',
     project_other: '项目',
@@ -293,9 +290,7 @@ const zh = {
     rulesetDir: '规则集目录：{{rules}}',
     failedTitle: '本次扫描执行失败',
     failedHint: '源码快照仍在，返回项目详情页可直接重新发起扫描，无需重新上传',
-    // 并发池排队中（第 3 路及以后）的提示：与 scanningHint 区分，避免排队扫描被误读为卡死
     queuedHint: '排队等待中，其他扫描完成后自动开始',
-    // 心跳进度：源码快照文件数在引擎启动前落库，扫描中即可见
     scannedFiles: '已扫描 {{count}} 个文件',
     cancelBtn: '取消扫描',
     cancelRequestedToast: '已请求取消扫描',
@@ -344,7 +339,6 @@ const zh = {
     uploadFallback: '上传',
     multiFileLabel: '{{dir}}（{{count}} 个文件）',
     cloneLabelWithRef: '{{url}}（{{ref}}）',
-    // 克隆失败只清临时目录，既有源码不受影响；toast 附带说明，避免用户误以为要重新上传
     cloneFailedSourceKept: '（原已上传的源码保持不变）',
     notFound: '项目不存在或已被删除',
     baselineBadge: '基线 {{id}}',
@@ -701,7 +695,6 @@ const zh = {
     confirmExampleDesc: '当前内容与所有内置示例都不同，载入示例会替换规则和测试样本，且不可撤销。',
     confirmContinue: '继续载入',
   },
-  // 后端错误码契约（server/src 各模块 HttpError 的 code），前端按 apiErrors.<code> 翻译
   apiErrors: {
     archive: {
       unsafePath: '压缩包或文件列表中含不安全的路径条目：{{raw}}',

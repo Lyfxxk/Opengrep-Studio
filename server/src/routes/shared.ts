@@ -3,9 +3,7 @@ import multer from 'multer';
 import { getProject, getScan, type Project } from '../db.js';
 import { HttpError } from '../errors.js';
 
-/** 规则包 YAML 上传与实验室运行的体积上限（同一策略，报错文案从这里取数） */
 export const MAX_RULE_YAML_BYTES = 1024 * 1024;
-/** 单个测试样本的体积上限（规则包创建与实验室运行共用，报错文案从这里取数） */
 export const MAX_SAMPLE_BYTES = 200 * 1024;
 
 export const asyncHandler =
@@ -18,11 +16,6 @@ export function newId(prefix: string): string {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-/**
- * 还原 multipart 文件名：busboy 按默认 defParamCharset（latin1）解码 filename 参数，
- * 浏览器实际发的是 UTF-8 字节，中文文件名会变成「è§åè§å.yaml」这类乱码并原样进日志/落库/回显。
- * 只在按 latin1 取回的字节序列能完整解码为 UTF-8 时才还原，已是正常 UTF-8 的名字原样返回。
- */
 export function decodeUploadFileName(name: string): string {
   const decoded = Buffer.from(name, 'latin1').toString('utf8');
   return decoded.includes('\uFFFD') ? name : decoded;
@@ -34,7 +27,6 @@ export function requireProject(id: string): Project {
   return project;
 }
 
-/** 基线校验：必须是本项目下已完成的扫描（POST /scans、PATCH /projects、SARIF 导入共用） */
 export function requireValidBaseline(projectId: string, baselineParam: unknown): string {
   const scan = getScan(String(baselineParam));
   if (!scan || scan.projectId !== projectId || scan.status !== 'completed') {
@@ -43,7 +35,6 @@ export function requireValidBaseline(projectId: string, baselineParam: unknown):
   return scan.id;
 }
 
-// 把 multer 的 LIMIT_FILE_SIZE 转成带该通道准确上限的 400（各通道上限不同，全局中间件无法区分）
 export function limit400(
   limited: import('express').RequestHandler,
   limitBytes: number,

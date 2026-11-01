@@ -92,7 +92,6 @@ const DEFAULT_DRAFT: LabDraft = {
 `,
 };
 
-/** 内置示例：覆盖 pattern 与 taint 两种写法，方便新手上手 */
 const LAB_EXAMPLES: Array<{ nameKey: 'lab.exampleEval' | 'lab.exampleWeakHash' | 'lab.exampleTaint'; draft: LabDraft }> = [
   { nameKey: 'lab.exampleEval', draft: DEFAULT_DRAFT },
   {
@@ -161,7 +160,6 @@ function loadDraft(): LabDraft {
   }
 }
 
-/** 从规则 YAML 粗提取第一条规则的语言（仅用于展示，真实推断以后端为准） */
 function guessLanguage(yamlText: string): string {
   const match = yamlText.match(/languages:\s*\[([^\]]+)\]/);
   if (match) return match[1].split(',')[0].trim();
@@ -175,7 +173,6 @@ function sampleLanguageExtension(language: string): 'javascript' | 'python' | 'n
   return 'none';
 }
 
-/** 代码样本编辑器：按规则语言挂语法高亮 */
 function SampleEditor({
   value,
   onChange,
@@ -185,7 +182,6 @@ function SampleEditor({
   onChange: (value: string) => void;
   language: string;
 }) {
-  // CodeMirror 不读 CSS 变量，必须显式给主题名，否则深色下是白底配浅色字（代码几乎看不见）
   const { resolvedTheme } = useTheme();
   const ext = sampleLanguageExtension(language);
   const extensions = useMemo(() => {
@@ -254,7 +250,6 @@ type SaveDialogState =
   | { mode: 'overwrite'; pack: IRulePack }
   | null;
 
-/** 引擎语言（snake_case）→ 规则包语言标签（PACK_LANGUAGES），无法映射时返回 undefined */
 function engineLangToPackLabel(engineLang: string): string | undefined {
   const map: Record<string, string> = {
     javascript: 'JavaScript',
@@ -281,7 +276,6 @@ function engineLangToPackLabel(engineLang: string): string | undefined {
 
 export default function LabPage() {
   const { t } = useTranslation();
-  // 规则 YAML 编辑器与样本编辑器同源取主题，避免两处各判一次深浅
   const { resolvedTheme } = useTheme();
   const [draft, setDraft] = useState<LabDraft>(loadDraft);
   const [running, setRunning] = useState(false);
@@ -293,15 +287,11 @@ export default function LabPage() {
   const [attachSamples, setAttachSamples] = useState(true);
   const [customPacks, setCustomPacks] = useState<IRulePack[] | null>(null);
   const saveErrorRef = useRef<string>('');
-  // P5：引擎预检（null=检测中，true=缺失）
   const [engineMissing, setEngineMissing] = useState<boolean | null>(null);
-  // P4：载入示例前若会覆盖已编辑内容，先确认
   const [confirmExample, setConfirmExample] = useState<LabDraft | null>(null);
 
-  // 保存时是否把当前正/反例样本写进规则包（可移植目录包，之后可在规则包页一键质量检查）
   const hasSamples = Boolean(draft.positive.trim() || draft.negative.trim());
 
-  // 草稿自动保存（防抖 400ms）
   useEffect(() => {
     const timer = window.setTimeout(() => {
       try {
@@ -312,7 +302,6 @@ export default function LabPage() {
     return () => window.clearTimeout(timer);
   }, [draft]);
 
-  // P5：进入实验室时预检引擎可用性，缺失则提前提示而不是等运行失败
   useEffect(() => {
     let cancelled = false;
     api
@@ -330,7 +319,6 @@ export default function LabPage() {
 
   const language = useMemo(() => guessLanguage(draft.yaml), [draft.yaml]);
 
-  // P3：正反例全空时不允许运行（后端同样校验，这里是即时反馈）
   const canRun = Boolean(draft.yaml.trim()) && hasSamples && engineMissing !== true;
 
   const run = useCallback(async () => {
@@ -343,7 +331,6 @@ export default function LabPage() {
         negative: draft.negative,
       });
       setResult(res);
-      // 通过与否的结果卡已完整展示，只在失败/出错时弹提示
       if (res.verdict === 'fail') {
         toast.warning(t('lab.runFailToast', { reasons: res.failReasons.join('；') }));
       } else if (res.verdict === 'error') {
@@ -356,7 +343,6 @@ export default function LabPage() {
     }
   }, [draft, running, t]);
 
-  // Ctrl/Cmd + Enter 运行
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
@@ -375,7 +361,6 @@ export default function LabPage() {
       .catch(() => setCustomPacks([]));
   }, []);
 
-  // P4：示例会不会覆盖用户已编辑的内容？只比对 YAML 会漏掉仅改正/反例样本的情况，这里整份草稿（含样本）都参与比对
   const pickExample = (example: LabDraft) => {
     const hasContent = Boolean(draft.yaml.trim() || draft.positive.trim() || draft.negative.trim());
     const edited =
@@ -399,7 +384,6 @@ export default function LabPage() {
     setConfirmExample(null);
   };
 
-  // P6：打开"另存为新规则包"时，语言标签默认从引擎语言推导
   const openSaveDialog = () => {
     const label = engineLangToPackLabel(language);
     if (label) setSaveLanguage(label);
@@ -558,7 +542,7 @@ export default function LabPage() {
 
   return (
     <div className="space-y-4">
-      {/* P5：引擎缺失时提前拦截，避免白等一次失败 */}
+      {}
       {engineMissing === true && (
         <div className="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning/10 p-4">
           <ShieldAlert className="mt-0.5 size-5 shrink-0 text-warning" />
@@ -568,7 +552,7 @@ export default function LabPage() {
           </div>
         </div>
       )}
-      {/* 页头由规则中心（RulesCenterPage）统一提供，这里只保留工具条 */}
+      {}
       <div className="flex flex-wrap items-center justify-end gap-2">
         {language && (
           <Badge variant="outline" className="font-normal">
@@ -625,7 +609,7 @@ export default function LabPage() {
           </Button>
       </div>
 
-      {/* P2：宽屏三栏并排（YAML | 样本 | 结果），编辑与查看不滚动切换；窄屏降级为现有上下布局 */}
+      {}
       <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
         <Card>
           <CardHeader className="pb-3">
@@ -779,7 +763,7 @@ export default function LabPage() {
         </DialogContent>
       </Dialog>
 
-      {/* P4：示例会覆盖已编辑内容时二次确认 */}
+      {}
       <AlertDialog
         open={confirmExample !== null}
         onOpenChange={(open) => {

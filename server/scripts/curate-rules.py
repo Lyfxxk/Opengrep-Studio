@@ -9,7 +9,6 @@ parser = argparse.ArgumentParser(description="从上游 opengrep-rules 精选/�
 parser.add_argument("--cap", type=int, default=0, help="每语言收录上限；0 或缺省 = 全量收录")
 parser.add_argument("--dry-run", action="store_true", help="只打印各语言收录统计，不写规则文件")
 ARGS = parser.parse_args()
-# None 表示不限量；--cap N 时按 ERROR 优先截断到 N 条
 CAP = ARGS.cap if ARGS.cap > 0 else None
 
 SRC = os.environ.get("OPENGREP_RULES_SRC") or os.path.join(tempfile.gettempdir(), "opengrep-rules")
@@ -30,7 +29,6 @@ TARGETS = {
     "dockerfile.yaml": ({"dockerfile"}, ["dockerfile"]),
 }
 
-# 解析缓存：同一上游 YAML 会被 12 种语言各收集一遍，全量模式下可省 ~12 倍解析时间
 _parsed = {}
 
 def load_rules(path):

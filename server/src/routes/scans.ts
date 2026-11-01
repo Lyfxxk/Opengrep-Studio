@@ -45,13 +45,8 @@ import {
 
 export const scanRoutes = Router();
 
-/** SARIF 导入的体积上限（文案从取数点引用） */
 const MAX_SARIF_BYTES = 20 * 1024 * 1024;
 
-/**
- * 解析项目实际生效的扫描配置：绑定有效就用绑定的；未绑定、或绑定的配置已被删除时，
- * 自动落到受保护的「兜底配置」并重新绑定（兜底配置不可删除，见 fallback-config.ts）。
- */
 function resolveScanConfig(project: Project): ScanConfig {
   const bound = project.configId ? getConfig(project.configId) : undefined;
   if (bound) return bound;
@@ -92,8 +87,6 @@ function buildConfigPlan(project: Project): ScanPlan {
     });
   }
   return {
-    // rules 字段会作为「规则集」展示在扫描概要与报告里：落配置名（创建时限 50 字符）而非
-    // cfg-xxx 内部 ID，用户才看得懂；可复现性由 configSnapshot.ruleFiles 的 sha256 保证
     rulesLabel: scanConfig.name,
     configFiles,
     rulepacks,
@@ -106,7 +99,6 @@ function buildConfigPlan(project: Project): ScanPlan {
   };
 }
 
-/** 扫描编号带项目与时间信息（如 scan-mobsf-20261027-2301-x7k2）：记录一多也能一眼看出归属与日期 */
 function newScanId(projectName: string): string {
   const slug =
     projectName
@@ -121,7 +113,6 @@ function newScanId(projectName: string): string {
   return `scan-${slug}-${time}-${Math.random().toString(36).slice(2, 6)}`;
 }
 
-/** HTTP 头只放得下 ASCII：扫描编号可能含中文项目名，ASCII 回退文件名必须剥掉非 ASCII，完整名走 filename*（RFC 5987） */
 function asciiFilename(name: string): string {
   return name.replace(/[^\x20-\x7E]+/g, '_');
 }
@@ -132,20 +123,11 @@ function requireScan(id: string): ScanRecord {
   return scan;
 }
 
-/**
- * 列表/轮询专用的扫描摘要：命令行、规则哈希快照、源码哈希只在报告/可复现清单里读取，
- * 留在列表响应里会让前端每 1.5–5 秒一次的轮询白白搬运成百上千 KB。
- */
 function toScanSummary(scan: ScanRecord): Omit<ScanRecord, 'srcHash' | 'commandLine' | 'configSnapshot'> {
   const { srcHash: _srcHash, commandLine: _commandLine, configSnapshot: _configSnapshot, ...rest } = scan;
   return rest;
 }
 
-/**
- * 扫描产物的引擎版本：优先用记录里落库的版本；旧记录没落 engine_version 时，
- * 只有引擎扫描（有 commandLine）才兜底探测当前版本——SARIF 导入没有 commandLine，
- * 用本机 opengrep 版本兜底会把外部工具的结果标错来源。
- */
 async function resolveScanEngineVersion(scan: ScanRecord): Promise<string | undefined> {
   if (scan.engineVersion) return scan.engineVersion;
   if (!scan.commandLine) return undefined;
@@ -159,8 +141,6 @@ scanRoutes.post('/api/projects/:id/scans', asyncHandler(async (req, res) => {
     });
   }
   const project = requireProject(req.params.id);
-  // 导入（上传/克隆）进行中时 pending/src 是半成品：放行会让下面的快照复制拿到不完整源码，
-  // 与上传/克隆入口的导入互斥同口径直接 409
   if (isProjectImporting(project.id)) {
     throw new HttpError(409, '该项目正在导入源码（上传/克隆）中，请等待完成后再试', {
       code: 'srv.projectImportBusy',
@@ -170,9 +150,6 @@ scanRoutes.post('/api/projects/:id/scans', asyncHandler(async (req, res) => {
   if (!fs.existsSync(pendingDir)) {
     throw new HttpError(400, '请先上传源码或克隆仓库再发起扫描', { code: 'srv.noSourceToScan' });
   }
-  // 引擎缺失在发扫描前同步拦截：否则快照复制、落库都做完后异步 runScan 才失败，
-  // 列表里留下一条难以找回原因的失败记录；前置拦截直接给出修复指引（runScan 里的
-  // 同款检查保留作双保险，覆盖服务运行期间引擎被删除的窗口）
   if (!engineAvailable()) {
     throw new HttpError(400, engineInstallHint(), { code: 'srv.engineMissing' });
   }
@@ -184,9 +161,6 @@ scanRoutes.post('/api/projects/:id/scans', asyncHandler(async (req, res) => {
   if (baselineParam !== undefined && baselineParam !== null && baselineParam !== '') {
     baselineScanId = requireValidBaseline(project.id, baselineParam);
   } else if (project.baselineScanId) {
-    // 项目级基线兜底走与 requireValidBaseline 同口径的自愈校验：旧数据里 projects.baseline_scan_id
-    // 可能指向已删扫描（修复前 deleteScan 只清过 scans 表），失效就清掉引用并不带基线继续扫描，
-    // 而不是静默把死 ID 落进新扫描、让项目被 400 永久卡死
     const fallback = getScan(project.baselineScanId);
     if (fallback && fallback.projectId === project.id && fallback.status === 'completed') {
       baselineScanId = project.baselineScanId;
@@ -209,18 +183,9 @@ scanRoutes.post('/api/projects/:id/scans', asyncHandler(async (req, res) => {
 
   const scanDir = scanSourceDir(project.id, scan.id);
   fs.mkdirSync(path.dirname(scanDir), { recursive: true });
-  // 先落库再复制快照：复制可能耗时数秒到数十秒，期间升级/删项目等互斥方查的都是 DB 里的
-  // scanning 行，后置落库会让整个复制窗口对所有互斥检查不可见（升级能溜进去替换引擎、
-  // 删项目能连 pending 目录一起删掉）。且插入前的代码全同步，升级检查与落库之间不存在
-  // 异步交错窗口。复制失败时清掉半成品快照并删除记录，对外仍按本次请求报错。
   insertScan(scan);
-  // 复制快照期间登记导入互斥：此刻到 copyDirectory 之间全同步、无事件循环让出点，
-  // 放在这里与放在开头导入检查后等价，且免去为中间几处 400 出口补释放；无论复制
-  // 成败都经 finally 释放，否则扫描一次失败就永久挡住该项目的上传/克隆
   markProjectImporting(project.id);
   try {
-    // 异步逐文件复制，快照复制（上限 1GB）期间事件循环不再冻结；不用 fs.cpSync：
-    // Node 22 在 Windows 上源路径含非 ASCII 字符时会直接终止进程（见 copyDirectory 注释）
     await copyDirectory(pendingDir, scanDir);
   } catch (error) {
     fs.rmSync(scanSnapshotRoot(project.id, scan.id), { recursive: true, force: true });
@@ -238,7 +203,6 @@ scanRoutes.get('/api/projects/:id/scans', asyncHandler(async (req, res) => {
   res.json(listScans(req.params.id).map(toScanSummary));
 }));
 
-/** 全量扫描列表（跨项目对比的候选池） */
 scanRoutes.get('/api/scans', asyncHandler(async (_req, res) => {
   res.json(listAllScans().map(toScanSummary));
 }));
@@ -249,14 +213,10 @@ scanRoutes.get('/api/scans/:scanId', asyncHandler(async (req, res) => {
 
 scanRoutes.delete('/api/scans/:scanId', asyncHandler(async (req, res) => {
   const scan = requireScan(req.params.scanId);
-  // 进行中的扫描还被引擎写入、快照目录被占用（Windows 上删目录会 EPERM，留下 DB 已删的矛盾状态）
   if (scan.status === 'scanning') {
     throw new HttpError(409, '扫描进行中，请等扫描完成或失败后再删除', { code: 'srv.scanBusy' });
   }
   deleteScan(scan.id);
-  // 连快照根目录（workspace/<项目id>/<扫描id>/）一起删：只删 src 会让父目录成为随删除次数
-  // 累积的永久空壳；force 兜底根目录从未落盘的情况（如 SARIF 导入的扫描没有快照）。
-  // 记录已删，目录清不掉只告警：回 500 会让界面误以为删除失败
   try {
     fs.rmSync(scanSnapshotRoot(scan.projectId, scan.id), { recursive: true, force: true });
   } catch (error) {
@@ -268,14 +228,6 @@ scanRoutes.delete('/api/scans/:scanId', asyncHandler(async (req, res) => {
   res.status(204).end();
 }));
 
-/**
- * 取消进行中的扫描（与 DELETE 语义区分：取消保留记录与快照，落 failed 供查看原因；DELETE 才清数据）。
- * - 引擎运行中：终止引擎进程（走 runEngine 既有 kill 链），runScan 收尾按"已被手动取消"落库后记录才变 failed；
- *   期间 hasRunningScan 仍为 true，升级闸保持关闭，确保 Windows 上不会替换运行中的引擎 exe
- * - 引擎已退出但登记未删（exit → close 窗口）：已无可终止的进程，仍按"取消中"应答但不置取消标记，
- *   runScan 按实际结果收尾（已完成的扫描落 completed，结果不丢）
- * - 排队中/引擎尚未启动：没有可杀的进程，直接落库失败，槽位轮到时 runScan 复查状态自动退出
- */
 scanRoutes.post('/api/scans/:scanId/cancel', asyncHandler(async (req, res) => {
   const scan = requireScan(req.params.scanId);
   if (scan.status !== 'scanning') {
@@ -290,8 +242,6 @@ scanRoutes.post('/api/scans/:scanId/cancel', asyncHandler(async (req, res) => {
     finishedAt: new Date().toISOString(),
     message: '已被手动取消',
     errorCode: 'scan.cancelled',
-    // 排队中取消时同步清排队标记（非排队扫描本就无值，置 null 无副作用）：
-    // 原实现要等槽位轮转才清，期间重启会变成 status=failed + queuedAt 永久残留的矛盾数据
     queuedAt: null,
   });
   res.json({ status: 'failed' });
@@ -300,7 +250,6 @@ scanRoutes.post('/api/scans/:scanId/cancel', asyncHandler(async (req, res) => {
 scanRoutes.get('/api/scans/:scanId/issues', asyncHandler(async (req, res) => {
   const scan = requireScan(req.params.scanId);
   const issues = listIssues(scan.id);
-  // 人工复核以 (项目, fingerprint) 为键跨扫描继承；污点链解析为结构化步骤
   const reviews = new Map(listReviews(scan.projectId).map((review) => [review.fingerprint, review]));
   res.json(
     issues.map(({ matchedLines: _ml, dataflowTrace, ...issue }) => {
@@ -367,9 +316,6 @@ scanRoutes.get('/api/scans/:scanId/snippet', asyncHandler(async (req, res) => {
   } catch {
   }
 
-  // start 超出文件末尾时 from 夹取后仍大于 to（to 已夹到 lines.length），会得到
-  // startLine > endLine 的倒挂区间；与 start ≥ 1 同属参数错误，直接 400 拒绝，
-  // 不能落进下面的归档兜底，否则越界请求会被 issue 缓存伪装成"成功"
   if (lines && startLine > lines.length) {
     throw new HttpError(400, `start=${startLine} 超出文件行数（文件共 ${lines.length} 行）`, {
       code: 'srv.snippetStartOutOfRange',
@@ -395,9 +341,6 @@ scanRoutes.get('/api/scans/:scanId/snippet', asyncHandler(async (req, res) => {
     source = 'archive';
   }
 
-  // 高亮行取请求区间与切片区间的交集：若按原始 [startLine, endLine] 迭代，
-  // 超大 end（如 Number.MAX_SAFE_INTEGER）会空转约 9e15 次拖死事件循环；
-  // 交集上界受切片区间约束（文件路径 ≤ 文件行数，归档路径 ≤ issue.endLine），迭代次数有界
   const highlightedLines: number[] = [];
   for (let line = Math.max(startLine, from); line <= Math.min(endLine, to); line += 1) {
     highlightedLines.push(line);
@@ -431,7 +374,6 @@ scanRoutes.get('/api/scans/:scanId/report', asyncHandler(async (req, res) => {
   if (format === 'html') {
     const includeSnippets = req.query.detail !== 'summary';
     const lang = parseProductLang(req.query.lang);
-    // 中文语境附规则说明映射（明细一句话 + 附录），英文直接用引擎原文
     const messages = lang === 'en' ? undefined : listRuleMessages(lang);
     const html = renderReportHtml(data, issues, { includeSnippets }, lang, messages);
     const prefix = lang === 'zh-Hant' ? '測試報告' : lang === 'en' ? 'test-report' : '测试报告';
@@ -447,7 +389,6 @@ scanRoutes.get('/api/scans/:scanId/report', asyncHandler(async (req, res) => {
   res.json(data);
 }));
 
-/** SARIF 2.1.0 导出：接入 GitHub Code Scanning / DefectDojo / SonarQube 等现有工具链 */
 scanRoutes.get('/api/scans/:scanId/sarif', asyncHandler(async (req, res) => {
   const scan = requireScan(req.params.scanId);
   if (scan.status !== 'completed') {
@@ -475,11 +416,6 @@ const importSarifUpload = multer({
   },
 });
 
-/**
- * SARIF 导入：把外部工具的扫描结果（Semgrep / CodeQL / 其他 Studio 实例导出的 SARIF）
- * 引入为本项目的一条"已完成"扫描，统一参与结果页、报告与基线对比；
- * 可选 baselineScanId 与 POST /scans 同一套校验，导入即完成对比。
- */
 scanRoutes.post(
   '/api/projects/:id/sarif',
   limit400(importSarifUpload.single('file'), MAX_SARIF_BYTES),
@@ -518,8 +454,6 @@ scanRoutes.post(
     try {
       replaceIssues(scan.id, issues);
     } catch (error) {
-      // 记录先落库、明细后写入：明细失败时删掉刚插入的扫描，避免列表里留下一条
-      // 「已完成但 0 问题」的假记录（与扫描快照复制失败的清理口径一致）
       deleteScan(scan.id);
       throw error;
     }
@@ -531,12 +465,10 @@ scanRoutes.post(
   }),
 );
 
-/** 报告/清单共用的语言参数：只认 zh / zh-Hant / en，其余一律回落简体 */
 function parseProductLang(value: unknown): ReportLang {
   return value === 'zh-Hant' ? 'zh-Hant' : value === 'en' ? 'en' : 'zh';
 }
 
-/** 扫描可复现清单：引擎命令行 + 规则文件哈希 + 引擎参数快照 + 引擎版本，本机绝对路径按报告同口径折叠 */
 scanRoutes.get('/api/scans/:scanId/manifest', asyncHandler(async (req, res) => {
   const scan = requireScan(req.params.scanId);
   const project = getProject(scan.projectId);
@@ -552,7 +484,6 @@ scanRoutes.get('/api/scans/:scanId/manifest', asyncHandler(async (req, res) => {
     engine: {
       name: 'opengrep',
       version: engineVersion ?? null,
-      // 清单是对外交付物：只留引擎文件名，绝对路径会把使用者的账户名与目录层级一起带出去
       binary: path.basename(config.opengrepBin),
     },
     source: {
@@ -571,7 +502,6 @@ scanRoutes.get('/api/scans/:scanId/manifest', asyncHandler(async (req, res) => {
   });
 }));
 
-// ---------- 无 Git 双快照 diff（P1-4） ----------
 
 scanRoutes.get('/api/scans/:scanId/diff', asyncHandler(async (req, res) => {
   const scan = requireScan(req.params.scanId);
@@ -598,12 +528,8 @@ scanRoutes.get('/api/scans/:scanId/diff', asyncHandler(async (req, res) => {
     );
   }
   const againstProject = getProject(against.projectId);
-  // 方向固定为「对比目标（before）→ 当前扫描（after）」：added/removed 与行级 +/- 才与
-  // 界面「本次新增/删除」的口径一致，传反会把新增文件显示成删除文件
   const fileDiff = await diffSnapshots(againstDir, srcDir);
 
-  // 基线扫描会把已修复问题以 comparisonStatus='fixed' 追加落库（见 applyBaselineComparison），
-  // 这里与结果页三分类同口径把它排除，否则 fixed 副本会被当作"当前存在/当前独有"，数字互相矛盾
   const currentMap = new Map(
     listIssues(scan.id)
       .filter((issue) => issue.comparisonStatus !== 'fixed')
@@ -650,7 +576,6 @@ scanRoutes.get('/api/scans/:scanId/diff', asyncHandler(async (req, res) => {
       removed: fileDiff.removed,
       modified: fileDiff.modified,
     },
-    // 跨引擎版本的基线对比有噪音（新引擎会新增检测、修复误报），界面据此给出标识
     engine: {
       current: scan.engineVersion ?? null,
       against: against.engineVersion ?? null,

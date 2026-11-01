@@ -64,10 +64,8 @@ export default function ProjectsPage() {
     );
   }, [projects, keyword]);
 
-  // 批量操作范围与当前筛选结果一致：搜索状态下「全选」不能把看不见的项目一起删掉
   const selection = useRowSelection(filteredProjects.map((project) => project.id));
 
-  // 页码夹取：删除 / 新建后不落在空页上
   const { page: safePage, setPage, pageCount, slice: pagedProjects } = usePagedList(
     filteredProjects,
     LIST_PAGE_SIZE,
@@ -92,14 +90,12 @@ export default function ProjectsPage() {
     projectId?: string,
   ) => {
     try {
-      // 增删改的结果列表里立刻可见，不再额外弹成功提示
       if (projectId) {
         await api.updateProject(projectId, values);
       } else {
         await api.createProject(values);
       }
       setCreateOpen(false);
-      // 程序化关闭不触发 onOpenChange，这里必须同步清空，否则下次“新建项目”会带出旧编辑态
       setEditingProject(null);
       await refresh();
     } catch (error) {
@@ -123,7 +119,6 @@ export default function ProjectsPage() {
     }
   };
 
-  // 逐个调用单删接口：某一项失败（如正在导入中）不影响其余项，最后汇总报数
   const handleBatchDelete = async () => {
     const ids = [...selection.selected];
     setBatchConfirmOpen(false);
@@ -139,7 +134,6 @@ export default function ProjectsPage() {
     setBatchDeleting(false);
     selection.clear();
     await refresh();
-    // 全部成功时列表已经少了一整批，只有部分失败需要报出来
     if (failed > 0)
       toast.warning(
         t('projects.batchPartial', { count: ids.length - failed, failed }),

@@ -1,6 +1,3 @@
-// 克隆失败信息脱敏回归（node --test 运行，`npm test` 统一驱动）
-// 历史 bug：redactSecrets 用 URL 解码后的 username/password 去匹配 git 回显的原始 URL，
-// 密码含 @ : / 等会被百分号编码的字符时永远匹配不上，凭据随错误信息/日志外泄。
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { redactSecrets } from '../src/git-clone.ts';

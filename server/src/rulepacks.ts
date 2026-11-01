@@ -3,11 +3,9 @@ import path from 'node:path';
 import { config } from './config.js';
 import { listRulePacks } from './db.js';
 
-/** 自定义规则包落盘目录（Docker 内指入数据卷） */
 const customRulesDir = config.customRulesDir;
 export const builtinRulesDir = path.join(config.rulesDir, 'security');
 
-/** 递归收集目录下所有 .yaml 规则文件（排序保证稳定） */
 export function collectRuleFiles(dir: string): string[] {
   const out: string[] = [];
   const walk = (current: string) => {
@@ -25,7 +23,6 @@ export function customPackPath(packId: string): string {
   return path.join(customRulesDir, `${packId}.yaml`);
 }
 
-/** 目录式（可移植格式）规则包的落盘目录 */
 export function customPackDir(packId: string): string {
   return path.join(customRulesDir, packId);
 }
@@ -36,7 +33,6 @@ export function packFilePath(pack: { id: string; builtin: boolean }): string {
     : customPackPath(pack.id);
 }
 
-/** 规则包参与扫描的全部规则文件：目录包取 rules/ 下所有 YAML，单文件包取自身 */
 export function packRuleFiles(pack: { id: string; builtin: boolean }): string[] {
   if (pack.builtin) {
     const file = packFilePath(pack);
@@ -44,8 +40,6 @@ export function packRuleFiles(pack: { id: string; builtin: boolean }): string[] 
   }
   const dir = customPackDir(pack.id);
   if (fs.existsSync(dir)) {
-    // rules/ 子目录缺失或变成普通文件按「无规则文件」处理（漂移只报不删的口径）：
-    // 直接 readdirSync 抛 ENOENT/ENOTDIR 会把启动漂移报告和扫描创建一起炸掉
     const rulesStat = fs.statSync(path.join(dir, 'rules'), { throwIfNoEntry: false });
     return rulesStat?.isDirectory() ? collectRuleFiles(path.join(dir, 'rules')) : [];
   }
@@ -53,21 +47,12 @@ export function packRuleFiles(pack: { id: string; builtin: boolean }): string[] 
   return fs.existsSync(file) ? [file] : [];
 }
 
-/**
- * 启动时报告自定义规则包「文件 ↔ 数据库记录」对不上的两类残骸（只报不删，删除交给人）。
- *
- * - 有文件没记录：常见于用 DATA_DIR 起临时实例（单测、验证实例）时，库随临时目录消失、
- *   文件仍写在同一份 customRulesDir 里；换过数据目录备份也会留下。它们不参与任何扫描，只占盘。
- * - 有记录没文件：界面上还能勾选，但 packRuleFiles 返回空、扫描时被静默跳过，
- *   报告里的规则集会比用户以为的少，必须让人看见。
- */
 export function reportCustomPackDrift(): void {
   if (!fs.existsSync(customRulesDir)) return;
   const custom = listRulePacks().filter((pack) => !pack.builtin);
   const known = new Set(custom.map((pack) => pack.id));
   const orphans = new Set<string>();
   for (const entry of fs.readdirSync(customRulesDir, { withFileTypes: true })) {
-    // 单文件包是 <id>.yaml，目录包是 <id>/；其余文件名（打包中间产物等）不当规则包看
     const id = entry.isDirectory()
       ? entry.name
       : /\.ya?ml$/i.test(entry.name)

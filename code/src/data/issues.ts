@@ -9,7 +9,6 @@ interface IIssueReview {
   updatedAt: string;
 }
 
-/** 污点传播链的一步（source → intermediate… → sink） */
 export interface ITaintStep {
   role: TaintRole;
   path: string;
@@ -28,13 +27,9 @@ export interface IIssue {
   filePath: string;
   startLine: number;
   endLine: number;
-  /** 问题指纹（人工复核与跨扫描继承的键，旧记录可能没有） */
   fingerprint?: string;
-  /** taint 规则命中的污点传播链 */
   taintFlow?: ITaintStep[];
-  /** 人工复核结论（以项目为域跨扫描继承，待复核时不返回） */
   review?: IIssueReview;
-  /** 命中规则所属的规则包（快照，旧记录可能没有） */
   rulepackId?: string;
   rulepackName?: string;
 }
@@ -121,7 +116,6 @@ export const MOCK_ISSUES: IIssue[] = [
   },
 ];
 
-/** 演示模式按扫描取问题集：非种子扫描（用户新发起的）回退到 scan-2 样本并改写归属 */
 export function mockIssuesForScan(scanId: string): IIssue[] {
   const matched = MOCK_ISSUES.filter((issue) => issue.scanId === scanId);
   if (matched.length > 0) return matched;
@@ -130,7 +124,6 @@ export function mockIssuesForScan(scanId: string): IIssue[] {
     .map((issue) => ({ ...issue, scanId }));
 }
 
-/** 问题在演示模式下的指纹口径（与服务端兜底口径同形） */
 export function mockIssueFingerprint(issue: IIssue): string {
   return issue.fingerprint ?? `${issue.ruleId}:${issue.filePath}:${issue.startLine}`;
 }

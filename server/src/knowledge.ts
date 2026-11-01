@@ -9,21 +9,10 @@ import { isSampleKind } from './pack-format.js';
 const srcDir = path.dirname(fileURLToPath(import.meta.url));
 const rulesDir = path.join(srcDir, '..', 'rules');
 
-/**
- * 规则 ID 来自 YAML（不受信输入）：必须是单级安全目录名才可拼进 samples/<id>/ 路径，
- * 否则 id 含 ../ 或绝对路径时 path.join 会逃出 samples/（读侧与写侧共用此口径）
- */
 export function isSafeSampleDirName(ruleId: string): boolean {
   const name = ruleId.replace(/\\/g, '/');
   return Boolean(name) && !name.includes('/') && name !== '.' && name !== '..';
 }
-
-/**
- * 规则知识库：按规则 ID 聚合
- *   规则包 YAML 元数据（severity/CWE/OWASP/上游溯源） + messages-zh[-Hant] 说明
- *   + CWE 解释与通用修复建议（server/rules/cwe-zh[-Hant].json） + 命中统计
- *   + 可移植规则包自带的正反例样本（如有）
- */
 
 interface KnowledgeCwe {
   id: string;
@@ -38,7 +27,6 @@ interface KnowledgeSample {
 
 export interface RuleKnowledge {
   ruleId: string;
-  /** 规则包中的完整规则 ID（issues 存的是剥离语言前缀的短 ID） */
   matchedRuleId?: string;
   found: boolean;
   pack?: { id: string; name: string; builtin: boolean };
@@ -47,7 +35,6 @@ export interface RuleKnowledge {
   securitySeverity?: number;
   cwe: KnowledgeCwe[];
   owasp: string[];
-  /** CWE 级通用修复建议（来自 cwe-zh.json；逐规则建议待社区补全） */
   fixSuggestion?: string;
   upstreamUrl?: string;
   samples?: { positives: KnowledgeSample[]; negatives: KnowledgeSample[] };
@@ -63,7 +50,6 @@ interface PackRuleDoc {
 const SAMPLE_MAX_BYTES = 8 * 1024;
 const SAMPLE_MAX_FILES = 2;
 
-// 规则包 YAML 解析缓存（按文件路径 + mtime 失效），避免每次知识查询重读全部规则包
 const yamlCache = new Map<string, { mtimeMs: number; doc: PackRuleDoc[] | null }>();
 
 function parsePackRuleFile(file: string): PackRuleDoc[] | null {
@@ -86,7 +72,6 @@ function parsePackRuleFile(file: string): PackRuleDoc[] | null {
   return doc;
 }
 
-/** messages-zh.json 的键是完整规则 ID（如 python.avoid-pickle），这里做精确/后缀匹配 */
 function matchZhMessage(map: Record<string, string>, ruleId: string, matchedRuleId?: string): string | undefined {
   const candidates = [matchedRuleId, ruleId].filter((v): v is string => Boolean(v));
   for (const id of candidates) {
@@ -104,7 +89,6 @@ function asStringArray(value: unknown): string[] {
   return value.map((item) => String(item).trim()).filter(Boolean);
 }
 
-/** CWE 编号规范化：去前导零（CWE-078 → CWE-78） */
 function normalizeCweId(raw: string): string {
   const match = raw.match(/CWE-0*(\d+)/i);
   return match ? `CWE-${match[1]}` : raw.trim();
@@ -117,7 +101,6 @@ interface KnowledgeResources {
   cwe: Record<string, { name: string; fix: string }>;
 }
 
-// 按语言缓存：简繁各一份；文件缺失时回空表，前端自然回落规则原文
 const resourcesCache = new Map<KnowledgeLang, KnowledgeResources>();
 
 function loadResources(lang: KnowledgeLang): KnowledgeResources {
@@ -139,7 +122,6 @@ function loadResources(lang: KnowledgeLang): KnowledgeResources {
   return resources;
 }
 
-/** 报告/离线 HTML 用的整表读取：键为完整规则 ID，值为当前语言说明；英文无表（走引擎原文） */
 export function listRuleMessages(lang: KnowledgeLang): Record<string, string> {
   return loadResources(lang).messages;
 }
@@ -206,7 +188,6 @@ function hitStats(ruleId: string): RuleKnowledge['stats'] {
   }
 }
 
-/** 聚合一条规则的知识条目；规则不在任何包中时 found=false，仍返回当前语言的说明与命中统计 */
 export function getRuleKnowledge(ruleId: string, lang: KnowledgeLang = 'zh'): RuleKnowledge {
   const found = findRule(ruleId);
   const { messages, cwe: cweMap } = loadResources(lang);
@@ -233,7 +214,6 @@ export function getRuleKnowledge(ruleId: string, lang: KnowledgeLang = 'zh'): Ru
     result.securitySeverity = securitySeverity;
   }
 
-  // cwe-zh.json 的键是裸编号（"310"）；兼容 "CWE-310" 全称键
   const cweZhById = (id: string) => cweMap[id] ?? cweMap[id.replace(/^CWE-/i, '')];
   const cweIds = [...new Set(asStringArray(metadata.cwe).map(normalizeCweId))].slice(0, 8);
   result.cwe = cweIds.map((id) => ({
@@ -252,9 +232,6 @@ export function getRuleKnowledge(ruleId: string, lang: KnowledgeLang = 'zh'): Ru
     result.upstreamUrl = `https://github.com/opengrep/opengrep-rules/tree/main/${upstreamPath.replace(/^\/+/, '')}`;
   }
 
-  // 可移植目录包可能带正反例样本（samples/<规则ID>/），有则展示
-  // 规则 ID 来自 YAML（不受信输入），必须确保是安全的单级目录名才可拼入路径，
-  // 否则 id 含 ../ 或绝对路径时 path.join 会逃出 samples/ 读到外部文件
   const sampleRoot = path.join(customPackDir(found.pack.id), 'samples');
   const sampleDirName = (found.matchedRuleId ?? ruleId).replace(/\\/g, '/');
   if (isSafeSampleDirName(sampleDirName)) {

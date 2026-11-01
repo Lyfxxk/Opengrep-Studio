@@ -64,7 +64,6 @@ export default function IssueFilterList({
   const messageMap = useRuleMessageMap();
   const packDisplayName = usePackDisplayName();
 
-  // 批量复核：勾选框用 issue.id 作为键，提交时从中反查 fingerprint
   const [batchDialog, setBatchDialog] = useState<{ status: 'confirmed' | 'false_positive' } | null>(null);
   const [batchReason, setBatchReason] = useState('');
   const [batchSubmitting, setBatchSubmitting] = useState(false);
@@ -87,10 +86,8 @@ export default function IssueFilterList({
     [issues, severity, status, keyword, messageMap],
   );
 
-  // 批量复核范围 = 当前筛选结果：列表只展示筛选后的条目，勾选与批量提交也必须同一范围
   const selection = useRowSelection(filtered.map((issue) => issue.id));
 
-  // 有问题但被筛选条件滤空 ≠ 扫描本身没发现问题，两种空态要分开表述
   const hasActiveFilter =
     severity !== 'all' || status !== 'all' || keyword.trim() !== '';
   const resetFilters = () => {
@@ -99,10 +96,8 @@ export default function IssueFilterList({
     setKeyword('');
   };
 
-  // 筛选或数据变化后页码可能越界（如筛选后只剩一页），渲染前夹回有效范围
   const { page: safePage, setPage, pageCount, slice: paged } = usePagedList(filtered, LIST_PAGE_SIZE);
 
-  /** 批量复核：循环调用 setReview，最后汇总成功/失败 */
   const handleBatchReview = async () => {
     if (!batchDialog) return;
     const { status } = batchDialog;
@@ -124,11 +119,9 @@ export default function IssueFilterList({
     selection.clear();
     setBatchReason('');
     onReviewed?.();
-    // 复核徽章在列表里立刻刷新，全部成功无需再弹一条；只有部分失败要报出来
     if (failed > 0) toast.warning(t('issueFilter.batchPartial', { count: selectedIssues.length - failed, failed }));
   };
 
-  /** ↑/↓ 在筛选后列表中逐条移动选中项；输入框内不劫持方向键 */
   const listRef = useRef<HTMLDivElement>(null);
   const moveSelection = useCallback(
     (offset: 1 | -1) => {
@@ -138,8 +131,6 @@ export default function IssueFilterList({
         currentIndex === -1
           ? 0
           : Math.min(filtered.length - 1, Math.max(0, currentIndex + offset));
-      // 越过分页边界时同步翻页：列表只渲染当前页切片，只改选中会让高亮落到
-      // 渲染不出来的条目上，看起来像键盘失灵
       setPage(Math.floor(nextIndex / LIST_PAGE_SIZE) + 1);
       onSelect(filtered[nextIndex].id);
     },
@@ -149,7 +140,6 @@ export default function IssueFilterList({
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
       if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
-      // 组合框/下拉/页签/对话框自己要用方向键：拦下来会把选择器的键盘导航换成问题列表跳转
       if (event.defaultPrevented) return;
       const target = event.target as HTMLElement | null;
       if (
@@ -166,7 +156,6 @@ export default function IssueFilterList({
     return () => window.removeEventListener('keydown', handler);
   }, [moveSelection]);
 
-  // 键盘切换后把选中项滚动到可视区域
   useEffect(() => {
     if (!selectedIssueId) return;
     const el = listRef.current?.querySelector(`[data-issue-id="${CSS.escape(selectedIssueId)}"]`);
@@ -281,7 +270,7 @@ export default function IssueFilterList({
                     : 'border-border hover:bg-muted/50',
                 )}
               >
-                {/* flex-wrap：窄栏（如 1024 断点三列布局）下徽章放不下时换行，避免把列表撑出横向滚动 */}
+                {}
                 <div className="flex min-w-0 flex-wrap items-center gap-2">
                   <Badge
                     variant="outline"
@@ -328,7 +317,7 @@ export default function IssueFilterList({
                     </span>
                   )}
                 </div>
-                {/* 不钳制描述行数：截断会让用户漏读风险说明，整段展示（列表内滚动 + 分页控制高度） */}
+                {}
                 <p className="mt-2 text-sm font-medium">
                   {lookupRuleMessage(messageMap, issue.ruleId, issue.message)}
                 </p>

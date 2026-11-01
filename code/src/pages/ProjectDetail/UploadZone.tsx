@@ -12,25 +12,20 @@ import { cn } from '@/lib/utils';
 
 export interface UploadZoneState {
   status: 'idle' | 'uploading' | 'uploaded';
-  /** 来源：upload=压缩包/文件夹上传，clone=Git 仓库直扫克隆 */
   sourceType?: 'upload' | 'clone';
   fileName?: string;
   fileSize?: number;
   progress?: number;
-  /** 上传时按 .gitignore 忽略规则剪枝掉的文件数（仅 upload 来源） */
   ignoredCount?: number;
 }
 
-/** 上传预检上限（分别对应后端 server/src/config.ts 的 maxUploadBytes / maxImportEntries，调整需两处同步；单边放宽会让前端预检提示错误上限，超出部分落入 multer 的英文兜底报错） */
 const MAX_FILE_SIZE = 200 * 1024 * 1024;
 const MAX_FILE_COUNT = 50000;
 
-/** 点击选择的压缩包格式（与后端 ARCHIVE_EXTS 一致） */
 const ARCHIVE_RE = /\.(zip|7z|rar|tar|tar\.gz|tgz)$/i;
 
 interface UploadZoneProps {
   state: UploadZoneState;
-  /** 最近一次上传的语言分布（语言 → 字节数），上传成功后展示 */
   languageStats?: Record<string, number>;
   onSelectItems: (items: UploadItem[], options: { respectGitignore: boolean }) => void;
   onClone: (url: string, ref: string) => void;
@@ -44,7 +39,6 @@ function formatFileSize(size: number): string {
   return `${(size / 1024).toFixed(1)} KB`;
 }
 
-/** 把拖拽进来的文件/目录（含嵌套子目录）展开成 文件+相对路径 列表 */
 async function collectFromDataTransfer(dt: DataTransfer): Promise<{
   items: UploadItem[];
   rootCount: number;
@@ -110,7 +104,6 @@ export default function UploadZone({
   const [dragActive, setDragActive] = useState(false);
   const [repoUrl, setRepoUrl] = useState('');
   const [branch, setBranch] = useState('');
-  /** 默认按 .gitignore 过滤上传内容（与 Git 仓库直扫口径一致），可显式关闭以深挖被忽略文件 */
   const [respectIgnore, setRespectIgnore] = useState(true);
 
   const submitClone = (event: FormEvent<HTMLFormElement>) => {
@@ -156,7 +149,6 @@ export default function UploadZone({
       toast.error(t('upload.tooManyFiles', { limit: MAX_FILE_COUNT }));
       return;
     }
-    // 只拦根级别混选（拖了压缩包+文件夹）；文件夹内部嵌套的压缩包是正常源码附件，放行
     if (rootCount > 1 && rootArchiveCount > 0) {
       toast.error(t('upload.archiveMixed'));
       return;
@@ -171,7 +163,6 @@ export default function UploadZone({
       onSelectItems([{ file: items[0].file }], { respectGitignore: respectIgnore });
       return;
     }
-    // 散装文件 / 文件夹：逐个校验大小
     for (const item of items) {
       if (item.file.size > MAX_FILE_SIZE) {
         toast.error(t('upload.fileTooLarge', { name: item.file.name, limit: MAX_FILE_SIZE / 1024 / 1024 }));
@@ -268,7 +259,6 @@ export default function UploadZone({
           setDragActive(true);
         }}
         onDragLeave={(event) => {
-          // 拖拽经过子元素同样触发 dragLeave：只有指针真正离开容器时才取消高亮，避免闪烁
           if (!event.currentTarget.contains(event.relatedTarget as Node)) {
             setDragActive(false);
           }

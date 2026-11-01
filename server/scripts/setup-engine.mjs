@@ -1,23 +1,4 @@
 #!/usr/bin/env node
-// 下载 opengrep 引擎二进制并做 SHA256 校验（零第三方依赖，Node ≥ 22.12）。
-//
-// 版本与哈希的优先级：
-//   1. 命令行 --version / --sha256（界面"一键升级"走这条，新版本哈希来自 release 资产 digest）
-//   2. opengrep-tool/installed.json（记录实际安装的版本；比 engines.json 新时优先，
-//      保证升级过的引擎不会被重跑本脚本降级回去）
-//   3. server/scripts/engines.json（仓库钉住的已知好版本，也是随时可用的恢复路径）
-//
-// 用法：npm run setup:engine [-- --force] [-- --version vX.Y.Z [-- --sha256 <hex>]]
-//   --force           引擎已就绪时也强制重新下载
-//   --version <tag>   临时改用其他版本下载（资产名仍取自 engines.json）
-//   --sha256 <hex>    配合 --version 使用：指定该版本的 SHA-256
-//                     （不指定时若与本机已装版本一致，复用 installed.json 里的哈希）
-//
-// 环境变量：
-//   OPENGREP_DOWNLOAD_BASE  覆盖下载基址（路径形态须与 GitHub 一致：<base>/<tag>/<资产名>），
-//                           国内网络可指向 GitHub 加速镜像；镜像失败后仍会自动回落到
-//                           github.com 与 api.github.com 通道
-//   OPENGREP_BIN            设置后引擎路径由用户自管，服务端不再使用本脚本的安装位置
 
 import {
   DOWNLOAD_CHANNEL_HINT,
@@ -44,11 +25,6 @@ const catalog = JSON.parse(readFileSync(path.join(scriptDir, 'engines.json'), 'u
 const args = process.argv.slice(2);
 const force = args.includes('--force');
 
-/**
- * 读取 `--flag <值>`：缺值、值本身是另一个 flag、或格式不符都直接报错退出。
- * 原来用 args[indexOf+1] 直取，`-- --version`（本想查版本）会静默回落到清单版本
- * 开始下 50MB，`-- --version --force` 则把 --force 当成版本名去拼下载链接。
- */
 function flagValue(flag, pattern, expect) {
   const index = args.indexOf(flag);
   if (index === -1) return undefined;
@@ -62,12 +38,9 @@ function flagValue(flag, pattern, expect) {
 }
 
 const explicitVersionInput = flagValue('--version', /^v?\d+\.\d+\.\d+$/, '形如 v1.33.0 的版本号');
-// GitHub release tag 一律带 v 前缀：允许输入省略 v（1.33.1），下载与提示统一按 v1.33.1 处理。
-// 否则三条下载通道都按 <base>/1.33.1/<资产> 拼 404，报错还误导为「该版本没有此平台的资产」
 const explicitVersion = explicitVersionInput ? `v${normalizeVersion(explicitVersionInput)}` : undefined;
 const explicitSha = flagValue('--sha256', /^[0-9a-fA-F]{64}$/, '64 位十六进制 SHA-256');
 
-/** 安装名取自脚本侧唯一源头（engine-name.mjs，与 server/src/config.ts 的 engineNameFor 同步维护） */
 const installedName = engineExecutableName;
 const installedPath = path.join(toolDir, installedName);
 const installedManifest = readInstalledManifest(toolDir);
@@ -101,14 +74,12 @@ function progress({ phase, percent }) {
   }
 }
 
-/** 目标版本：命令行 > installed.json（比清单新时）> engines.json */
 function resolveInstallTarget() {
   if (!explicitVersion && !explicitSha) return resolveTarget({ catalog, installed: installedManifest });
   const asset = assetForPlatform();
   const version = explicitVersion ?? catalog.version;
   const sameAsInstalled =
     installedManifest !== undefined && compareVersions(installedManifest.version, version) === 0;
-  // --version 指向清单外的新版本时哈希无从得知（新版本哈希不预存），必须由调用方给出
   if (!explicitSha && !sameAsInstalled && compareVersions(version, catalog.version) !== 0) {
     console.error(`[setup:engine] 版本 ${version} 不在 engines.json 中，缺少可校验的 SHA-256。`);
     console.error('[setup:engine] 请加 --sha256 <hex>（可从该版本 release 资产的 digest 字段取得），或更新 engines.json 后重试。');
@@ -117,7 +88,6 @@ function resolveInstallTarget() {
   return {
     version,
     assetFile: asset.file,
-    // --version 指向已安装版本时复用 installed.json 的哈希（新版哈希不在 engines.json 里）
     sha256: (explicitSha ?? (sameAsInstalled ? installedManifest.sha256 : asset.sha256)).toLowerCase(),
     source: '命令行指定',
   };

@@ -18,15 +18,12 @@ interface IReportMeta {
   rulepacks?: Array<{ id: string; name: string }>;
   rules?: string;
   engineVersion?: string;
-  /** 源码快照 SHA-256（可复现清单，旧记录可能没有） */
   sourceHash?: string;
-  /** 发起扫描时的完整引擎命令行 */
   commandLine?: string;
   generatedAt: string;
 }
 
 interface IReportTotals {
-  /** 当前问题总数（不含"已修复"项，与 issueCount 口径一致） */
   total: number;
   bySeverity: Record<IIssue['severity'], number>;
   byComparison: Record<IIssue['comparisonStatus'], number>;
@@ -36,11 +33,9 @@ interface IReportFileAgg {
   filePath: string;
   count: number;
   maxSeverity: IIssue['severity'];
-  /** 该文件命中次数最多的规则（行动清单副行用） */
   topRule?: string;
 }
 
-/** 服务端结论的结构化载荷：code 对应 i18n 键 reportConclusion.<code>，message 为中文兜底 */
 interface IReportConclusionCode {
   code: string;
   params: Record<string, unknown>;
@@ -51,20 +46,16 @@ export interface IReportData {
   meta: IReportMeta;
   totals: IReportTotals;
   conclusion: string;
-  /** 服务端下发的结论载荷（演示模式与旧数据缺失，此时回落 conclusion 原文） */
   conclusionCode?: IReportConclusionCode | null;
   topFiles: IReportFileAgg[];
   issues: IIssue[];
-  /** 人工复核统计（无复核记录时为 undefined） */
   reviewStats?: IReportReviewStats;
 }
 
-/** severity → 排序权重：由展示顺序（lib/severity.ts 的 SEVERITY_ORDER）派生，新增/调级只改那一处 */
 const SEVERITY_RANK = Object.fromEntries(
   SEVERITY_ORDER.map((severity, index) => [severity, index]),
 ) as Record<IIssue['severity'], number>;
 
-/** 演示模式下从本地扫描/问题数据聚合报告（与服务端 buildReportData 同口径） */
 export function buildMockReport(scan: IScanResult, projectName: string): IReportData {
   const issues = mockIssuesForScan(scan.id);
   const current = issues.filter((issue) => issue.comparisonStatus !== 'fixed');
@@ -74,7 +65,6 @@ export function buildMockReport(scan: IScanResult, projectName: string): IReport
   const byComparison: IReportTotals['byComparison'] = { new: 0, fixed: 0, remaining: 0 };
   for (const issue of issues) byComparison[issue.comparisonStatus] += 1;
 
-  // 文件级聚合带每个文件的代表规则，与服务端 buildReportData 同口径
   const fileAgg = new Map<string, IReportFileAgg & { ruleCounts: Map<string, number> }>();
   for (const issue of current) {
     let entry = fileAgg.get(issue.filePath);

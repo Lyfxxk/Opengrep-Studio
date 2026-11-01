@@ -2,10 +2,8 @@ import { useTranslation } from 'react-i18next';
 import { Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-/** 批量删除组件共用的实体名（i18n entity.* 键尾段；文案改动改 i18n 资源） */
 export type BatchEntity = 'project' | 'scan' | 'config' | 'rulePack';
 
-/** 批量操作条：勾选 > 0 时出现在列表上方，提供批量删除与取消选择 */
 export default function BatchDeleteBar({ count, entity, deleting, onDelete, onClear }: {
   count: number;
   entity: BatchEntity;

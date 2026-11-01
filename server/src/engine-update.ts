@@ -11,11 +11,8 @@ import {
   platformKey,
 } from '../scripts/engine-install.mjs';
 
-/** 检查更新的结果（/api/engine/update，界面"检查更新"与一键升级共用） */
 export interface EngineUpdateInfo {
-  /** 本机实际探测到的版本（未安装/探测失败时为空） */
   current?: string;
-  /** 清单钉住的版本（engines.json 或已升级的 installed.json） */
   pinned?: string;
   latest?: string;
   latestTag?: string;
@@ -27,9 +24,7 @@ export interface EngineUpdateInfo {
   releaseUrl?: string;
   publishedAt?: string;
   checkedAt: string;
-  /** 不可升级的人话原因（canUpgrade=false 时必定有值） */
   reason?: string;
-  /** 上游不可达等网络异常的说明 */
   error?: string;
 }
 
@@ -46,9 +41,7 @@ export interface EngineUpgradeState {
   finishedAt?: string;
 }
 
-/** GitHub 匿名接口限额 60 次/小时，成功结果缓存 30 分钟，避免看板轮询把配额打光 */
 const CHECK_TTL_MS = 30 * 60_000;
-/** 失败结果（403 限流 / 网络错误）短缓存 5 分钟：不反复打上游，但也不会把旧错误卡太久 */
 const FAILURE_TTL_MS = 5 * 60_000;
 
 let cachedCheck: { at: number; info: EngineUpdateInfo } | undefined;
@@ -69,7 +62,6 @@ async function buildUpdateInfo(): Promise<EngineUpdateInfo> {
     checkedAt: new Date().toISOString(),
   };
 
-  // 只对安装位引擎开放升级：env / PATH 来源的引擎由用户自己管，换来的是不碰用户环境
   if (engineSource === 'env') {
     return { ...base, reason: '引擎由环境变量 OPENGREP_BIN 指定，请您自行管理版本' };
   }
@@ -108,7 +100,6 @@ async function buildUpdateInfo(): Promise<EngineUpdateInfo> {
   if (!info.updateAvailable) {
     return { ...info, reason: `已是最新 stable 版本（v${current}）` };
   }
-  // 上游资产结构变化时明确拒绝，而不是下到一半才发现名字对不上
   if (!asset) {
     return { ...info, reason: `上游 ${latestTag} 缺少资产 ${target.assetFile}，暂不支持自动升级` };
   }
@@ -118,7 +109,6 @@ async function buildUpdateInfo(): Promise<EngineUpdateInfo> {
   return { ...info, canUpgrade: true };
 }
 
-/** 检查更新（force=true 跳过缓存，界面"检查更新"按钮用） */
 export async function checkEngineUpdate(force = false): Promise<EngineUpdateInfo> {
   const ttl = cachedCheck?.info.error ? FAILURE_TTL_MS : CHECK_TTL_MS;
   if (!force && cachedCheck && Date.now() - cachedCheck.at < ttl) {
@@ -136,22 +126,15 @@ export function engineUpgradeState(): EngineUpgradeState {
   return upgradeState;
 }
 
-/** 升级是否在跑（扫描/规则实验室入口据此互斥，Windows 也不允许替换运行中的 exe） */
 export function engineUpgradeRunning(): boolean {
   return upgradePending !== null;
 }
 
-/**
- * 一键升级：下载 → SHA-256（release 资产 digest）校验 → --version 核对 → 原子替换 → 写 installed.json。
- * 全过程失败都不动现有引擎，状态通过 /api/engine/upgrade 轮询。
- */
 export async function startEngineUpgrade(): Promise<EngineUpgradeState> {
   if (upgradePending) {
     throw new HttpError(409, '引擎升级正在进行中，请稍候', { code: 'srv.upgradePending' });
   }
 
-  // 先同步占住互斥位再走网络检查：检查要等 GitHub 往返（可达数秒），期间扫描/实验室
-  // 若照常发起，随后替换二进制就会撞上运行中的引擎，升级与扫描两边一起失败
   upgradePending = Promise.resolve();
   try {
     const info = await checkEngineUpdate(true);
@@ -200,7 +183,6 @@ export async function startEngineUpgrade(): Promise<EngineUpgradeState> {
           },
           log: (message: string) => console.log(`[engine-upgrade] ${message}`),
         });
-        // 换的是同一个安装位：探测缓存必须失效，否则看板与报告还显示旧版本
         resetEngineVersionCache();
         cachedCheck = undefined;
         upgradeState = {
@@ -230,7 +212,6 @@ export async function startEngineUpgrade(): Promise<EngineUpgradeState> {
 
     return upgradeState;
   } catch (error) {
-    // 检查阶段失败：释放占位并把原本的 4xx/5xx 交回调用方
     upgradePending = null;
     throw error;
   }

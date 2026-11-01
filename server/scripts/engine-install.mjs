@@ -1,7 +1,3 @@
-// 引擎资产下载 / 校验 / 安装的共享实现（零第三方依赖，Node ≥ 22.12）。
-//
-// 为什么独立成模块：setup-engine.mjs（命令行）与 server/src/engine-update.ts（界面一键升级）
-// 必须走同一套下载通道与哈希口径，否则两条安装链路的校验规则会漂移。
 
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -23,23 +19,18 @@ import { pipeline } from 'node:stream/promises';
 export const GITHUB_REPO = 'opengrep/opengrep';
 export const GITHUB_DOWNLOAD_BASE = `https://github.com/${GITHUB_REPO}/releases/download`;
 export const GITHUB_API_BASE = `https://api.github.com/repos/${GITHUB_REPO}`;
-/** 安装清单文件名（落在 toolDir，优先于 engines.json 表示"用户已经升级过"） */
 export const INSTALLED_MANIFEST_NAME = 'installed.json';
 
-/** 下载通道顺序的文案（错误信息与界面提示共用，改顺序时同步改这里） */
 export const DOWNLOAD_CHANNEL_HINT = '下载通道顺序：OPENGREP_DOWNLOAD_BASE 镜像 → github.com 直链 → api.github.com 资产通道';
 
-/** 匹配 `<tool>-<platform>-<arch>` 形态的平台键（engines.json 与 config.ts 共用口径） */
 export function platformKey(platform = process.platform, arch = process.arch) {
   return `${platform}-${arch}`;
 }
 
-/** v1.32.0 / 1.32.0 → '1.32.0' */
 export function normalizeVersion(tag) {
   return String(tag ?? '').trim().replace(/^v/i, '');
 }
 
-/** 比较语义化版本（只看 major.minor.patch，预发布后缀忽略）：前者更新返回 1，相同 0，更旧 -1 */
 export function compareVersions(a, b) {
   const parts = (value) =>
     normalizeVersion(value)
@@ -54,7 +45,6 @@ export function compareVersions(a, b) {
   return 0;
 }
 
-/** GitHub release 资产的 digest 字段形如 `sha256:<hex>`；未提供时返回 undefined */
 export function parseDigest(digest) {
   const match = /^sha256:([0-9a-f]{64})$/i.exec(String(digest ?? '').trim());
   return match ? match[1].toLowerCase() : undefined;
@@ -64,10 +54,6 @@ export function sha256File(file) {
   return createHash('sha256').update(readFileSync(file)).digest('hex');
 }
 
-/**
- * 读取本地覆盖清单 opengrep-tool/installed.json（记录实际安装的版本与哈希）。
- * 文件缺失或结构损坏时返回 undefined，由调用方回落到 engines.json。
- */
 export function readInstalledManifest(toolDir) {
   const file = path.join(toolDir, INSTALLED_MANIFEST_NAME);
   try {
@@ -101,11 +87,6 @@ export function writeInstalledManifest(toolDir, info) {
   return target;
 }
 
-/**
- * 解析本次要安装的目标版本：
- *   - installed.json 记录的版本比 engines.json 新 → 用 installed.json（用户已升级，不允许被降级）
- *   - 否则用 engines.json（仓库钉住的已知好版本，也是恢复路径）
- */
 export function resolveTarget({ catalog, installed, platform }) {
   const key = platformKey(platform);
   const asset = catalog?.assets?.[key];
@@ -129,7 +110,6 @@ export function resolveTarget({ catalog, installed, platform }) {
   };
 }
 
-/** 探测二进制版本（`--version` 输出的第一个 x.y.z）；不可执行时返回 undefined */
 export function probeVersion(binPath, timeoutMs = 8000) {
   return new Promise((resolve) => {
     let settled = false;
@@ -145,8 +125,6 @@ export function probeVersion(binPath, timeoutMs = 8000) {
         env: { ...process.env, OPENGREP_ENABLE_VERSION_CHECK: '0' },
       });
     } catch {
-      // Windows 对非可执行文件（下载损坏/被杀软拦截）在 spawn 内部同步抛 spawn EFTYPE，
-      // error 事件监听器根本挂不上：与 error 事件分支同语义返回 undefined
       done(undefined);
       return;
     }
@@ -179,7 +157,6 @@ async function fetchJson(url, timeoutMs) {
   return res.json();
 }
 
-/** 上游 HTTP 状态转成人话（匿名调用 GitHub API 只有 60 次/小时，限流是最常见的 403） */
 function describeHttpError(status) {
   if (status === 403 || status === 429) return `GitHub API 限流（匿名请求 60 次/小时，HTTP ${status}），请稍后重试`;
   if (status === 404) return `上游发布不存在（HTTP 404），请确认版本号是否正确`;
@@ -187,17 +164,14 @@ function describeHttpError(status) {
   return `GitHub API 返回 HTTP ${status}`;
 }
 
-/** 查指定 tag 的 release（含资产列表） */
 export function fetchReleaseByTag(tag, timeoutMs = 20000) {
   return fetchJson(`${GITHUB_API_BASE}/releases/tags/${encodeURIComponent(tag)}`, timeoutMs);
 }
 
-/** 查最新 stable release（GitHub 的 latest 天然排除 draft 与 pre-release） */
 export function fetchLatestRelease(timeoutMs = 20000) {
   return fetchJson(`${GITHUB_API_BASE}/releases/latest`, timeoutMs);
 }
 
-/** 从 release JSON 中按资产名取下载地址与摘要（资产名缺失时返回 undefined） */
 export function findAsset(release, assetName) {
   const assets = Array.isArray(release?.assets) ? release.assets : [];
   const asset = assets.find((item) => item?.name === assetName);
@@ -237,13 +211,6 @@ async function downloadTo(url, target, { headers, onProgress, timeoutMs }) {
   }, createWriteStream(target));
 }
 
-/**
- * 按 镜像 → github.com → api.github.com 顺序下载到 target，任一条成功即返回。
- * api 通道必须带 Accept: application/octet-stream（否则拿回的是资产 JSON 元数据），
- * 并跟随 302 跳到 release-assets.githubusercontent.com 完成下载。
- * 传入 expectedSha256 时逐通道校验：坏镜像（返回错误页/残缺文件）会继续落到下一条通道，
- * 而不是直接判定整个安装失败。
- */
 export async function downloadAsset({
   tag,
   assetFile,
@@ -299,12 +266,6 @@ export async function downloadAsset({
   throw new Error(`所有下载通道均失败：\n  ${failures.join('\n  ')}`);
 }
 
-/**
- * 完整安装流程，任一步失败都不动现有引擎：
- *   下载（多通道）→ SHA-256 校验 → 运行 --version 核对版本 → 原子替换 → 写 installed.json
- * 替换用"旧文件先让位、新文件就位后再删"的方式：Windows 不允许 rename 覆盖已存在文件，
- * 中途失败会把旧引擎挪回原位，最坏结果是"没升成"而不是"引擎坏了"。
- */
 export async function installEngineAsset({
   tag,
   assetFile,
@@ -322,8 +283,6 @@ export async function installEngineAsset({
 
   mkdirSync(toolDir, { recursive: true });
   const installedPath = path.join(toolDir, installedName);
-  // 临时名带 pid：CLI（setup:engine）与界面"一键升级"可能在同一 toolDir 上并发，固定名会让
-  // 一方 rename 就位后仍被另一方的写入追加，POSIX 下产出半坏的引擎文件
   const stagingPath = `${installedPath}.${process.pid}.download`;
   const backupPath = `${installedPath}.${process.pid}.old`;
   rmSync(stagingPath, { force: true });
@@ -370,7 +329,6 @@ export async function installEngineAsset({
       try {
         renameSync(backupPath, installedPath);
       } catch {
-        // 回滚失败时保留 .old 文件，让用户能手工恢复
       }
     }
     rmSync(stagingPath, { force: true });
@@ -380,9 +338,6 @@ export async function installEngineAsset({
       }`,
     );
   }
-  // 清单必须先于备份清理落盘：Windows 上旧引擎 exe 若仍被占用，删备份会 EBUSY；
-  // 若清单排在后面，会留下"新引擎已就位但 installed.json 缺失"的状态，
-  // 下一轮 setup:engine 回落 engines.json，可能误判重下甚至把刚升级的版本降级回去。
   writeInstalledManifest(toolDir, {
     version: tag,
     assetFile,
@@ -392,7 +347,6 @@ export async function installEngineAsset({
   try {
     rmSync(backupPath, { force: true });
   } catch {
-    // 与回滚分支同口径：备份清理失败不算安装失败，只提示残留路径供手工删除
     log?.(`备份文件 ${backupPath} 清理失败（可能仍被占用），已保留，可手工删除`);
   }
   if (process.platform !== 'win32') chmodSync(installedPath, 0o755);

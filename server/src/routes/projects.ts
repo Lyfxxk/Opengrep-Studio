@@ -30,7 +30,6 @@ import { asyncHandler, decodeUploadFileName, newId, requireProject, requireValid
 
 export const projectRoutes = Router();
 
-/** 项目描述上限（与前端 NewProjectDialog 的 maxLength 200 同一口径；列表接口会带回全部描述） */
 const MAX_PROJECT_DESCRIPTION_LENGTH = 200;
 
 function normalizeProjectDescription(value: unknown): string {
@@ -45,7 +44,6 @@ function normalizeProjectDescription(value: unknown): string {
 }
 
 projectRoutes.get('/api/projects', (_req, res) => {
-  // hasSource 让前端在刷新/从其他页返回时恢复「源码已导入」的扫描按钮可用态
   res.json(
     listProjects().map((project) => ({
       ...project,
@@ -99,8 +97,6 @@ projectRoutes.patch('/api/projects/:id', asyncHandler(async (req, res) => {
     if (configId === null || configId === '') {
       patch.configId = null;
     } else {
-      // 引用字段校验与 baselineScanId 同口径：配置不存在时报 400，
-      // 而不是静默解绑（否则下次一键扫描会把用户选的配置改绑成默认配置）
       const scanConfig = getConfig(String(configId));
       if (!scanConfig) {
         throw new HttpError(400, '扫描配置不存在或已被删除', { code: 'srv.configNotFound' });
@@ -114,26 +110,20 @@ projectRoutes.patch('/api/projects/:id', asyncHandler(async (req, res) => {
 
 projectRoutes.delete('/api/projects/:id', asyncHandler(async (req, res) => {
   const project = requireProject(req.params.id);
-  // 导入进行中（上传解压/剪枝或克隆）时工作区正被写入：放行删除会让导入任务在已删项目上
-  // 留下孤儿工作区，并把 success 响应发给一个已经不存在的项目
   if (isProjectImporting(project.id)) {
     throw new HttpError(409, '该项目正在导入源码（上传/克隆）中，请等待完成后再删除', {
       code: 'srv.projectImportBusy',
     });
   }
-  // 进行中/排队中的扫描还在用项目工作区与 DB 行：放行删除会让引擎把 issue 写回已删的扫描，
-  // Windows 上还会撞上被占用的目录（rmSync 抛 EPERM 但 DB 已删，留下自相矛盾的状态）
   if (listScans(project.id).some((scan) => scan.status === 'scanning')) {
     throw new HttpError(409, '项目有进行中的扫描，请等扫描完成后再删除', {
       code: 'srv.projectScanBusy',
     });
   }
-  // 级联删除（扫描/问题/复核）在 db 层 deleteProject 内完成，路由不再重复调用
   deleteProject(project.id);
   try {
     fs.rmSync(projectWorkspace(project.id), { recursive: true, force: true });
   } catch (error) {
-    // 记录已删，目录清不掉（Windows 文件占用/杀软扫描）只告警：回 500 会让界面误以为删除失败
     console.warn(
       `[projects] 项目 ${project.id} 工作区清理失败，可手动删除 ${projectWorkspace(project.id)}：` +
         (error instanceof Error ? error.message : String(error)),
@@ -142,11 +132,6 @@ projectRoutes.delete('/api/projects/:id', asyncHandler(async (req, res) => {
   res.status(204).end();
 }));
 
-/**
- * 上传快照的忽略规则剪枝：默认开启（respectGitignore !== 'false'），
- * 按 .gitignore / .opengrepignore 过滤，使上传源码与 Git 仓库直扫的扫描口径一致；
- * 关闭后保留全部上传内容（用于排查 .env 等被忽略文件中的硬编码密钥）。
- */
 async function applyIgnoreFilter(
   destDir: string,
   preCount: number,
@@ -165,22 +150,12 @@ async function applyIgnoreFilter(
   return { fileCount: keptFiles, ignoredCount: ignoredFiles };
 }
 
-/** 同一项目同一时刻只允许一个源码导入任务（上传/克隆），防止并发写同一个 pending 目录 */
 const importingProjects = new Set<string>();
 
-/**
- * 导入互斥对扫描入口的暴露：上传解压/剪枝/统计已异步化，期间其余请求照常调度，
- * 而导入中的 pending/src 是半成品，扫描创建放行会快照到不完整源码。
- */
 export function isProjectImporting(projectId: string): boolean {
   return importingProjects.has(projectId);
 }
 
-/**
- * 导入互斥的登记/释放：扫描创建复制快照期间同样占住 pending/src——异步复制可达数十秒，
- * 不登记则并发上传/克隆的整树替换（commitStaging/cloneRepo 的 rmSync+rename）会让复制
- * 拿到已删路径或新旧混合的源码。上传/克隆与扫描复制由此双向互斥。
- */
 export function markProjectImporting(projectId: string): void {
   importingProjects.add(projectId);
 }
@@ -208,9 +183,6 @@ projectRoutes.post(
       });
     }
     importingProjects.add(project.id);
-    // 上传先落 pending/src 的兄弟临时目录，全部校验通过后才替换 pending/src：
-    // 解析失败/路径不安全/全部被忽略等错误只清临时目录，用户此前导入的源码原样保留
-    // （与 cloneRepo 的临时目录 + 原子替换同口径）。临时目录与 destDir 同盘，rename 原子。
     const destDir = pendingSourceDir(project.id);
     const stagingDir = `${destDir}.uploading`;
     try {
@@ -222,15 +194,12 @@ projectRoutes.post(
       const looseFiles = filesMap.files ?? [];
       const respectGitignore = req.body?.respectGitignore !== 'false';
 
-      /** 校验全部通过后再用新内容替换旧源码（Windows 上 rename 目标已存在会 EPERM，先删旧） */
       const commitStaging = () => {
         fs.rmSync(destDir, { recursive: true, force: true });
         fs.renameSync(stagingDir, destDir);
       };
 
-      // 形态一：单个压缩包（ZIP / 7Z / RAR / TAR / TAR.GZ），按扩展名分发解压
       if (archive) {
-        // 浏览器发的是 UTF-8 文件名，busboy 默认按 latin1 解码，中文文件名会乱码进回显与日志
         const archiveName = decodeUploadFileName(archive.originalname);
         if (!isArchiveFileName(archiveName)) {
           throw new HttpError(
@@ -256,7 +225,6 @@ projectRoutes.post(
         return;
       }
 
-      // 形态二：散装多文件（文件夹拖拽 / 目录选择），按相对路径落盘
       if (looseFiles.length > 0) {
         const pathsRaw = req.body?.paths;
         const relPaths = Array.isArray(pathsRaw)
@@ -273,8 +241,6 @@ projectRoutes.post(
             params: { limit: config.maxImportEntries },
           });
         }
-        // 体积闸门放在写盘之前：multer 用 memoryStorage，此刻全部文件已在内存里，
-        // 边写边累加只是把拒绝推迟到写完一堆临时文件之后再回滚
         const looseTotalBytes = looseFiles.reduce((sum, file) => sum + file.size, 0);
         if (looseTotalBytes > config.maxExtractedBytes) {
           throw new HttpError(
@@ -300,7 +266,6 @@ projectRoutes.post(
             fs.writeFileSync(target, file.buffer);
           });
         } catch (error) {
-          // 中途失败只清临时目录；旧 pending/src 由外层兜底保留（不会被半成品覆盖）
           fs.rmSync(stagingDir, { recursive: true, force: true });
           throw error;
         }
@@ -331,8 +296,6 @@ projectRoutes.post(
         code: 'srv.fileRequired',
       });
     } catch (error) {
-      // 任何失败都只清本次临时目录：commitStaging 成功前的异常不能动旧 pending/src，
-      // 否则一次损坏压缩包上传就会把用户此前导入的源码一起丢掉
       fs.rmSync(stagingDir, { recursive: true, force: true });
       throw error;
     } finally {
@@ -369,7 +332,6 @@ projectRoutes.post('/api/projects/:id/clone', asyncHandler(async (req, res) => {
   }
 }));
 
-// ---------- 人工复核与证据链（P1-2） ----------
 
 const REVIEW_STATUSES = ['confirmed', 'false_positive', 'accepted'] as const;
 

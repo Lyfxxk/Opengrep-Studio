@@ -11,12 +11,10 @@ import {
 } from '@/components/ui/alert-dialog';
 import type { BatchEntity } from '@/components/BatchDeleteBar';
 
-/** 批量删除确认框：与单条删除的 AlertDialog 同款视觉 */
 export default function BatchDeleteConfirm({ open, entity, count, extra, onOpenChange, onConfirm }: {
   open: boolean;
   entity: BatchEntity;
   count: number;
-  /** 追加在确认文案后的补充说明（如配置解绑提示），由调用方自行翻译 */
   extra?: string;
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;

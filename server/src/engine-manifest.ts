@@ -9,7 +9,6 @@ import {
 
 const serverRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 
-/** 引擎安装目录（与 server/scripts/setup-engine.mjs 同一位置） */
 export const engineToolDir = path.join(serverRoot, '..', 'opengrep-tool');
 
 const catalogPath = path.join(serverRoot, 'scripts', 'engines.json');
@@ -25,7 +24,6 @@ export interface EngineCatalog {
   assets: Record<string, EngineAsset>;
 }
 
-/** 本次实际要安装/使用的引擎目标（installed.json 比清单新时以本地记录为准） */
 export interface EngineTarget {
   version: string;
   assetFile: string;
@@ -35,13 +33,11 @@ export interface EngineTarget {
 
 let catalogCache: EngineCatalog | undefined;
 
-/** engines.json 只读且很小，进程内缓存一次即可（升级只改 installed.json） */
 function engineCatalog(): EngineCatalog {
   catalogCache ??= JSON.parse(fs.readFileSync(catalogPath, 'utf8')) as EngineCatalog;
   return catalogCache;
 }
 
-/** 当前平台的安装目标；平台无对应资产时返回 undefined（health 不能因此 500） */
 export function engineTarget(): EngineTarget | undefined {
   try {
     return resolveTarget({
@@ -54,7 +50,6 @@ export function engineTarget(): EngineTarget | undefined {
   }
 }
 
-/** 清单目标版本（去掉前缀 v，供界面展示） */
 export function engineTargetVersion(): string | undefined {
   const target = engineTarget();
   return target ? normalizeVersion(target.version) : undefined;

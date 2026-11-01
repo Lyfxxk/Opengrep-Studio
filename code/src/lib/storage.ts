@@ -4,9 +4,6 @@ import { MOCK_CONFIGS, type IConfig } from '@/data/configs';
 import { MOCK_RULE_PACKS, type IRulePack } from '@/data/rulepacks';
 import type { IReviewRecord } from '@/data/diffs';
 
-// 演示模式（VITE_USE_MOCK）的 localStorage 持久化：结构与各领域类型一一对应，
-// 缺失/损坏时回退到内置种子数据，保证无后端也能走通完整工作流。
-
 const PROJECTS_KEY = '__global_opengrep_projects';
 const SCANS_KEY = '__global_opengrep_scans';
 const CONFIGS_KEY = '__global_opengrep_configs';
@@ -74,7 +71,6 @@ export function saveReviews(reviews: IReviewRecord[]): void {
   saveJson(REVIEWS_KEY, reviews, '人工复核');
 }
 
-/** 自建规则包的 YAML 内容（packId → 文本），供演示模式的查看/编辑回显 */
 export function loadPackContents(): Record<string, string> {
   return loadJson<Record<string, string>>(PACK_CONTENTS_KEY, {}, '规则包内容');
 }

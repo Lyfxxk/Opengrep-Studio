@@ -25,15 +25,12 @@ interface ReportMeta {
   rulepacks?: RulePackRef[];
   rules?: string;
   engineVersion?: string;
-  /** 源码快照 SHA-256（可复现清单，旧扫描记录可能没有） */
   sourceHash?: string;
-  /** 发起扫描时的完整引擎命令行 */
   commandLine?: string;
   generatedAt: string;
 }
 
 interface ReportTotals {
-  /** 当前问题总数（不含基线对比产生的"已修复"项，与 scan.issueCount 口径一致） */
   total: number;
   bySeverity: Record<Severity, number>;
   byComparison: Record<ComparisonStatus, number>;
@@ -43,12 +40,10 @@ interface ReportFileAgg {
   filePath: string;
   count: number;
   maxSeverity: Severity;
-  /** 该文件命中次数最多的规则（行动清单副行用） */
   topRule?: string;
 }
 
 interface ReportReviewSummary {
-  /** 已人工复核的问题数（确认 + 误报 + 有条件接受） */
   reviewed: number;
   confirmed: number;
   falsePositives: number;
@@ -62,7 +57,6 @@ interface ReportIssueReview {
   updatedAt?: string;
 }
 
-/** 结论的结构化载荷：code 前端按 report.conclusion.<code> 翻译，message 是中文兜底 */
 export interface ConclusionPayload {
   code: string;
   params: Record<string, unknown>;
@@ -73,11 +67,9 @@ export interface ReportData {
   meta: ReportMeta;
   totals: ReportTotals;
   conclusion: string;
-  /** 在线报告页按语言重拼结论用；旧扫描缓存或异常场景可能缺失（前端回落 conclusion 原文） */
   conclusionCode?: ConclusionPayload | null;
   topFiles: ReportFileAgg[];
   issues: Array<Issue & { review?: ReportIssueReview }>;
-  /** 人工复核统计（无复核记录时为 undefined） */
   reviewStats?: ReportReviewSummary;
 }
 
@@ -116,7 +108,6 @@ const HANT_REVIEW: Record<ReviewStatus, string> = {
   accepted: '已接受',
 };
 
-/** 自包含 HTML 报告的界面文案：简体为原文，繁体走台灣用語；结论句按 conclusionCode 参数重拼 */
 const REPORT_TEXT_ZH = {
   htmlLang: 'zh-CN',
   brand: 'Opengrep Studio · 码审工作台',
@@ -403,7 +394,6 @@ const REPORT_TEXT: Record<ReportLang, ReportText> = {
   en: REPORT_TEXT_EN,
 };
 
-/** 结论句输入：报告数据、载荷兜底文案、HTML 按语言重拼三处共用同一拼装 */
 interface ConclusionInput {
   fileCount?: number | null;
   baselineScanId?: string | null;
@@ -411,10 +401,6 @@ interface ConclusionInput {
   reviewStats?: ReportReviewSummary;
 }
 
-/**
- * 结论句的唯一实现（按语言重拼）：不依赖 conclusionCode 载荷，旧扫描也能拿到对应语言的结论，
- * 避免繁体/英文报告里夹一段简体原文。
- */
 function composeConclusion(input: ConclusionInput, text: ReportText): string {
   const { totals } = input;
   const files = input.fileCount ? String(input.fileCount) : '—';
@@ -445,7 +431,6 @@ function composeConclusion(input: ConclusionInput, text: ReportText): string {
 }
 
 const TOP_FILES_LIMIT = 10;
-/** HTML 报告内嵌代码片段的条数上限（严重+高危合计），避免大扫描把报告撑到几十 MB */
 const SNIPPET_LIMIT = 100;
 
 export function buildReportData(
@@ -455,14 +440,12 @@ export function buildReportData(
   engineVersion?: string,
   reviews: Review[] = [],
 ): ReportData {
-  // 严重度分布只统计"当前存在"的问题；已修复项单独出现在对比统计里
   const current = issues.filter(isActiveIssue);
   const bySeverity: Record<Severity, number> = { critical: 0, high: 0, medium: 0, low: 0 };
   for (const issue of current) bySeverity[issue.severity] += 1;
   const byComparison: Record<ComparisonStatus, number> = { new: 0, fixed: 0, remaining: 0 };
   for (const issue of issues) byComparison[issue.comparisonStatus] += 1;
 
-  // 人工复核（以 fingerprint 为键跨扫描继承）：挂到问题明细并汇总
   const reviewMap = new Map(reviews.map((review) => [review.fingerprint, review]));
   const reviewStats: ReportReviewSummary = { reviewed: 0, confirmed: 0, falsePositives: 0, accepted: 0 };
   const attachReview = (issue: IssueRow): Issue & { review?: ReportIssueReview } => {
@@ -484,7 +467,6 @@ export function buildReportData(
     };
   };
 
-  // 文件级聚合带每个文件的代表规则（行动清单副行展示），规则计数与问题计数同步维护
   const fileAgg = new Map<string, ReportFileAgg & { ruleCounts: Map<string, number> }>();
   for (const issue of current) {
     let entry = fileAgg.get(issue.filePath);
@@ -511,8 +493,6 @@ export function buildReportData(
     .sort((a, b) => b.count - a.count || SEVERITY_RANK[a.maxSeverity] - SEVERITY_RANK[b.maxSeverity])
     .slice(0, TOP_FILES_LIMIT);
 
-  // 耗时从实际开跑时间算起：排队等待（并发池）与快照准备不属于引擎运行时间；
-  // 旧记录没有 startedAt，回落到创建时间（与历史行为一致）
   const durationStart = scan.startedAt ?? scan.scannedAt;
   const durationSeconds =
     scan.finishedAt && durationStart
@@ -536,8 +516,6 @@ export function buildReportData(
     fileCount: scan.fileCount,
     baselineScanId: scan.baselineScanId,
     rulepacks: scan.rulepacks,
-    // 旧扫描曾把配置内部 ID（cfg-xxx）当规则集落库，报告面向交付不作展示（页面与 HTML 导出
-    // 各自按无值兜底渲染为「未记录/—」）；可复现信息不受影响：manifest.config 仍保留原始快照
     rules: scan.rules?.startsWith('cfg-') ? undefined : scan.rules,
     engineVersion,
     sourceHash: scan.srcHash,
@@ -564,11 +542,6 @@ export function buildReportData(
   };
 }
 
-/**
- * 结论的结构化载荷：code+params 供在线报告页按当前语言重拼；
- * message（中文兜底）供自包含 HTML 报告与前后端版本错位场景直接使用。
- * 复核句不在载荷内——它属于统计呈现，由前端 reviewStats 独立渲染。
- */
 function buildConclusionPayload(scan: ScanRecord, totals: ReportTotals): ConclusionPayload | null {
   const { bySeverity, byComparison } = totals;
   const fileCount = scan.fileCount ?? 0;
@@ -633,22 +606,17 @@ const SEVERITY_COLOR: Record<Severity, string> = {
 };
 
 
-/** 取说明首句：明细条目只放一句话，同一规则的完整说明去重到附录 */
 function firstSentence(value: string): string {
   const text = String(value ?? '').trim();
   const cut = text.split(/(?<=[。！？])/)[0] || text;
   return cut.length > 64 ? `${cut.slice(0, 64)}…` : cut;
 }
 
-/** 绝对路径 token 判定：POSIX 根、Windows 盘符、UNC 前缀 */
 function isAbsolutePathToken(token: string): boolean {
   return token.startsWith('/') || token.startsWith('\\\\') || /^[A-Za-z]:[\\/]/.test(token);
 }
 
-/** 命令行含本机绝对路径：对外交付泄露目录结构且撑坏版面，逐个折叠成 <repo>/<文件名> */
 export function sanitizeCommand(cmd: string): string {
-  // 不能只处理带引号的参数：参数只有在含空白时才会被加引号，无空格的快照路径
-  // （Docker /data、/opt/... 等）会以裸参数出现；改为同时扫描引号内与裸 token
   return cmd.replace(/"([^"]*)"|(\S+)/g, (match: string, quoted?: string, bare?: string) => {
     const token = quoted ?? bare ?? '';
     if (!isAbsolutePathToken(token)) return match;
@@ -662,14 +630,12 @@ export function sanitizeCommand(cmd: string): string {
   });
 }
 
-/** 路径拆「目录 + 文件名」：目录允许断行，文件名不折断，避免按字符断词 */
 function pathHtml(p: string): string {
   const s = String(p ?? '');
   const cut = s.lastIndexOf('/') + 1;
   return `<span class="dir">${escapeHtml(s.slice(0, cut))}</span><span class="fname">${escapeHtml(s.slice(cut))}</span>`;
 }
 
-/** 规则说明查找：messages 键为完整规则 ID，精确未命中时按末段后缀匹配（与知识库同口径） */
 function buildMessageLookup(messages?: Record<string, string>) {
   if (!messages) return (_ruleId: string, fallback: string) => fallback;
   const exact = new Map(Object.entries(messages));
@@ -683,7 +649,6 @@ function buildMessageLookup(messages?: Record<string, string>) {
 
 type ReportIssue = Issue & { review?: ReportIssueReview };
 
-/** 明细条目：位置行（行号 + 规则）+ 一句话说明 + 可选片段与状态标签 */
 function issueEntryHtml(
   issue: ReportIssue,
   snippets: Map<string, string>,
@@ -719,7 +684,6 @@ function issueEntryHtml(
     </div>`;
 }
 
-/** 明细组：按严重度（或"已修复"）一组，组内按文件归并，同一文件的 N 条只写一次路径 */
 function detailGroupHtml(options: {
   heading: string;
   sub: string;
@@ -758,13 +722,9 @@ function detailGroupHtml(options: {
 }
 
 export interface HtmlRenderOptions {
-  /** false 时省略全部代码片段（detail=summary） */
   includeSnippets: boolean;
 }
 
-/** 渲染自包含 HTML 报告：内联 CSS、无外部依赖，可直接离线打开或打印为 PDF。
- * 版式四章：结论（决策者 30 秒）→ 行动清单（按文件）→ 明细（按严重度分组、组内按文件归并的条目式）→ 方法与证据 + 规则附录。
- * 全程 A4 纵向，任何元素不允许超出纸宽（明细弃用表格改条目式正是为此）。 */
 export function renderReportHtml(
   data: ReportData,
   issues: IssueRow[],
@@ -774,8 +734,6 @@ export function renderReportHtml(
 ): string {
   const { meta, totals, reviewStats } = data;
   const text = REPORT_TEXT[lang];
-  // 复核结论由 buildReportData 以 issue.id 挂在 data.issues 上；本函数的 issues 参数是原始行
-  // （需要 matchedLines 取代码片段），这里按 id 回填 review，否则明细条目里的复核标签永远不显示
   const reviewById = new Map(
     data.issues.filter((issue) => issue.review).map((issue) => [issue.id, issue.review!]),
   );
@@ -793,7 +751,6 @@ export function renderReportHtml(
   }
   const snippetBudget = { left: SNIPPET_LIMIT };
 
-  // 文件级聚合：封面 Top5 与行动清单共用（排序：最高等级 → 条数）
   const fileMap = new Map<
     string,
     { path: string; count: number; bySev: Record<Severity, number>; maxSev: Severity; ruleCounts: Map<string, number> }
@@ -822,7 +779,6 @@ export function renderReportHtml(
     })
     .sort((a, b) => SEVERITY_RANK[a.maxSev] - SEVERITY_RANK[b.maxSev] || b.count - a.count);
 
-  // 规则级聚合：附录规则卡（同一规则的完整说明只出现一次）
   const ruleMap = new Map<string, { id: string; count: number; files: Set<string>; maxSev: Severity }>();
   for (const issue of current) {
     let rule = ruleMap.get(issue.ruleId);
@@ -838,7 +794,6 @@ export function renderReportHtml(
     (a, b) => SEVERITY_RANK[a.maxSev] - SEVERITY_RANK[b.maxSev] || b.count - a.count,
   );
 
-  // 三种语言统一按统计值重拼结论：zh 的拼装结果与 data.conclusion 同字，不必再分叉
   const conclusionText = escapeHtml(
     composeConclusion(
       {

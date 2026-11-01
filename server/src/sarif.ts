@@ -1,10 +1,5 @@
 import type { IssueRow, ScanRecord, Severity } from './db.js';
 
-/**
- * SARIF 2.1.0 导出：把扫描结果映射为 GitHub Code Scanning / DefectDojo / SonarQube
- * 等工具链可消费的标准格式。只导出"当前存在"的问题（不含基线对比出的"已修复"项）。
- */
-
 const SARIF_SCHEMA = 'https://json.schemastore.org/sarif-2.1.0.json';
 
 const LEVEL_BY_SEVERITY: Record<Severity, 'error' | 'warning' | 'note'> = {
@@ -58,7 +53,6 @@ export function buildSarifReport(
 ): SarifLog {
   const current = issues.filter((issue) => issue.comparisonStatus !== 'fixed');
 
-  // 规则去重并按首次出现排序，result.ruleIndex 指向这里
   const ruleIds: string[] = [];
   const severityByRule = new Map<string, Severity>();
   for (const issue of current) {

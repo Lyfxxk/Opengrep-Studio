@@ -28,7 +28,6 @@ export default function TagPathInput({
       setError('');
       return;
     }
-    // glob 语法里顿号/逗号本就非法：整串照抄旧占位符（如 node_modules/**、dist/**）会静默失效，这里只拦新输入、不拦存量回显
     if (/[、，,]/.test(trimmed)) {
       setError(t('tagPath.globSeparator'));
       return;

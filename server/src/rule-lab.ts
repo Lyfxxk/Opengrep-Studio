@@ -10,7 +10,6 @@ import { readSampleText, scanPackSamples } from './pack-format.js';
 import { collectRuleFiles } from './rulepacks.js';
 import { extractTaintFlow, relativizeTaintFlow, type TaintStep } from './taint.js';
 
-/** 规则语言 → 样本文件扩展名（generic 用 .txt 匹配任意文本） */
 export const LANG_EXT: Record<string, string> = {
   javascript: 'js',
   typescript: 'ts',
@@ -48,7 +47,6 @@ interface RuleLabMatch {
   severity: string;
   message: string;
   matchedLines?: string;
-  /** taint 规则命中的污点传播链（source → intermediate → sink） */
   taintFlow?: TaintStep[];
 }
 
@@ -65,7 +63,6 @@ export interface RuleLabRunResult {
   positive: RuleLabSampleResult;
   negative: RuleLabSampleResult;
   failReasons: string[];
-  /** 引擎运行前的失败（YAML 不合法、无样本、语言未知） */
   error?: string;
   engineErrors: string[];
 }
@@ -115,26 +112,15 @@ function sampleKindOf(findingPath: string): 'positive' | 'negative' | undefined 
   return undefined;
 }
 
-/**
- * 实验室临时目录的保留期。单次实验被 ruleLabTimeoutMs（默认 30 秒）封顶，
- * 10 分钟远超其上限，足以区分"上次崩溃的残留"与"别的进程正在使用的目录"。
- */
 const RULE_LAB_STALE_MS = 10 * 60 * 1000;
 
-/**
- * 服务启动时清理上次异常退出残留的实验室临时目录。
- * 只删超过保留期的 lab-* 目录、不做整树 rmSync：rulelab 树由多个进程共用
- * （pack-regression 等独立进程也在这里建 scratch 跑引擎），而本服务会因 tsx watch
- * 热重启等原因频繁启动——整树删除会把别的进程刚建好、引擎即将读取的
- * rule.yaml 连根端掉，引擎侧表现为「配置文件 rule.yaml 不存在」。
- */
 export function cleanupRuleLabScratch(): void {
   const scratchRoot = path.join(config.dataDir, 'rulelab');
   let entries: fs.Dirent[];
   try {
     entries = fs.readdirSync(scratchRoot, { withFileTypes: true });
   } catch {
-    return; // rulelab 根目录尚不存在：无可清理
+    return;
   }
   const staleBefore = Date.now() - RULE_LAB_STALE_MS;
   for (const entry of entries) {
@@ -145,14 +131,12 @@ export function cleanupRuleLabScratch(): void {
         fs.rmSync(dir, { recursive: true, force: true });
       }
     } catch {
-      // 目录被并发进程抢先清理等竞态：跳过即可
     }
   }
 }
 
 interface PackCheckItem {
   ruleId: string;
-  /** 规则文件相对包根目录的路径 */
   ruleFile: string;
   positiveCount: number;
   negativeCount: number;
@@ -161,17 +145,11 @@ interface PackCheckItem {
 }
 
 export interface PackCheckResult {
-  /** verified = 至少一条规则带样本且全部通过；basic = 无样本或存在未通过的样本 */
   tier: 'verified' | 'basic';
   items: PackCheckItem[];
   durationMs: number;
 }
 
-/**
- * 规则包质量检查：复用实验室 runner，逐规则跑它自己的正反例样本。
- * 无样本的规则记为 unverified（basic 档）；这是导入校验之外的"能不能命中"级验证。
- */
-/** 单次质量检查最多实测的规则条数（其余记 unverified，避免大包把检查拖到分钟级） */
 const MAX_SAMPLED_RULES = 20;
 
 export async function runPackCheck(packDir: string): Promise<PackCheckResult> {
@@ -189,7 +167,6 @@ export async function runPackCheck(packDir: string): Promise<PackCheckResult> {
     try {
       for (const id of parseRuleYaml(text).ruleIds) knownIds.add(id);
     } catch (error) {
-      // 包内文件被手工改坏（漂移）时给 400 业务错误，而不是让路由落进通用 500
       const name = path.relative(packDir, file).replace(/\\/g, '/');
       const reason = error instanceof Error ? error.message : String(error);
       throw new HttpError(400, `规则文件 ${name} 不合法：${reason}`, {
@@ -264,10 +241,6 @@ export async function runPackCheck(packDir: string): Promise<PackCheckResult> {
   };
 }
 
-/**
- * 规则实验室单次实验：结构校验 → 临时目录跑引擎 → 按正/反例期望出三态结论。
- * "写错了"是实验室的常态，所有失败都以 error/fail 结果返回而不是 HTTP 错误。
- */
 export async function runRuleLab(
   yamlText: string,
   samples: { positive: string; negative: string },
@@ -360,7 +333,6 @@ export async function runRuleLab(
     try {
       output = JSON.parse(stdout) as EngineOutput;
     } catch {
-      // 引擎崩溃时没有 JSON 输出，错误信息从 stderr 取
     }
     for (const item of output?.errors ?? []) {
       if (item.level !== 'warn' && item.message) result.engineErrors.push(item.message);
@@ -418,8 +390,6 @@ export async function runRuleLab(
     try {
       fs.rmSync(scratchDir, { recursive: true, force: true });
     } catch {
-      // Windows 上引擎子进程刚退出、文件句柄短暂未释放（或杀软扫描占用）时会抛 EPERM/EBUSY：
-      // 清理失败不该把一次已成功的运行变成 500，残留的 scratch 目录在 dataDir/rulelab 下可手动清
     }
   }
 }

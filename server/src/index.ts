@@ -22,20 +22,13 @@ import { projectRoutes } from './routes/projects.js';
 import { scanRoutes } from './routes/scans.js';
 
 const app = express();
-// 默认 100kb 会先于路由层校验拒绝大 JSON：规则包在线创建/编辑允许 1MB YAML、实验室
-// 允许 1MB YAML + 各 200KB 正反例，JSON 转义后还要膨胀。这里统一放宽到 5MB，
-// 各路由仍按自己的业务上限做 400 校验；文件上传走 multipart，不受此限制。
 app.use(express.json({ limit: '5mb' }));
 
-/** 主机名是否指向本机：localhost 或 IP 字面量（IPv6 的 URL 形态带方括号，先剥掉） */
 function isLocalHost(hostname: string): boolean {
   const name = hostname.replace(/^\[|\]$/g, '').toLowerCase();
   return name === 'localhost' || net.isIP(name) !== 0;
 }
 
-// 防 DNS 重绑定与跨站盲写：攻击页把自己的域名解析到 127.0.0.1 后，浏览器会带着攻击域名的
-// Host 头访问本服务并视为同源（可读取扫描结果与源码片段）。因此 Host 必须是 localhost 或
-// IP 字面量；带 Origin 的变更请求必须来自本机。经 IP 直连的局域网访问不受影响。
 app.use((req, _res, next) => {
   let hostOk = false;
   if (typeof req.headers.host === 'string') {
@@ -67,8 +60,6 @@ app.use((req, _res, next) => {
   next();
 });
 
-// 各资源域路由：misc（健康检查/规则说明/扫描配置/知识库/实验室）→ 引擎 → 规则包 → 项目 → 扫描。
-// 挂载顺序只影响注册先后，各域路径互不重叠；/api 404 兜底必须排在其后。
 app.use(miscRoutes);
 app.use(engineRoutes);
 app.use(rulepackRoutes);
@@ -84,8 +75,6 @@ if (fs.existsSync(distDir)) {
   app.use(express.static(distDir));
   app.use((req, res, next) => {
     if (req.method !== 'GET') { next(); return; }
-    // 只对 HTML 导航回落到 index.html：缺失的静态资源（/assets/*.js）拿到 HTML 会以 MIME
-    // 错误收场，掩盖真正的 404；带扩展名的路径一律走后续 404
     if (!req.accepts('html') || path.extname(req.path)) { next(); return; }
     res.sendFile(path.join(distDir, 'index.html'));
   });
@@ -93,7 +82,6 @@ if (fs.existsSync(distDir)) {
 
 app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
   if (error instanceof HttpError) {
-    // code/params 是可选契约：带 code 的错误前端按语言翻译，message 仍是各语言兜底
     const meta = error.meta?.code
       ? { code: error.meta.code, params: error.meta.params }
       : {};
@@ -117,9 +105,6 @@ app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
     });
     return;
   }
-  // Express 内部抛出的客户端错误自带状态码：路由参数带畸形百分号编码（%FF、截断的多字节
-  // 序列等）时 decode_param 抛的 URIError 已被 express 标为 status=400（layer.js），JSON
-  // body 解析失败同理。这些是客户端输入问题，按其状态码回 4xx，既不误导排障也不刷异常日志
   const framed = error as { status?: unknown; statusCode?: unknown; message?: unknown };
   const status = typeof framed.status === 'number'
     ? framed.status
@@ -140,7 +125,6 @@ app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
 const server = app.listen(config.port, config.host, () => {
   ensureBuiltinRulePacks();
   pruneStaleBuiltinPacks();
-  // 兜底扫描配置常驻：未绑定配置（或绑定已失效）的项目发起扫描时回落到它，且不可删除
   ensureFallbackScanConfig();
   markStaleScansFailed();
   console.log(`[server] Opengrep Studio 后端已启动: http://${config.host}:${config.port}`);
@@ -150,7 +134,6 @@ const server = app.listen(config.port, config.host, () => {
   );
   console.log(`[server] 数据目录: ${config.dataDir}`);
   console.log(`[server] 自定义规则包目录: ${config.customRulesDir}`);
-  // 紧跟数据目录打印：文件与数据库记录对不上的残骸（孤儿文件 / 记录没文件）要让人当场看见
   reportCustomPackDrift();
   if (!fs.existsSync(config.opengrepBin)) {
     console.error(`[server] 警告：${engineInstallHint().replace(/\n/g, '\n[server] ')}`);
@@ -172,8 +155,6 @@ server.on('error', (err: NodeJS.ErrnoException) => {
   throw err;
 });
 
-// 退出时先杀引擎子进程再关 HTTP：Docker stop / taskkill 只把信号发给 node 本身，
-// 不处理的话孤儿 opengrep 会继续跑完并占着引擎文件（Windows 上会锁死下一次升级）
 let shuttingDown = false;
 function shutdown(signal: NodeJS.Signals): void {
   if (shuttingDown) return;
@@ -181,7 +162,6 @@ function shutdown(signal: NodeJS.Signals): void {
   console.log(`[server] 收到 ${signal}，终止引擎子进程并退出`);
   terminateTrackedChildren();
   server.close(() => process.exit(0));
-  // 兜底：个别连接挂着不关也要保证退出
   setTimeout(() => process.exit(0), 3000).unref();
 }
 process.on('SIGINT', () => shutdown('SIGINT'));

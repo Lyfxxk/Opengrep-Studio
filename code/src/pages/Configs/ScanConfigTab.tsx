@@ -71,7 +71,6 @@ export default function ScanConfigTab() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [target, setTarget] = useState<ConfigDialogTarget | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<IConfig | null>(null);
-  // 兜底配置不进选择域：全选与批量删除都不会带上它（接口侧同样会 403 拒绝）
   const selection = useRowSelection(configs.filter((config) => !config.isProtected).map((config) => config.id));
   const [batchConfirmOpen, setBatchConfirmOpen] = useState(false);
   const [batchDeleting, setBatchDeleting] = useState(false);
@@ -155,7 +154,6 @@ export default function ScanConfigTab() {
     if (!deleteTarget) return;
     try {
       await api.deleteConfig(deleteTarget.id);
-      // 解绑后果删除前已在确认框告知，只有真解绑了项目才需要再报数
       if (deleteBoundCount > 0) {
         toast.success(t('configs.deletedUnboundToast', { count: deleteBoundCount }));
       }
@@ -169,11 +167,9 @@ export default function ScanConfigTab() {
   const packNameOf = (packId: string) =>
     rulePacks.find((pack) => pack.id === packId)?.name;
 
-  // 停用包在扫描时会被静默跳过：徽章必须标出来，避免「规则包 N」造成已全覆盖的错觉
   const packDisabledOf = (packId: string) =>
     rulePacks.find((pack) => pack.id === packId)?.enabled === false;
 
-  // 逐个调用单删接口：某一项失败不影响其余项，最后汇总报数
   const handleBatchDelete = async () => {
     const ids = [...selection.selected];
     setBatchConfirmOpen(false);
@@ -282,7 +278,7 @@ export default function ScanConfigTab() {
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap items-center gap-1">
-                          {/* key 用包 id：包名不保证唯一（同名包可并存），用名称会撞 key */}
+                          {}
                           {config.rulePackIds.slice(0, 2).map((packId) => (
                             <Badge
                               key={packId}

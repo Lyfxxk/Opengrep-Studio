@@ -28,14 +28,10 @@ export interface IRulePack {
   enabled: boolean
   ruleCount: number
   createdAt: string
-  /** 可移植格式清单（目录包必有；单文件包为 null） */
   version?: string
   manifest?: IRulePackManifest | null
-  /** 样本文件总数（正例 + 反例） */
   sampleCount?: number
-  /** 目录式包（可移植格式） */
   isDir?: boolean
-  /** 最近一次质量检查摘要 */
   lastCheck?: IRulePackCheckSummary | null
 }
 
@@ -55,7 +51,6 @@ export interface IRulePackCheckResult {
   summary: IRulePackCheckSummary;
 }
 
-/** 演示模式（VITE_USE_MOCK）的种子规则包：4 个内置 + 1 个带样本的自建包 */
 export const MOCK_RULE_PACKS: IRulePack[] = [
   {
     id: 'builtin-python',

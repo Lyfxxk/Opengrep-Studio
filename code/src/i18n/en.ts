@@ -1,4 +1,3 @@
-// 英文资源：typeof zh 锁定键结构——键缺失/多余/错拼都会在编译期报错
 import zh from './zh';
 
 const en: typeof zh = {
@@ -136,7 +135,6 @@ const en: typeof zh = {
     intermediate: 'Propagation',
     sink: 'Sink',
   },
-  // Entity nouns carry plural suffixes: English picks singular/plural by count
   entity: {
     project_one: 'project',
     project_other: 'projects',
@@ -300,9 +298,7 @@ const en: typeof zh = {
     failedTitle: 'This scan failed',
     failedHint:
       'The source snapshot is still available — go back to the project detail page and start a new scan directly, no re-upload needed.',
-    // 并发池排队中（第 3 路及以后）的提示：与 scanningHint 区分，避免排队扫描被误读为卡死
     queuedHint: 'Queued — waiting for a free slot; it starts automatically.',
-    // 心跳进度：源码快照文件数在引擎启动前落库，扫描中即可见
     scannedFiles: '{{count}} files scanned',
     cancelBtn: 'Cancel scan',
     cancelRequestedToast: 'Cancellation requested',
@@ -351,7 +347,6 @@ const en: typeof zh = {
     uploadFallback: 'Upload',
     multiFileLabel: '{{dir}} ({{count}} files)',
     cloneLabelWithRef: '{{url}} ({{ref}})',
-    // 克隆失败只清临时目录，既有源码不受影响；前导空格用于与错误消息拼接
     cloneFailedSourceKept: ' (previously uploaded source remains unchanged)',
     notFound: 'Project not found or deleted',
     baselineBadge: 'Baseline {{id}}',
@@ -722,7 +717,6 @@ const en: typeof zh = {
       'Your current content differs from every built-in example; loading one replaces the rule and test samples, and cannot be undone.',
     confirmContinue: 'Load anyway',
   },
-  // Backend error-code contract (HttpError codes across server modules), translated per language
   apiErrors: {
     archive: {
       unsafePath: 'Unsafe path entry in archive or file list: {{raw}}',

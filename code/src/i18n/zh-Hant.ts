@@ -1,6 +1,5 @@
 import zh from './zh';
 
-// 繁體中文資源（台灣用語）：鍵結構由 typeof zh 鎖定，與 zh.ts / en.ts 同步增刪鍵
 const zhHant: typeof zh = {
   app: {
     tagline: '碼審工作台',
@@ -135,7 +134,6 @@ const zhHant: typeof zh = {
     intermediate: '傳播',
     sink: '匯聚點',
   },
-  // 實體名詞帶複數字尾：英文裡按 count 取單複數（zh 僅用 _other，_one 為鍵結構對齊保留）
   entity: {
     project_one: '專案',
     project_other: '專案',
@@ -294,9 +292,7 @@ const zhHant: typeof zh = {
     rulesetDir: '規則集目錄：{{rules}}',
     failedTitle: '本次掃描執行失敗',
     failedHint: '原始碼快照仍在，返回專案詳情頁可直接重新發起掃描，無需重新上傳',
-    // 並行池排隊中（第 3 路及以後）的提示：與 scanningHint 區分，避免排隊掃描被誤讀為卡死
     queuedHint: '排隊等待中，其他掃描完成後自動開始',
-    // 心跳進度：原始碼快照檔案數在引擎啟動前落庫，掃描中即可見
     scannedFiles: '已掃描 {{count}} 個檔案',
     cancelBtn: '取消掃描',
     cancelRequestedToast: '已請求取消掃描',
@@ -345,7 +341,6 @@ const zhHant: typeof zh = {
     uploadFallback: '上傳',
     multiFileLabel: '{{dir}}（{{count}} 個檔案）',
     cloneLabelWithRef: '{{url}}（{{ref}}）',
-    // 克隆失敗只清臨時目錄，既有原始碼不受影響；toast 附帶說明，避免使用者誤以為要重新上傳
     cloneFailedSourceKept: '（原已上傳的原始碼保持不變）',
     notFound: '專案不存在或已被刪除',
     baselineBadge: '基線 {{id}}',
@@ -702,7 +697,6 @@ const zhHant: typeof zh = {
     confirmExampleDesc: '目前內容與所有內建範例都不同，載入範例會替換規則和測試樣本，且無法復原。',
     confirmContinue: '繼續載入',
   },
-  // 後端錯誤碼契約（server/src 各模組 HttpError 的 code），前端按 apiErrors.<code> 翻譯
   apiErrors: {
     archive: {
       unsafePath: '壓縮檔或檔案列表中含不安全的路徑條目：{{raw}}',

@@ -39,7 +39,6 @@ const STATUS_OPTIONS: Array<{ value: ReviewableStatus; hintKey: 'review.hintConf
   { value: 'accepted', hintKey: 'review.hintAccepted' },
 ];
 
-/** 人工复核对话框：结论以 (项目, fingerprint) 落库，后续扫描自动继承 */
 export default function ReviewDialog({ projectId, issue, onClose, onSaved }: ReviewDialogProps) {
   const { t } = useTranslation();
   const [status, setStatus] = useState<ReviewStatus>('confirmed');
@@ -71,7 +70,6 @@ export default function ReviewDialog({ projectId, issue, onClose, onSaved }: Rev
         ...(reason.trim() ? { reason: reason.trim() } : {}),
         reviewer: reviewer.trim() || undefined,
       });
-      // 复核结论会立刻回写到列表与片段区的徽章上，不再弹成功提示
       onSaved();
       onClose();
     } catch (error) {
@@ -81,7 +79,6 @@ export default function ReviewDialog({ projectId, issue, onClose, onSaved }: Rev
     }
   };
 
-  /** 撤回复核结论：回到未复核（待复核）状态，与保存互斥展示 */
   const resetReview = async () => {
     if (!issue?.fingerprint) return;
     setSubmitting(true);

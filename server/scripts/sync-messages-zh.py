@@ -22,7 +22,6 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 DST = os.path.join(os.path.dirname(HERE), "rules", "security")
 ZH_FILE = os.path.join(os.path.dirname(HERE), "rules", "messages-zh.json")
 
-
 def builtin_ids():
     """收集内置包全部规则 ID 与英文 message。"""
     rules = {}
@@ -35,14 +34,12 @@ def builtin_ids():
                 rules[rid] = rule.get("message") or ""
     return rules
 
-
 def load_json(path):
     try:
         with open(path, encoding="utf-8") as f:
             return json.load(f)
     except FileNotFoundError:
         return {}
-
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.strip().splitlines()[0])
@@ -75,12 +72,10 @@ def main():
                 continue
             zh[rid] = message.strip()
             added += 1
-        # 全量按 key 排序落盘，保证 diff 稳定
         with open(ZH_FILE, "w", encoding="utf-8") as f:
             json.dump(dict(sorted(zh.items())), f, ensure_ascii=False, indent=1)
             f.write("\n")
         print(f"已合并 {added} 条到 {ZH_FILE}")
-        # 简繁两份必须同键（i18n-check.mjs 校验），本脚本只写简体，繁体须人工跟进
         if added:
             print("提示：请同步 server/rules/messages-zh-Hant.json 对应条目，npm run i18n:check 会拦截", file=sys.stderr)
 
@@ -93,7 +88,6 @@ def main():
     if missing and not (args.draft or args.merge):
         print("提示：用 --draft 导出缺失条目，翻译后 --merge 入库", file=sys.stderr)
         print("提示：--merge 只写简体，请同步 server/rules/messages-zh-Hant.json 对应条目，npm run i18n:check 会拦截", file=sys.stderr)
-
 
 if __name__ == "__main__":
     main()

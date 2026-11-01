@@ -13,7 +13,6 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
 
-/** 一级导航 label 的合法 i18n 键（约束 NAV_ITEMS 与 Header 面包屑的取值） */
 type NavKey =
   | 'nav.dashboard'
   | 'nav.projects'
@@ -22,7 +21,6 @@ type NavKey =
   | 'nav.rules'
   | 'nav.configs';
 
-/** 一级导航（侧栏与 Header 面包屑共用；label 存 i18n 键，文案改动改 i18n 资源） */
 export const NAV_ITEMS: Array<{ path: string; label: NavKey; icon: typeof LayoutDashboard }> = [
   { path: '/dashboard', label: 'nav.dashboard', icon: LayoutDashboard },
   { path: '/projects', label: 'nav.projects', icon: FolderOpen },

@@ -38,7 +38,6 @@ import { asyncHandler, decodeUploadFileName, limit400, MAX_RULE_YAML_BYTES, MAX_
 
 export const rulepackRoutes = Router();
 
-/** 规则包 zip 导入的体积上限（文案从取数点引用） */
 const MAX_PACK_ZIP_BYTES = 20 * 1024 * 1024;
 
 const BUILTIN_LANG_LABELS: Record<string, string> = {
@@ -102,7 +101,6 @@ export function ensureBuiltinRulePacks(): void {
   }
 }
 
-/** 清理失效的内置规则包注册（对应 YAML 已从 security/ 移除的），不动其余内置包与配置勾选 */
 export function pruneStaleBuiltinPacks(): void {
   for (const pack of listRulePacks()) {
     if (pack.builtin && !fs.existsSync(packFilePath(pack))) {
@@ -112,7 +110,6 @@ export function pruneStaleBuiltinPacks(): void {
   }
 }
 
-/** 规则包名称校验（创建 / 上传 / 导入三条入口共用） */
 function requireValidPackName(raw: unknown): string {
   const name = String(raw ?? '').trim();
   if (!name) throw new HttpError(400, '请输入规则包名称', { code: 'srv.packNameRequired' });
@@ -148,10 +145,6 @@ function saveNewRulePack(name: string, language: string, yamlText: string, sourc
   return pack;
 }
 
-/**
- * 规则实验室"另存为新规则包"（带测试样本）：落成可移植目录包
- * （pack.yaml + rules/rule.yaml + samples/<首个规则id>/），样本随包分发、可一键质量检查。
- */
 function savePortablePackFromLab(
   name: string,
   language: string,
@@ -159,9 +152,6 @@ function savePortablePackFromLab(
   samples: { positive: string; negative: string },
 ): RulePack {
   const parsed = parseRuleYaml(yamlText);
-  // 与实验室 runRuleLab 的前置校验对齐：样本扩展名取自首条规则语言，语言不在 LANG_EXT
-  // 表内时若静默跳过落盘，包会以 sampleCount=0 照常创建并返回 201，样本彻底丢失且无提示。
-  // 必须在写盘之前拦下，避免留下半成品包目录；文案与实验室保持一致（同语言两条入口同口径）。
   const sampleLanguage = parsed.firstLanguage.trim();
   if (
     (samples.positive.trim() || samples.negative.trim()) &&
@@ -174,7 +164,6 @@ function savePortablePackFromLab(
         : '无法从规则推断语言，请在第一条规则的 languages 中填写',
     );
   }
-  // 规则 id 来自 YAML（不受信输入），落盘前必须确保可作单级样本目录名，否则会写出 customRulesDir
   if (parsed.ruleIds[0] && !isSafeSampleDirName(parsed.ruleIds[0])) {
     throw new HttpError(
       400,
@@ -243,7 +232,6 @@ rulepackRoutes.post('/api/rulepacks', asyncHandler(async (req, res) => {
   if (!content.trim()) {
     throw new HttpError(400, '请输入规则包 YAML 内容', { code: 'srv.packContentRequired' });
   }
-  // body 解析放宽到 5MB 不代表业务上没有闸：与上传/Y 实验室共用同一 YAML 体积上限
   if (content.length > MAX_RULE_YAML_BYTES) {
     throw new HttpError(
       400,
@@ -269,8 +257,6 @@ rulepackRoutes.post('/api/rulepacks', asyncHandler(async (req, res) => {
       : saveNewRulePack(name, language, content, 'online-editor');
     res.status(201).json(pack);
   } catch (error) {
-    // savePortablePackFromLab 抛的 HttpError 自带 code/params（如 srv.ruleIdUnsafe），
-    // 重新包装会丢掉契约键，前端就只能显示中文兜底文案
     if (error instanceof HttpError) throw error;
     throw new HttpError(400, error instanceof Error ? error.message : String(error));
   }
@@ -310,7 +296,6 @@ rulepackRoutes.post(
     const language = String(req.body?.language ?? '').trim() || 'Java';
     const content = req.file.buffer.toString('utf8');
     try {
-      // 上传来源只用于日志；中文文件名按 UTF-8 还原，否则日志里是一串 latin1 乱码
       res.status(201).json(saveNewRulePack(name, language, content, decodeUploadFileName(req.file.originalname)));
     } catch (error) {
       if (error instanceof HttpError) throw error;
@@ -390,7 +375,6 @@ function safePackFolderName(name: string): string {
   return sanitized.slice(0, 40) || 'rulepack';
 }
 
-/** 导出 zip 内的贡献规范 README（P1-7）：逐规则样本清单 + 用法 + 许可声明；包内已有手写 README 时不覆盖 */
 function buildExportReadme(pack: RulePack, packDir?: string): string {
   const inventory: Array<{ ruleId: string; positiveCount: number; negativeCount: number }> = [];
   const knownIds = new Set<string>();
@@ -442,7 +426,6 @@ function buildExportReadme(pack: RulePack, packDir?: string): string {
   });
 }
 
-/** 导出可移植规则包 zip：目录包原样打包；单文件包自动生成 pack.yaml 清单（basic 档）；缺 README 时注入贡献规范版 */
 rulepackRoutes.get('/api/rulepacks/:id/export', asyncHandler(async (req, res) => {
   const pack = getRulePack(req.params.id);
   if (!pack) throw new HttpError(404, '规则包不存在或已被删除', { code: 'srv.packNotFound' });
@@ -490,7 +473,6 @@ const importPackUpload = multer({
   },
 });
 
-/** 判断解压后的 zip 根：pack.yaml 在根目录，或恰有一个含 pack.yaml 的子目录 */
 function detectPackRoot(dir: string): string | null {
   if (fs.existsSync(path.join(dir, 'pack.yaml'))) return dir;
   const children = fs
@@ -503,7 +485,6 @@ function detectPackRoot(dir: string): string | null {
   return null;
 }
 
-/** 散装 YAML 的搜索根：顶层无文件且恰有一个子目录时下钻一层（Windows 右键压缩文件夹的产物形态） */
 function detectLooseRoot(dir: string): string {
   const entries = fs.readdirSync(dir, { withFileTypes: true });
   if (entries.some((entry) => entry.isFile())) return dir;
@@ -530,7 +511,6 @@ rulepackRoutes.post(
       const root = detectPackRoot(tmpDir);
 
       if (root) {
-        // 可移植格式：pack.yaml + rules/ + samples/
         let manifest: PackManifest;
         try {
           manifest = parsePackManifest(fs.readFileSync(path.join(root, 'pack.yaml'), 'utf8'));
@@ -538,8 +518,6 @@ rulepackRoutes.post(
           if (error instanceof HttpError) throw error;
           throw new HttpError(400, error instanceof Error ? error.message : String(error));
         }
-        // 缺 rules/ 目录（ENOENT）、或 rules 是普通文件（ENOTDIR）时 readdirSync 都会抛错落成 500，
-        // 先用 stat 一次拦成 400（collectRuleFiles 还有导出等调用点，不在其内部兜底）
         const rulesStat = fs.statSync(path.join(root, 'rules'), { throwIfNoEntry: false });
         if (!rulesStat?.isDirectory()) {
           throw new HttpError(400, '包内缺少 rules/ 目录：请按 pack.yaml + rules/ + samples/ 结构打包', {
@@ -586,12 +564,9 @@ rulepackRoutes.post(
         const packId = newId('rp');
         const destDir = customPackDir(packId);
         fs.mkdirSync(config.customRulesDir, { recursive: true });
-        // zip 顶层文件夹名不可控（可能含中文），必须用安全复制（见 copyDirectory 注释）
         try {
           await copyDirectory(root, destDir);
         } catch (error) {
-          // 复制中途失败（磁盘满/超长文件名/杀软拦截）会把半成品残留在 customRulesDir：
-          // 记录尚未落库，只有启动漂移警告能看到它，直接清掉（与 finally 清 tmpDir 同口径）
           fs.rmSync(destDir, { recursive: true, force: true });
           throw error;
         }
@@ -617,7 +592,6 @@ rulepackRoutes.post(
         return;
       }
 
-      // 无清单：单个散装 YAML 走旧式单文件包；多个则要求补齐可移植格式
       const looseRoot = detectLooseRoot(tmpDir);
       const looseFiles = fs
         .readdirSync(looseRoot, { withFileTypes: true })
@@ -636,7 +610,6 @@ rulepackRoutes.post(
       const name = requireValidPackName(String(req.body?.name ?? '').trim() || zipName);
       let language = String(req.body?.language ?? '').trim();
       try {
-        // 坏 YAML 在这里就拦下（否则 saveNewRulePack 内部抛普通 Error 会变成 500）
         language = language || parseRuleYaml(content).firstLanguage;
       } catch (error) {
         throw new HttpError(
@@ -653,7 +626,6 @@ rulepackRoutes.post(
   }),
 );
 
-/** 规则包质量检查：逐规则跑自己的正反例样本（复用实验室 runner），结果存为 lastCheck */
 rulepackRoutes.post('/api/rulepacks/:id/check', asyncHandler(async (req, res) => {
   const pack = getRulePack(req.params.id);
   if (!pack) throw new HttpError(404, '规则包不存在或已被删除', { code: 'srv.packNotFound' });

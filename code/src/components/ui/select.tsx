@@ -161,7 +161,6 @@ function SelectItem({
   )
 }
 
-/** 分组下拉：对比扫描等场景按项目归类的选项分组 */
 function SelectGroup({
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Group>) {

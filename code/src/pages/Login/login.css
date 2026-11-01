@@ -1,8 +1,5 @@
-/* Opengrep Studio 登录页样式 —— 移植自 UI 设计稿 login.html（tech-utility 暗色主题：终端绿 + 单色格栅）。
-   所有选择器与设计令牌均收敛在 .login-shell 作用域内，避免污染应用全局样式。 */
 
 .login-shell {
-  /* ─── tokens ─── */
   --bg:            oklch(0.155 0.014 245);
   --surface:       oklch(0.195 0.016 245);
   --surface-2:     oklch(0.235 0.018 245);
@@ -16,11 +13,9 @@
   --on-accent:     #ffffff;
   --accent-soft:   color-mix(in srgb, var(--accent) 16%, transparent);
 
-  /* 电光青：展示性高亮（标题发光字、终端提示符、光标、扫描光束） */
   --signal:        #00e5ff;
   --signal-soft:   color-mix(in srgb, var(--signal) 13%, transparent);
 
-  /* 成功语义绿：终端 ✓ 标记、登录成功态，不随品牌主色变化 */
   --ok:            oklch(0.8 0.165 152);
   --ok-soft:       color-mix(in oklch, var(--ok) 13%, transparent);
 
@@ -39,10 +34,8 @@
   --radius: 8px;
   --radius-lg: 12px;
 
-  /* ─── 页面基底（对应设计稿的 body） ─── */
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(440px, 560px);
-  /* 固定单屏高：矮视口时按下方断点压缩左栏，而不是把页面撑出滚动条 */
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
@@ -67,7 +60,6 @@
   border-radius: 4px;
 }
 
-/* ─── 左侧：暗色展示面板（格栅 + 微光） ─── */
 .login-shell .brand-panel {
   position: relative;
   display: flex;
@@ -141,7 +133,6 @@
   text-shadow: 0 0 28px color-mix(in oklch, var(--signal) 45%, transparent);
 }
 
-/* ─── 终端演示（本页唯一视觉主角） ─── */
 .login-shell .term {
   position: relative;
   margin-top: clamp(24px, 4.2vh, 46px);
@@ -226,7 +217,6 @@
 }
 @keyframes login-caret-blink { 50% { opacity: 0; } }
 
-/* 扫描光束：掠过一次 */
 .login-shell .term::after {
   content: '';
   position: absolute;
@@ -250,7 +240,6 @@
   .login-shell .caret { animation: none; }
 }
 
-/* ─── 四步流程 ─── */
 .login-shell .steps {
   padding-top: clamp(28px, 4.5vh, 48px);
   display: grid;
@@ -273,12 +262,11 @@
 }
 .login-shell .step p { margin: 0; font-size: 14px; color: var(--muted); line-height: 1.6; }
 
-/* ─── 右侧：登录表单 ─── */
 .login-shell .form-panel {
-  position: relative; /* 语言切换按钮的定位锚点 */
+  position: relative;
   display: flex;
   align-items: center;
-  align-items: safe center; /* 内容超高时改为顶部对齐，配合 overflow-y 保证可滚动到顶 */
+  align-items: safe center;
   justify-content: center;
   overflow-y: auto;
   padding: clamp(32px, 5vw, 64px) 40px;
@@ -287,7 +275,6 @@
 }
 .login-shell .form-col { width: min(410px, 100%); }
 
-/* 右上角语言切换：未登录用户唯一可见的切语言入口 */
 .login-shell .lang-switch {
   position: absolute;
   top: 14px;
@@ -422,7 +409,6 @@
 }
 @keyframes login-spin { to { transform: rotate(360deg); } }
 
-/* 登录成功态 */
 .login-shell .success-state { text-align: center; padding-top: 8px; }
 .login-shell .success-mark {
   width: 56px; height: 56px;
@@ -473,14 +459,13 @@
   text-decoration-color: var(--fg);
 }
 
-/* ─── 响应式 ─── */
 @media (max-width: 920px) {
   .login-shell {
     grid-template-columns: 1fr;
     height: auto;
     min-height: 100vh;
     min-height: 100dvh;
-    overflow: visible; /* 窄屏单列时允许页面自然滚动 */
+    overflow: visible;
   }
   .login-shell .brand-panel { display: none; }
   .login-shell .form-panel {
@@ -492,7 +477,6 @@
   }
 }
 
-/* ─── 矮视口自适应：桌面端保证单屏展示（左栏内容分级压缩） ─── */
 @media (max-height: 900px) {
   .login-shell .brand-panel { padding: 32px clamp(32px, 4.5vw, 56px); }
   .login-shell .brand-hero h1 { font-size: clamp(24px, 2.6vw, 34px); }
@@ -518,7 +502,6 @@
   .login-shell .step p { font-size: 13px; }
 }
 
-/* 繁体界面优先 TC 字形：按 :lang 作用域覆盖，简体与英文保持原字体栈 */
 .login-shell:lang(zh-Hant) {
   --font-display: 'Space Grotesk', 'Segoe UI', system-ui, 'PingFang TC', 'PingFang SC', 'Microsoft JhengHei', 'Microsoft YaHei', sans-serif;
   --font-body:    'Segoe UI', system-ui, -apple-system, 'PingFang TC', 'PingFang SC', 'Microsoft JhengHei', 'Microsoft YaHei', sans-serif;

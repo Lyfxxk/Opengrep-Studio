@@ -25,7 +25,7 @@ export default function App() {
         <Route path="scans" element={<ScansCenterPage />} />
         <Route path="reports" element={<ReportsCenterPage />} />
         <Route path="rules" element={<RulesCenterPage />} />
-        {/* 旧路径兼容：规则实验室并入规则中心 */}
+        {}
         <Route path="lab" element={<Navigate to="/rules?tab=lab" replace />} />
         <Route path="configs" element={<ConfigsPage />} />
       </Route>

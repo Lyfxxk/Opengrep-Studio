@@ -4,7 +4,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import RulePackTab from '@/pages/Configs/RulePackTab';
 import LabPage from '@/pages/Lab/LabPage';
 
-/** 规则中心：规则包库与规则实验室——管规则、写规则、带测试分发 */
 export default function RulesCenterPage() {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -17,8 +16,6 @@ export default function RulesCenterPage() {
       <Tabs
         value={tab}
         onValueChange={(value) => {
-          // 仅实验室 tab 进 URL：规则包为默认态保持地址干净，实验室可被直接分享 / 收藏
-          // 只增删 tab 这一个键：整体覆盖会把 ?pack=<id> 深链一起清掉，用户从实验室点回规则包就再也找不到那只包
           setSearchParams(
             (prev) => {
               const next = new URLSearchParams(prev);

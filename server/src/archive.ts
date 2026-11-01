@@ -8,7 +8,6 @@ import { config } from './config.js';
 import { HttpError } from './errors.js';
 import { walkAndStripSymlinks, ALWAYS_SKIP_DIR_NAMES } from './fs-walk.js';
 
-/** 服务端支持的压缩包格式（解压通道见 extractArchive） */
 const ARCHIVE_EXTS = ['.zip', '.7z', '.rar', '.tar', '.tar.gz', '.tgz'];
 const TAR_RE = /\.(tar|tar\.gz|tgz)$/i;
 
@@ -17,11 +16,9 @@ export function isArchiveFileName(name: string): boolean {
   return ARCHIVE_EXTS.some((ext) => lower.endsWith(ext));
 }
 
-/** 当前平台文件名不允许的字符（Windows 另保留 <>:"|?*；控制在两侧都非法） */
 const ILLEGAL_PATH_CHARS =
   process.platform === 'win32' ? /[\u0000-\u001f<>:"|?*]/ : /[\u0000-\u001f]/;
 
-/** 归一化相对路径并拒绝绝对路径 / 盘符 / 上跳目录（Zip-Slip 同源防护） */
 export function safeRelativePath(raw: string): string {
   const normalized = raw.replace(/\\/g, '/');
   const parts = normalized.split('/');
@@ -42,19 +39,10 @@ export function safeRelativePath(raw: string): string {
   return parts.filter((part) => part && part !== '.').join('/');
 }
 
-/**
- * 路径遏制不变量：target 解析后必须位于 root 之下（不含 root 本身）。
- * 上传落盘与 snippet 读取共用，加固时只需改这一处。
- */
 export function isPathWithin(root: string, target: string): boolean {
   return path.resolve(target).startsWith(path.resolve(root) + path.sep);
 }
 
-/**
- * 递归复制目录（异步：整棵源码树的复制不再冻结事件循环，复制期间健康检查/轮询照常响应）。
- * 不要改成 fs.cpSync：Node 22.x 在 Windows 上源路径字符串含非 ASCII 字符时
- * 会无任何输出直接终止进程（子项含非 ASCII 不受影响，故扫描快照不受此坑影响）。
- */
 export async function copyDirectory(src: string, dest: string): Promise<void> {
   await fs.promises.mkdir(dest, { recursive: true });
   for (const entry of await fs.promises.readdir(src, { withFileTypes: true })) {
@@ -70,7 +58,6 @@ function removeAndThrow(dir: string, code: string, message: string): never {
   throw new HttpError(400, message, { code });
 }
 
-/** 解压后统一限额校验（文件数 / 总体积），返回实际文件数；kind 决定错误码前缀 */
 function enforceExtractLimits(dir: string, kind: 'tar' | 'archive'): number {
   const { files, bytes } = walkAndStripSymlinks(dir);
   const label = kind === 'tar' ? 'TAR 压缩包' : '压缩包';
@@ -99,11 +86,6 @@ function enforceExtractLimits(dir: string, kind: 'tar' | 'archive'): number {
   return files;
 }
 
-/**
- * ZIP：保留原有的元数据前置校验（条目数 / 体积在解压前即可判定）。
- * 落盘循环走异步 I/O（copyDirectory 同款手法）：3 万条目的 zip 逐条同步 writeFileSync
- * 会把事件循环冻住数秒，health 等其余接口全程无响应；每条 await 让出后请求照常调度。
- */
 export async function extractZipSafely(buffer: Buffer, destDir: string): Promise<number> {
   const zip = new AdmZip(buffer);
   const fileEntries = zip.getEntries().filter((entry) => !entry.isDirectory);
@@ -116,7 +98,6 @@ export async function extractZipSafely(buffer: Buffer, destDir: string): Promise
     );
   }
 
-  // 预检通过条目名只校验一次并缓存：第二遍落盘时若再解析一遍，两处逻辑容易漂移
   const names: string[] = [];
   let totalBytes = 0;
   for (const entry of fileEntries) {
@@ -128,7 +109,6 @@ export async function extractZipSafely(buffer: Buffer, destDir: string): Promise
         { code: 'archive.zipUnsafePath', params: { entry: entry.entryName } },
       );
     }
-    // 声明体积为 0 却带压缩数据 = 骗过预检的炸弹条目：adm-zip 对声明 0 的条目解压不设上限
     if (entry.header.size === 0 && entry.header.compressedSize > 0) {
       throw new HttpError(
         400,
@@ -160,7 +140,6 @@ export async function extractZipSafely(buffer: Buffer, destDir: string): Promise
       );
     }
     const data = entry.getData();
-    // 实际字节数复核：中央目录的声明可伪造，只有解出来的数据可信
     extractedBytes += data.length;
     if (extractedBytes > config.maxExtractedBytes) {
       throw new HttpError(
@@ -175,7 +154,6 @@ export async function extractZipSafely(buffer: Buffer, destDir: string): Promise
   return fileEntries.length;
 }
 
-/** TAR / TAR.GZ / TGZ（bz2/xz 不在支持清单里，入口 isArchiveFileName 已提前拒绝） */
 async function extractTarArchive(buffer: Buffer, destDir: string, fileName: string): Promise<void> {
   const lower = fileName.toLowerCase();
   fs.rmSync(destDir, { recursive: true, force: true });
@@ -184,9 +162,7 @@ async function extractTarArchive(buffer: Buffer, destDir: string, fileName: stri
     os.tmpdir(),
     `ogsrc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.tar`,
   );
-  // 异步写/解压：1GB 快照的同步 tar.x 会把事件循环整段冻住，health 等接口全程无响应
   await fs.promises.writeFile(tmpFile, buffer);
-  // tar 头自带每个条目的原始体积：边解压边计数，炸弹在写盘前就被拦下
   let entries = 0;
   let bytes = 0;
   try {
@@ -227,7 +203,6 @@ async function extractTarArchive(buffer: Buffer, destDir: string, fileName: stri
   }
 }
 
-/** 扩展名 → 语言（GitHub Linguist 简化版，用于源码语言分布统计） */
 const EXT_LANG: Record<string, string> = {
   ts: 'TypeScript', tsx: 'TypeScript', mts: 'TypeScript', cts: 'TypeScript',
   js: 'JavaScript', jsx: 'JavaScript', mjs: 'JavaScript', cjs: 'JavaScript',
@@ -259,8 +234,6 @@ function languageOf(fileName: string): string | undefined {
   return EXT_LANG[ext];
 }
 
-/** 遍历解压产物，按扩展名聚合各语言的字节数（跳过 node_modules / .git / 符号链接）。
- *  异步遍历：大快照同步 statSync 数万次同样会冻结事件循环。 */
 export async function collectLanguageStats(dir: string): Promise<Record<string, number>> {
   const stats: Record<string, number> = {};
   const walk = async (current: string): Promise<void> => {
@@ -290,7 +263,6 @@ export async function collectLanguageStats(dir: string): Promise<Record<string, 
   return stats;
 }
 
-/** 汇总目录体积（7z worker 落盘监控用；目录尚不存在返回 0） */
 async function directoryBytes(dir: string): Promise<number> {
   let entries: fs.Dirent[];
   try {
@@ -313,17 +285,11 @@ async function directoryBytes(dir: string): Promise<number> {
   return total;
 }
 
-/**
- * 7Z / RAR：解压放独立 worker（callMain 同步阻塞且不可中断，放主线程会整段冻结还没法限时）。
- * 主线程对 worker 双保险：整体超时 terminate；每秒轮询落盘体积、超限 terminate。
- * 体积上限因此是准实时的（轮询间隔内的增量仍可能落盘，失败时随半成品目录一起清理）。
- */
 async function extractSevenZ(buffer: Buffer, destDir: string, fileName: string): Promise<void> {
   const ext = path.extname(fileName).toLowerCase() || '.7z';
   let abortReason: string | null = null;
   let abortCode: string | null = null;
   const worker = new Worker(path.join(import.meta.dirname, 'seven-z-worker.mjs'));
-  // worker 侧以 parentPort.on('message') 为入口：先建 Worker 再投递任务（加载期的消息会被缓存）
   worker.postMessage({ buffer, ext, destDir });
   try {
     const result = await new Promise<{ ok: boolean; message?: string }>((resolve) => {
@@ -350,8 +316,6 @@ async function extractSevenZ(buffer: Buffer, destDir: string, fileName: string):
         settle({ ok: false, message: error instanceof Error ? error.message : String(error) });
       });
       worker.once('exit', (exitCode) => {
-        // worker 没发消息就退出（崩溃或被系统回收）时也必须 settle，
-        // 否则这个 Promise 永不落地，项目的导入互斥会一直 409 到重启
         settle({ ok: false, message: abortReason ?? `解压线程意外退出（code ${exitCode}）` });
       });
     });
@@ -366,7 +330,6 @@ async function extractSevenZ(buffer: Buffer, destDir: string, fileName: string):
   }
 }
 
-/** 按扩展名分发解压，返回文件数；失败时清理半成品目录 */
 export async function extractArchive(
   buffer: Buffer,
   destDir: string,
@@ -386,7 +349,6 @@ export async function extractArchive(
   } catch (error) {
     fs.rmSync(destDir, { recursive: true, force: true });
     if (error instanceof HttpError) throw error;
-    // adm-zip 等解析库抛的是普通 Error（如损坏的 ZIP），统一按 400 客户端错误回传
     throw new HttpError(
       400,
       `压缩包解压失败：${error instanceof Error ? error.message : String(error)}`,

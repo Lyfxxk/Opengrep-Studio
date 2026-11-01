@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Opengrep Studio 一键启动（macOS / Linux），与 Windows 的 一键启动（Windows）.bat 等价：
-# 校验 Node 版本 → 缺依赖时自动安装 → 拉起前后端；Ctrl+C 停止全部服务。
-# 首次使用请先执行 `npm run setup:engine` 下载扫描引擎（约 50MB，按平台自动选择）。
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -59,8 +56,6 @@ echo "    端口被占用时自动顺延：绝不终止已在运行的实例（�
 echo "    提示：Ctrl+C 停止本次启动的全部服务"
 echo "[5/5] 前端就绪后将自动打开浏览器（后台探测进行中）"
 (
-  # 后台探测：只打开「本次新出现」的前端端口。dev.mjs 在 1022 被别的实例占用时会顺延到 1023+，
-  # 固定打开 1022 会把别人的实例当成自己的（与 Windows .bat 的 BEFORE 快照同口径）。
   listening_ports() {
     node -e '
       const net = require("node:net");

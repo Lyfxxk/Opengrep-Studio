@@ -36,7 +36,6 @@ export default function RulePackContentDialog({
 
   useEffect(() => {
     if (!open || !pack) return;
-    // 竞态守卫：切换包时晚到的旧响应不得覆盖新包内容
     let cancelled = false;
     setEditing(false);
     setLoading(true);

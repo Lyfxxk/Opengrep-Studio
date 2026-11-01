@@ -76,7 +76,6 @@ const VERDICT_CLASSES: Record<string, string> = {
   unverified: 'text-muted-foreground',
 };
 
-/** 已知判定值翻键翻译，未知值原样展示 */
 function verdictLabel(
   v: string,
   t: (key: 'rulePacks.verdictPass' | 'rulePacks.verdictFail' | 'rulePacks.verdictError' | 'rulePacks.verdictUnverified') => string,
@@ -95,7 +94,6 @@ export default function RulePackTab() {
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState<IRulePack | null>(null);
   const [deleteRefCount, setDeleteRefCount] = useState(0);
-  // 停用确认：停用的包会被 buildConfigPlan 静默跳过（全部停用才报错），必须先让用户看到引用面
   const [toggleTarget, setToggleTarget] = useState<IRulePack | null>(null);
   const [toggleRefCount, setToggleRefCount] = useState(0);
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -108,7 +106,6 @@ export default function RulePackTab() {
   const [builtinOpen, setBuiltinOpen] = useState(false);
   const [checking, setChecking] = useState<IRulePack | null>(null);
   const [checkResult, setCheckResult] = useState<IRulePackCheckResult | null>(null);
-  // 列表没取到 ≠ 包不存在：深链此时不能报「已删除」，也不能清掉 ?pack（恢复后还能接着用）
   const [loadFailed, setLoadFailed] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
@@ -130,15 +127,11 @@ export default function RulePackTab() {
     void loadAll();
   }, [loadAll]);
 
-  // 扫描结果页的「本次扫描规则包」浮层带 ?pack=<id> 深链进来：列表加载完成后直接打开该包的
-  // 内容查看对话框，而不是只落到列表页让用户自己找。
-  // 命中后清掉参数：留着会让每次刷新重复弹窗，也会挡住手动打开别的包。
   useEffect(() => {
     const packId = searchParams.get('pack');
     if (!packId || loading || loadFailed) return;
     const target = rulePacks.find((pack) => pack.id === packId);
     if (target) {
-      // 内置包默认折叠，不展开的话用户关掉对话框会以为深链没生效
       if (target.builtin) setBuiltinOpen(true);
       setContentTarget(target);
     } else {
@@ -149,7 +142,6 @@ export default function RulePackTab() {
     setSearchParams(next, { replace: true });
   }, [loading, loadFailed, rulePacks, searchParams, setSearchParams, t]);
 
-  /** 内容对话框的关闭回调：稳定引用，避免 RulePackContentDialog 的加载 effect 因新函数引用重跑 */
   const handleContentDialogOpenChange = useCallback((open: boolean) => {
     if (!open) setContentTarget(null);
   }, []);
@@ -164,7 +156,6 @@ export default function RulePackTab() {
   };
 
   const handleToggle = async (pack: IRulePack, enabled: boolean) => {
-    // 启用方向无需确认；停用方向先查被多少配置引用，有引用时弹确认说明漏报影响
     if (enabled) {
       await performToggle(pack, enabled);
       return;
@@ -190,7 +181,6 @@ export default function RulePackTab() {
   };
 
   const handleFileChange = (file: File | undefined) => {
-    // 先清空选择：非法文件被拒后用户重选同一个文件时，input 不清空不会再触发 change
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -242,7 +232,6 @@ export default function RulePackTab() {
   };
 
   const handleImportZip = (file: File | undefined) => {
-    // 与上传入口同口径：先清空 input，非法 zip 被拒后还能重新选中同一个文件
     if (importInputRef.current) {
       importInputRef.current.value = '';
     }
@@ -259,7 +248,6 @@ export default function RulePackTab() {
     api
       .importRulePack(file)
       .then((pack) => {
-        // 服务端可能附带跳过/告警信息，有话才弹；导入结果列表里已经可见
         if (pack.message) toast.success(pack.message);
         return loadAll();
       })
@@ -273,7 +261,6 @@ export default function RulePackTab() {
     window.open(api.exportRulePackUrl(pack.id), '_blank');
   };
 
-  // 质量检查请求序号：检查耗时数十秒，期间关闭对话框或改查别的包时，晚到的旧响应不得覆盖新状态
   const checkSeqRef = useRef(0);
 
   const handleCheck = async (pack: IRulePack) => {
@@ -303,13 +290,10 @@ export default function RulePackTab() {
     }
   };
 
-  // 自定义包是日常工作区，始终展示；内置包随项目分发，默认收纳
   const customPacks = rulePacks.filter((pack) => !pack.builtin);
   const builtinPacks = rulePacks.filter((pack) => pack.builtin);
   const builtinRuleTotal = builtinPacks.reduce((sum, pack) => sum + pack.ruleCount, 0);
 
-  // 分页：自定义包表格与内置包卡片流各自翻页，删行 / 导入后夹页码防空页
-  // 卡片流是 1/2 列栅格，10 条正好 5 行，与其余列表同口径
   const {
     page: safeCustomPage,
     setPage: setCustomPage,
@@ -323,12 +307,10 @@ export default function RulePackTab() {
     slice: pagedBuiltinPacks,
   } = usePagedList(builtinPacks, LIST_PAGE_SIZE);
 
-  // 批量删除只覆盖自定义包表格（内置包在下方以卡片流呈现，不参与勾选）
   const selection = useRowSelection(customPacks.map((pack) => pack.id));
   const [batchConfirmOpen, setBatchConfirmOpen] = useState(false);
   const [batchDeleting, setBatchDeleting] = useState(false);
 
-  // 逐个调用单删接口：某一项失败不影响其余项，最后汇总报数
   const handleBatchDelete = async () => {
     const ids = [...selection.selected];
     setBatchConfirmOpen(false);
@@ -366,7 +348,6 @@ export default function RulePackTab() {
     </TableHeader>
   );
 
-  // 仅自定义包使用表格；内置包在下方以卡片流呈现
   const renderPackRow = (pack: IRulePack) => (
     <TableRow key={pack.id}>
       <TableCell className="w-10">
@@ -531,7 +512,7 @@ export default function RulePackTab() {
         </Card>
       ) : (
         <>
-          {/* 自定义规则包：用户自己的资产（可编辑 / 导出 / 删除），独立一张卡 */}
+          {}
           <Card className="overflow-hidden">
             <div className="flex items-center gap-2 border-b bg-muted/20 px-4 py-2.5">
               <PackageOpen className="size-4 shrink-0 text-primary" />
@@ -564,8 +545,7 @@ export default function RulePackTab() {
             </CardContent>
           </Card>
 
-          {/* 内置规则包：随项目分发的只读资产，与自定义包平级但另起一张卡。
-              原先嵌在自定义表格卡内、还用缩进竖线冒充父子层级，视觉上像被塞进表格的一行 */}
+          {}
           <Card className="overflow-hidden">
             <button
               type="button"
@@ -645,14 +625,14 @@ export default function RulePackTab() {
         </>
       )}
 
-      {/* 在线创建 */}
+      {}
       <RulePackCreateDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
         onCreated={() => void loadAll()}
       />
 
-      {/* 查看 / 编辑 */}
+      {}
       <RulePackContentDialog
         open={contentTarget !== null}
         onOpenChange={handleContentDialogOpenChange}
@@ -660,7 +640,7 @@ export default function RulePackTab() {
         onSaved={() => void loadAll()}
       />
 
-      {/* 上传确认 */}
+      {}
       <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
@@ -704,12 +684,11 @@ export default function RulePackTab() {
         </DialogContent>
       </Dialog>
 
-      {/* 质量检查结果 */}
+      {}
       <Dialog
         open={checking !== null}
         onOpenChange={(open) => {
           if (!open) {
-            // 递增序号让在途请求的迟到响应作废，避免结果窗口重开后闪现旧包的检查结果
             checkSeqRef.current += 1;
             setChecking(null);
             setCheckResult(null);

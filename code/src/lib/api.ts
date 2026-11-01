@@ -26,7 +26,6 @@ import {
   savePackContents,
 } from '@/lib/storage';
 
-/** 当前界面语言 → 服务端产物语言：zh / zh-Hant / en 三种，其余语言回落简体 */
 function productLang(): string {
   const lang = (i18n.resolvedLanguage ?? i18n.language).toLowerCase();
   if (lang.startsWith('zh-hant')) return 'zh-Hant';
@@ -34,10 +33,6 @@ function productLang(): string {
   return 'zh';
 }
 
-// 演示模式开关：只认显式的 'true' / '1'，避免 VITE_USE_MOCK=false 被 Boolean('false') 误判为开。
-// 刻意写成对 import.meta.env.VITE_USE_MOCK 的直接比较（不用 env?. 兜底取值）：构建期 Vite 会把
-// 该成员访问替换为字面量，压缩器随之把整个开关折叠成常量，所有 if (USE_MOCK) 分支连同 mock
-// 数据一起被摇树剔除；未设变量时运行期判定结果与原先的 includes 写法完全一致。
 export const USE_MOCK =
   import.meta.env.VITE_USE_MOCK === 'true' || import.meta.env.VITE_USE_MOCK === '1';
 
@@ -45,12 +40,6 @@ interface ApiErrorShape {
   error?: { message?: string; code?: string; params?: Record<string, unknown> };
 }
 
-/**
- * 后端错误码 → 当前语言文案：code 是前后端契约（键见 i18n 资源 apiErrors 组）。
- * 键由后端契约动态决定、无法枚举进 t() 的类型系统，故对 t 做局部宽化；
- * defaultValue 兜底保证前后端版本错位时退回后端原文而不是显示裸键名。
- */
-/** 按当前界面语言重拼后端错误；无 code（旧数据/意外异常）时回落后端原文 */
 export function translateApiError(
   code: string | undefined,
   params: Record<string, unknown> | undefined,
@@ -62,7 +51,6 @@ export function translateApiError(
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  // FormData 由浏览器自动生成 multipart 边界，手动设置 Content-Type 会破坏上传
   const isFormData = typeof FormData !== 'undefined' && init?.body instanceof FormData;
   const res = await fetch(path, {
     ...init,
@@ -135,7 +123,6 @@ type ProjectInput = {
   description: string;
 };
 
-/** 上传条目：压缩包为单条（无 relativePath）；文件夹/多文件时 relativePath 为目录内相对路径 */
 export interface UploadItem {
   file: File;
   relativePath?: string;
@@ -152,7 +139,6 @@ export interface ConfigFormValues {
   maxTargetBytes: number;
 }
 
-/** 规则实验室的单处命中 */
 export interface RuleLabMatch {
   ruleId: string;
   checkId: string;
@@ -162,11 +148,9 @@ export interface RuleLabMatch {
   severity: string;
   message: string;
   matchedLines?: string;
-  /** taint 规则命中的污点传播链 */
   taintFlow?: ITaintStep[];
 }
 
-/** 规则实验室运行结果：pass=正例命中且反例无误报；fail=漏报/误报；error=规则或引擎出错 */
 export interface RuleLabRunResult {
   verdict: 'pass' | 'fail' | 'error';
   ruleIds: string[];
@@ -179,26 +163,19 @@ export interface RuleLabRunResult {
   engineErrors: string[];
 }
 
-/** /api/health 响应；ok 恒为 true 仅表示服务存活，引擎可用性看 engine 是否为 'MISSING' */
 export interface HealthInfo {
   ok: boolean;
   platform?: string;
   arch?: string;
-  /** 实际探测到的引擎版本（引擎缺失或存在但无法执行时为 undefined，此时 engineHint 附修复指引） */
   engineVersion?: string;
-  /** 清单钉住的版本（engines.json，或已升级后的 installed.json） */
   enginePinnedVersion?: string;
-  /** 引擎是否由本应用安装并管理（env / PATH 来源为 false，不支持一键升级） */
   engineManaged?: boolean;
   engineSource?: string;
-  /** 引擎来源的中文标注 */
   engineSourceLabel?: string;
-  /** 解析后的引擎路径；未找到时为 'MISSING'，并附 engineHint 修复指引 */
   engine?: string;
   engineHint?: string;
 }
 
-/** 引擎更新检查结果（GET /api/engine/update） */
 export interface IEngineUpdateInfo {
   current?: string;
   pinned?: string;
@@ -210,13 +187,10 @@ export interface IEngineUpdateInfo {
   releaseUrl?: string;
   publishedAt?: string;
   checkedAt: string;
-  /** 不可升级的人话原因 */
   reason?: string;
-  /** 上游不可达等网络异常说明 */
   error?: string;
 }
 
-/** 一键升级进度（POST/GET /api/engine/upgrade） */
 export interface IEngineUpgradeState {
   state: 'idle' | 'running' | 'done' | 'error';
   phase?: 'downloading' | 'verifying' | 'installing';
@@ -228,10 +202,8 @@ export interface IEngineUpgradeState {
   finishedAt?: string;
 }
 
-/** mock 扫描从发起到完成的时长；读取时按 scannedAt 惰性收敛，刷新页面/丢失定时器也不会永久卡在 scanning */
 const MOCK_SCAN_DURATION_MS = 3000;
 
-/** mock 扫描完成时的问题数：与 listIssues 的回退样本口径一致（不含已修复项）；按需计算，模块加载时不扫样本 */
 function mockScanIssueCount(): number {
   return MOCK_ISSUES.filter(
     (issue) => issue.scanId === '2' && issue.comparisonStatus !== 'fixed',
@@ -257,7 +229,6 @@ function materializeMockScans(): IScanResult[] {
   return settled;
 }
 
-/** 演示模式的复核结论合并进问题列表（与服务端 issues 接口口径一致：待复核不返回 review 字段） */
 function withMockReviews(issues: IIssue[], projectId?: string): IIssue[] {
   const reviews = loadReviews().filter((review) => !projectId || review.projectId === projectId);
   if (reviews.length === 0) return issues;
@@ -277,7 +248,6 @@ function withMockReviews(issues: IIssue[], projectId?: string): IIssue[] {
   });
 }
 
-/** 演示模式粗算 YAML 规则条数（统计顶格 `- id:` 条目；仅用于展示，不做校验） */
 function countMockRules(yamlText: string): number {
   return [...yamlText.matchAll(/^\s*-\s+id:\s*(\S+)/gm)].length || 1;
 }
@@ -318,7 +288,6 @@ export const api = {
     },
   ): Promise<IProject> {
     if (USE_MOCK) {
-      // null → undefined 归一，保持 localStorage 里的 IProject 形状（可选字段不能存 null）
       const next = loadProjects().map((item) =>
         item.id === id
           ? {
@@ -345,7 +314,6 @@ export const api = {
 
   async deleteProject(id: string): Promise<void> {
     if (USE_MOCK) {
-      // 与服务端删除语义一致：级联清理该项目下的扫描记录
       saveProjects(loadProjects().filter((item) => item.id !== id));
       saveScans(loadScans().filter((scan) => scan.projectId !== id));
       return;
@@ -361,7 +329,6 @@ export const api = {
     fileName: string;
     fileSize: number;
     fileCount: number;
-    /** 按 .gitignore 忽略规则剪枝掉的文件数（关闭过滤时为 0） */
     ignoredCount?: number;
     languageStats?: Record<string, number>;
   }> {
@@ -386,7 +353,6 @@ export const api = {
     formData.append('respectGitignore', String(options?.respectGitignore ?? true));
     const single = items.length === 1 && !items[0].relativePath ? items[0] : null;
     if (single) {
-      // 单个压缩包走原有 file 字段
       formData.append('file', single.file);
     } else {
       for (const { file, relativePath } of items) {
@@ -397,7 +363,6 @@ export const api = {
     return uploadWithProgress(`/api/projects/${projectId}/source`, formData, options?.onProgress);
   },
 
-  /** 从 Git 仓库 URL 浅克隆源码（服务端执行 git clone --depth 1），与上传源码等效 */
   cloneSource(projectId: string, url: string, ref?: string): Promise<{
     url: string;
     ref: string;
@@ -500,13 +465,11 @@ export const api = {
     return request<IReportData>(`/api/scans/${scanId}/report`);
   },
 
-  /** 自包含 HTML 报告的下载地址（含严重/高危问题的代码片段）：带上当前语言，报告正文与文件名同步本地化 */
   scanReportHtmlUrl(scanId: string): string {
     return `/api/scans/${scanId}/report?format=html&lang=${productLang()}`;
   },
 
 
-  /** 规则实验室：提交规则 YAML + 正/反例样本，返回三态判定与命中明细 */
   ruleLabRun(input: {
     yaml: string;
     positive: string;
@@ -647,7 +610,6 @@ export const api = {
     });
   },
 
-  /** 在线创建规则包；带 samples 时落成可移植目录包（样本随包分发，可一键质量检查） */
   createRulePack(
     name: string,
     language: string,
@@ -726,7 +688,6 @@ export const api = {
   },
 
   async countConfigsUsingRulePack(rulePackId: string): Promise<number> {
-    // 用 api.listConfigs 而不是 this：调用方一旦解构方法，this 绑定就丢了
     const configs = await api.listConfigs();
     return configs.filter((config) => config.rulePackIds.includes(rulePackId)).length;
   },
@@ -746,10 +707,8 @@ export const api = {
     await request<void>(`/api/rulepacks/${id}`, { method: 'DELETE' });
   },
 
-  /** 导入可移植规则包 zip（含 pack.yaml 清单与可选样本），也接受单个 YAML 的压缩包 */
   importRulePack(file: File): Promise<IRulePack & { message?: string }> {
     if (USE_MOCK) {
-      // 演示模式不解析 zip，按文件名登记一个 basic 档包
       const name = file.name.replace(/\.zip$/i, '');
       const pack: IRulePack & { message?: string } = {
         id: `rp-${Date.now()}`,
@@ -775,12 +734,10 @@ export const api = {
     });
   },
 
-  /** 导出可移植规则包 zip 的下载地址 */
   exportRulePackUrl(id: string): string {
     return `/api/rulepacks/${id}/export`;
   },
 
-  /** 质量检查：逐规则跑正反例样本（复用规则实验室引擎链路） */
   checkRulePack(id: string): Promise<IRulePackCheckResult> {
     if (USE_MOCK) {
       const pack = loadRulePacks().find((item) => item.id === id);
@@ -815,7 +772,6 @@ export const api = {
     return request(`/api/rulepacks/${id}/check`, { method: 'POST' });
   },
 
-  /** 人工复核：以 (项目, fingerprint) 为键设置结论，跨扫描继承 */
   setReview(
     projectId: string,
     fingerprint: string,
@@ -842,7 +798,6 @@ export const api = {
     });
   },
 
-  /** 清除复核结论（回到待复核） */
   async clearReview(projectId: string, fingerprint: string): Promise<void> {
     if (USE_MOCK) {
       saveReviews(
@@ -857,13 +812,11 @@ export const api = {
     });
   },
 
-  /** 全量扫描列表（跨项目对比候选池 / 扫描中心） */
   listAllScans(): Promise<IScanResult[]> {
     if (USE_MOCK) return Promise.resolve(materializeMockScans());
     return request('/api/scans');
   },
 
-  /** 删除单条扫描（问题明细与源码快照一并移除；进行中的扫描后端返回 409） */
   async deleteScan(id: string): Promise<void> {
     if (USE_MOCK) {
       saveScans(loadScans().filter((scan) => scan.id !== id));
@@ -872,10 +825,8 @@ export const api = {
     await request<void>(`/api/scans/${id}`, { method: 'DELETE' });
   },
 
-  /** 取消进行中的扫描（与删除区分：记录保留、落 failed 供查看原因；排队中的立即失败，运行中的先终止引擎） */
   async cancelScan(id: string): Promise<void> {
     if (USE_MOCK) {
-      // 演示模式扫描本就会在数秒后自动完成，这里同样只做状态收敛：落 failed 并保留记录
       saveScans(
         loadScans().map((scan) =>
           scan.id === id && scan.status === 'scanning'
@@ -888,7 +839,6 @@ export const api = {
     await request<void>(`/api/scans/${id}/cancel`, { method: 'POST' });
   },
 
-  /** 健康检查（引擎版本与解析来源）；演示模式下无后端，直接标记引擎缺失 */
   getHealth(): Promise<HealthInfo> {
     if (USE_MOCK) {
       return Promise.resolve({
@@ -900,7 +850,6 @@ export const api = {
     return request('/api/health');
   },
 
-  /** 检查引擎更新（force=true 跳过服务端 30 分钟缓存） */
   checkEngineUpdate(force = false): Promise<IEngineUpdateInfo> {
     if (USE_MOCK) {
       return Promise.resolve({
@@ -913,12 +862,10 @@ export const api = {
     return request(`/api/engine/update${force ? '?refresh=1' : ''}`);
   },
 
-  /** 一键升级进度（升级在后台跑，靠轮询拿百分比） */
   engineUpgradeState(): Promise<IEngineUpgradeState> {
     return request('/api/engine/upgrade');
   },
 
-  /** 发起一键升级；失败（扫描中 / 已是最新 / 上游不可达）会抛出可读错误 */
   startEngineUpgrade(): Promise<IEngineUpgradeState> {
     if (USE_MOCK) {
       return Promise.reject(new Error(i18n.t('api.demoUpgradeUnsupported')));
@@ -926,7 +873,6 @@ export const api = {
     return request('/api/engine/upgrade', { method: 'POST' });
   },
 
-  /** 双快照对比：问题级 + 文件级 */
   getScanDiff(scanId: string, againstId: string): Promise<IScanDiff> {
     if (USE_MOCK) {
       const current = mockIssuesForScan(scanId);
@@ -984,7 +930,6 @@ export const api = {
     return request(`/api/scans/${scanId}/diff?${params.toString()}`);
   },
 
-  /** 规则知识库条目：服务端按 lang 返回简体或繁体说明 */
   getRuleKnowledge(ruleId: string, lang: string): Promise<IRuleKnowledge> {
     if (USE_MOCK) {
       const hits = MOCK_ISSUES.filter((issue) => issue.ruleId === ruleId);
@@ -1001,12 +946,10 @@ export const api = {
     );
   },
 
-  /** SARIF 2.1.0 导出下载地址（GitHub Code Scanning / DefectDojo 等工具链可消费） */
   scanSarifUrl(scanId: string): string {
     return `/api/scans/${scanId}/sarif`;
   },
 
-  /** 导入外部 SARIF 结果：生成本项目的一条"已完成"扫描，可设基线参与对比 */
   importSarif(projectId: string, file: File, baselineScanId?: string): Promise<IScanResult> {
     const formData = new FormData();
     formData.append('file', file);
@@ -1017,7 +960,6 @@ export const api = {
     });
   },
 
-  /** 扫描可复现清单（源码哈希 + 引擎命令行 + 规则哈希 + 参数快照） */
   scanManifestUrl(scanId: string): string {
     return `/api/scans/${scanId}/manifest?lang=${productLang()}`;
   },
