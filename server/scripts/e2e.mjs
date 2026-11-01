@@ -900,6 +900,15 @@ assert(
 assert(
   typeof manifest.commandLine === 'string' && manifest.commandLine.includes(' scan '),
   'manifest 引擎命令行', manifest.commandLine);
+// 隐私护栏：清单是对外交付物，本机绝对路径（连带账户名与目录层级）必须折叠成 <repo>/xxx。
+// 判定口径与 report.ts 的 isAbsolutePathToken 一致：裸 token 或带引号 token 以 盘符: / \ 开头
+const absToken = /(?:^|\s)(?:"|')?(?:[A-Za-z]:[\\/]|[\\/])/;
+assert(
+  manifest.commandLine.includes('<repo>/') && !absToken.test(manifest.commandLine),
+  'manifest 命令行已折叠本机绝对路径', manifest.commandLine);
+assert(
+  typeof manifest.engine?.binary === 'string' && !/[\\/]/.test(manifest.engine.binary),
+  'manifest 引擎只留文件名', manifest.engine.binary);
 assert(
   Array.isArray(manifest.config?.ruleFiles) && manifest.config.ruleFiles.length > 0
     && manifest.config.ruleFiles.every((f) => /^[0-9a-f]{64}$/.test(f.sha256)),
