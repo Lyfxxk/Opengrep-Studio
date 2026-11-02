@@ -2,7 +2,6 @@ import { useRef, useState, type DragEvent, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { CheckCircle2, FileArchive, GitBranch, RotateCcw, Upload } from 'lucide-react';
-import LanguageStatsBar from '@/components/LanguageStatsBar';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -23,6 +22,41 @@ const MAX_FILE_SIZE = 200 * 1024 * 1024;
 const MAX_FILE_COUNT = 50000;
 
 const ARCHIVE_RE = /\.(zip|7z|rar|tar|tar\.gz|tgz)$/i;
+
+const LANG_COLORS: Record<string, string> = {
+  TypeScript: '#3178c6',
+  JavaScript: '#f1e05a',
+  Vue: '#41b883',
+  HTML: '#e34c26',
+  CSS: '#563d7c',
+  SCSS: '#c6538c',
+  Less: '#cc6699',
+  Python: '#3572A5',
+  Java: '#b07219',
+  Go: '#00ADD8',
+  Ruby: '#701516',
+  PHP: '#4F5D95',
+  Rust: '#dea584',
+  Kotlin: '#A97BFF',
+  Swift: '#F05138',
+  C: '#555555',
+  'C++': '#f34b7d',
+  'C#': '#178600',
+  Shell: '#89e051',
+  Dockerfile: '#384d54',
+  SQL: '#e38c00',
+  YAML: '#cb171e',
+  JSON: '#40566e',
+  Markdown: '#083fa1',
+  XML: '#0060ac',
+  TOML: '#9c4221',
+  INI: '#d1dbe0',
+  Gradle: '#02303a',
+};
+
+const FALLBACK_COLORS = ['#8b949e', '#a371f7', '#7ee787', '#ffa657', '#79c0ff', '#f778ba'];
+
+const TOP_N = 6;
 
 interface UploadZoneProps {
   state: UploadZoneState;
@@ -90,6 +124,54 @@ async function collectFromDataTransfer(dt: DataTransfer): Promise<{
     await walkEntry(entry, '');
   }
   return { items: out, rootCount: entries.length, rootArchiveCount };
+}
+
+function LanguageStatsBar({ stats }: { stats: Record<string, number> }) {
+  const { t } = useTranslation();
+  const total = Object.values(stats).reduce((sum, bytes) => sum + bytes, 0);
+  if (total <= 0) return null;
+  const sorted = Object.entries(stats).sort((a, b) => b[1] - a[1]);
+  const head = sorted.slice(0, TOP_N).map(([language, bytes], index) => ({
+    language,
+    percent: (bytes / total) * 100,
+    color: LANG_COLORS[language] ?? FALLBACK_COLORS[index % FALLBACK_COLORS.length],
+  }));
+  const rest = sorted.slice(TOP_N).reduce((sum, [, bytes]) => sum + bytes, 0);
+  if (rest > 0) {
+    const fallbackIndex = TOP_N % FALLBACK_COLORS.length;
+    head.push({ language: 'Other', percent: (rest / total) * 100, color: FALLBACK_COLORS[fallbackIndex] });
+  }
+
+  return (
+    <div className="min-w-0">
+      <div className="flex h-2 w-full overflow-hidden rounded-full">
+        {head.map((seg) => (
+          <span
+            key={seg.language}
+            style={{ width: `${seg.percent}%`, backgroundColor: seg.color }}
+            className="h-full"
+          />
+        ))}
+      </div>
+      <div className="mt-2.5 flex flex-wrap gap-x-5 gap-y-1.5">
+        {head.map((seg) => (
+          <span key={seg.language} className="flex items-center gap-1.5 text-xs">
+            <span
+              className="inline-block size-2.5 rounded-full"
+              style={{ backgroundColor: seg.color }}
+            />
+            <span className="font-medium">{seg.language}</span>
+            <span className="tabular-nums text-muted-foreground">
+              {seg.percent.toFixed(1)}%
+            </span>
+          </span>
+        ))}
+        <span className="text-xs text-muted-foreground">
+          {t('langStats.total', { kb: (total / 1000).toFixed(1) })}
+        </span>
+      </div>
+    </div>
+  );
 }
 
 export default function UploadZone({
