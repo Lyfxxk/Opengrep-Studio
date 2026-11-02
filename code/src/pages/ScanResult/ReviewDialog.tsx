@@ -102,7 +102,7 @@ export default function ReviewDialog({ projectId, issue, onClose, onSaved }: Rev
         <div className="space-y-4">
           <div className="rounded-lg border bg-muted/40 px-3 py-2 text-xs">
             <p className="truncate font-mono text-muted-foreground" title={issue?.filePath ?? ''}>
-              {issue?.filePath}:{issue?.startLine}
+              {issue?.filePath || t('issues.unknownPath')}:{issue?.startLine}
             </p>
             <p className="mt-1 font-mono text-muted-foreground">{issue?.ruleId}</p>
           </div>

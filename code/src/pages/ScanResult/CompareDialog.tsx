@@ -53,7 +53,7 @@ function IssueDiffTable({ list }: { list: IScanDiffIssueList }) {
           {list.items.map((item, index) => (
             <tr key={`${item.filePath}-${item.startLine}-${index}`} className="border-t">
               <td className="break-all px-3 py-1.5 font-mono">
-                {item.filePath}:{item.startLine}
+                {item.filePath || t('issues.unknownPath')}:{item.startLine}
               </td>
               <td className="px-3 py-1.5 font-mono">{item.ruleId}</td>
               <td className="px-3 py-1.5">
@@ -61,7 +61,9 @@ function IssueDiffTable({ list }: { list: IScanDiffIssueList }) {
                   {t(`severity.${item.severity}`)}
                 </Badge>
               </td>
-              <td className="max-w-[280px] truncate px-3 py-1.5 text-muted-foreground">{item.message}</td>
+              <td className="max-w-[280px] truncate px-3 py-1.5 text-muted-foreground">
+                {item.message || t('issues.noDescription')}
+              </td>
             </tr>
           ))}
         </tbody>

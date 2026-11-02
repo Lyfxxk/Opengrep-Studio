@@ -317,10 +317,10 @@ export default function IssueFilterList({
                   )}
                 </div>
                 <p className="mt-2 text-sm font-medium">
-                  {lookupRuleMessage(messageMap, issue.ruleId, issue.message)}
+                  {lookupRuleMessage(messageMap, issue.ruleId, issue.message) || t('issues.noDescription')}
                 </p>
                 <p className="mt-1 truncate font-mono text-xs text-muted-foreground">
-                  {issue.filePath}:{issue.startLine}
+                  {issue.filePath || t('issues.unknownPath')}:{issue.startLine}
                 </p>
               </button>
             </div>

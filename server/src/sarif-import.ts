@@ -108,7 +108,7 @@ function messageOf(result: SarifResult, rule: SarifRule | undefined): string {
   const text = result.message?.text?.trim() || result.message?.markdown?.trim();
   if (text) return text;
   const fromRule = rule?.shortDescription?.text?.trim() || rule?.fullDescription?.text?.trim();
-  return fromRule || '（SARIF 结果未提供描述）';
+  return fromRule || '';
 }
 
 export function parseSarifImport(text: string): SarifImportResult {
@@ -174,7 +174,7 @@ export function parseSarifImport(text: string): SarifImportResult {
         severity: severityOf(result),
         comparisonStatus: 'remaining',
         message: messageOf(result, rule),
-        filePath: uri || '（未知路径）',
+        filePath: uri,
         startLine,
         endLine,
         matchedLines: undefined,
@@ -184,5 +184,5 @@ export function parseSarifImport(text: string): SarifImportResult {
     }
   }
 
-  return { toolName: toolName || '未知工具', issues };
+  return { toolName, issues };
 }

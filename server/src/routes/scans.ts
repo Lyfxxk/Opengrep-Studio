@@ -455,7 +455,7 @@ scanRoutes.post(
       scannedAt: new Date().toISOString(),
       finishedAt: new Date().toISOString(),
       baselineScanId,
-      rules: `SARIF 导入（${toolName}）`,
+      rules: toolName ? `SARIF 导入（${toolName}）` : 'SARIF 导入',
       fileCount: 0,
     };
     for (const issue of issues) issue.scanId = scan.id;
