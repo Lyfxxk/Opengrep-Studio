@@ -3,9 +3,9 @@ import path from 'node:path';
 import { load as yamlLoad, dump as yamlDump } from 'js-yaml';
 import { config } from './config.js';
 import { HttpError } from './errors.js';
-import { engineInstallHint, runEngine } from './engine.js';
+import { engineInstallHint, engineInstallHintInfo, runEngine } from './engine.js';
 import { relativizeToRoot, stripRuleIdPrefix } from './engine-output.js';
-import { parseRuleYaml } from './rule-yaml.js';
+import { parseRuleYaml, RuleYamlError } from './rule-yaml.js';
 import { readSampleText, scanPackSamples } from './pack-format.js';
 import { collectRuleFiles } from './rulepacks.js';
 import { extractTaintFlow, relativizeTaintFlow, type TaintStep } from './taint.js';
@@ -55,6 +55,12 @@ interface RuleLabSampleResult {
   matches: RuleLabMatch[];
 }
 
+export interface LabFailure {
+  code: string;
+  params?: Record<string, unknown>;
+  message: string;
+}
+
 export interface RuleLabRunResult {
   verdict: 'pass' | 'fail' | 'error';
   ruleIds: string[];
@@ -62,8 +68,10 @@ export interface RuleLabRunResult {
   durationMs: number;
   positive: RuleLabSampleResult;
   negative: RuleLabSampleResult;
-  failReasons: string[];
+  failures: LabFailure[];
   error?: string;
+  errorCode?: string;
+  errorParams?: Record<string, unknown>;
   engineErrors: string[];
 }
 
@@ -86,9 +94,9 @@ interface EngineOutput {
 }
 
 function errorResult(
-  partial: Partial<RuleLabRunResult>,
-  message: string,
+  failure: { code: string; params?: Record<string, unknown>; message: string },
   startedAt: number,
+  partial: Partial<RuleLabRunResult> = {},
 ): RuleLabRunResult {
   return {
     verdict: 'error',
@@ -97,8 +105,10 @@ function errorResult(
     durationMs: Date.now() - startedAt,
     positive: { provided: false, matches: [] },
     negative: { provided: false, matches: [] },
-    failReasons: [],
-    error: message,
+    failures: [],
+    error: failure.message,
+    errorCode: failure.code,
+    ...(failure.params ? { errorParams: failure.params } : {}),
     engineErrors: [],
     ...partial,
   };
@@ -142,6 +152,9 @@ interface PackCheckItem {
   negativeCount: number;
   verdict: 'pass' | 'fail' | 'error' | 'unverified';
   detail?: string;
+  failures?: LabFailure[];
+  errorCode?: string;
+  errorParams?: Record<string, unknown>;
 }
 
 export interface PackCheckResult {
@@ -168,6 +181,12 @@ export async function runPackCheck(packDir: string): Promise<PackCheckResult> {
       for (const id of parseRuleYaml(text).ruleIds) knownIds.add(id);
     } catch (error) {
       const name = path.relative(packDir, file).replace(/\\/g, '/');
+      if (error instanceof RuleYamlError) {
+        throw new HttpError(400, `规则文件 ${name} 不合法：${error.message}`, {
+          code: 'srv.ruleFileInvalidDetail',
+          params: { name, reasonCode: error.code, reasonParams: error.params },
+        });
+      }
       const reason = error instanceof Error ? error.message : String(error);
       throw new HttpError(400, `规则文件 ${name} 不合法：${reason}`, {
         code: 'srv.ruleFileInvalidDetail',
@@ -200,6 +219,8 @@ export async function runPackCheck(packDir: string): Promise<PackCheckResult> {
           negativeCount,
           verdict: 'unverified',
           detail: `超出单次检查上限（${MAX_SAMPLED_RULES} 条），未验证`,
+          errorCode: 'lab.sampleCapUnverified',
+          errorParams: { limit: MAX_SAMPLED_RULES },
         });
         continue;
       }
@@ -218,17 +239,24 @@ export async function runPackCheck(packDir: string): Promise<PackCheckResult> {
       sawSample = true;
       const detail =
         run.verdict === 'fail'
-          ? run.failReasons.join('；')
+          ? run.failures.map((item) => item.message).join('；')
           : run.verdict === 'error'
             ? run.error ?? run.engineErrors[0] ?? '引擎执行失败'
             : undefined;
+      const errorCode =
+        run.verdict !== 'error'
+          ? undefined
+          : run.errorCode ?? (run.engineErrors.length > 0 ? undefined : 'lab.engineFailed');
       items.push({
         ruleId,
         ruleFile: relFile,
         positiveCount,
         negativeCount,
         verdict: run.verdict,
-        detail,
+        ...(detail ? { detail } : {}),
+        ...(run.verdict === 'fail' && run.failures.length > 0 ? { failures: run.failures } : {}),
+        ...(errorCode ? { errorCode } : {}),
+        ...(run.verdict === 'error' && run.errorParams ? { errorParams: run.errorParams } : {}),
       });
     }
   }
@@ -249,16 +277,31 @@ export async function runRuleLab(
   const startedAt = Date.now();
 
   if (!fs.existsSync(config.opengrepBin)) {
-    return errorResult({}, engineInstallHint(), startedAt);
+    const hint = engineInstallHintInfo();
+    return errorResult({ code: hint.code, params: hint.params, message: engineInstallHint() }, startedAt);
   }
 
   let ruleIds: string[];
   try {
     ruleIds = parseRuleYaml(yamlText).ruleIds;
   } catch (error) {
+    const message = `规则 YAML 不合法：${error instanceof Error ? error.message : String(error)}`;
+    if (error instanceof RuleYamlError) {
+      return errorResult(
+        {
+          code: 'lab.ruleYamlInvalid',
+          params: { reasonCode: error.code, reasonParams: error.params },
+          message,
+        },
+        startedAt,
+      );
+    }
     return errorResult(
-      {},
-      `规则 YAML 不合法：${error instanceof Error ? error.message : String(error)}`,
+      {
+        code: 'srv.ruleYamlInvalid',
+        params: { reason: error instanceof Error ? error.message : String(error) },
+        message,
+      },
       startedAt,
     );
   }
@@ -266,7 +309,11 @@ export async function runRuleLab(
   const positive = samples.positive.trim();
   const negative = samples.negative.trim();
   if (!positive && !negative) {
-    return errorResult({ ruleIds }, '请至少填写一个测试样本（正例或反例）', startedAt);
+    return errorResult(
+      { code: 'lab.samplesRequired', message: '请至少填写一个测试样本（正例或反例）' },
+      startedAt,
+      { ruleIds },
+    );
   }
 
   let language = (languageHint ?? '').trim();
@@ -281,11 +328,15 @@ export async function runRuleLab(
   const ext = LANG_EXT[language.toLowerCase()];
   if (!ext) {
     return errorResult(
-      { ruleIds },
-      language
-        ? `暂不支持为语言 ${language} 提供测试样本`
-        : '无法从规则推断语言，请在第一条规则的 languages 中填写',
+      {
+        code: language ? 'srv.sampleLangUnsupported' : 'srv.ruleLanguageMissing',
+        ...(language ? { params: { language } } : {}),
+        message: language
+          ? `暂不支持为语言 ${language} 提供测试样本`
+          : '无法从规则推断语言，请在第一条规则的 languages 中填写',
+      },
       startedAt,
+      { ruleIds },
     );
   }
 
@@ -301,7 +352,7 @@ export async function runRuleLab(
     durationMs: 0,
     positive: { provided: Boolean(positive), matches: [] },
     negative: { provided: Boolean(negative), matches: [] },
-    failReasons: [],
+    failures: [],
     engineErrors: [],
   };
   try {
@@ -326,7 +377,8 @@ export async function runRuleLab(
     );
 
     if (timedOut) {
-      result.engineErrors.push(`引擎超过 ${Math.round(config.ruleLabTimeoutMs / 1000)} 秒被终止`);
+      result.errorCode = 'lab.engineTimeout';
+      result.errorParams = { seconds: Math.round(config.ruleLabTimeoutMs / 1000) };
     }
 
     let output: EngineOutput | undefined;
@@ -338,10 +390,12 @@ export async function runRuleLab(
       if (item.level !== 'warn' && item.message) result.engineErrors.push(item.message);
     }
     if (!output) {
-      result.engineErrors.push(
-        (stderr.trim().split('\n').filter(Boolean).pop() ?? '').slice(0, 500)
-          || `引擎输出无法解析（exit=${code}）`,
-      );
+      const detail = (stderr.trim().split('\n').filter(Boolean).pop() ?? '').slice(0, 500);
+      if (detail) result.engineErrors.push(detail);
+      if (!result.errorCode) {
+        result.errorCode = 'lab.outputUnparseable';
+        result.errorParams = { exitCode: code };
+      }
     }
 
     const byKind: Record<'positive' | 'negative', RuleLabMatch[]> = {
@@ -371,17 +425,24 @@ export async function runRuleLab(
     result.negative.matches = byKind.negative;
 
     if (result.positive.provided && byKind.positive.length === 0) {
-      result.failReasons.push('正例未命中：期望至少 1 处命中，实际 0 处');
+      result.failures.push({
+        code: 'lab.positiveNoMatch',
+        message: '正例未命中：期望至少 1 处命中，实际 0 处',
+      });
     }
     if (result.negative.provided && byKind.negative.length > 0) {
       const lines = byKind.negative.map((m) => m.startLine).join('、');
-      result.failReasons.push(`反例出现误报：${byKind.negative.length} 处（第 ${lines} 行）`);
+      result.failures.push({
+        code: 'lab.negativeFalsePositive',
+        params: { count: byKind.negative.length, lines },
+        message: `反例出现误报：${byKind.negative.length} 处（第 ${lines} 行）`,
+      });
     }
 
     result.verdict =
-      result.engineErrors.length > 0 || !output
+      timedOut || result.engineErrors.length > 0 || !output
         ? 'error'
-        : result.failReasons.length > 0
+        : result.failures.length > 0
           ? 'fail'
           : 'pass';
     return result;

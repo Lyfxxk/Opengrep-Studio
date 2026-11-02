@@ -26,6 +26,15 @@ test('顶层缺少非空 rules 列表：拒绝', () => {
   assert.throws(() => parseRuleYaml('rules: []'), /非空的 rules 列表/);
 });
 
+function throwCode(fn) {
+  try {
+    fn();
+  } catch (error) {
+    return error.code;
+  }
+  return undefined;
+}
+
 test('缺少 id / languages / pattern 表达式：逐条报原因', () => {
   assert.throws(
     () => parseRuleYaml('rules:\n  - languages: [javascript]\n    pattern: eval(...)\n'),
@@ -39,6 +48,31 @@ test('缺少 id / languages / pattern 表达式：逐条报原因', () => {
     () => parseRuleYaml('rules:\n  - id: a\n    languages: [javascript]\n    message: x\n'),
     /缺少 pattern 类表达式/,
   );
+});
+
+test('校验失败带可翻译错误码与参数', () => {
+  assert.equal(
+    throwCode(() => parseRuleYaml('rules:\n  - languages: [javascript]\n    pattern: eval(...)\n')),
+    'ruleYaml.missingId',
+  );
+  assert.equal(
+    throwCode(() => parseRuleYaml('rules:\n  - id: a\n    message: x\n    pattern: eval(...)\n')),
+    'ruleYaml.missingLanguages',
+  );
+  assert.equal(
+    throwCode(() => parseRuleYaml('rules:\n  - id: a\n    languages: [javascript]\n    message: x\n')),
+    'ruleYaml.missingPattern',
+  );
+  assert.equal(throwCode(() => parseRuleYaml('rules: [ { broken')), 'ruleYaml.parseFailed');
+  assert.equal(throwCode(() => parseRuleYaml('foo: bar')), 'ruleYaml.rulesMissing');
+  try {
+    parseRuleYaml('rules:\n  - id: a\n    message: x\n    pattern: eval(...)\n');
+    assert.fail('应当抛出');
+  } catch (error) {
+    assert.equal(error.code, 'ruleYaml.missingLanguages');
+    assert.equal(error.params?.index, 1);
+    assert.equal(error.params?.id, 'a');
+  }
 });
 
 test('非对象规则条目：按缺少 id 报业务错误而不是 TypeError', () => {

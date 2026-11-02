@@ -762,15 +762,17 @@ const labMiss = await api('POST', '/api/rulelab/run', {
   yaml: LAB_EVAL_RULE,
   samples: { positive: 'const a = 1;\n', negative: '' },
 });
-assert(labMiss.json.verdict === 'fail' && labMiss.json.failReasons.join().includes('正例未命中'),
-  '漏报判为 fail', JSON.stringify(labMiss.json.failReasons));
+assert(labMiss.json.verdict === 'fail'
+    && labMiss.json.failures?.some((item) => item.code === 'lab.positiveNoMatch'),
+  '漏报判为 fail', JSON.stringify(labMiss.json.failures));
 
 const labFalse = await api('POST', '/api/rulelab/run', {
   yaml: LAB_EVAL_RULE,
   samples: { positive: '', negative: 'eval("1");\n' },
 });
-assert(labFalse.json.verdict === 'fail' && labFalse.json.failReasons.join().includes('误报'),
-  '反例误报判为 fail', JSON.stringify(labFalse.json.failReasons));
+assert(labFalse.json.verdict === 'fail'
+    && labFalse.json.failures?.some((item) => item.code === 'lab.negativeFalsePositive'),
+  '反例误报判为 fail', JSON.stringify(labFalse.json.failures));
 
 const labBroken = await api('POST', '/api/rulelab/run', {
   yaml: 'rules: [ { broken',

@@ -63,7 +63,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PACK_LANGUAGES } from '@/data/constants';
 import type { IRulePack } from '@/data/rulepacks';
-import { api, type HealthInfo, type RuleLabMatch, type RuleLabRunResult } from '@/lib/api';
+import { api, translateApiError, type HealthInfo, type RuleLabMatch, type RuleLabRunResult } from '@/lib/api';
 import TaintFlow from '@/pages/ScanResult/TaintFlow';
 
 const DRAFT_KEY = 'rulelab-draft-v1';
@@ -332,9 +332,23 @@ export default function LabPage() {
       });
       setResult(res);
       if (res.verdict === 'fail') {
-        toast.warning(t('lab.runFailToast', { reasons: res.failReasons.join('；') }));
+        toast.warning(
+          t('lab.runFailToast', {
+            reasons: res.failures
+              .map((failure) => translateApiError(failure.code, failure.params, failure.message))
+              .join('；'),
+          }),
+        );
       } else if (res.verdict === 'error') {
-        toast.error(t('lab.runErrorToast', { error: res.error ?? t('lab.engineFailedFallback') }));
+        toast.error(
+          t('lab.runErrorToast', {
+            error: translateApiError(
+              res.errorCode,
+              res.errorParams,
+              res.error ?? t('lab.engineFailedFallback'),
+            ),
+          }),
+        );
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : String(error));
@@ -480,8 +494,10 @@ export default function LabPage() {
           <div className="min-w-0 text-sm">
             <div className="font-medium text-warning">{t('rulePacks.verdictFail')}</div>
             <ul className="mt-1 list-inside list-disc space-y-0.5 text-xs text-muted-foreground">
-              {result.failReasons.map((reason) => (
-                <li key={reason}>{reason}</li>
+              {result.failures.map((failure) => (
+                <li key={failure.message}>
+                  {translateApiError(failure.code, failure.params, failure.message)}
+                </li>
               ))}
             </ul>
           </div>
@@ -493,8 +509,10 @@ export default function LabPage() {
         <XCircle className="mt-0.5 size-5 shrink-0 text-destructive" />
         <div className="min-w-0 text-sm">
           <div className="font-medium text-destructive">{t('lab.ruleError')}</div>
-          {result.error && (
-            <p className="mt-1 whitespace-pre-wrap font-mono text-xs text-foreground/90">{result.error}</p>
+          {(result.errorCode || result.error) && (
+            <p className="mt-1 whitespace-pre-wrap text-xs text-foreground/90">
+              {translateApiError(result.errorCode, result.errorParams, result.error ?? '')}
+            </p>
           )}
           {result.engineErrors.map((message) => (
             <p key={message} className="mt-1 whitespace-pre-wrap font-mono text-xs text-foreground/90">

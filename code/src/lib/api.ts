@@ -47,7 +47,16 @@ export function translateApiError(
 ): string {
   if (!code) return fallback;
   const t = i18n.t as (key: string, opts?: Record<string, unknown>) => string;
-  return t(`apiErrors.${code}`, { ...params, defaultValue: fallback });
+  const resolved = { ...params };
+  if (typeof resolved.reasonCode === 'string') {
+    resolved.reason = t(`apiErrors.${resolved.reasonCode}`, {
+      ...((resolved.reasonParams as Record<string, unknown> | undefined) ?? {}),
+      defaultValue: '',
+    });
+    delete resolved.reasonCode;
+    delete resolved.reasonParams;
+  }
+  return t(`apiErrors.${code}`, { ...resolved, defaultValue: fallback });
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -158,8 +167,10 @@ export interface RuleLabRunResult {
   durationMs: number;
   positive: { provided: boolean; matches: RuleLabMatch[] };
   negative: { provided: boolean; matches: RuleLabMatch[] };
-  failReasons: string[];
+  failures: Array<{ code: string; params?: Record<string, unknown>; message: string }>;
   error?: string;
+  errorCode?: string;
+  errorParams?: Record<string, unknown>;
   engineErrors: string[];
 }
 
@@ -586,9 +597,9 @@ export const api = {
                 : [],
             },
             negative: { provided: Boolean(input.negative.trim()), matches: [] },
-            failReasons:
+            failures:
               input.positive.trim() && !hit
-                ? [i18n.t('api.failPositiveMiss')]
+                ? [{ code: 'lab.positiveNoMatch', message: i18n.t('api.failPositiveMiss') }]
                 : [],
             engineErrors: [],
           });

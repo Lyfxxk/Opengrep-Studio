@@ -15,7 +15,7 @@ import {
   updateRulePack,
   type RulePack,
 } from '../db.js';
-import { parseRuleYaml } from '../rule-yaml.js';
+import { parseRuleYaml, RuleYamlError } from '../rule-yaml.js';
 import { isSafeSampleDirName } from '../knowledge.js';
 import {
   builtinRulesDir,
@@ -117,6 +117,29 @@ function requireValidPackName(raw: unknown): string {
     throw new HttpError(400, '规则包名称不能超过 50 个字符', { code: 'srv.packNameTooLong' });
   }
   return name;
+}
+
+function asRuleYamlHttpError(error: unknown): HttpError {
+  if (error instanceof HttpError) return error;
+  if (error instanceof RuleYamlError) {
+    return new HttpError(400, error.message, { code: error.code, params: error.params });
+  }
+  const reason = error instanceof Error ? error.message : String(error);
+  return new HttpError(400, reason, { code: 'srv.ruleYamlInvalid', params: { reason } });
+}
+
+function asRuleFileHttpError(error: unknown, name: string): HttpError {
+  if (error instanceof RuleYamlError) {
+    return new HttpError(400, `规则文件 ${name} 不合法：${error.message}`, {
+      code: 'srv.ruleFileInvalidDetail',
+      params: { name, reasonCode: error.code, reasonParams: error.params },
+    });
+  }
+  const reason = error instanceof Error ? error.message : String(error);
+  return new HttpError(400, `规则文件 ${name} 不合法：${reason}`, {
+    code: 'srv.ruleFileInvalidDetail',
+    params: { name, reason },
+  });
 }
 
 rulepackRoutes.get('/api/rulepacks', (_req, res) => {
@@ -260,8 +283,7 @@ rulepackRoutes.post('/api/rulepacks', asyncHandler(async (req, res) => {
       : saveNewRulePack(name, language, content, 'online-editor');
     res.status(201).json(pack);
   } catch (error) {
-    if (error instanceof HttpError) throw error;
-    throw new HttpError(400, error instanceof Error ? error.message : String(error));
+    throw asRuleYamlHttpError(error);
   }
 }));
 
@@ -351,8 +373,7 @@ rulepackRoutes.put('/api/rulepacks/:id/content', asyncHandler(async (req, res) =
   try {
     ruleCount = parseRuleYaml(content).ruleCount;
   } catch (error) {
-    if (error instanceof HttpError) throw error;
-    throw new HttpError(400, error instanceof Error ? error.message : String(error));
+    throw asRuleYamlHttpError(error);
   }
   fs.writeFileSync(customPackPath(pack.id), content, 'utf8');
   updateRulePack(pack.id, { ruleCount });
@@ -550,17 +571,15 @@ rulepackRoutes.post(
               language = parsed.firstLanguage;
             }
             for (const id of parsed.ruleIds) {
-              if (ids.has(id)) throw new Error(`存在重复的规则 id：${id}`);
+              if (ids.has(id)) {
+                throw new RuleYamlError('ruleYaml.duplicateId', `存在重复的规则 id：${id}`, { id });
+              }
               ids.add(id);
               ruleCount += 1;
             }
           } catch (error) {
             const rel = path.relative(root, file).replace(/\\/g, '/');
-            const reason = error instanceof Error ? error.message : String(error);
-            throw new HttpError(400, `规则文件 ${rel} 不合法：${reason}`, {
-              code: 'srv.ruleFileInvalidDetail',
-              params: { name: rel, reason },
-            });
+            throw asRuleFileHttpError(error, rel);
           }
         }
         const { sampleCount } = scanPackSamples(root, ids);
@@ -615,11 +634,7 @@ rulepackRoutes.post(
       try {
         language = language || parseRuleYaml(content).firstLanguage;
       } catch (error) {
-        throw new HttpError(
-          400,
-          `规则文件 ${looseFiles[0].name} 不合法：${error instanceof Error ? error.message : String(error)}`,
-          { code: 'srv.ruleFileInvalid', params: { name: looseFiles[0].name } },
-        );
+        throw asRuleFileHttpError(error, looseFiles[0].name);
       }
       const pack = saveNewRulePack(name, language || 'Other', content, originalName);
       res.status(201).json({ ...pack, message: '导入成功（单文件包，无样本，basic 档）' });
