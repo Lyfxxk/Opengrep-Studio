@@ -25,12 +25,10 @@ import {
 } from '@/components/ui/table';
 import ScanStatusBadge from '@/components/ScanStatusBadge';
 import RulePackCell from '@/components/RulePackCell';
-import BatchDeleteBar from '@/components/BatchDeleteBar';
-import BatchDeleteConfirm from '@/components/BatchDeleteConfirm';
+import BatchDeleteBar, { BatchDeleteConfirm } from '@/components/BatchDeleteBar';
 import CompareDialog from '@/pages/ScanResult/CompareDialog';
 import { useRowSelection } from '@/lib/useRowSelection';
-import { usePagedList } from '@/lib/usePagedList';
-import { attachProjectNames, type ScanWithProject } from '@/lib/scans';
+import { attachProjectNames, usePagedList, type ScanWithProject } from '@/lib/usePagedList';
 import { formatDateTime } from '@/lib/format';
 import type { IProject } from '@/data/projects';
 import { api } from '@/lib/api';
