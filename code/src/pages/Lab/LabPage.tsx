@@ -529,7 +529,12 @@ export default function LabPage() {
           <div className="font-medium text-destructive">{t('lab.ruleError')}</div>
           {(result.errorCode || result.error) && (
             <p className="mt-1 whitespace-pre-wrap text-xs text-foreground/90">
-              {translateApiError(result.errorCode, result.errorParams, result.error ?? '')}
+              {[
+                translateApiError(result.errorCode, result.errorParams, result.error ?? ''),
+                result.errorParams?.macos ? t('engine.hintMacosQuarantine') : '',
+              ]
+                .filter(Boolean)
+                .join('\n')}
             </p>
           )}
           {result.engineErrors.map((message) => (
