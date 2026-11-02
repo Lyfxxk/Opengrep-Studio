@@ -191,11 +191,6 @@ function hitStats(ruleId: string): RuleKnowledge['stats'] {
   }
 }
 
-function cweNameFromRaw(raw: string): string | undefined {
-  const match = raw.match(/CWE-0*\d+\s*:\s*(.+)$/i);
-  return match?.[1]?.trim() || undefined;
-}
-
 function ruleMessageText(rule: PackRuleDoc | undefined): string | undefined {
   const text = typeof rule?.message === 'string' ? rule.message.trim() : '';
   return text ? text : undefined;
@@ -203,10 +198,11 @@ function ruleMessageText(rule: PackRuleDoc | undefined): string | undefined {
 
 export function getRuleKnowledge(ruleId: string, lang: RuleKnowledgeLang = 'zh'): RuleKnowledge {
   const found = findRule(ruleId);
-  const resources = lang === 'en' ? null : loadResources(lang);
-  const message = resources
-    ? matchZhMessage(resources.messages, ruleId, found?.matchedRuleId)
-    : ruleMessageText(found?.rule);
+  const resources = lang === 'en' ? loadResources('zh') : loadResources(lang);
+  const message =
+    lang === 'en'
+      ? ruleMessageText(found?.rule)
+      : matchZhMessage(resources.messages, ruleId, found?.matchedRuleId);
 
   const result: RuleKnowledge = {
     ruleId,
@@ -231,28 +227,14 @@ export function getRuleKnowledge(ruleId: string, lang: RuleKnowledgeLang = 'zh')
 
   const cweEntries = asStringArray(metadata.cwe);
   const cweIds = [...new Set(cweEntries.map(normalizeCweId))].slice(0, 8);
-  if (resources) {
-    const cweZhById = (id: string) => resources.cwe[id] ?? resources.cwe[id.replace(/^CWE-/i, '')];
-    result.cwe = cweIds.map((id) => ({
-      id,
-      ...(cweZhById(id)?.name ? { name: cweZhById(id).name } : {}),
-      ...(cweZhById(id)?.fix ? { fix: cweZhById(id).fix } : {}),
-    }));
-    const firstFix = cweIds.map((id) => cweZhById(id)?.fix).find(Boolean);
-    if (firstFix) result.fixSuggestion = firstFix;
-  } else {
-    const nameById = new Map<string, string>();
-    for (const entry of cweEntries) {
-      const name = cweNameFromRaw(entry);
-      if (!name) continue;
-      const id = normalizeCweId(entry);
-      if (!nameById.has(id)) nameById.set(id, name);
-    }
-    result.cwe = cweIds.map((id) => ({
-      id,
-      ...(nameById.get(id) ? { name: nameById.get(id) } : {}),
-    }));
-  }
+  const cweTextById = (id: string) => resources.cwe[id] ?? resources.cwe[id.replace(/^CWE-/i, '')];
+  result.cwe = cweIds.map((id) => ({
+    id,
+    ...(cweTextById(id)?.name ? { name: cweTextById(id).name } : {}),
+    ...(cweTextById(id)?.fix ? { fix: cweTextById(id).fix } : {}),
+  }));
+  const firstFix = cweIds.map((id) => cweTextById(id)?.fix).find(Boolean);
+  if (firstFix) result.fixSuggestion = firstFix;
 
   result.owasp = asStringArray(metadata.owasp).slice(0, 6);
 

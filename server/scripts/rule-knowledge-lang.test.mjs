@@ -50,23 +50,17 @@ test('zh-Hant 走繁体词典', () => {
   assert.equal((knowledge.fixSuggestion ?? '').length > 0, true);
 });
 
-test('en 说明取规则自带原文，不含汉字也不含中文修复建议', () => {
+test('en 说明取规则自带原文不含汉字，CWE 名称与修复建议回落简体词典', () => {
   const knowledge = getRuleKnowledge(RULE, 'en');
   assert.equal(knowledge.found, true);
   assert.equal((knowledge.message ?? '').length > 0, true);
   assert.equal(CJK.test(knowledge.message ?? ''), false);
   assert.equal(/curl/i.test(knowledge.message ?? ''), true);
-  assert.equal(knowledge.fixSuggestion, undefined);
-  assert.equal(knowledge.cwe.length > 0, true);
-  for (const item of knowledge.cwe) {
-    assert.equal(item.fix, undefined);
-    assert.equal(CJK.test(item.name ?? ''), false);
-  }
-  assert.equal(
-    knowledge.cwe.some((item) => (item.name ?? '').length > 0),
-    true,
-    'en 的 CWE 名应来自规则 metadata',
-  );
+  const cwe = knowledge.cwe.find((item) => item.id === 'CWE-95');
+  assert.ok(cwe, 'CWE-95 应在列');
+  assert.equal((cwe.name ?? '').length > 0, true, 'en 的 CWE 名回落随包简体词典');
+  assert.equal((cwe.fix ?? '').length > 0, true);
+  assert.equal((knowledge.fixSuggestion ?? '').length > 0, true, 'en 的修复建议回落简体词典');
 });
 
 test('未知规则在 en 下也返回 found:false 且不带说明', () => {
