@@ -1,4 +1,4 @@
-import { isActiveIssue } from './db.js';
+import { isActiveIssue, SEVERITY_RANK } from './db.js';
 import type {
   ComparisonStatus,
   Issue,
@@ -76,7 +76,6 @@ export interface ReportData {
 }
 
 const SEVERITY_ORDER: Severity[] = ['critical', 'high', 'medium', 'low'];
-const SEVERITY_RANK: Record<Severity, number> = { critical: 0, high: 1, medium: 2, low: 3 };
 const SEVERITY_LABEL: Record<Severity, string> = { critical: '严重', high: '高危', medium: '中危', low: '低危' };
 const COMPARISON_LABEL: Record<ComparisonStatus, string> = {
   new: '新增',
@@ -478,29 +477,11 @@ export function buildReportData(
     };
   };
 
-  const fileAgg = new Map<string, ReportFileAgg & { ruleCounts: Map<string, number> }>();
-  for (const issue of current) {
-    let entry = fileAgg.get(issue.filePath);
-    if (!entry) {
-      entry = {
-        filePath: issue.filePath,
-        count: 0,
-        maxSeverity: issue.severity,
-        ruleCounts: new Map(),
-      };
-      fileAgg.set(issue.filePath, entry);
-    }
-    entry.count += 1;
-    entry.ruleCounts.set(issue.ruleId, (entry.ruleCounts.get(issue.ruleId) ?? 0) + 1);
-    if (SEVERITY_RANK[issue.severity] < SEVERITY_RANK[entry.maxSeverity]) {
-      entry.maxSeverity = issue.severity;
-    }
-  }
-  const fileAggList = [...fileAgg.values()].map(({ ruleCounts, ...rest }) => {
-    const [topRule] = [...ruleCounts.entries()].sort((a, b) => b[1] - a[1]);
-    return topRule ? { ...rest, topRule: topRule[0] } : rest;
-  });
-  const topFiles = [...fileAggList]
+  const topFiles = aggregateFileIssues(current)
+    .map(({ bySev, ruleCounts, ...rest }) => {
+      const topRule = topRuleOf(ruleCounts);
+      return topRule ? { ...rest, topRule } : rest;
+    })
     .sort((a, b) => b.count - a.count || SEVERITY_RANK[a.maxSeverity] - SEVERITY_RANK[b.maxSeverity])
     .slice(0, TOP_FILES_LIMIT);
 
@@ -855,28 +836,31 @@ const REPORT_CSS = `
   }
 `;
 
-interface FileStat {
-  path: string;
+interface FileIssueAgg {
+  filePath: string;
   count: number;
   bySev: Record<Severity, number>;
-  maxSev: Severity;
-  topRule: string;
+  maxSeverity: Severity;
+  ruleCounts: Map<string, number>;
 }
 
-function aggregateFileStats(issues: ReportIssue[]): FileStat[] {
-  const fileMap = new Map<
-    string,
-    FileStat & { ruleCounts: Map<string, number> }
-  >();
+function topRuleOf(ruleCounts: Map<string, number>): string {
+  const [topRule] = [...ruleCounts.entries()].sort((a, b) => b[1] - a[1]);
+  return topRule?.[0] ?? '';
+}
+
+function aggregateFileIssues(
+  issues: ReadonlyArray<Pick<IssueRow, 'filePath' | 'severity' | 'ruleId'>>,
+): FileIssueAgg[] {
+  const fileMap = new Map<string, FileIssueAgg>();
   for (const issue of issues) {
     let file = fileMap.get(issue.filePath);
     if (!file) {
       file = {
-        path: issue.filePath,
+        filePath: issue.filePath,
         count: 0,
         bySev: { critical: 0, high: 0, medium: 0, low: 0 },
-        maxSev: issue.severity,
-        topRule: '',
+        maxSeverity: issue.severity,
         ruleCounts: new Map(),
       };
       fileMap.set(issue.filePath, file);
@@ -884,14 +868,11 @@ function aggregateFileStats(issues: ReportIssue[]): FileStat[] {
     file.count += 1;
     file.bySev[issue.severity] += 1;
     file.ruleCounts.set(issue.ruleId, (file.ruleCounts.get(issue.ruleId) ?? 0) + 1);
-    if (SEVERITY_RANK[issue.severity] < SEVERITY_RANK[file.maxSev]) file.maxSev = issue.severity;
+    if (SEVERITY_RANK[issue.severity] < SEVERITY_RANK[file.maxSeverity]) {
+      file.maxSeverity = issue.severity;
+    }
   }
-  return [...fileMap.values()]
-    .map(({ ruleCounts, ...rest }) => {
-      const [topRule] = [...ruleCounts.entries()].sort((a, b) => b[1] - a[1]);
-      return { ...rest, topRule: topRule?.[0] ?? '' };
-    })
-    .sort((a, b) => SEVERITY_RANK[a.maxSev] - SEVERITY_RANK[b.maxSev] || b.count - a.count);
+  return [...fileMap.values()];
 }
 
 interface RuleStat {
@@ -944,7 +925,13 @@ export function renderReportHtml(
   }
   const snippetBudget = { left: SNIPPET_LIMIT };
 
-  const fileList = aggregateFileStats(current);
+  const fileList = aggregateFileIssues(current)
+    .map(({ ruleCounts, filePath, ...rest }) => ({
+      path: filePath,
+      ...rest,
+      topRule: topRuleOf(ruleCounts),
+    }))
+    .sort((a, b) => SEVERITY_RANK[a.maxSeverity] - SEVERITY_RANK[b.maxSeverity] || b.count - a.count);
   const ruleList = aggregateRuleStats(current);
 
   const conclusionText = escapeHtml(
@@ -991,7 +978,7 @@ export function renderReportHtml(
         ${countedSeverities
           .map((sev) => `<td class="num">${file.bySev[sev] || '—'}</td>`)
           .join('')}
-        <td><span class="sev-chip" style="color:#fff;background:${SEVERITY_COLOR[file.maxSev]}">${text.severity[file.maxSev]}</span></td>
+        <td><span class="sev-chip" style="color:#fff;background:${SEVERITY_COLOR[file.maxSeverity]}">${text.severity[file.maxSeverity]}</span></td>
       </tr>`,
     )
     .join('');
