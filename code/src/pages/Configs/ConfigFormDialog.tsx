@@ -23,7 +23,7 @@ import type { ConfigFormValues } from '@/lib/api';
 import type { IConfig } from '@/data/configs';
 import type { IRulePack } from '@/data/rulepacks';
 import { cn } from '@/lib/utils';
-import { usePackDisplayName } from '@/lib/packName';
+import { usePackDisplayName } from '@/lib/displayNames';
 import TagPathInput from './TagPathInput';
 
 export interface ConfigDialogTarget {

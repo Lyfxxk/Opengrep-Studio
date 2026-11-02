@@ -8,7 +8,7 @@ import type { IIssue } from '@/data/issues';
 import { REVIEW_BADGE_CLASS } from '@/data/issues';
 import type { ICodeSnippet } from '@/data/codesnippets';
 import { api } from '@/lib/api';
-import { usePackDisplayName } from '@/lib/packName';
+import { usePackDisplayName } from '@/lib/displayNames';
 import { lookupRuleMessage, useRuleMessageMap } from '@/lib/ruleMessages';
 import { SEVERITY_BADGE_CLASS } from '@/lib/severity';
 import { cn } from '@/lib/utils';
