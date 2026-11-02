@@ -1,19 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Eye, FileText, GitCompareArrows, Search } from 'lucide-react';
+import { Eye, FileText, GitCompareArrows } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
 import Pagination from '@/components/Pagination';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import ListFilterBar from '@/components/ListFilterBar';
 import { LIST_PAGE_SIZE } from '@/data/constants';
 import {
   Table,
@@ -28,56 +21,31 @@ import RulePackCell from '@/components/RulePackCell';
 import BatchDeleteBar, { BatchDeleteConfirm } from '@/components/BatchDeleteBar';
 import CompareDialog from '@/pages/ScanResult/CompareDialog';
 import {
-  attachProjectNames,
+  filterScans,
   usePagedList,
   useRowSelection,
+  useScanRows,
   type ScanWithProject,
 } from '@/lib/usePagedList';
 import { formatDateTime } from '@/lib/format';
-import type { IProject } from '@/data/projects';
 import { api } from '@/lib/api';
 
 export default function ScansCenterPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [scans, setScans] = useState<ScanWithProject[] | null>(null);
-  const [loadFailed, setLoadFailed] = useState(false);
-  const [projects, setProjects] = useState<IProject[]>([]);
+  const { scans, projects, loadFailed, reload: load } = useScanRows();
   const [filterProjectId, setFilterProjectId] = useState('all');
   const [keyword, setKeyword] = useState('');
   const [compareScanId, setCompareScanId] = useState<string | null>(null);
   const [batchConfirmOpen, setBatchConfirmOpen] = useState(false);
   const [batchDeleting, setBatchDeleting] = useState(false);
 
-  const load = useCallback(async () => {
-    try {
-      const [allScans, projects] = await Promise.all([api.listAllScans(), api.listProjects()]);
-      setProjects(projects);
-      setScans(attachProjectNames(allScans, projects));
-      setLoadFailed(false);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : String(error));
-      setLoadFailed(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
-
   const hasScanning = useMemo(() => (scans ?? []).some((scan) => scan.status === 'scanning'), [scans]);
 
-  const filteredScans = useMemo(() => {
-    const trimmed = keyword.trim().toLowerCase();
-    return (scans ?? []).filter((scan) => {
-      if (filterProjectId !== 'all' && scan.projectId !== filterProjectId) return false;
-      if (trimmed === '') return true;
-      return (
-        scan.id.toLowerCase().includes(trimmed) ||
-        (scan.projectName ?? '').toLowerCase().includes(trimmed)
-      );
-    });
-  }, [scans, filterProjectId, keyword]);
+  const filteredScans = useMemo(
+    () => filterScans(scans ?? [], filterProjectId, keyword),
+    [scans, filterProjectId, keyword],
+  );
 
   const deletableIds = useMemo(
     () => filteredScans.filter((scan) => scan.status !== 'scanning').map((scan) => scan.id),
@@ -127,35 +95,17 @@ export default function ScansCenterPage() {
         onClear={selection.clear}
       />
 
-      {(scans?.length ?? 0) > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          <Select value={filterProjectId} onValueChange={setFilterProjectId}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t('scans.filterProjectAll')}</SelectItem>
-              {projects.map((project) => (
-                <SelectItem key={project.id} value={project.id}>
-                  {project.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <div className="relative min-w-[180px] flex-1 sm:max-w-[280px]">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={keyword}
-              onChange={(event) => setKeyword(event.target.value)}
-              placeholder={t('scans.filterKeywordPlaceholder')}
-              className="pl-9"
-            />
-          </div>
-          <span className="text-xs text-muted-foreground">
-            {t('scans.filterCount', { count: filteredScans.length })}
-          </span>
-        </div>
-      )}
+      <ListFilterBar
+        total={scans?.length ?? 0}
+        projects={projects}
+        projectId={filterProjectId}
+        onProjectChange={setFilterProjectId}
+        keyword={keyword}
+        onKeywordChange={setKeyword}
+        allLabel={t('scans.filterProjectAll')}
+        placeholder={t('scans.filterKeywordPlaceholder')}
+        countLabel={t('scans.filterCount', { count: filteredScans.length })}
+      />
 
       {scans === null ? (
         <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
