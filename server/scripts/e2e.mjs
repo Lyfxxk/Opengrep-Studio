@@ -27,13 +27,9 @@ function assert(cond, label, extra = '') {
 async function api(method, path, body) {
   const res = await fetchRetry(BASE + path, {
     method,
-    headers: body instanceof FormData
-      ? undefined
-      : typeof body === 'string'
-        ? { 'Content-Type': 'application/json' }
-        : body !== undefined
-          ? { 'Content-Type': 'application/json' }
-          : undefined,
+    headers: body !== undefined && !(body instanceof FormData)
+      ? { 'Content-Type': 'application/json' }
+      : undefined,
     body: body instanceof FormData ? body : body !== undefined ? JSON.stringify(body) : undefined,
   });
   const text = await res.text();
@@ -122,6 +118,13 @@ function makeZip(override) {
   return zip.toBuffer();
 }
 
+function fileForm(content, type, name, extra = {}) {
+  const form = new FormData();
+  form.append('file', new Blob([content], { type }), name);
+  for (const [key, value] of Object.entries(extra)) form.append(key, value);
+  return form;
+}
+
 const PACK_JS_YAML = `rules:
   - id: js-hardcoded-secret
     languages: [javascript, typescript]
@@ -204,26 +207,29 @@ const PACK_JAVA_YAML = `rules:
 `;
 
 async function uploadPack(name, language, content) {
-  const form = new FormData();
-  form.append('file', new Blob([content], { type: 'application/yaml' }), `${name}.yaml`);
-  form.append('name', name);
-  form.append('language', language);
-  const res = await api('POST', '/api/rulepacks/upload', form);
+  const res = await api('POST', '/api/rulepacks/upload',
+    fileForm(content, 'application/yaml', `${name}.yaml`, { name, language }));
   if (res.status !== 201) throw new Error(`上传规则包失败: ${JSON.stringify(res.json)}`);
   return res.json;
 }
 
 async function createConfig(values) {
-  const res = await api('POST', '/api/configs', values);
+  const res = await api('POST', '/api/configs', {
+    excludes: [],
+    includes: [],
+    timeoutSeconds: 30,
+    jobs: 4,
+    maxTargetBytes: 5000000,
+    ...values,
+  });
   if (res.status !== 201) throw new Error(`创建配置失败: ${JSON.stringify(res.json)}`);
   return res.json;
 }
 
 async function makeProjectWithSource(name) {
   const created = await api('POST', '/api/projects', { name, language: 'TypeScript' });
-  const form = new FormData();
-  form.append('file', new Blob([makeZip()], { type: 'application/zip' }), 'sample.zip');
-  await api('POST', `/api/projects/${created.json.id}/source`, form);
+  await api('POST', `/api/projects/${created.json.id}/source`,
+    fileForm(makeZip(), 'application/zip', 'sample.zip'));
   return created.json.id;
 }
 
@@ -335,11 +341,6 @@ const fullConfig = await createConfig({
   name: 'E2E-全量配置',
   description: '勾选 JS + Java 两个包',
   rulePackIds: [packJs.id, packJava.id],
-  excludes: [],
-  includes: [],
-  timeoutSeconds: 30,
-  jobs: 4,
-  maxTargetBytes: 5000000,
 });
 assert(fullConfig.id.startsWith('cfg-'), '创建扫描配置成功');
 
@@ -358,11 +359,7 @@ assert(
 const globstarEdge = await createConfig({
   name: 'E2E-globstar边界配置',
   rulePackIds: [packJs.id],
-  excludes: [],
   includes: ['a/**/b/**/c/**/d/**/e/x.py'],
-  timeoutSeconds: 30,
-  jobs: 4,
-  maxTargetBytes: 5000000,
 });
 await api('DELETE', `/api/configs/${globstarEdge.id}`);
 
@@ -377,9 +374,8 @@ assert(created.json.name === 'E2E演示项目', '中文名称无乱码', created
 const pid = created.json.id;
 
 console.log('== 5. 上传源码并绑定配置扫描（v1，无基线） ==');
-const form = new FormData();
-form.append('file', new Blob([makeZip()], { type: 'application/zip' }), 'sample-v1.zip');
-const up = await api('POST', `/api/projects/${pid}/source`, form);
+const up = await api('POST', `/api/projects/${pid}/source`,
+  fileForm(makeZip(), 'application/zip', 'sample-v1.zip'));
 assert(up.status === 200 && up.json.fileCount === 4, `上传解压 4 个文件 (got ${up.json?.fileCount})`);
 
 const noConfigScan = await api('POST', `/api/projects/${pid}/scans`, {});
@@ -402,11 +398,6 @@ const danglingCfg = await createConfig({
   name: 'E2E-兜底回落配置',
   description: '绑定后删除，验证扫描回落到兜底配置',
   rulePackIds: [packJs.id],
-  excludes: [],
-  includes: [],
-  timeoutSeconds: 30,
-  jobs: 4,
-  maxTargetBytes: 5000000,
 });
 await api('PATCH', `/api/projects/${pid}`, { configId: danglingCfg.id });
 assert((await api('DELETE', `/api/configs/${danglingCfg.id}`)).status === 204, '删除已绑定的配置');
@@ -449,9 +440,8 @@ assert(snip.json.highlightedLines.includes(sample.startLine), '命中行已高�
 assert(snip.json.source === 'file', '片段来自源码文件', snip.json.source);
 
 console.log('== 7. 上传 v2 并以 v1 为基线扫描 ==');
-const form2 = new FormData();
-form2.append('file', new Blob([makeZip({ 'api.ts': SAMPLE_TS_V2 })], { type: 'application/zip' }), 'sample-v2.zip');
-await api('POST', `/api/projects/${pid}/source`, form2);
+await api('POST', `/api/projects/${pid}/source`,
+  fileForm(makeZip({ 'api.ts': SAMPLE_TS_V2 }), 'application/zip', 'sample-v2.zip'));
 const scan2 = await api('POST', `/api/projects/${pid}/scans`, { baselineScanId: s1.id });
 assert(scan2.status === 201, 'v2 扫描已提交');
 const s2 = await pollScan(scan2.json.id);
@@ -464,9 +454,8 @@ assert(by('fixed') >= 1, '检测到已修复问题（eval 被移除）');
 assert(s2.issueCount === by('new') + by('remaining'), 'issueCount 不含已修复');
 
 console.log('== 7a. 上传失败不丢弃已导入源码 ==');
-const brokenUpload = new FormData();
-brokenUpload.append('file', new Blob([Buffer.from('not a zip')], { type: 'application/zip' }), 'broken.zip');
-const brokenUp = await api('POST', `/api/projects/${pid}/source`, brokenUpload);
+const brokenUp = await api('POST', `/api/projects/${pid}/source`,
+  fileForm(Buffer.from('not a zip'), 'application/zip', 'broken.zip'));
 assert(brokenUp.status === 400, '损坏 ZIP 被拒绝', JSON.stringify(brokenUp.json));
 const afterBroken = ((await api('GET', '/api/projects')).json ?? []).find((p) => p.id === pid);
 assert(afterBroken?.hasSource === true, '损坏包上传失败后保留此前源码', JSON.stringify(afterBroken));
@@ -491,24 +480,20 @@ const makeIgnoreZip = () => {
   return zip.toBuffer();
 };
 const igProject = (await api('POST', '/api/projects', { name: 'E2E-忽略过滤', language: 'TypeScript' })).json;
-const igForm = new FormData();
-igForm.append('file', new Blob([makeIgnoreZip()], { type: 'application/zip' }), 'ig.zip');
-const igUp = await api('POST', `/api/projects/${igProject.id}/source`, igForm);
+const igUp = await api('POST', `/api/projects/${igProject.id}/source`,
+  fileForm(makeIgnoreZip(), 'application/zip', 'ig.zip'));
 assert(igUp.status === 200, '忽略过滤上传成功', JSON.stringify(igUp.json));
 assert(igUp.json.fileCount === 2 && igUp.json.ignoredCount === 3,
   `默认过滤 fileCount=2 ignoredCount=3 (got ${igUp.json.fileCount}/${igUp.json.ignoredCount})`);
-const igFormOff = new FormData();
-igFormOff.append('file', new Blob([makeIgnoreZip()], { type: 'application/zip' }), 'ig-off.zip');
-igFormOff.append('respectGitignore', 'false');
-const igUpOff = await api('POST', `/api/projects/${igProject.id}/source`, igFormOff);
+const igUpOff = await api('POST', `/api/projects/${igProject.id}/source`,
+  fileForm(makeIgnoreZip(), 'application/zip', 'ig-off.zip', { respectGitignore: 'false' }));
 assert(igUpOff.status === 200 && igUpOff.json.fileCount === 6 && igUpOff.json.ignoredCount === 0,
   `关闭过滤保留全部 6 个文件 (got ${igUpOff.json.fileCount}/${igUpOff.json.ignoredCount})`);
 const allIgnoredZip = new AdmZip();
 allIgnoredZip.addFile('demo-src/.gitignore', Buffer.from('*\n', 'utf8'));
 allIgnoredZip.addFile('demo-src/only.env', Buffer.from('A=1\n', 'utf8'));
-const igFormAll = new FormData();
-igFormAll.append('file', new Blob([allIgnoredZip.toBuffer()], { type: 'application/zip' }), 'ig-all.zip');
-const igUpAll = await api('POST', `/api/projects/${igProject.id}/source`, igFormAll);
+const igUpAll = await api('POST', `/api/projects/${igProject.id}/source`,
+  fileForm(allIgnoredZip.toBuffer(), 'application/zip', 'ig-all.zip'));
 assert(igUpAll.status === 400, '全被忽略时返回 400', JSON.stringify(igUpAll.json));
 await api('DELETE', `/api/projects/${igProject.id}`);
 
@@ -521,9 +506,8 @@ const arcProject = (await api('POST', '/api/projects', { name: 'E2E-压缩包通
 try {
   const tgzPath = path.join(arcTmp, 'src.tar.gz');
   tar.c({ z: true, cwd: arcTmp, sync: true, file: tgzPath, portable: true }, ['src']);
-  const tgzForm = new FormData();
-  tgzForm.append('file', new Blob([fs.readFileSync(tgzPath)], { type: 'application/gzip' }), 'src.tar.gz');
-  const tgzUp = await api('POST', `/api/projects/${arcProject.id}/source`, tgzForm);
+  const tgzUp = await api('POST', `/api/projects/${arcProject.id}/source`,
+    fileForm(fs.readFileSync(tgzPath), 'application/gzip', 'src.tar.gz'));
   assert(tgzUp.status === 200 && tgzUp.json?.fileCount === 2,
     `tar.gz 上传解压 2 个文件 (got ${tgzUp.status}/${tgzUp.json?.fileCount})`, JSON.stringify(tgzUp.json));
 
@@ -532,9 +516,8 @@ try {
   seven.FS.mkdir('/in');
   seven.FS.mount(seven.NODEFS, { root: arcTmp }, '/in');
   seven.callMain(['a', '/out.7z', '/in/src']);
-  const sevenForm = new FormData();
-  sevenForm.append('file', new Blob([seven.FS.readFile('/out.7z')], { type: 'application/x-7z-compressed' }), 'src.7z');
-  const sevenUp = await api('POST', `/api/projects/${arcProject.id}/source`, sevenForm);
+  const sevenUp = await api('POST', `/api/projects/${arcProject.id}/source`,
+    fileForm(seven.FS.readFile('/out.7z'), 'application/x-7z-compressed', 'src.7z'));
   assert(sevenUp.status === 200 && sevenUp.json?.fileCount === 2,
     `7z 上传解压 2 个文件 (got ${sevenUp.status}/${sevenUp.json?.fileCount})`, JSON.stringify(sevenUp.json));
 } finally {
@@ -615,9 +598,8 @@ console.log('== 11. 未上传就扫描 / 损坏 ZIP 被拒 ==');
 const p2 = await api('POST', '/api/projects', { name: 'E2E-空项目', language: 'Java' });
 const noSrc = await api('POST', `/api/projects/${p2.json.id}/scans`, {});
 assert(noSrc.status === 400, '未上传源码时拒绝扫描');
-const badZip = new FormData();
-badZip.append('file', new Blob([Buffer.from('not a zip')], { type: 'application/zip' }), 'evil.zip');
-const badUp = await api('POST', `/api/projects/${p2.json.id}/source`, badZip);
+const badUp = await api('POST', `/api/projects/${p2.json.id}/source`,
+  fileForm(Buffer.from('not a zip'), 'application/zip', 'evil.zip'));
 assert(badUp.status === 400, '损坏 ZIP 被拒绝');
 
 console.log('== 11a. 取消扫描：两种取消路径都要落成 failed + 可翻译错误码 ==');
@@ -718,11 +700,6 @@ await api('PATCH', `/api/rulepacks/${packJs.id}`, { enabled: true });
 const boundCfg = await createConfig({
   name: 'E2E-引用自定义包配置',
   rulePackIds: [onlinePack.json.id],
-  excludes: [],
-  includes: [],
-  timeoutSeconds: 30,
-  jobs: 4,
-  maxTargetBytes: 5000000,
 });
 const delReferencedPack = await api('DELETE', `/api/rulepacks/${onlinePack.json.id}`);
 assert(delReferencedPack.status === 204, '删除规则包成功');
@@ -829,9 +806,7 @@ assert(labTaint.json.verdict === 'pass', 'taint 规则实验室通过', JSON.str
 
 console.log('== 18. 可移植规则包：导入 / 检查 / 导出回流 / 扫描 ==');
 function packZipForm(zip, name = 'e2e-pack.zip') {
-  const form = new FormData();
-  form.append('file', new Blob([zip.toBuffer()], { type: 'application/zip' }), name);
-  return form;
+  return fileForm(zip.toBuffer(), 'application/zip', name);
 }
 
 const portablePack = new AdmZip();
@@ -854,7 +829,6 @@ const packProject = await makeProjectWithSource('E2E-目录包扫描项目');
 const packCfg = await createConfig({
   name: 'E2E-目录包配置',
   rulePackIds: [imported.json.id],
-  excludes: [], includes: [], timeoutSeconds: 30, jobs: 4, maxTargetBytes: 5000000,
 });
 await api('PATCH', `/api/projects/${packProject}`, { configId: packCfg.id });
 const packScan = await api('POST', `/api/projects/${packProject}/scans`, {});
@@ -925,10 +899,8 @@ assert(
   JSON.stringify({ startedAt: scanRecord.startedAt, scannedAt: scanRecord.scannedAt, finishedAt: scanRecord.finishedAt }));
 
 console.log('== 18c. SARIF 导入：导出 → 导入往返 + 基线对比 ==');
-const roundtripForm = new FormData();
-roundtripForm.append('file', new Blob([JSON.stringify(sarif)], { type: 'application/json' }), 'roundtrip.sarif');
-roundtripForm.append('baselineScanId', packScanDone.id);
-const importedScan = await api('POST', `/api/projects/${packProject}/sarif`, roundtripForm);
+const importedScan = await api('POST', `/api/projects/${packProject}/sarif`,
+  fileForm(JSON.stringify(sarif), 'application/json', 'roundtrip.sarif', { baselineScanId: packScanDone.id }));
 assert(importedScan.status === 201 && importedScan.json.status === 'completed',
   'SARIF 导入生成已完成扫描', JSON.stringify(importedScan.json));
 assert(importedScan.json.importSource === 'sarif' && importedScan.json.toolName === 'Opengrep Studio (opengrep)',
@@ -951,18 +923,14 @@ const importedManifest = await api('GET', `/api/scans/${importedScan.json.id}/ma
 assert(importedManifest.json?.engine?.version === null, 'SARIF 导入清单的引擎版本为空',
   JSON.stringify(importedManifest.json?.engine));
 
-const badSarif = new FormData();
-badSarif.append('file', new Blob(['{"not":"sarif"}'], { type: 'application/json' }), 'bad.sarif');
-const badSarifRes = await api('POST', `/api/projects/${packProject}/sarif`, badSarif);
+const badSarifRes = await api('POST', `/api/projects/${packProject}/sarif`,
+  fileForm('{"not":"sarif"}', 'application/json', 'bad.sarif'));
 assert(badSarifRes.status === 400, '非 SARIF 的 JSON 被拒绝', JSON.stringify(badSarifRes.json));
-const badExt = new FormData();
-badExt.append('file', new Blob([JSON.stringify(sarif)], { type: 'application/json' }), 'evil.txt');
-const badExtRes = await api('POST', `/api/projects/${packProject}/sarif`, badExt);
+const badExtRes = await api('POST', `/api/projects/${packProject}/sarif`,
+  fileForm(JSON.stringify(sarif), 'application/json', 'evil.txt'));
 assert(badExtRes.status === 400, '非 .sarif/.json 扩展名被拒绝');
-const badBaseline = new FormData();
-badBaseline.append('file', new Blob([JSON.stringify(sarif)], { type: 'application/json' }), 'b.sarif');
-badBaseline.append('baselineScanId', 'scan-不存在');
-const badBaselineRes = await api('POST', `/api/projects/${packProject}/sarif`, badBaseline);
+const badBaselineRes = await api('POST', `/api/projects/${packProject}/sarif`,
+  fileForm(JSON.stringify(sarif), 'application/json', 'b.sarif', { baselineScanId: 'scan-不存在' }));
 assert(badBaselineRes.status === 400, '非法基线被拒绝', JSON.stringify(badBaselineRes.json));
 
 const packCheck = await api('POST', `/api/rulepacks/${imported.json.id}/check`);
@@ -1081,7 +1049,6 @@ const p20pack = await uploadPack('E2E-P1批次规则包', 'JavaScript', PACK_JS_
 const p20cfg = await createConfig({
   name: 'E2E-P1批次配置',
   rulePackIds: [p20pack.id],
-  excludes: [], includes: [], timeoutSeconds: 30, jobs: 4, maxTargetBytes: 5000000,
 });
 const p20proj = await makeProjectWithSource('E2E-P1批次项目');
 await api('PATCH', `/api/projects/${p20proj}`, { configId: p20cfg.id });
@@ -1128,9 +1095,8 @@ assert(
   diffSame.json.issueDiff.new.count === 0 && diffSame.json.issueDiff.fixed.count === 0
     && diffSame.json.issueDiff.remaining.count === p20scanA.issueCount,
   '同源对比：无新增无修复，全部遗留', JSON.stringify(diffSame.json.issueDiff));
-const formV2 = new FormData();
-formV2.append('file', new Blob([makeZip({ 'api.ts': SAMPLE_TS_V2 })], { type: 'application/zip' }), 'p1-v2.zip');
-await api('POST', `/api/projects/${p20proj}/source`, formV2);
+await api('POST', `/api/projects/${p20proj}/source`,
+  fileForm(makeZip({ 'api.ts': SAMPLE_TS_V2 }), 'application/zip', 'p1-v2.zip'));
 const p20scanC = await pollScan((await api('POST', `/api/projects/${p20proj}/scans`, {})).json.id);
 const diffV2 = await api('GET', `/api/scans/${p20scanC.id}/diff?against=${p20scanA.id}`);
 assert(diffV2.json.issueDiff.new.count >= 1 && diffV2.json.issueDiff.fixed.count >= 1,
