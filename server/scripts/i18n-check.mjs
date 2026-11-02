@@ -129,6 +129,7 @@ checkPair('cwe-zh', 'CWE 知识库');
 if (problems.length) {
   console.error('\n发现不一致：');
   for (const line of problems) console.error(`- ${line}`);
+  console.error('请同步 code/src/i18n 三份语言包与 server/rules/messages-zh*.json（简繁同键），再重跑 npm run i18n:check');
   process.exitCode = 1;
 } else {
   console.log('i18n 资源一致');
