@@ -12,7 +12,6 @@ import { markStaleScansFailed } from './scan-runner.js';
 import { cleanupRuleLabScratch } from './rule-lab.js';
 import { reportCustomPackDrift } from './rulepacks.js';
 import { miscRoutes } from './routes/misc.js';
-import { engineRoutes } from './routes/engine.js';
 import {
   ensureBuiltinRulePacks,
   pruneStaleBuiltinPacks,
@@ -61,7 +60,6 @@ app.use((req, _res, next) => {
 });
 
 app.use(miscRoutes);
-app.use(engineRoutes);
 app.use(rulepackRoutes);
 app.use(projectRoutes);
 app.use(scanRoutes);
