@@ -14,7 +14,7 @@ import {
   getEngineVersion,
   runEngine,
 } from './engine.js';
-import { relativizeToRoot, stripRuleIdPrefix } from './engine-output.js';
+import { relativizeToRoot, stripRuleIdPrefix } from './fs-walk.js';
 import { extractTaintFlow, relativizeTaintFlow } from './taint.js';
 import {
   db,
