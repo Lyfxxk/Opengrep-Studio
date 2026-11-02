@@ -7,6 +7,16 @@ import type { ReportLang } from '../report.js';
 export const MAX_RULE_YAML_BYTES = 1024 * 1024;
 export const MAX_SAMPLE_BYTES = 200 * 1024;
 
+let engineJobBusy = false;
+
+export function isEngineJobBusy(): boolean {
+  return engineJobBusy;
+}
+
+export function setEngineJobBusy(busy: boolean): void {
+  engineJobBusy = busy;
+}
+
 export function parseProductLang(value: unknown): ReportLang {
   return value === 'zh-Hant' ? 'zh-Hant' : value === 'en' ? 'en' : 'zh';
 }
