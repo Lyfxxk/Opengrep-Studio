@@ -113,7 +113,7 @@ export function buildMockReport(scan: IScanResult, projectName: string): IReport
       durationSeconds,
       fileCount: scan.fileCount ?? 128,
       baselineScanId: scan.baselineScanId,
-      rulepacks: scan.rulepacks ?? [{ id: 'builtin-js', name: 'JavaScript 内置安全规则包' }],
+      rulepacks: scan.rulepacks ?? [{ id: 'builtin-js-ts', name: 'JavaScript / TypeScript 内置安全规则包' }],
       generatedAt: new Date().toISOString(),
     },
     totals: { total: current.length, bySeverity, byComparison },
