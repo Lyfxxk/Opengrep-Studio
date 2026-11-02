@@ -1,3 +1,5 @@
+import { isBackendUnreachable } from './script-utils.mjs';
+
 const BASE = process.env.BASE_URL ?? 'http://127.0.0.1:8787';
 const results = [];
 let passed = 0, failed = 0;
@@ -318,16 +320,6 @@ async function main() {
     results.filter((l) => l.startsWith('FAIL')).forEach((l) => console.log('  ' + l));
     process.exit(1);
   }
-}
-
-function isBackendUnreachable(error) {
-  let cause = error;
-  while (cause) {
-    if (cause.code === 'ECONNREFUSED' || cause.code === 'ENOTFOUND' || cause.code === 'ECONNRESET') return true;
-    if (Array.isArray(cause.errors) && cause.errors.some((item) => item?.code === 'ECONNREFUSED')) return true;
-    cause = cause.cause;
-  }
-  return false;
 }
 
 main().catch((e) => {

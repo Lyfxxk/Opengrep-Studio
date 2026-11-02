@@ -2,6 +2,7 @@ import { readFileSync, rmSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import * as tar from 'tar';
+import { isBackendUnreachable } from './script-utils.mjs';
 
 const BASE = process.env.BASE_URL ?? 'http://127.0.0.1:8787';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -25,6 +26,11 @@ async function j(pathname, init) {
 }
 const post = (data) => ({
   method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(data),
+});
+const patch = (data) => ({
+  method: 'PATCH',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify(data),
 });
@@ -207,11 +213,11 @@ async function main() {
   let projects = await j('/api/projects');
   let p1 = projects.find((p) => p.name === 'demo-nodejs-payment');
   if (!p1) p1 = await j('/api/projects', post({ name: 'demo-nodejs-payment', description: '种子数据：Node.js 支付服务演示（故意包含硬编码密钥 / MD5 / eval / SQL 拼接）' }));
-  await j(`/api/projects/${p1.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ configId: config.id }) });
+  await j(`/api/projects/${p1.id}`, patch({ configId: config.id }));
   const tar1 = await makeTar('nodejs-v1');
   log(`  上传 v1 源码：${(await uploadSource(p1.id, tar1)).fileCount} 个文件`);
   const s1 = await scanAndWait(p1.id, 'v1 基线扫描');
-  await j(`/api/projects/${p1.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ baselineScanId: s1.id }) });
+  await j(`/api/projects/${p1.id}`, patch({ baselineScanId: s1.id }));
   log('  已设为项目基线');
   const tar2 = await makeTar('nodejs-v2');
   log(`  上传 v2 源码（修复 eval、新增 backupApiKey / csrfToken）：${(await uploadSource(p1.id, tar2)).fileCount} 个文件`);
@@ -245,7 +251,7 @@ async function main() {
   projects = await j('/api/projects');
   let p2 = projects.find((p) => p.name === 'demo-python-flask-blog');
   if (!p2) p2 = await j('/api/projects', post({ name: 'demo-python-flask-blog', description: '种子数据：Flask 博客演示（SQL 拼接 / pickle 反序列化 / eval / 弱哈希）' }));
-  await j(`/api/projects/${p2.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ configId: config.id }) });
+  await j(`/api/projects/${p2.id}`, patch({ configId: config.id }));
   const tar3 = await makeTar('python-v1');
   log(`  上传源码：${(await uploadSource(p2.id, tar3)).fileCount} 个文件`);
   await scanAndWait(p2.id, 'flask 扫描');
@@ -255,7 +261,7 @@ async function main() {
     projects = await j('/api/projects');
     let p3 = projects.find((p) => p.name === 'real-express');
     if (!p3) p3 = await j('/api/projects', post({ name: 'real-express', description: '种子数据：GitHub expressjs/express 浅克隆（真实代码基线）' }));
-    await j(`/api/projects/${p3.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ configId: config.id }) });
+    await j(`/api/projects/${p3.id}`, patch({ configId: config.id }));
     const candidates = [
       'https://github.com/expressjs/express',
       'https://gitee.com/mirrors/express',
@@ -284,16 +290,6 @@ async function main() {
   log(`项目 ${finalProjects.length} 个：${finalProjects.map((p) => p.name).join('、')}`);
   log(`扫描 ${finalScans.length} 次：${finalScans.map((s) => `${s.status}(${s.issueCount ?? '-'})`).join('、')}`);
   log('完成。所有数据落在 server/data/（.gitignore 已忽略）。');
-}
-
-function isBackendUnreachable(error) {
-  let cause = error;
-  while (cause) {
-    if (cause.code === 'ECONNREFUSED' || cause.code === 'ENOTFOUND' || cause.code === 'ECONNRESET') return true;
-    if (Array.isArray(cause.errors) && cause.errors.some((item) => item?.code === 'ECONNREFUSED')) return true;
-    cause = cause.cause;
-  }
-  return false;
 }
 
 main().catch((error) => {
