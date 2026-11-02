@@ -1,5 +1,6 @@
 import argparse
 import os
+import sys
 import tempfile
 import glob
 
@@ -13,6 +14,11 @@ CAP = ARGS.cap if ARGS.cap > 0 else None
 
 SRC = os.environ.get("OPENGREP_RULES_SRC") or os.path.join(tempfile.gettempdir(), "opengrep-rules")
 DST = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "rules", "security")
+
+if not os.path.isdir(SRC):
+    print(f"错误: 规则源目录不存在: {SRC}")
+    print("请先 git clone https://github.com/opengrep/opengrep-rules 到该目录，或设置 OPENGREP_RULES_SRC 指向本地已有的 opengrep-rules 仓库后重跑")
+    sys.exit(1)
 
 TARGETS = {
     "python.yaml": ({"python"}, ["python"]),
@@ -86,6 +92,9 @@ for out_name, (langs, top_dirs) in TARGETS.items():
     print(f"{out_name}: 候选 {len(candidates)}（一档 {len(t1)}）-> {cap_note}")
     if ARGS.dry_run:
         continue
+    if not candidates:
+        print(f"错误: {out_name} 候选为 0，拒绝用空规则包覆写内置规则；请确认规则源 {SRC} 是完整的 opengrep-rules 仓库")
+        sys.exit(1)
 
     rule_dicts = []
     pack = out_name.replace(".yaml", "")
