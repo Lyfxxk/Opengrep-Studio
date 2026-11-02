@@ -11,7 +11,7 @@ RUN npm run build --prefix code
 COPY server/package.json server/package-lock.json ./server/
 RUN npm ci --prefix server
 
-COPY server/scripts/engines.json server/scripts/setup-engine.mjs server/scripts/engine-install.mjs server/scripts/engine-name.mjs ./server/scripts/
+COPY server/scripts/engines.json server/scripts/setup-engine.mjs server/scripts/engine-install.mjs ./server/scripts/
 RUN node server/scripts/setup-engine.mjs
 
 FROM node:22-bookworm-slim

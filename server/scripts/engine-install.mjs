@@ -27,6 +27,9 @@ export function platformKey(platform = process.platform, arch = process.arch) {
   return `${platform}-${arch}`;
 }
 
+export const engineExecutableName =
+  process.platform === 'win32' ? 'opengrep.exe' : 'opengrep';
+
 export function normalizeVersion(tag) {
   return String(tag ?? '').trim().replace(/^v/i, '');
 }
