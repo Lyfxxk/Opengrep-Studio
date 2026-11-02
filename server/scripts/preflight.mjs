@@ -2,8 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { normalizeVersion, readInstalledManifest, resolveTarget } from './engine-install.mjs';
-import { engineExecutableName } from './engine-name.mjs';
+import { engineExecutableName, normalizeVersion, readInstalledManifest, resolveTarget } from './engine-install.mjs';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.join(scriptDir, '..', '..');
