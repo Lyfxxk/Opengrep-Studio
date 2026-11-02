@@ -46,6 +46,9 @@ const zh = {
     backToProjects: '返回项目列表',
     close: '关闭',
     confirm: '确认',
+    sidebar: '侧边栏',
+    sidebarDescription: '显示移动端侧边栏',
+    toggleSidebar: '切换侧边栏',
   },
   pagination: {
     prev: '上一页',
@@ -210,6 +213,10 @@ const zh = {
     'bundled-dir': 'opengrep-tool 安装位（npm run setup:engine）',
     path: '系统 PATH 查找',
     missing: '未找到',
+  },
+  issues: {
+    noDescription: '（结果未提供描述）',
+    unknownPath: '（未知路径）',
   },
   langStats: {
     total: '合计 {{kb}} KB',
@@ -408,7 +415,7 @@ const zh = {
     samplePositives: '正例（应命中）',
     sampleNegatives: '反例（不应命中）',
     upstreamLink: '查看上游规则源文件',
-    notFound: '未在已安装的规则包中找到该规则的定义，仅展示中文说明与命中统计。',
+    notFound: '未在已安装的规则包中找到该规则的定义，仅展示规则说明与命中统计。',
   },
   configs: {
     pageTitle: '扫描配置',
@@ -871,6 +878,8 @@ const zh = {
       packManifestMissing: '压缩包含多个规则文件但缺少 pack.yaml 清单，请按可移植格式打包（pack.yaml + rules/ 目录）',
       allFilesIgnored: '按 .gitignore 忽略规则过滤后没有剩余可扫描的文件，请检查忽略规则，或关闭「按 .gitignore 忽略文件」后重新上传',
       noEnabledBuiltinPacks: '没有已启用的内置规则包，无法创建兜底配置；请先在配置管理创建配置并在项目详情页绑定',
+      importSuccess: '导入成功：{{rules}} 条规则、{{samples}} 个样本，建议先运行质量检查',
+      importSuccessBasic: '导入成功（单文件包，无样本，basic 档）',
     },
     git: {
       badUrl: '仓库地址格式不正确，请输入 https:// 开头的 Git 仓库 URL',

@@ -48,6 +48,9 @@ const en: typeof zh = {
     backToProjects: 'Back to projects',
     close: 'Close',
     confirm: 'Confirm',
+    sidebar: 'Sidebar',
+    sidebarDescription: 'Displays the mobile sidebar',
+    toggleSidebar: 'Toggle Sidebar',
   },
   pagination: {
     prev: 'Previous',
@@ -213,6 +216,10 @@ const en: typeof zh = {
     'bundled-dir': 'opengrep-tool install (npm run setup:engine)',
     path: 'found on the system PATH',
     missing: 'not found',
+  },
+  issues: {
+    noDescription: '(no description provided)',
+    unknownPath: '(unknown path)',
   },
   langStats: {
     total: 'Total {{kb}} KB',
@@ -901,6 +908,9 @@ const en: typeof zh = {
         'No files left to scan after applying .gitignore. Check your ignore rules, or turn off "Respect .gitignore" and upload again.',
       noEnabledBuiltinPacks:
         'No built-in rule packs are enabled, so the fallback config cannot be created. Create a config in Config Management and bind it on the project page.',
+      importSuccess:
+        'Import succeeded: {{rules}} rules and {{samples}} samples. Run a quality check first.',
+      importSuccessBasic: 'Import succeeded (single-file pack, no samples, basic tier).',
     },
     git: {
       badUrl: 'Invalid repository URL — enter a Git URL starting with https://',
