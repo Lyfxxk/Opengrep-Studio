@@ -5,7 +5,7 @@ import { config } from './config.js';
 import { HttpError } from './errors.js';
 import { engineInstallHint, engineInstallHintInfo, runEngine } from './engine.js';
 import { relativizeToRoot, stripRuleIdPrefix } from './fs-walk.js';
-import { readSampleText, scanPackSamples } from './pack-format.js';
+import { readSampleText, scanPackSamples, type SampleSet } from './pack-format.js';
 import { collectRuleFiles } from './rulepacks.js';
 import { extractTaintFlow, relativizeTaintFlow, type TaintStep } from './taint.js';
 
@@ -56,6 +56,20 @@ function invalid(
   throw new RuleYamlError(code, `规则条目不合法（第 ${index + 1} 条：${reason}）`, {
     index: index + 1,
     ...params,
+  });
+}
+
+export function asRuleFileHttpError(error: unknown, name: string): HttpError {
+  if (error instanceof RuleYamlError) {
+    return new HttpError(400, `规则文件 ${name} 不合法：${error.message}`, {
+      code: 'srv.ruleFileInvalidDetail',
+      params: { name, reasonCode: error.code, reasonParams: error.params },
+    });
+  }
+  const reason = error instanceof Error ? error.message : String(error);
+  return new HttpError(400, `规则文件 ${name} 不合法：${reason}`, {
+    code: 'srv.ruleFileInvalidDetail',
+    params: { name, reason },
   });
 }
 
@@ -237,6 +251,46 @@ export interface PackCheckResult {
 
 const MAX_SAMPLED_RULES = 20;
 
+async function checkSampledRule(
+  rule: Record<string, unknown>,
+  relFile: string,
+  ruleId: string,
+  set: SampleSet,
+): Promise<PackCheckItem> {
+  const singleRuleYaml = yamlDump({ rules: [rule] });
+  const run = await runRuleLab(
+    singleRuleYaml,
+    {
+      positive: set.positives.map(readSampleText).join('\n\n'),
+      negative: set.negatives.map(readSampleText).join('\n\n'),
+    },
+    typeof rule.languages === 'object' && rule.languages !== null
+      ? String((rule.languages as unknown[])[0] ?? '')
+      : undefined,
+  );
+  const detail =
+    run.verdict === 'fail'
+      ? run.failures.map((item) => item.message).join('；')
+      : run.verdict === 'error'
+        ? run.error ?? run.engineErrors[0] ?? '引擎执行失败'
+        : undefined;
+  const errorCode =
+    run.verdict !== 'error'
+      ? undefined
+      : run.errorCode ?? (run.engineErrors.length > 0 ? undefined : 'lab.engineFailed');
+  return {
+    ruleId,
+    ruleFile: relFile,
+    positiveCount: set.positives.length,
+    negativeCount: set.negatives.length,
+    verdict: run.verdict,
+    ...(detail ? { detail } : {}),
+    ...(run.verdict === 'fail' && run.failures.length > 0 ? { failures: run.failures } : {}),
+    ...(errorCode ? { errorCode } : {}),
+    ...(run.verdict === 'error' && run.errorParams ? { errorParams: run.errorParams } : {}),
+  };
+}
+
 export async function runPackCheck(packDir: string): Promise<PackCheckResult> {
   const startedAt = Date.now();
   const ruleFiles = collectRuleFiles(path.join(packDir, 'rules'));
@@ -252,18 +306,7 @@ export async function runPackCheck(packDir: string): Promise<PackCheckResult> {
     try {
       for (const id of parseRuleYaml(text).ruleIds) knownIds.add(id);
     } catch (error) {
-      const name = path.relative(packDir, file).replace(/\\/g, '/');
-      if (error instanceof RuleYamlError) {
-        throw new HttpError(400, `规则文件 ${name} 不合法：${error.message}`, {
-          code: 'srv.ruleFileInvalidDetail',
-          params: { name, reasonCode: error.code, reasonParams: error.params },
-        });
-      }
-      const reason = error instanceof Error ? error.message : String(error);
-      throw new HttpError(400, `规则文件 ${name} 不合法：${reason}`, {
-        code: 'srv.ruleFileInvalidDetail',
-        params: { name, reason },
-      });
+      throw asRuleFileHttpError(error, path.relative(packDir, file).replace(/\\/g, '/'));
     }
     const doc = yamlLoad(text) as { rules?: Array<Record<string, unknown>> } | null;
     rulesByFile.push({ file, rules: Array.isArray(doc?.rules) ? doc!.rules! : [] });
@@ -297,39 +340,8 @@ export async function runPackCheck(packDir: string): Promise<PackCheckResult> {
         continue;
       }
       sampled += 1;
-      const singleRuleYaml = yamlDump({ rules: [rule] });
-      const run = await runRuleLab(
-        singleRuleYaml,
-        {
-          positive: set.positives.map(readSampleText).join('\n\n'),
-          negative: set.negatives.map(readSampleText).join('\n\n'),
-        },
-        typeof rule.languages === 'object' && rule.languages !== null
-          ? String((rule.languages as unknown[])[0] ?? '')
-          : undefined,
-      );
       sawSample = true;
-      const detail =
-        run.verdict === 'fail'
-          ? run.failures.map((item) => item.message).join('；')
-          : run.verdict === 'error'
-            ? run.error ?? run.engineErrors[0] ?? '引擎执行失败'
-            : undefined;
-      const errorCode =
-        run.verdict !== 'error'
-          ? undefined
-          : run.errorCode ?? (run.engineErrors.length > 0 ? undefined : 'lab.engineFailed');
-      items.push({
-        ruleId,
-        ruleFile: relFile,
-        positiveCount,
-        negativeCount,
-        verdict: run.verdict,
-        ...(detail ? { detail } : {}),
-        ...(run.verdict === 'fail' && run.failures.length > 0 ? { failures: run.failures } : {}),
-        ...(errorCode ? { errorCode } : {}),
-        ...(run.verdict === 'error' && run.errorParams ? { errorParams: run.errorParams } : {}),
-      });
+      items.push(await checkSampledRule(rule, relFile, ruleId, set));
     }
   }
 
