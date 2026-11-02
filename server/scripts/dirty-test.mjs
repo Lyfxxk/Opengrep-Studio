@@ -24,13 +24,13 @@ function record(label, ok, detail) {
   results.push(`${ok ? 'PASS' : 'FAIL'}  ${label}${ok ? '' : '  <<< ' + detail}`);
   ok ? passed++ : failed++;
 }
-const expect4xx = (label, res, contains) => {
+const expect4xx = (label, res, errorCode) => {
   const statusOk = res.status >= 400 && res.status < 500;
-  const containsOk = contains === undefined || JSON.stringify(res.body).includes(contains);
+  const codeOk = errorCode === undefined || res.body?.error?.code === errorCode;
   record(
     label,
-    statusOk && containsOk,
-    `status=${res.status}${containsOk ? '' : ` 未含期望报文「${contains}」`} body=${JSON.stringify(res.body).slice(0, 120)}`,
+    statusOk && codeOk,
+    `status=${res.status}${codeOk ? '' : ` 期望错误码 ${errorCode}，实际 ${res.body?.error?.code ?? '（无）'}`} body=${JSON.stringify(res.body).slice(0, 120)}`,
   );
 };
 const expect2xx = (label, res) =>
@@ -77,7 +77,7 @@ async function main() {
     fd2.append('files', new Blob(['x'], { type: 'text/plain' }), 'f.txt');
     fd2.append('paths', evil);
     const r2 = await fdPost(`/api/projects/${uploadProject.id}/source`, fd2);
-    expect4xx(`路径穿越 paths=${evil} → 400`, r2, '不安全');
+    expect4xx(`路径穿越 paths=${evil} → 400`, r2, 'archive.unsafePath');
   }
   for (const evil of ['evil<1>.txt', 'a:b.txt', 'q?*.js']) {
     const fd2b = new FormData();
