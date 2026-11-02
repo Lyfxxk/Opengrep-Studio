@@ -18,7 +18,7 @@ function loadJson<T>(key: string, fallback: T, label: string): T {
       return JSON.parse(raw) as T;
     }
   } catch (error) {
-    console.error(`读取${label}缓存失败，回退到内置示例数据:`, String(error));
+    console.error(`Failed to load ${label} cache, falling back to built-in sample data:`, String(error));
   }
   return fallback;
 }
@@ -27,54 +27,54 @@ function saveJson(key: string, value: unknown, label: string): void {
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch (error) {
-    console.error(`保存${label}失败:`, String(error));
+    console.error(`Failed to save ${label}:`, String(error));
   }
 }
 
 export function loadProjects(): IProject[] {
-  return loadJson<IProject[]>(PROJECTS_KEY, [...MOCK_PROJECTS], '项目列表');
+  return loadJson<IProject[]>(PROJECTS_KEY, [...MOCK_PROJECTS], 'project list');
 }
 
 export function saveProjects(projects: IProject[]): void {
-  saveJson(PROJECTS_KEY, projects, '项目列表');
+  saveJson(PROJECTS_KEY, projects, 'project list');
 }
 
 export function loadScans(): IScanResult[] {
-  return loadJson<IScanResult[]>(SCANS_KEY, [...MOCK_SCAN_RESULTS], '扫描记录');
+  return loadJson<IScanResult[]>(SCANS_KEY, [...MOCK_SCAN_RESULTS], 'scan records');
 }
 
 export function saveScans(scans: IScanResult[]): void {
-  saveJson(SCANS_KEY, scans, '扫描记录');
+  saveJson(SCANS_KEY, scans, 'scan records');
 }
 
 export function loadConfigs(): IConfig[] {
-  return loadJson<IConfig[]>(CONFIGS_KEY, [...MOCK_CONFIGS], '扫描配置');
+  return loadJson<IConfig[]>(CONFIGS_KEY, [...MOCK_CONFIGS], 'scan configs');
 }
 
 export function saveConfigs(configs: IConfig[]): void {
-  saveJson(CONFIGS_KEY, configs, '扫描配置');
+  saveJson(CONFIGS_KEY, configs, 'scan configs');
 }
 
 export function loadRulePacks(): IRulePack[] {
-  return loadJson<IRulePack[]>(RULE_PACKS_KEY, [...MOCK_RULE_PACKS], '规则包');
+  return loadJson<IRulePack[]>(RULE_PACKS_KEY, [...MOCK_RULE_PACKS], 'rule packs');
 }
 
 export function saveRulePacks(packs: IRulePack[]): void {
-  saveJson(RULE_PACKS_KEY, packs, '规则包');
+  saveJson(RULE_PACKS_KEY, packs, 'rule packs');
 }
 
 export function loadReviews(): IReviewRecord[] {
-  return loadJson<IReviewRecord[]>(REVIEWS_KEY, [], '人工复核');
+  return loadJson<IReviewRecord[]>(REVIEWS_KEY, [], 'manual reviews');
 }
 
 export function saveReviews(reviews: IReviewRecord[]): void {
-  saveJson(REVIEWS_KEY, reviews, '人工复核');
+  saveJson(REVIEWS_KEY, reviews, 'manual reviews');
 }
 
 export function loadPackContents(): Record<string, string> {
-  return loadJson<Record<string, string>>(PACK_CONTENTS_KEY, {}, '规则包内容');
+  return loadJson<Record<string, string>>(PACK_CONTENTS_KEY, {}, 'rule pack contents');
 }
 
 export function savePackContents(contents: Record<string, string>): void {
-  saveJson(PACK_CONTENTS_KEY, contents, '规则包内容');
+  saveJson(PACK_CONTENTS_KEY, contents, 'rule pack contents');
 }
