@@ -256,36 +256,6 @@ flowchart LR
 - [ ] GitHub Action 工作流程範本（CI 中跑掃描並回傳 SARIF）
 - [ ] 報告範本自訂（品牌 / 頁首頁尾）
 
-## 開發指南
-
-常用命令（根目錄執行）：
-
-| 命令 | 說明 |
-| :--- | :--- |
-| `npm run dev` | 同時啟動後端 `tsx watch`(:8787) 與前端 Vite(:1022) |
-| `npm test` | 後端單元測試（引擎解析 / gitignore 語意 / 規則 YAML / SARIF 匯入） |
-| `npm run test-packs` | 規則包結構校驗與樣本回歸 |
-| `npm run i18n:check` | 語言包一致性（三份 UI 語言包＋簡繁規則說明／CWE） |
-| `npm run e2e` | 黑箱 REST 回歸（需先啟動後端與引擎，21 組情境） |
-| `npm run seed` | 灌入示範資料 |
-| `npm --prefix code run lint` | 前端型別檢查 + ESLint |
-
-目錄結構：
-
-```text
-├─ code/                 # React 19 + Vite + Tailwind v4 + shadcn/ui 前端
-│  └─ src/pages/         # 儀表板 / 專案 / 掃描結果 / 報告 / 規則中心(含實驗室) / 設定
-├─ server/               # Express 後端（node:sqlite，無原生相依）
-│  ├─ src/               # API / 掃描編排 / SARIF / 快照對比 / 規則包 / 報告
-│  ├─ rules/security/    # 12 語言內建規則（精選自 opengrep-rules）
-│  └─ scripts/           # 引擎下載 / 種子資料 / 測試 / 規則再生成
-└─ docs/images/          # 文件圖片
-```
-
-**貢獻一條規則的推薦路徑**：規則實驗室寫規則並用正反例驗證 → 「儲存到規則包」（附上樣本）→ 匯出 zip → 提 PR。⚠️ 請勿提交來自 semgrep-rules 的規則（其許可限制競爭性使用）；opengrep-rules 來源的規則請保留上游溯源資訊。前端有示範模式：`VITE_USE_MOCK=true npm --prefix code run dev`。
-
-CI（`.github/workflows/ci.yml`）包含四個任務：後端型別檢查 + 單元測試、前端 lint + 建置、**下載真實引擎跑完整 E2E**、以及 **Docker 建置與啟動冒煙**。
-
 ## 致謝
 
 - [opengrep/opengrep](https://github.com/opengrep/opengrep) —— 掃描引擎（LGPL-2.1），本儲存庫不內嵌其二進位檔，由腳本下載並校驗
@@ -300,7 +270,3 @@ CI（`.github/workflows/ci.yml`）包含四個任務：後端型別檢查 + 單�
 
 - **掃描引擎**：opengrep 以 LGPL-2.1 發布，本儲存庫不含引擎二進位檔，`npm run setup:engine` 從官方 Releases 下載並做 SHA-256 校驗
 - **內建規則**：精選自 opengrep-rules（LGPL 2.1 + Commons Clause），可自由使用與再散布（保留署名），但不得將規則本身作為付費產品出售
-
-## 星標歷史
-
-[![Star History Chart](https://api.star-history.com/svg?repos=Lyfxxk/Opengrep-Studio&type=Date)](https://star-history.com/#Lyfxxk/Opengrep-Studio)
