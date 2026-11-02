@@ -996,10 +996,11 @@ export function renderReportHtml(
     )
     .join('');
 
+  const firstSeverity = SEVERITY_ORDER.find((sev) => current.some((issue) => issue.severity === sev));
   const detailHtml =
     current.length === 0
       ? `<p class="conclusion">${text.noIssues}</p>`
-      : SEVERITY_ORDER.map((sev, index) => {
+      : SEVERITY_ORDER.map((sev) => {
           const list = current.filter((issue) => issue.severity === sev);
           if (list.length === 0) return '';
           const byFileCount = new Set(list.map((issue) => issue.filePath)).size;
@@ -1008,7 +1009,7 @@ export function renderReportHtml(
             sub: text.groupCount(list.length, byFileCount),
             hint: text.groupHint[sev],
             accent: SEVERITY_COLOR[sev],
-            first: index === 0,
+            first: sev === firstSeverity,
             list,
             snippets,
             snippetBudget,
