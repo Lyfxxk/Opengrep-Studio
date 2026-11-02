@@ -1,18 +1,13 @@
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { pruneIgnoredFiles } from '../src/ignore-filter.ts';
+import { pruneIgnoredFiles } from '../src/fs-walk.ts';
+import { makeTempDir, writeTree } from './script-utils.mjs';
 
 function makeFixture(files) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'igtest-'));
-  for (const [rel, content] of Object.entries(files)) {
-    const full = path.join(dir, rel);
-    fs.mkdirSync(path.dirname(full), { recursive: true });
-    if (content === null) fs.mkdirSync(full, { recursive: true });
-    else fs.writeFileSync(full, content, 'utf8');
-  }
+  const dir = makeTempDir('igtest-');
+  writeTree(dir, files);
   return dir;
 }
 
@@ -31,7 +26,6 @@ test('目录整棵剪除且否定规则不复活', async () => {
   assert.ok(!fs.existsSync(path.join(dir, '.env')));
   assert.ok(!fs.existsSync(path.join(dir, 'dist')));
   assert.ok(fs.existsSync(path.join(dir, '.gitignore')), '规则文件本身保留');
-  fs.rmSync(dir, { recursive: true, force: true });
 });
 
 test('深层否定规则覆盖浅层', async () => {
@@ -45,7 +39,6 @@ test('深层否定规则覆盖浅层', async () => {
   const r = await pruneIgnoredFiles(dir);
   assert.equal(r.keptFiles, 3);
   assert.equal(r.ignoredFiles, 2);
-  fs.rmSync(dir, { recursive: true, force: true });
 });
 
 test('锚定模式只匹配同层级', async () => {
@@ -59,7 +52,6 @@ test('锚定模式只匹配同层级', async () => {
   const r = await pruneIgnoredFiles(dir);
   assert.equal(r.keptFiles, 3);
   assert.equal(r.ignoredFiles, 2);
-  fs.rmSync(dir, { recursive: true, force: true });
 });
 
 test('dist/* 保留子目录内被否定的文件；CRLF 规则文件', async () => {
@@ -72,7 +64,6 @@ test('dist/* 保留子目录内被否定的文件；CRLF 规则文件', async ()
   const r = await pruneIgnoredFiles(dir);
   assert.equal(r.keptFiles, 3);
   assert.equal(r.ignoredFiles, 1);
-  fs.rmSync(dir, { recursive: true, force: true });
 });
 
 test('node_modules / .git 强制静默剪除', async () => {
@@ -85,7 +76,6 @@ test('node_modules / .git 强制静默剪除', async () => {
   const r = await pruneIgnoredFiles(dir);
   assert.equal(r.keptFiles, 1);
   assert.equal(r.ignoredFiles, 0);
-  fs.rmSync(dir, { recursive: true, force: true });
 });
 
 test('无规则文件时零剪枝', async () => {
@@ -93,7 +83,6 @@ test('无规则文件时零剪枝', async () => {
   const r = await pruneIgnoredFiles(dir);
   assert.equal(r.keptFiles, 2);
   assert.equal(r.ignoredFiles, 0);
-  fs.rmSync(dir, { recursive: true, force: true });
 });
 
 test('.opengrepignore 优先级高于同目录 .gitignore', async () => {
@@ -106,5 +95,4 @@ test('.opengrepignore 优先级高于同目录 .gitignore', async () => {
   const r = await pruneIgnoredFiles(dir);
   assert.equal(r.keptFiles, 3);
   assert.equal(r.ignoredFiles, 1);
-  fs.rmSync(dir, { recursive: true, force: true });
 });
