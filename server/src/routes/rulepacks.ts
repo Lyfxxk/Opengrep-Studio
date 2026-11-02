@@ -24,7 +24,7 @@ import {
   customPackPath,
   packFilePath,
 } from '../rulepacks.js';
-import { LANG_EXT, parseRuleYaml, runPackCheck, RuleYamlError } from '../rule-lab.js';
+import { asRuleFileHttpError, LANG_EXT, parseRuleYaml, runPackCheck, RuleYamlError } from '../rule-lab.js';
 import {
   buildLegacyManifestYaml,
   buildPackReadme,
@@ -124,20 +124,6 @@ function asRuleYamlHttpError(error: unknown): HttpError {
   }
   const reason = error instanceof Error ? error.message : String(error);
   return new HttpError(400, reason, { code: 'srv.ruleYamlInvalid', params: { reason } });
-}
-
-function asRuleFileHttpError(error: unknown, name: string): HttpError {
-  if (error instanceof RuleYamlError) {
-    return new HttpError(400, `规则文件 ${name} 不合法：${error.message}`, {
-      code: 'srv.ruleFileInvalidDetail',
-      params: { name, reasonCode: error.code, reasonParams: error.params },
-    });
-  }
-  const reason = error instanceof Error ? error.message : String(error);
-  return new HttpError(400, `规则文件 ${name} 不合法：${reason}`, {
-    code: 'srv.ruleFileInvalidDetail',
-    params: { name, reason },
-  });
 }
 
 rulepackRoutes.get('/api/rulepacks', (_req, res) => {
