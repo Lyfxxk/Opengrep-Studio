@@ -77,8 +77,8 @@ const cancelRequested = new Set<string>();
 export function requestScanCancel(scanId: string): boolean {
   const child = runningEngines.get(scanId);
   if (!child) return false;
-  if (child.exitCode !== null || child.signalCode !== null) return true;
   cancelRequested.add(scanId);
+  if (child.exitCode !== null || child.signalCode !== null) return true;
   child.kill();
   return true;
 }
@@ -364,7 +364,10 @@ async function runScan(scanId: string, plan: ScanPlan): Promise<void> {
     const { code, stdout, stderr, timedOut, stdoutTruncated } = await runEngine(args, srcDir, {
       timeoutMs: config.scanTimeoutMs,
       logLabel: 'scan-runner',
-      onSpawn: (child) => runningEngines.set(scanId, child),
+      onSpawn: (child) => {
+        runningEngines.set(scanId, child);
+        if (getScan(scanId)?.status !== 'scanning') child.kill();
+      },
     });
     runningEngines.delete(scanId);
     if (getScan(scanId)?.status !== 'scanning') return;
