@@ -33,8 +33,7 @@ import { engineAvailable, engineInstallHint, getEngineVersion } from '../engine.
 import { engineUpgradeRunning } from '../engine-update.js';
 import { diffSnapshots } from '../snapshot-diff.js';
 import { packRuleFiles } from '../rulepacks.js';
-import { buildSarifReport } from '../sarif.js';
-import { parseSarifImport } from '../sarif-import.js';
+import { buildSarifReport, parseSarifImport } from '../sarif.js';
 import { buildReportData, renderReportHtml, sanitizeCommand } from '../report.js';
 import { applyBaselineComparison, enqueueScan, requestScanCancel, type ScanPlan } from '../scan-runner.js';
 import {
