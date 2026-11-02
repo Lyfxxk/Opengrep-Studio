@@ -610,6 +610,8 @@ rulepackRoutes.post(
         res.status(201).json({
           ...pack,
           message: `导入成功：${ruleCount} 条规则、${sampleCount} 个样本，建议先运行质量检查`,
+          messageCode: 'srv.importSuccess',
+          messageParams: { rules: ruleCount, samples: sampleCount },
         });
         return;
       }
@@ -637,7 +639,11 @@ rulepackRoutes.post(
         throw asRuleFileHttpError(error, looseFiles[0].name);
       }
       const pack = saveNewRulePack(name, language || 'Other', content, originalName);
-      res.status(201).json({ ...pack, message: '导入成功（单文件包，无样本，basic 档）' });
+      res.status(201).json({
+        ...pack,
+        message: '导入成功（单文件包，无样本，basic 档）',
+        messageCode: 'srv.importSuccessBasic',
+      });
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     }

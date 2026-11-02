@@ -248,7 +248,9 @@ export default function RulePackTab() {
     api
       .importRulePack(file)
       .then((pack) => {
-        if (pack.message) toast.success(pack.message);
+        if (pack.messageCode || pack.message) {
+          toast.success(translateApiError(pack.messageCode, pack.messageParams, pack.message ?? ''));
+        }
         return loadAll();
       })
       .catch((error) => {
