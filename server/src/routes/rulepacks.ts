@@ -538,12 +538,6 @@ async function importPortablePack(root: string, res: Response): Promise<void> {
   const packId = newId('rp');
   const destDir = customPackDir(packId);
   fs.mkdirSync(config.customRulesDir, { recursive: true });
-  try {
-    await copyDirectory(root, destDir);
-  } catch (error) {
-    fs.rmSync(destDir, { recursive: true, force: true });
-    throw error;
-  }
   const pack: RulePack = {
     id: packId,
     name: manifest.name,
@@ -558,7 +552,13 @@ async function importPortablePack(root: string, res: Response): Promise<void> {
     isDir: true,
     lastCheck: null,
   };
-  insertRulePack(pack);
+  try {
+    await copyDirectory(root, destDir);
+    insertRulePack(pack);
+  } catch (error) {
+    fs.rmSync(destDir, { recursive: true, force: true });
+    throw error;
+  }
   res.status(201).json({
     ...pack,
     message: `导入成功：${ruleCount} 条规则、${sampleCount} 个样本，建议先运行质量检查`,
