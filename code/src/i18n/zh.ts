@@ -425,6 +425,8 @@ const zh = {
     selectAllAria: '全选配置',
     fallbackBadge: '兜底',
     fallbackHint: '未绑定配置（或绑定已失效）的项目扫描时自动使用；可调整但不可删除',
+    fallbackName: '默认扫描配置',
+    fallbackDescription: '兜底配置：未绑定配置（或绑定已失效）的项目扫描时自动使用；可调整但不可删除',
     rowSelectAria: '选择配置 {{name}}',
     colName: '配置名称',
     colRulePacks: '规则包',

@@ -43,15 +43,16 @@ import {
 import { type IConfig } from '@/data/configs';
 import type { IProject } from '@/data/projects';
 import type { IRulePack } from '@/data/rulepacks';
+import { useConfigDisplayName } from '@/lib/configName';
 import {
   api,
   type ConfigFormValues,
 } from '@/lib/api';
 import ConfigFormDialog, { type ConfigDialogTarget } from './ConfigFormDialog';
 
-function toFormValues(config: IConfig): ConfigFormValues {
+function toFormValues(config: IConfig, name?: string): ConfigFormValues {
   return {
-    name: config.name,
+    name: name ?? config.name,
     description: config.description,
     rulePackIds: config.rulePackIds,
     excludes: config.excludes,
@@ -64,6 +65,7 @@ function toFormValues(config: IConfig): ConfigFormValues {
 
 export default function ScanConfigTab() {
   const { t } = useTranslation();
+  const configDisplay = useConfigDisplayName();
   const [configs, setConfigs] = useState<IConfig[]>([]);
   const [projects, setProjects] = useState<IProject[]>([]);
   const [rulePacks, setRulePacks] = useState<IRulePack[]>([]);
@@ -118,14 +120,14 @@ export default function ScanConfigTab() {
   const handleEdit = (config: IConfig) => {
     setTarget({
       id: config.id,
-      values: toFormValues(config),
+      values: toFormValues(config, configDisplay(config).name),
     });
     setDialogOpen(true);
   };
 
   const handleCopy = (config: IConfig) => {
     setTarget({
-      values: { ...toFormValues(config), name: `${config.name}${t('configs.copySuffix')}` },
+      values: { ...toFormValues(config), name: `${configDisplay(config).name}${t('configs.copySuffix')}` },
     });
     setDialogOpen(true);
   };
@@ -251,12 +253,12 @@ export default function ScanConfigTab() {
                           checked={selection.selected.has(config.id)}
                           onCheckedChange={() => selection.toggle(config.id)}
                           disabled={config.isProtected}
-                          aria-label={t('configs.rowSelectAria', { name: config.name })}
+                          aria-label={t('configs.rowSelectAria', { name: configDisplay(config).name })}
                         />
                       </TableCell>
                       <TableCell>
                         <span className="flex items-center gap-1.5 font-medium">
-                          {config.name}
+                          {configDisplay(config).name}
                           {config.isProtected && (
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -270,9 +272,9 @@ export default function ScanConfigTab() {
                             </Tooltip>
                           )}
                         </span>
-                        {config.description && (
+                        {configDisplay(config).description && (
                           <span className="block max-w-[220px] truncate text-xs text-muted-foreground">
-                            {config.description}
+                            {configDisplay(config).description}
                           </span>
                         )}
                       </TableCell>

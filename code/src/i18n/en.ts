@@ -435,6 +435,9 @@ const en: typeof zh = {
     selectAllAria: 'Select all configs',
     fallbackBadge: 'Fallback',
     fallbackHint: 'Used automatically when a project has no valid config bound. Editable, but cannot be deleted.',
+    fallbackName: 'Default scan config',
+    fallbackDescription:
+      'Fallback config: used automatically when a project has no valid config bound. Editable, but cannot be deleted.',
     rowSelectAria: 'Select config {{name}}',
     colName: 'Name',
     colRulePacks: 'Rule packs',
