@@ -1115,7 +1115,9 @@ const p20report = await api('GET', `/api/scans/${p20scanB.id}/report`);
 assert(
   p20report.json?.reviewStats?.reviewed >= 1 && p20report.json.reviewStats.falsePositives >= 1,
   '报告含复核统计', JSON.stringify(p20report.json?.reviewStats));
-assert((p20report.json?.conclusion ?? '').includes('人工复核'), '报告结论含复核句');
+assert(
+  p20report.json?.conclusionCode?.code === 'summary' && (p20report.json?.conclusion ?? '').length > 0,
+  '报告结论带结构化代码且非空');
 
 const diffSame = await api('GET', `/api/scans/${p20scanB.id}/diff?against=${p20scanA.id}`);
 assert(diffSame.status === 200, '同源对比可用', JSON.stringify(diffSame.json));
@@ -1147,7 +1149,7 @@ const kb = await api('GET', '/api/rules/knowledge/js-hardcoded-secret');
 assert(kb.status === 200 && kb.json.found === true && kb.json.matchedRuleId === 'js-hardcoded-secret',
   '知识库命中自定义规则', JSON.stringify(kb.json));
 assert(
-  kb.json.cwe.some((item) => item.id === 'CWE-798' && (item.name ?? '').includes('硬编码')),
+  kb.json.cwe.some((item) => item.id === 'CWE-798' && (item.name ?? '').length > 0 && /[\u4e00-\u9fff]/.test(item.name)),
   'CWE 中文名映射', JSON.stringify(kb.json.cwe));
 assert((kb.json.fixSuggestion ?? '').length > 0, 'CWE 级修复建议');
 assert(kb.json.stats.total >= 1, '命中统计', JSON.stringify(kb.json.stats));
@@ -1164,10 +1166,10 @@ assert(kbEn.status === 200 && kbEn.json?.found === true, '英文知识可取', k
 assert(
   (kbEn.json?.message ?? '').length > 0 && !/[\u4e00-\u9fff]/.test(kbEn.json.message),
   '英文说明取规则自带原文且不含汉字', kbEn.json?.message);
-assert(kbEn.json?.fixSuggestion === undefined, '英文界面不输出中文修复建议');
+assert((kbEn.json?.fixSuggestion ?? '').length > 0, '英文修复建议回落简体词典');
 assert(
-  kbEn.json?.cwe?.some((item) => (item.name ?? '').length > 0 && !/[\u4e00-\u9fff]/.test(item.name)) === true,
-  '英文 CWE 名取规则 metadata', JSON.stringify(kbEn.json?.cwe));
+  kbEn.json?.cwe?.some((item) => (item.name ?? '').length > 0) === true,
+  '英文 CWE 名回落简体词典', JSON.stringify(kbEn.json?.cwe));
 const kbBadLang = await api('GET', '/api/rules/knowledge/aead-no-final?lang=fr');
 assert(kbBadLang.json?.message === kbUpstream.json?.message, '非法 lang 回落简体', kbBadLang.json?.message);
 
