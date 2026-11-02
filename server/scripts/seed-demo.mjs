@@ -286,7 +286,21 @@ async function main() {
   log('完成。所有数据落在 server/data/（.gitignore 已忽略）。');
 }
 
+function isBackendUnreachable(error) {
+  let cause = error;
+  while (cause) {
+    if (cause.code === 'ECONNREFUSED' || cause.code === 'ENOTFOUND' || cause.code === 'ECONNRESET') return true;
+    if (Array.isArray(cause.errors) && cause.errors.some((item) => item?.code === 'ECONNREFUSED')) return true;
+    cause = cause.cause;
+  }
+  return false;
+}
+
 main().catch((error) => {
-  console.error('种子脚本失败：', error.message);
+  if (isBackendUnreachable(error)) {
+    console.error('种子脚本失败：后端未就绪。请先 npm run dev 启动后端（或用 BASE_URL 指向运行中的实例）后再执行 npm run seed。');
+  } else {
+    console.error('种子脚本失败：', error.message);
+  }
   process.exit(1);
 });
