@@ -1071,7 +1071,7 @@ export function renderReportHtml(
       <div class="doc-meta">
         <b class="mono">${escapeHtml(meta.scanId)}</b><br>
         ${text.meta.finishedAt} <b>${formatDateTime(meta.finishedAt ?? meta.scannedAt)}</b><br>
-        ${text.meta.engine} <b>${meta.engineVersion ? `opengrep v${escapeHtml(meta.engineVersion)}` : '—'}</b> · ${text.meta.rulesLabel} <b>${escapeHtml(meta.rules ?? '—')}</b>
+        ${text.meta.engine} <b>${meta.engineVersion ? `opengrep v${escapeHtml(meta.engineVersion)}` : '—'}</b> · ${text.meta.rulesLabel} <b>${meta.importSource === 'sarif' ? escapeHtml(text.sarifImport(meta.toolName)) : escapeHtml(meta.rules ?? '—')}</b>
       </div>
     </div>
 
