@@ -1,8 +1,20 @@
 import { Fragment } from 'react';
-import { Link, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from 'next-themes';
-import { Check, LogOut, Monitor, Moon, Sun } from 'lucide-react';
+import {
+  Check,
+  FileText,
+  FolderOpen,
+  LayoutDashboard,
+  LogOut,
+  Monitor,
+  Moon,
+  Puzzle,
+  Radar,
+  SlidersHorizontal,
+  Sun,
+} from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Breadcrumb,
@@ -18,16 +30,45 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
-import AppSidebar, { NAV_ITEMS } from '@/components/AppSidebar';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarTrigger,
+} from '@/components/ui/sidebar';
 import LanguageMenu from '@/components/LanguageMenu';
 import { getCurrentUsername, isAuthenticated, logout } from '@/lib/auth';
 import avatarUrl from '@/assets/images/avatar.jpg';
+import logoUrl from '@/assets/images/logo.png';
 
 interface Crumb {
   label: string;
   to?: string;
 }
+
+type NavKey =
+  | 'nav.dashboard'
+  | 'nav.projects'
+  | 'nav.scans'
+  | 'nav.reports'
+  | 'nav.rules'
+  | 'nav.configs';
+
+const NAV_ITEMS: Array<{ path: string; label: NavKey; icon: typeof LayoutDashboard }> = [
+  { path: '/dashboard', label: 'nav.dashboard', icon: LayoutDashboard },
+  { path: '/projects', label: 'nav.projects', icon: FolderOpen },
+  { path: '/scans', label: 'nav.scans', icon: Radar },
+  { path: '/reports', label: 'nav.reports', icon: FileText },
+  { path: '/rules', label: 'nav.rules', icon: Puzzle },
+  { path: '/configs', label: 'nav.configs', icon: SlidersHorizontal },
+];
 
 const ICON_BUTTON_CLASS =
   'flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
@@ -37,6 +78,63 @@ const THEMES = [
   { mode: 'dark', labelKey: 'theme.dark', Icon: Moon },
   { mode: 'system', labelKey: 'theme.system', Icon: Monitor },
 ] as const;
+
+function AppSidebar() {
+  const { pathname } = useLocation();
+  const { t } = useTranslation();
+
+  return (
+    <Sidebar collapsible="icon">
+      <SidebarHeader>
+        <div className="flex items-center gap-2 px-2 py-3 group-data-[state=collapsed]:justify-center group-data-[state=collapsed]:px-0">
+          <img src={logoUrl} alt="" className="size-8 shrink-0" />
+          <div className="min-w-0 flex-1 group-data-[state=collapsed]:hidden">
+            <div className="truncate text-sm font-semibold text-sidebar-foreground">Opengrep Studio</div>
+            <div className="truncate text-xs text-sidebar-foreground/60">{t('app.tagline')}</div>
+          </div>
+        </div>
+      </SidebarHeader>
+      <SidebarContent>
+        <SidebarGroup className="p-2.5">
+          <SidebarMenu className="gap-1.5">
+            {NAV_ITEMS.map((item) => {
+              const Icon = item.icon;
+              const isActive =
+                pathname === item.path || pathname.startsWith(`${item.path}/`);
+              return (
+                <SidebarMenuItem key={item.path}>
+                  <SidebarMenuButton
+                    asChild
+                    tooltip={t(item.label)}
+                    isActive={isActive}
+                    size="lg"
+                    className="gap-3 rounded-lg px-3 text-[15px] [&>svg]:size-5"
+                  >
+                    <NavLink to={item.path} className="flex items-center gap-3">
+                      <Icon className="size-5 shrink-0" />
+                      <span className="group-data-[state=collapsed]:hidden">
+                        {t(item.label)}
+                      </span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              );
+            })}
+          </SidebarMenu>
+        </SidebarGroup>
+      </SidebarContent>
+      <SidebarFooter>
+        <div
+          className="flex h-8 items-center justify-center rounded-lg bg-sidebar-foreground/10 text-xs font-medium tabular-nums text-sidebar-foreground/60"
+          title={`Opengrep Studio v${__APP_VERSION__}`}
+        >
+          <span className="group-data-[state=collapsed]:hidden">v{__APP_VERSION__}</span>
+          <span className="size-1.5 rounded-full bg-sidebar-foreground/40 group-data-[state=expanded]:hidden" />
+        </div>
+      </SidebarFooter>
+    </Sidebar>
+  );
+}
 
 export const Layout = () => {
   const navigate = useNavigate();
