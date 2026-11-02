@@ -1,30 +1,91 @@
 import type { IIssue } from '@/data/issues';
 import { MOCK_ISSUES, mockIssuesForScan, mockIssueFingerprint } from '@/data/issues';
-import type { IConfig } from '@/data/configs';
-import type { IProject } from '@/data/projects';
+import { MOCK_CONFIGS, type IConfig } from '@/data/configs';
+import { MOCK_PROJECTS, type IProject } from '@/data/projects';
 import i18n from '@/i18n';
 import type { ICodeSnippet } from '@/data/codesnippets';
 import { MOCK_CODE_SNIPPETS } from '@/data/codesnippets';
-import type { IRulePack } from '@/data/rulepacks';
+import { MOCK_RULE_PACKS, type IRulePack } from '@/data/rulepacks';
 import type { IRulePackCheckResult } from '@/data/rulepacks';
 import type { IReviewRecord, IScanDiff, IRuleKnowledge } from '@/data/diffs';
 import type { ITaintStep } from '@/data/issues';
-import type { IScanResult } from '@/data/scanresults';
+import { MOCK_SCAN_RESULTS, type IScanResult } from '@/data/scanresults';
 import { buildMockReport, type IReportData } from '@/data/reports';
-import {
-  loadProjects,
-  loadScans,
-  saveProjects,
-  saveScans,
-  loadConfigs,
-  saveConfigs,
-  loadRulePacks,
-  saveRulePacks,
-  loadReviews,
-  saveReviews,
-  loadPackContents,
-  savePackContents,
-} from '@/lib/storage';
+
+const PROJECTS_KEY = '__global_opengrep_projects';
+const SCANS_KEY = '__global_opengrep_scans';
+const CONFIGS_KEY = '__global_opengrep_configs';
+const RULE_PACKS_KEY = '__global_opengrep_rulepacks';
+const REVIEWS_KEY = '__global_opengrep_reviews';
+const PACK_CONTENTS_KEY = '__global_opengrep_pack_contents';
+
+function loadJson<T>(key: string, fallback: T, label: string): T {
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw) {
+      return JSON.parse(raw) as T;
+    }
+  } catch (error) {
+    console.error(`Failed to load ${label} cache, falling back to built-in sample data:`, String(error));
+  }
+  return fallback;
+}
+
+function saveJson(key: string, value: unknown, label: string): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (error) {
+    console.error(`Failed to save ${label}:`, String(error));
+  }
+}
+
+function loadProjects(): IProject[] {
+  return loadJson<IProject[]>(PROJECTS_KEY, [...MOCK_PROJECTS], 'project list');
+}
+
+function saveProjects(projects: IProject[]): void {
+  saveJson(PROJECTS_KEY, projects, 'project list');
+}
+
+function loadScans(): IScanResult[] {
+  return loadJson<IScanResult[]>(SCANS_KEY, [...MOCK_SCAN_RESULTS], 'scan records');
+}
+
+function saveScans(scans: IScanResult[]): void {
+  saveJson(SCANS_KEY, scans, 'scan records');
+}
+
+function loadConfigs(): IConfig[] {
+  return loadJson<IConfig[]>(CONFIGS_KEY, [...MOCK_CONFIGS], 'scan configs');
+}
+
+function saveConfigs(configs: IConfig[]): void {
+  saveJson(CONFIGS_KEY, configs, 'scan configs');
+}
+
+function loadRulePacks(): IRulePack[] {
+  return loadJson<IRulePack[]>(RULE_PACKS_KEY, [...MOCK_RULE_PACKS], 'rule packs');
+}
+
+function saveRulePacks(packs: IRulePack[]): void {
+  saveJson(RULE_PACKS_KEY, packs, 'rule packs');
+}
+
+function loadReviews(): IReviewRecord[] {
+  return loadJson<IReviewRecord[]>(REVIEWS_KEY, [], 'manual reviews');
+}
+
+function saveReviews(reviews: IReviewRecord[]): void {
+  saveJson(REVIEWS_KEY, reviews, 'manual reviews');
+}
+
+function loadPackContents(): Record<string, string> {
+  return loadJson<Record<string, string>>(PACK_CONTENTS_KEY, {}, 'rule pack contents');
+}
+
+function savePackContents(contents: Record<string, string>): void {
+  saveJson(PACK_CONTENTS_KEY, contents, 'rule pack contents');
+}
 
 function productLang(): string {
   const lang = (i18n.resolvedLanguage ?? i18n.language).toLowerCase();
