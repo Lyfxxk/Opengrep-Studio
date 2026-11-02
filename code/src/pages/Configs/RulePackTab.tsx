@@ -62,7 +62,7 @@ import { cn } from '@/lib/utils';
 import { usePackDisplayName } from '@/lib/packName';
 import Pagination from '@/components/Pagination';
 import { LIST_PAGE_SIZE, PACK_LANGUAGES } from '@/data/constants';
-import { api } from '@/lib/api';
+import { api, translateApiError } from '@/lib/api';
 import RulePackContentDialog from './RulePackContentDialog';
 import RulePackCreateDialog from './RulePackCreateDialog';
 
@@ -741,8 +741,16 @@ export default function RulePackTab() {
                         {item.ruleFile} · {t('rulePacks.itemSamples', { pos: item.positiveCount, neg: item.negativeCount })}
                       </span>
                     </div>
-                    {item.detail && (
-                      <p className="mt-1 text-xs text-muted-foreground">{item.detail}</p>
+                    {(item.failures?.length || item.errorCode || item.detail) && (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {item.failures?.length
+                          ? item.failures
+                              .map((failure) =>
+                                translateApiError(failure.code, failure.params, failure.message),
+                              )
+                              .join('；')
+                          : translateApiError(item.errorCode, item.errorParams, item.detail ?? '')}
+                      </p>
                     )}
                   </div>
                 ))}

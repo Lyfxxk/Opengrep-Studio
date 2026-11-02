@@ -768,6 +768,24 @@ const en: typeof zh = {
       upgraded: 'Engine upgraded to v{{version}}. Rescan and rebuild the baseline.',
       upgradeFailedKeepCurrent: '{{detail}}; the existing engine v{{from}} is untouched and still works',
     },
+    lab: {
+      samplesRequired: 'Provide at least one test sample (positive or negative)',
+      engineTimeout: 'The engine was stopped after {{seconds}} seconds',
+      outputUnparseable: 'Engine output could not be parsed (exit={{exitCode}})',
+      ruleYamlInvalid: 'Invalid rule YAML: {{reason}}',
+      positiveNoMatch: 'Positive sample not matched: expected at least 1 hit, got 0',
+      negativeFalsePositive: 'False positives on the negative sample: {{count}} hit(s) (line {{lines}})',
+      engineFailed: 'Engine execution failed',
+      sampleCapUnverified: 'Beyond the per-check cap ({{limit}} rules) — not verified',
+    },
+    ruleYaml: {
+      parseFailed: 'YAML parse failed: {{reason}}',
+      rulesMissing: 'The YAML top level needs a non-empty rules list',
+      missingId: 'Rule #{{index}} has no id',
+      missingLanguages: 'Rule {{id}} (#{{index}}) has no languages',
+      missingPattern: 'Rule {{id}} (#{{index}}) has no pattern expression or taint mode',
+      duplicateId: 'Duplicate rule id: {{id}}',
+    },
     srv: {
       routeNotFound: 'Endpoint not found',
       internalError: 'Internal server error',
@@ -863,12 +881,12 @@ const en: typeof zh = {
         'The source snapshot needed for comparison has been cleaned up; file-level diff is unavailable (issue-level diff is unaffected).',
       ruleIdInvalid: 'The ruleId path parameter is required',
       labUpgradeBusy: 'An engine upgrade is in progress — wait for it to finish before running the lab.',
-      ruleFileInvalid: 'Invalid rule file {{name}}',
       upgradePending: 'An engine upgrade is already in progress — please wait.',
       noUpgradeTarget: 'No upgradable version right now',
       ruleIdUnsafe:
         'Rule id "{{id}}" contains unsafe characters and cannot be used as a sample directory name. Fix the rule id in the YAML and try again.',
       ruleFileInvalidDetail: 'Rule file {{name}} is invalid: {{reason}}',
+      ruleYamlInvalid: 'Invalid rule YAML: {{reason}}',
       packExportParseFailed: 'The rule pack content could not be parsed; export aborted: {{reason}}',
       packManifestMissing:
         'The archive contains multiple rule files but no pack.yaml manifest. Package it in the portable format (pack.yaml + rules/).',

@@ -42,6 +42,9 @@ interface IRulePackCheckItem {
   negativeCount: number;
   verdict: 'pass' | 'fail' | 'error' | 'unverified';
   detail?: string;
+  failures?: Array<{ code: string; params?: Record<string, unknown>; message: string }>;
+  errorCode?: string;
+  errorParams?: Record<string, unknown>;
 }
 
 export interface IRulePackCheckResult {
