@@ -152,12 +152,15 @@ export default function CompareDialog({ scanId, onClose }: CompareDialogProps) {
               <SelectValue placeholder={t('compare.targetPlaceholder')} />
             </SelectTrigger>
             <SelectContent>
-              {Object.entries(
-                (candidates ?? []).reduce<Record<string, ScanWithProject[]>>((acc, scan) => {
-                  (acc[scan.projectName ?? scan.projectId] ??= []).push(scan);
+              {[
+                ...(candidates ?? []).reduce<Map<string, ScanWithProject[]>>((acc, scan) => {
+                  const key = scan.projectName ?? scan.projectId;
+                  const bucket = acc.get(key);
+                  if (bucket) bucket.push(scan);
+                  else acc.set(key, [scan]);
                   return acc;
-                }, {}),
-              ).map(([project, groupScans]) => (
+                }, new Map()),
+              ].map(([project, groupScans]) => (
                 <SelectGroup key={project}>
                   <SelectLabel>{project}</SelectLabel>
                   {groupScans.map((scan) => (
