@@ -11,7 +11,7 @@ import {
   isPathWithin,
   safeRelativePath,
 } from '../archive.js';
-import { pruneIgnoredFiles } from '../ignore-filter.js';
+import { pruneIgnoredFiles } from '../fs-walk.js';
 import { HttpError } from '../errors.js';
 import {
   deleteProject,
