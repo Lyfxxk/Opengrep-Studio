@@ -79,7 +79,9 @@ export default function CodeSnippetViewer({
       <CardHeader className="pb-3">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           <FileCode2 className="size-4 shrink-0 text-primary" />
-          <span className="truncate font-mono text-sm font-medium">{issue.filePath}</span>
+          <span className="truncate font-mono text-sm font-medium">
+            {issue.filePath || t('issues.unknownPath')}
+          </span>
           <span className="shrink-0 text-xs text-muted-foreground">
             L{issue.startLine}–L{issue.endLine}
           </span>
@@ -135,7 +137,7 @@ export default function CodeSnippetViewer({
             </span>
           )}
           {' · '}
-          {lookupRuleMessage(messageMap, issue.ruleId, issue.message)}
+          {lookupRuleMessage(messageMap, issue.ruleId, issue.message) || t('issues.noDescription')}
         </CardDescription>
         {issue.review?.reason && (
           <CardDescription className="rounded-md border border-warning/30 bg-warning/5 px-2.5 py-1.5 text-xs leading-5">

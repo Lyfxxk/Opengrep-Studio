@@ -43,6 +43,10 @@ function splitPath(path: string) {
 }
 
 function PathLabel({ path, className }: { path: string; className?: string }) {
+  const { t } = useTranslation();
+  if (!path) {
+    return <span className={cn('min-w-0 text-xs', className)}>{t('issues.unknownPath')}</span>;
+  }
   const { dir, name } = splitPath(path);
   return (
     <span className={cn('min-w-0 text-xs', className)}>
@@ -127,7 +131,9 @@ function IssueEntry({
         </span>
         <span className="min-w-0 truncate font-mono text-[11px] leading-5">{issue.ruleId}</span>
       </div>
-      <p className="ml-[66px] text-[13px] leading-5 text-foreground/80">{note}</p>
+      <p className="ml-[66px] text-[13px] leading-5 text-foreground/80">
+        {note || t('issues.noDescription')}
+      </p>
       {(issue.comparisonStatus !== 'remaining' || issue.review) && (
         <div className="ml-[66px] mt-1 flex gap-1.5">
           {issue.comparisonStatus !== 'remaining' && (

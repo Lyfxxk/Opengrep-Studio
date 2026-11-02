@@ -159,6 +159,8 @@ const REPORT_TEXT_ZH = {
     `${rules} 条规则按命中次数排序，同一规则的完整说明（含修复建议）只在此处出现一次。`,
   ruleStat: (count: number, files: number) => `命中 ${count} 次 · ${files} 个文件`,
   noMessage: '（暂无说明）',
+  noDescription: '（结果未提供描述）',
+  unknownPath: '（未知路径）',
   methodSub: { packs: '规则集', repro: '引擎与可复现性', review: '复核与覆盖', exclusions: '排除项', boundaries: '覆盖边界' },
   packThName: '规则包',
   packThId: '标识',
@@ -245,6 +247,8 @@ const REPORT_TEXT_HANT: typeof REPORT_TEXT_ZH = {
     `${rules} 條規則按命中次數排序，同一規則的完整說明（含修復建議）只在此處出現一次。`,
   ruleStat: (count: number, files: number) => `命中 ${count} 次 · ${files} 個檔案`,
   noMessage: '（暫無說明）',
+  noDescription: '（結果未提供描述）',
+  unknownPath: '（未知路徑）',
   methodSub: { packs: '規則集', repro: '引擎與可重現性', review: '複核與覆蓋', exclusions: '排除項', boundaries: '覆蓋邊界' },
   packThName: '規則包',
   packThId: '標識',
@@ -349,6 +353,8 @@ const REPORT_TEXT_EN: typeof REPORT_TEXT_ZH = {
     `${rules} rules sorted by hit count; the full note (with fix guidance) appears here only once per rule.`,
   ruleStat: (count: number, files: number) => `${count} hits · ${files} files`,
   noMessage: '(no note available)',
+  noDescription: '(no description provided)',
+  unknownPath: '(unknown path)',
   methodSub: { packs: 'Rule packs', repro: 'Engine & reproducibility', review: 'Review & coverage', exclusions: 'Exclusions', boundaries: 'Coverage boundary' },
   packThName: 'Rule pack',
   packThId: 'ID',
@@ -630,8 +636,9 @@ export function sanitizeCommand(cmd: string): string {
   });
 }
 
-function pathHtml(p: string): string {
+function pathHtml(p: string, unknownLabel: string): string {
   const s = String(p ?? '');
+  if (!s) return `<span class="fname">${escapeHtml(unknownLabel)}</span>`;
   const cut = s.lastIndexOf('/') + 1;
   return `<span class="dir">${escapeHtml(s.slice(0, cut))}</span><span class="fname">${escapeHtml(s.slice(cut))}</span>`;
 }
@@ -678,7 +685,7 @@ function issueEntryHtml(
         <span class="line">${escapeHtml(lineRange)}</span>
         <span class="rule">${escapeHtml(issue.ruleId)}</span>
       </div>
-      <div class="entry-msg">${escapeHtml(lookup(issue.ruleId, firstSentence(issue.message)))}</div>
+      <div class="entry-msg">${escapeHtml(lookup(issue.ruleId, firstSentence(issue.message)) || text.noDescription)}</div>
       ${showSnippet ? `<pre class="entry-snippet">${escapeHtml(snippets.get(issue.id) ?? '')}</pre>` : ''}
       ${tags ? `<div class="entry-tags">${tags}</div>` : ''}
     </div>`;
@@ -707,7 +714,7 @@ function detailGroupHtml(options: {
     .map(
       ([filePath, list]) => `<div class="file-block">
       <div class="file-head">
-        <span class="fpath">${pathHtml(filePath)}</span>
+        <span class="fpath">${pathHtml(filePath, text.unknownPath)}</span>
         <span class="file-count">${text.issuesUnit(list.length)}</span>
       </div>
       ${list.map((issue) => issueEntryHtml(issue, options.snippets, options.snippetBudget, text, lookup)).join('')}
@@ -828,7 +835,7 @@ export function renderReportHtml(
     .slice(0, 5)
     .map(
       (file) => `<tr>
-        <td class="path">${pathHtml(file.path)}</td>
+        <td class="path">${pathHtml(file.path, text.unknownPath)}</td>
         <td class="num strong">${file.count}</td>
         ${SEVERITY_ORDER.filter((sev) => sev !== 'low' && totals.bySeverity[sev] > 0)
           .map((sev) => `<td class="num">${file.bySev[sev] || '—'}</td>`)
@@ -841,7 +848,7 @@ export function renderReportHtml(
   const actionRows = fileList
     .map(
       (file) => `<tr>
-        <td class="path">${pathHtml(file.path)}<div class="sub-rule">${escapeHtml(file.topRule)}</div></td>
+        <td class="path">${pathHtml(file.path, text.unknownPath)}<div class="sub-rule">${escapeHtml(file.topRule)}</div></td>
         <td class="num strong">${file.count}</td>
         <td class="num crit">${file.bySev.critical || '—'}</td>
         <td class="num hi">${file.bySev.high || '—'}</td>

@@ -129,11 +129,22 @@ test('空 results 合法（干净基线工作流）', () => {
   assert.equal(issues.length, 0);
 });
 
-test('region 缺省时行号为 1；无 locations 时路径占位', () => {
+test('region 缺省时行号为 1；无 locations 时路径留空', () => {
   const { issues } = parseSarifImport(sarif([{ ruleId: 'r1', message: { text: 'x' } }]));
   assert.equal(issues[0].startLine, 1);
   assert.equal(issues[0].endLine, 1);
-  assert.equal(issues[0].filePath, '（未知路径）');
+  assert.equal(issues[0].filePath, '');
+});
+
+test('缺描述与缺工具名时留空字符串，占位由界面语言渲染', () => {
+  const doc = {
+    version: '2.1.0',
+    runs: [{ tool: { driver: {} }, results: [{ ruleId: 'r1' }] }],
+  };
+  const { toolName, issues } = parseSarifImport(JSON.stringify(doc));
+  assert.equal(toolName, '');
+  assert.equal(issues[0].message, '');
+  assert.equal(issues[0].filePath, '');
 });
 
 test('非法输入全部 400：坏 JSON / 非 2.x / 缺 runs / 顶层非对象', () => {
