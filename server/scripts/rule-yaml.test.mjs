@@ -10,6 +10,12 @@ const VALID = `rules:
     pattern: eval(...)
 `;
 
+const throwsCode = (fn, code) =>
+  assert.throws(fn, (error) => {
+    assert.equal(error.code, code);
+    return true;
+  });
+
 test('合法规则：返回规则数与 id 列表', () => {
   const parsed = parseRuleYaml(VALID);
   assert.equal(parsed.ruleCount, 1);
@@ -18,12 +24,12 @@ test('合法规则：返回规则数与 id 列表', () => {
 });
 
 test('YAML 语法错误：抛出并带原因', () => {
-  assert.throws(() => parseRuleYaml('rules: [ { broken'), /YAML 解析失败/);
+  throwsCode(() => parseRuleYaml('rules: [ { broken'), 'ruleYaml.parseFailed');
 });
 
 test('顶层缺少非空 rules 列表：拒绝', () => {
-  assert.throws(() => parseRuleYaml('foo: bar'), /非空的 rules 列表/);
-  assert.throws(() => parseRuleYaml('rules: []'), /非空的 rules 列表/);
+  throwsCode(() => parseRuleYaml('foo: bar'), 'ruleYaml.rulesMissing');
+  throwsCode(() => parseRuleYaml('rules: []'), 'ruleYaml.rulesMissing');
 });
 
 function throwCode(fn) {
@@ -36,17 +42,17 @@ function throwCode(fn) {
 }
 
 test('缺少 id / languages / pattern 表达式：逐条报原因', () => {
-  assert.throws(
+  throwsCode(
     () => parseRuleYaml('rules:\n  - languages: [javascript]\n    pattern: eval(...)\n'),
-    /缺少 id/,
+    'ruleYaml.missingId',
   );
-  assert.throws(
+  throwsCode(
     () => parseRuleYaml('rules:\n  - id: a\n    message: x\n    pattern: eval(...)\n'),
-    /缺少 languages/,
+    'ruleYaml.missingLanguages',
   );
-  assert.throws(
+  throwsCode(
     () => parseRuleYaml('rules:\n  - id: a\n    languages: [javascript]\n    message: x\n'),
-    /缺少 pattern 类表达式/,
+    'ruleYaml.missingPattern',
   );
 });
 
@@ -76,8 +82,8 @@ test('校验失败带可翻译错误码与参数', () => {
 });
 
 test('非对象规则条目：按缺少 id 报业务错误而不是 TypeError', () => {
-  assert.throws(() => parseRuleYaml('rules:\n  - null\n'), /第 1 条：缺少 id/);
-  assert.throws(() => parseRuleYaml('rules:\n  - 42\n'), /第 1 条：缺少 id/);
+  throwsCode(() => parseRuleYaml('rules:\n  - null\n'), 'ruleYaml.missingId');
+  throwsCode(() => parseRuleYaml('rules:\n  - 42\n'), 'ruleYaml.missingId');
 });
 
 test('taint 模式无需 pattern 前缀键', () => {
@@ -97,7 +103,7 @@ test('taint 模式无需 pattern 前缀键', () => {
 });
 
 test('重复规则 id：拒绝', () => {
-  assert.throws(
+  throwsCode(
     () =>
       parseRuleYaml(`rules:
   - id: dup-rule
@@ -109,7 +115,7 @@ test('重复规则 id：拒绝', () => {
     message: y
     pattern: eval(...)
 `),
-    /重复的规则 id/,
+    'ruleYaml.duplicateId',
   );
 });
 
