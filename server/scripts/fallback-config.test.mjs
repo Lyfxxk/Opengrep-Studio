@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 
 const tempDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'og-fallback-cfg-'));
 process.env.DATA_DIR = tempDataDir;
+process.env.CUSTOM_RULES_DIR = path.join(tempDataDir, 'rules-custom');
 
 const db = await import('../src/db.ts');
 const { ensureFallbackScanConfig } = await import('../src/fallback-config.ts');

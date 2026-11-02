@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 
 const tempDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'og-baseline-'));
 process.env.DATA_DIR = tempDataDir;
+process.env.CUSTOM_RULES_DIR = path.join(tempDataDir, 'rules-custom');
 
 const { deleteScan, insertProject, insertScan, getProject, getScan, closeDatabase } =
   await import('../src/db.ts');

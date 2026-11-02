@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 
 const tempDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'og-report-'));
 process.env.DATA_DIR = tempDataDir;
+process.env.CUSTOM_RULES_DIR = path.join(tempDataDir, 'rules-custom');
 
 const { buildReportData, renderReportHtml } = await import('../src/report.ts');
 const { closeDatabase } = await import('../src/db.ts');
