@@ -14,7 +14,6 @@
     "test-packs": "npm --prefix server run test-packs",
     "i18n:check": "npm --prefix server run i18n:check",
     "version": "node server/scripts/sync-version.mjs",
-    "predev": "node server/scripts/preflight.mjs",
     "dev": "node server/scripts/dev.mjs",
     "dev:server": "npm --prefix server run dev",
     "dev:web": "npm --prefix code run dev",
