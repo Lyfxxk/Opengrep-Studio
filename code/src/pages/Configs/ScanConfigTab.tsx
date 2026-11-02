@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { formatDateTime } from '@/lib/format';
-import { usePackDisplayName } from '@/lib/packName';
+import { useConfigDisplayName, usePackDisplayName } from '@/lib/displayNames';
 import { MoreHorizontal, Package, Pencil, Plus, SlidersHorizontal, Trash2 } from 'lucide-react';
 import {
   AlertDialog,
@@ -18,8 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import BatchDeleteBar from '@/components/BatchDeleteBar';
-import BatchDeleteConfirm from '@/components/BatchDeleteConfirm';
+import BatchDeleteBar, { BatchDeleteConfirm } from '@/components/BatchDeleteBar';
 import { useRowSelection } from '@/lib/useRowSelection';
 import {
   DropdownMenu,
@@ -44,7 +43,6 @@ import {
 import { type IConfig } from '@/data/configs';
 import type { IProject } from '@/data/projects';
 import type { IRulePack } from '@/data/rulepacks';
-import { useConfigDisplayName } from '@/lib/configName';
 import {
   api,
   type ConfigFormValues,
@@ -196,6 +194,7 @@ export default function ScanConfigTab() {
 
   return (
     <div className="space-y-4">
+      <h1 className="mb-6 text-xl font-semibold">{t('configs.pageTitle')}</h1>
       <div className="flex justify-end">
         <Button className="gap-1" onClick={handleCreate}>
           <Plus className="size-4" />
