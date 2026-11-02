@@ -291,7 +291,7 @@ async function main() {
   res = await call('/api/rules/knowledge/no-such-rule-xyz');
   record('知识库[未知规则] → 200 空壳或 404（不崩溃）', res.status === 200 || res.status === 404, `status=${res.status}`);
   res = await call(`/api/scans/${seedScan.id}/snippet?path=../../../server/src/index.ts&start=1&end=5`);
-  record('代码片段[路径穿越] → 不返回服务器文件', res.status >= 400 || !String(res.body?.content ?? '').includes('HttpError'), `status=${res.status}`);
+  record('代码片段[路径穿越] → 400 拒绝', res.status === 400 && res.body?.error?.code === 'srv.snippetPathInvalid', `status=${res.status} body=${JSON.stringify(res.body).slice(0, 120)}`);
   res = await call(`/api/scans/${seedScan.id}/snippet?path=config.js&start=-5&end=99999`);
   record('代码片段[越界行号] → 不崩溃', res.status >= 200 && res.status < 500, `status=${res.status}`);
   const seedIssue = (await call(`/api/scans/${seedScan.id}/issues`)).body[0];
