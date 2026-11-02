@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 
 const tempDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'og-stale-scan-'));
 process.env.DATA_DIR = tempDataDir;
+process.env.CUSTOM_RULES_DIR = path.join(tempDataDir, 'rules-custom');
 
 const { insertProject, insertScan, updateScan, getScan, closeDatabase } = await import('../src/db.ts');
 const { markStaleScansFailed } = await import('../src/scan-runner.ts');
