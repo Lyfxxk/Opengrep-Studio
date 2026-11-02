@@ -307,7 +307,7 @@ export default function LabPage() {
     api
       .getHealth()
       .then((health: HealthInfo) => {
-        if (!cancelled) setEngineMissing(health.engine === 'MISSING');
+        if (!cancelled) setEngineMissing(health.engineReady === false);
       })
       .catch(() => {
         if (!cancelled) setEngineMissing(null);

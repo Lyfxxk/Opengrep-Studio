@@ -16,7 +16,7 @@ interface EngineCardProps {
 
 export default function EngineCard({ health, scanRunning, onUpgraded }: EngineCardProps) {
   const { t } = useTranslation();
-  const ready = Boolean(health?.engine && health.engine !== 'MISSING' && health.engineVersion);
+  const ready = health?.engineReady === true && Boolean(health.engineVersion);
   const managed = health?.engineManaged === true;
   const [update, setUpdate] = useState<IEngineUpdateInfo | null>(null);
   const [checking, setChecking] = useState(false);

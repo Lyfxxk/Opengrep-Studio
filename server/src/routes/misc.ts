@@ -56,6 +56,7 @@ miscRoutes.get('/api/health', asyncHandler(async (_req, res) => {
     engineVersion,
     enginePinnedVersion: engineTargetVersion(),
     engineManaged: engineReady && engineSource === 'bundled-dir',
+    engineReady,
     engine: engineReady ? engineDisplayPath() : 'MISSING',
     engineSource,
     engineSourceLabel: engineSourceLabel(),

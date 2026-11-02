@@ -163,7 +163,7 @@ const log = (msg) => console.log(msg);
 
 async function main() {
   const health = await j('/api/health');
-  if (health.engine === 'MISSING' || !health.engineVersion) {
+  if (health.engineReady !== true || !health.engineVersion) {
     throw new Error(
       `引擎不可用（engine=${health.engine}，版本=${health.engineVersion ?? '探测不到'}）。` +
         '请先在仓库根目录运行 npm run setup:engine 安装或修复引擎，重启后端后再执行本脚本。',
