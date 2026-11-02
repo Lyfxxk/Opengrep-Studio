@@ -1,18 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { FileCode2, FileText, ListOrdered, Search } from 'lucide-react';
-import { toast } from 'sonner';
+import { FileCode2, FileText, ListOrdered } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import Pagination from '@/components/Pagination';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import ListFilterBar from '@/components/ListFilterBar';
 import { LIST_PAGE_SIZE } from '@/data/constants';
 import {
   Table,
@@ -23,51 +15,20 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import RulePackCell from '@/components/RulePackCell';
-import { attachProjectNames, usePagedList, type ScanWithProject } from '@/lib/usePagedList';
+import { filterScans, usePagedList, useScanRows } from '@/lib/usePagedList';
 import { formatDateTime } from '@/lib/format';
-import type { IProject } from '@/data/projects';
 import { api } from '@/lib/api';
 
 export default function ReportsCenterPage() {
   const { t } = useTranslation();
-  const [rows, setRows] = useState<ScanWithProject[] | null>(null);
-  const [loadFailed, setLoadFailed] = useState(false);
-  const [projects, setProjects] = useState<IProject[]>([]);
+  const { scans: rows, projects, loadFailed, reload: load } = useScanRows({ completedOnly: true });
   const [filterProjectId, setFilterProjectId] = useState('all');
   const [keyword, setKeyword] = useState('');
 
-  const load = useCallback(async () => {
-    try {
-      const [allScans, projects] = await Promise.all([api.listAllScans(), api.listProjects()]);
-      setProjects(projects);
-      setLoadFailed(false);
-      setRows(
-        attachProjectNames(
-          allScans.filter((scan) => scan.status === 'completed'),
-          projects,
-        ),
-      );
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : String(error));
-      setLoadFailed(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
-
-  const filteredRows = useMemo(() => {
-    const trimmed = keyword.trim().toLowerCase();
-    return (rows ?? []).filter((scan) => {
-      if (filterProjectId !== 'all' && scan.projectId !== filterProjectId) return false;
-      if (trimmed === '') return true;
-      return (
-        scan.id.toLowerCase().includes(trimmed) ||
-        (scan.projectName ?? '').toLowerCase().includes(trimmed)
-      );
-    });
-  }, [rows, filterProjectId, keyword]);
+  const filteredRows = useMemo(
+    () => filterScans(rows ?? [], filterProjectId, keyword),
+    [rows, filterProjectId, keyword],
+  );
 
   const { page: safePage, setPage, pageCount, slice: pagedRows } = usePagedList(filteredRows, LIST_PAGE_SIZE);
 
@@ -77,35 +38,17 @@ export default function ReportsCenterPage() {
         <h1 className="text-xl font-semibold">{t('nav.reports')}</h1>
       </div>
 
-      {(rows?.length ?? 0) > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          <Select value={filterProjectId} onValueChange={setFilterProjectId}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t('reports.filterProjectAll')}</SelectItem>
-              {projects.map((project) => (
-                <SelectItem key={project.id} value={project.id}>
-                  {project.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <div className="relative min-w-[180px] flex-1 sm:max-w-[280px]">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={keyword}
-              onChange={(event) => setKeyword(event.target.value)}
-              placeholder={t('reports.filterKeywordPlaceholder')}
-              className="pl-9"
-            />
-          </div>
-          <span className="text-xs text-muted-foreground">
-            {t('reports.filterCount', { count: filteredRows.length })}
-          </span>
-        </div>
-      )}
+      <ListFilterBar
+        total={rows?.length ?? 0}
+        projects={projects}
+        projectId={filterProjectId}
+        onProjectChange={setFilterProjectId}
+        keyword={keyword}
+        onKeywordChange={setKeyword}
+        allLabel={t('reports.filterProjectAll')}
+        placeholder={t('reports.filterKeywordPlaceholder')}
+        countLabel={t('reports.filterCount', { count: filteredRows.length })}
+      />
 
       {rows === null ? (
         <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
