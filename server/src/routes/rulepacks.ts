@@ -307,8 +307,7 @@ rulepackRoutes.post(
     try {
       res.status(201).json(saveNewRulePack(name, language, content, decodeUploadFileName(req.file.originalname)));
     } catch (error) {
-      if (error instanceof HttpError) throw error;
-      throw new HttpError(400, error instanceof Error ? error.message : String(error));
+      throw asRuleYamlHttpError(error);
     }
   }),
 );
