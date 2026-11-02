@@ -16,7 +16,7 @@ export default function RulePackCell({
     return (
       <span
         className={`block truncate text-xs text-muted-foreground ${className}`}
-        title={names.join('、')}
+        title={names.join(t('common.listSeparator'))}
       >
         {names.length === 1
           ? names[0]
