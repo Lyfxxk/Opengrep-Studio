@@ -23,8 +23,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import RulePackCell from '@/components/RulePackCell';
-import { attachProjectNames, type ScanWithProject } from '@/lib/scans';
-import { usePagedList } from '@/lib/usePagedList';
+import { attachProjectNames, usePagedList, type ScanWithProject } from '@/lib/usePagedList';
 import { formatDateTime } from '@/lib/format';
 import type { IProject } from '@/data/projects';
 import { api } from '@/lib/api';
