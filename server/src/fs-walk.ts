@@ -3,7 +3,7 @@ import path from 'node:path';
 
 export const ALWAYS_SKIP_DIR_NAMES = new Set(['node_modules', '.git']);
 
-export function normalizePath(p: string): string {
+function normalizePath(p: string): string {
   return p.replace(/\\/g, '/');
 }
 
