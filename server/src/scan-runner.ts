@@ -322,6 +322,43 @@ async function buildReproducibilityRecord(
   });
 }
 
+function mapFindingsToIssues(
+  findings: OpengrepFinding[],
+  options: {
+    scanId: string;
+    srcDir: string;
+    knownRuleIds: Set<string>;
+    ruleIdToPack: Map<string, { id: string; name: string }>;
+  },
+): IssueRow[] {
+  return findings.map((finding) => {
+    const ruleId = stripRuleIdPrefix(finding.check_id, options.knownRuleIds);
+    const pack = options.ruleIdToPack.get(ruleId);
+    const taintFlow = relativizeTaintFlow(
+      extractTaintFlow(finding.extra.dataflow_trace),
+      (p) => relativizeToRoot(p, options.srcDir),
+    );
+    const relativePath = relativizeToRoot(finding.path, options.srcDir);
+    return {
+      id: '',
+      scanId: options.scanId,
+      fingerprint:
+        finding.extra.fingerprint ?? `${finding.check_id}:${relativePath}:${finding.start.line}`,
+      ruleId,
+      severity: mapSeverity(finding),
+      comparisonStatus: 'remaining',
+      message: finding.extra.message,
+      filePath: relativePath,
+      startLine: finding.start.line,
+      endLine: finding.end.line,
+      matchedLines: finding.extra.lines,
+      ...(taintFlow ? { dataflowTrace: JSON.stringify(taintFlow) } : {}),
+      rulepackId: pack?.id,
+      rulepackName: pack?.name,
+    };
+  });
+}
+
 async function runScan(scanId: string, plan: ScanPlan): Promise<void> {
   const scan: ScanRecord | undefined = getScan(scanId);
   if (!scan || scan.status !== 'scanning') return;
@@ -425,31 +462,11 @@ async function runScan(scanId: string, plan: ScanPlan): Promise<void> {
     }
 
     const findings = output.results ?? [];
-    const currentIssues: IssueRow[] = findings.map((finding) => {
-      const ruleId = stripRuleIdPrefix(finding.check_id, knownRuleIds);
-      const pack = ruleIdToPack.get(ruleId);
-      const taintFlow = relativizeTaintFlow(
-        extractTaintFlow(finding.extra.dataflow_trace),
-        (p) => relativizeToRoot(p, srcDir),
-      );
-      const relativePath = relativizeToRoot(finding.path, srcDir);
-      return {
-        id: '',
-        scanId,
-        fingerprint:
-          finding.extra.fingerprint ?? `${finding.check_id}:${relativePath}:${finding.start.line}`,
-        ruleId,
-        severity: mapSeverity(finding),
-        comparisonStatus: 'remaining',
-        message: finding.extra.message,
-        filePath: relativePath,
-        startLine: finding.start.line,
-        endLine: finding.end.line,
-        matchedLines: finding.extra.lines,
-        ...(taintFlow ? { dataflowTrace: JSON.stringify(taintFlow) } : {}),
-        rulepackId: pack?.id,
-        rulepackName: pack?.name,
-      };
+    const currentIssues = mapFindingsToIssues(findings, {
+      scanId,
+      srcDir,
+      knownRuleIds,
+      ruleIdToPack,
     });
 
     applyBaselineComparison(currentIssues, scanId, scan.baselineScanId);
