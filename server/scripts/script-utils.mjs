@@ -21,6 +21,15 @@ export function makeTempDir(prefix) {
   return dir;
 }
 
+export function writeTree(root, files) {
+  for (const [rel, content] of Object.entries(files)) {
+    const full = path.join(root, rel);
+    fs.mkdirSync(path.dirname(full), { recursive: true });
+    if (content === null) fs.mkdirSync(full, { recursive: true });
+    else fs.writeFileSync(full, content);
+  }
+}
+
 export function useTempDataDir(prefix) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
   process.env.DATA_DIR = dir;
