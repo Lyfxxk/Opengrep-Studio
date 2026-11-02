@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { formatDateTime } from '@/lib/format';
+import { usePackDisplayName } from '@/lib/packName';
 import { MoreHorizontal, Package, Pencil, Plus, SlidersHorizontal, Trash2 } from 'lucide-react';
 import {
   AlertDialog,
@@ -66,6 +67,7 @@ function toFormValues(config: IConfig, name?: string): ConfigFormValues {
 export default function ScanConfigTab() {
   const { t } = useTranslation();
   const configDisplay = useConfigDisplayName();
+  const packDisplayName = usePackDisplayName();
   const [configs, setConfigs] = useState<IConfig[]>([]);
   const [projects, setProjects] = useState<IProject[]>([]);
   const [rulePacks, setRulePacks] = useState<IRulePack[]>([]);
@@ -166,8 +168,10 @@ export default function ScanConfigTab() {
     }
   };
 
-  const packNameOf = (packId: string) =>
-    rulePacks.find((pack) => pack.id === packId)?.name;
+  const packNameOf = (packId: string) => {
+    const pack = rulePacks.find((item) => item.id === packId);
+    return pack ? packDisplayName(pack.name, pack.id) : undefined;
+  };
 
   const packDisabledOf = (packId: string) =>
     rulePacks.find((pack) => pack.id === packId)?.enabled === false;
