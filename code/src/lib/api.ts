@@ -170,6 +170,7 @@ export interface HealthInfo {
   engineVersion?: string;
   enginePinnedVersion?: string;
   engineManaged?: boolean;
+  engineReady?: boolean;
   engineSource?: string;
   engineSourceLabel?: string;
   engine?: string;
@@ -844,6 +845,7 @@ export const api = {
       return Promise.resolve({
         ok: false,
         engine: 'MISSING',
+        engineReady: false,
         engineHint: i18n.t('api.demoEngineHint'),
       });
     }
