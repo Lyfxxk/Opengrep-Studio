@@ -90,7 +90,7 @@ export default function LanguageStatsBar({ stats }: LanguageStatsBarProps) {
           </span>
         ))}
         <span className="text-xs text-muted-foreground">
-          {t('langStats.total', { kb: (total / 1024).toFixed(0) })}
+          {t('langStats.total', { kb: (total / 1000).toFixed(0) })}
         </span>
       </div>
     </div>
