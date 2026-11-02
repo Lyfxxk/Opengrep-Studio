@@ -82,7 +82,7 @@ export default function LoginPage() {
     <div className="login-shell">
       <section className="brand-panel" aria-label={t('login.introPanel')}>
         <div className="brand-hero">
-          <p className="hero-eyebrow">// LOCAL-FIRST CODE AUDIT</p>
+          <p className="hero-eyebrow">{t('login.eyebrow')}</p>
           <h1>
             {t('login.heroTitle1')}
             <em>{t('login.heroTitleEm')}</em>
@@ -352,7 +352,7 @@ export default function LoginPage() {
 
           <div className="form-foot">
             <span style={{ fontSize: '15px', fontWeight: 600 }}>
-              © 2026 Opengrep Studio by{' '}
+              {t('login.copyright')}{' '}
               <a href="https://github.com/Lyfxxk" target="_blank" rel="noopener noreferrer">
                 Lyfxxk
               </a>
