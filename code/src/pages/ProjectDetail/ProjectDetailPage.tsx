@@ -19,7 +19,7 @@ import type { IProject } from '@/data/projects';
 import type { IRulePack } from '@/data/rulepacks';
 import type { IScanResult } from '@/data/scanresults';
 import { api, translateApiError, type UploadItem } from '@/lib/api';
-import { useConfigDisplayName } from '@/lib/configName';
+import { useConfigDisplayName } from '@/lib/displayNames';
 import ScanHistoryTable from './ScanHistoryTable';
 import UploadZone, { type UploadZoneState } from './UploadZone';
 

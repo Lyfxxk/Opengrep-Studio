@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/sheet';
 import type { IKnowledgeSample, IRuleKnowledge } from '@/data/diffs';
 import { type IIssue } from '@/data/issues';
-import { usePackDisplayName } from '@/lib/packName';
+import { usePackDisplayName } from '@/lib/displayNames';
 import { api } from '@/lib/api';
 
 interface KnowledgeSheetProps {

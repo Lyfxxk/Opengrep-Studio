@@ -33,7 +33,7 @@ import { COMPARISON_VISUALS } from '@/data/constants';
 import { lookupRuleMessage, useRuleMessageMap } from '@/lib/ruleMessages';
 import { SEVERITY_BADGE_CLASS, SEVERITY_ORDER } from '@/lib/severity';
 import { cn } from '@/lib/utils';
-import { usePackDisplayName } from '@/lib/packName';
+import { usePackDisplayName } from '@/lib/displayNames';
 import { useRowSelection } from '@/lib/useRowSelection';
 import { usePagedList } from '@/lib/usePagedList';
 import { api } from '@/lib/api';

@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import type { IScanResult } from '@/data/scanresults';
-import { usePackDisplayName } from '@/lib/packName';
+import { usePackDisplayName } from '@/lib/displayNames';
 
 export default function RulePackCell({
   scan,
