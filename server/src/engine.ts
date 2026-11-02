@@ -1,19 +1,8 @@
 import { spawn, type ChildProcess, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { config, engineSource, type EngineSource } from './config.js';
+import { config, engineSource } from './config.js';
 import { probeVersion } from '../scripts/engine-install.mjs';
-
-const SOURCE_LABELS: Record<EngineSource, string> = {
-  env: '环境变量 OPENGREP_BIN 指定',
-  'bundled-dir': 'opengrep-tool 安装位（npm run setup:engine）',
-  path: '系统 PATH 查找',
-  missing: '未找到',
-};
-
-export function engineSourceLabel(): string {
-  return SOURCE_LABELS[engineSource] ?? engineSource;
-}
 
 export function engineInstallHint(binPath: string = config.opengrepBin): string {
   if (engineSource === 'env') {
@@ -56,13 +45,17 @@ export function engineNotRunnableHint(binPath: string = config.opengrepBin): str
 }
 
 export function engineInstallHintInfo(): { code: string; params: Record<string, unknown> } {
+  const params: Record<string, unknown> = { bin: config.opengrepBin };
+  if (process.platform === 'darwin') params.macos = true;
   return engineSource === 'env'
-    ? { code: 'engine.installHintEnv', params: { bin: config.opengrepBin } }
-    : { code: 'engine.installHint', params: { bin: config.opengrepBin } };
+    ? { code: 'engine.installHintEnv', params }
+    : { code: 'engine.installHint', params };
 }
 
 export function engineNotRunnableHintInfo(): { code: string; params: Record<string, unknown> } {
-  return { code: 'engine.notRunnableHint', params: { bin: config.opengrepBin } };
+  const params: Record<string, unknown> = { bin: config.opengrepBin };
+  if (process.platform === 'darwin') params.macos = true;
+  return { code: 'engine.notRunnableHint', params };
 }
 
 export function engineDisplayPath(): string {

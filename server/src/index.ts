@@ -3,9 +3,9 @@ import net from 'node:net';
 import path from 'node:path';
 import express, { type NextFunction, type Request, type Response } from 'express';
 import multer from 'multer';
-import { config } from './config.js';
+import { config, engineSource } from './config.js';
 import { HttpError } from './errors.js';
-import { engineInstallHint, engineSourceLabel, terminateTrackedChildren } from './engine.js';
+import { engineInstallHint, terminateTrackedChildren } from './engine.js';
 import { engineTargetVersion } from './engine-manifest.js';
 import { ensureFallbackScanConfig } from './fallback-config.js';
 import { markStaleScansFailed } from './scan-runner.js';
@@ -128,7 +128,7 @@ const server = app.listen(config.port, config.host, () => {
   ensureFallbackScanConfig();
   markStaleScansFailed();
   console.log(`[server] Opengrep Studio 后端已启动: http://${config.host}:${config.port}`);
-  console.log(`[server] 引擎路径: ${path.resolve(config.opengrepBin)}（${engineSourceLabel()}）`);
+  console.log(`[server] 引擎路径: ${path.resolve(config.opengrepBin)}（${engineSource}）`);
   console.log(
     `[server] 运行平台: ${process.platform}/${process.arch}  清单目标引擎版本: ${engineTargetVersion() ?? '未知'}`,
   );

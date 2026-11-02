@@ -238,8 +238,6 @@ assert(typeof health.json?.engineVersion === 'string' && /^\d+\.\d+\.\d+$/.test(
   'health 引擎版本为实际探测值', health.json?.engineVersion);
 assert(typeof health.json?.enginePinnedVersion === 'string' && health.json.enginePinnedVersion.length > 0,
   'health 含清单钉住版本', health.json?.enginePinnedVersion);
-assert(typeof health.json?.engineSourceLabel === 'string' && health.json.engineSourceLabel.length > 0,
-  'health 含中文来源标注', health.json?.engineSourceLabel);
 assert(typeof health.json?.engineManaged === 'boolean',
   'health 标注引擎是否由本应用托管', health.json?.engineManaged);
 
@@ -785,7 +783,7 @@ const labNoSample = await api('POST', '/api/rulelab/run', {
   yaml: LAB_EVAL_RULE,
   samples: { positive: '   ', negative: '' },
 });
-assert(labNoSample.json.verdict === 'error' && (labNoSample.json.error ?? '').includes('样本'),
+assert(labNoSample.json.verdict === 'error' && labNoSample.json.errorCode === 'lab.samplesRequired',
   '空样本返回 error', JSON.stringify(labNoSample.json));
 
 const labTaint = await api('POST', '/api/rulelab/run', {

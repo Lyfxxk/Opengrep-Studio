@@ -267,8 +267,13 @@ export default function ScanResultPage() {
             <XCircle className="size-8 text-destructive" />
             <p className="text-sm font-medium">{t('scanResult.failedTitle')}</p>
             {scan.message && (
-              <p className="max-w-[640px] break-all font-mono text-xs text-muted-foreground">
-                {translateApiError(scan.errorCode, scan.errorParams, scan.message)}
+              <p className="max-w-[640px] whitespace-pre-line break-all font-mono text-xs text-muted-foreground">
+                {[
+                  translateApiError(scan.errorCode, scan.errorParams, scan.message),
+                  scan.errorParams?.macos ? t('engine.hintMacosQuarantine') : '',
+                ]
+                  .filter(Boolean)
+                  .join('\n')}
               </p>
             )}
             <p className="text-xs text-muted-foreground">{t('scanResult.failedHint')}</p>
