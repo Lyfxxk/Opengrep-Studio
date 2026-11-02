@@ -150,6 +150,44 @@ async function applyIgnoreFilter(
   return { fileCount: keptFiles, ignoredCount: ignoredFiles };
 }
 
+function stageLooseFiles(
+  stagingDir: string,
+  looseFiles: Express.Multer.File[],
+  relPaths: string[],
+): number {
+  if (relPaths.length !== looseFiles.length) {
+    throw new HttpError(400, '文件列表与路径参数数量不匹配', { code: 'srv.filesMismatch' });
+  }
+  if (looseFiles.length > config.maxImportEntries) {
+    throw new HttpError(400, `文件数超过 ${config.maxImportEntries} 上限`, {
+      code: 'srv.tooManyFiles',
+      params: { limit: config.maxImportEntries },
+    });
+  }
+  const totalBytes = looseFiles.reduce((sum, file) => sum + file.size, 0);
+  if (totalBytes > config.maxExtractedBytes) {
+    throw new HttpError(
+      400,
+      `总体积超过 ${config.maxExtractedBytes / 1024 ** 3}GB 上限`,
+      { code: 'srv.totalTooLarge', params: { gb: config.maxExtractedBytes / 1024 ** 3 } },
+    );
+  }
+  looseFiles.forEach((file, index) => {
+    const rel = safeRelativePath(relPaths[index] || decodeUploadFileName(file.originalname));
+    if (!rel) throw new HttpError(400, '文件路径不能为空', { code: 'srv.pathRequired' });
+    const target = path.join(stagingDir, rel);
+    if (!isPathWithin(stagingDir, target)) {
+      throw new HttpError(400, `文件路径不安全：${relPaths[index]}`, {
+        code: 'srv.unsafeFilePath',
+        params: { path: relPaths[index] },
+      });
+    }
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(target, file.buffer);
+  });
+  return totalBytes;
+}
+
 const importingProjects = new Set<string>();
 
 export function isProjectImporting(projectId: string): boolean {
@@ -230,43 +268,7 @@ projectRoutes.post(
           : pathsRaw !== undefined
             ? [String(pathsRaw)]
             : [];
-        if (relPaths.length !== looseFiles.length) {
-          throw new HttpError(400, '文件列表与路径参数数量不匹配', { code: 'srv.filesMismatch' });
-        }
-        if (looseFiles.length > config.maxImportEntries) {
-          throw new HttpError(400, `文件数超过 ${config.maxImportEntries} 上限`, {
-            code: 'srv.tooManyFiles',
-            params: { limit: config.maxImportEntries },
-          });
-        }
-        const looseTotalBytes = looseFiles.reduce((sum, file) => sum + file.size, 0);
-        if (looseTotalBytes > config.maxExtractedBytes) {
-          throw new HttpError(
-            400,
-            `总体积超过 ${config.maxExtractedBytes / 1024 ** 3}GB 上限`,
-            { code: 'srv.totalTooLarge', params: { gb: config.maxExtractedBytes / 1024 ** 3 } },
-          );
-        }
-        try {
-          looseFiles.forEach((file, index) => {
-            const rel = safeRelativePath(
-              relPaths[index] || decodeUploadFileName(file.originalname),
-            );
-            if (!rel) throw new HttpError(400, '文件路径不能为空', { code: 'srv.pathRequired' });
-            const target = path.join(stagingDir, rel);
-            if (!isPathWithin(stagingDir, target)) {
-              throw new HttpError(400, `文件路径不安全：${relPaths[index]}`, {
-                code: 'srv.unsafeFilePath',
-                params: { path: relPaths[index] },
-              });
-            }
-            fs.mkdirSync(path.dirname(target), { recursive: true });
-            fs.writeFileSync(target, file.buffer);
-          });
-        } catch (error) {
-          fs.rmSync(stagingDir, { recursive: true, force: true });
-          throw error;
-        }
+        const looseTotalBytes = stageLooseFiles(stagingDir, looseFiles, relPaths);
         const firstSegments = relPaths.map((p) => p.replace(/\\/g, '/').split('/')[0]);
         const commonRoot =
           firstSegments.every((seg) => seg && seg === firstSegments[0]) && looseFiles.length > 1
