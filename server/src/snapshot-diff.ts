@@ -33,9 +33,16 @@ async function hashFile(file: string): Promise<FileEntry> {
   const stat = await fs.promises.stat(file);
   const fd = await fs.promises.open(file, 'r');
   try {
-    const buffer = Buffer.alloc(Math.min(stat.size, HASH_READ_CAP));
-    await fd.read(buffer, 0, buffer.length, 0);
-    hash.update(buffer);
+    const headLength = Math.min(stat.size, HASH_READ_CAP);
+    const head = Buffer.alloc(headLength);
+    await fd.read(head, 0, head.length, 0);
+    hash.update(head);
+    if (stat.size > HASH_READ_CAP) {
+      const tailLength = Math.min(stat.size - HASH_READ_CAP, HASH_READ_CAP);
+      const tail = Buffer.alloc(tailLength);
+      await fd.read(tail, 0, tail.length, stat.size - tailLength);
+      hash.update(tail);
+    }
   } finally {
     await fd.close();
   }
