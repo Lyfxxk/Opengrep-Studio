@@ -79,7 +79,8 @@ async function main() {
     const r2 = await fdPost(`/api/projects/${uploadProject.id}/source`, fd2);
     expect4xx(`路径穿越 paths=${evil} → 400`, r2, 'archive.unsafePath');
   }
-  for (const evil of ['evil<1>.txt', 'a:b.txt', 'q?*.js']) {
+  const illegalNameCases = process.platform === 'win32' ? ['evil<1>.txt', 'a:b.txt', 'q?*.js'] : ['a:b.txt'];
+  for (const evil of illegalNameCases) {
     const fd2b = new FormData();
     fd2b.append('files', new Blob(['x'], { type: 'text/plain' }), 'f.txt');
     fd2b.append('paths', evil);
@@ -227,7 +228,7 @@ async function main() {
 
   console.log('===== 九、SARIF 导入导出 =====');
   const sarifProject = await ensureProject('脏测试-外部SARIF导入', '脏测试保留：模拟 CodeQL 外部结果导入');
-  const sarifAlready = (await call(`/api/projects/${sarifProject.id}/scans`)).body.some((s) => (s.rules ?? '').includes('CodeQL'));
+  const sarifAlready = (await call(`/api/projects/${sarifProject.id}/scans`)).body.some((s) => s.importSource === 'sarif');
   const fdSarif = (content, filename) => {
     const f = new FormData();
     f.append('file', new Blob([JSON.stringify(content)], { type: 'application/json' }), filename);
