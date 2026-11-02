@@ -319,4 +319,21 @@ async function main() {
   }
 }
 
-main().catch((e) => { console.error('脚本异常：', e); process.exit(1); });
+function isBackendUnreachable(error) {
+  let cause = error;
+  while (cause) {
+    if (cause.code === 'ECONNREFUSED' || cause.code === 'ENOTFOUND' || cause.code === 'ECONNRESET') return true;
+    if (Array.isArray(cause.errors) && cause.errors.some((item) => item?.code === 'ECONNREFUSED')) return true;
+    cause = cause.cause;
+  }
+  return false;
+}
+
+main().catch((e) => {
+  if (isBackendUnreachable(e)) {
+    console.error('脏测试需要运行中的后端：先 npm run dev 启动后端再跑脏测试（BASE_URL 可覆盖）。');
+  } else {
+    console.error('脚本异常：', e);
+  }
+  process.exit(1);
+});
