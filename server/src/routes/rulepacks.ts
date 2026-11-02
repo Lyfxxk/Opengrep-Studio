@@ -4,7 +4,6 @@ import path from 'node:path';
 import type { Response } from 'express';
 import AdmZip from 'adm-zip';
 import { Router } from 'express';
-import multer from 'multer';
 import { config } from '../config.js';
 import { copyDirectory, extractZipSafely } from '../archive.js';
 import { HttpError } from '../errors.js';
@@ -32,7 +31,7 @@ import {
   scanPackSamples,
   type PackManifest,
 } from '../pack-format.js';
-import { asyncHandler, decodeUploadFileName, limit400, MAX_RULE_YAML_BYTES, MAX_SAMPLE_BYTES, newId, withEngineJobBusy } from './shared.js';
+import { asyncHandler, decodeUploadFileName, limit400, MAX_RULE_YAML_BYTES, MAX_SAMPLE_BYTES, memoryFileUpload, newId, withEngineJobBusy } from './shared.js';
 
 export const rulepackRoutes = Router();
 
@@ -282,16 +281,10 @@ rulepackRoutes.patch('/api/rulepacks/:id', asyncHandler(async (req, res) => {
   res.json({ ...pack, enabled });
 }));
 
-const uploadYaml = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: MAX_RULE_YAML_BYTES },
-  fileFilter: (_req, file, cb) => {
-    if (!/\.ya?ml$/i.test(file.originalname)) {
-      cb(new HttpError(400, '仅支持 .yaml / .yml 规则包文件', { code: 'srv.yamlOnly' }));
-      return;
-    }
-    cb(null, true);
-  },
+const uploadYaml = memoryFileUpload(MAX_RULE_YAML_BYTES, {
+  pattern: /\.ya?ml$/i,
+  message: '仅支持 .yaml / .yml 规则包文件',
+  code: 'srv.yamlOnly',
 });
 
 rulepackRoutes.post(
@@ -468,16 +461,10 @@ rulepackRoutes.get('/api/rulepacks/:id/export', asyncHandler(async (req, res) =>
   res.send(zip.toBuffer());
 }));
 
-const importPackUpload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: MAX_PACK_ZIP_BYTES },
-  fileFilter: (_req, file, cb) => {
-    if (!/\.zip$/i.test(file.originalname)) {
-      cb(new HttpError(400, '仅支持 .zip 规则包压缩包', { code: 'srv.zipOnly' }));
-      return;
-    }
-    cb(null, true);
-  },
+const importPackUpload = memoryFileUpload(MAX_PACK_ZIP_BYTES, {
+  pattern: /\.zip$/i,
+  message: '仅支持 .zip 规则包压缩包',
+  code: 'srv.zipOnly',
 });
 
 function detectPackRoot(dir: string): string | null {

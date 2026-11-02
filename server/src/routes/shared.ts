@@ -86,3 +86,20 @@ export function limit400(
     });
   };
 }
+
+export function memoryFileUpload(
+  maxBytes: number,
+  accept: { pattern: RegExp; message: string; code: string },
+) {
+  return multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: maxBytes },
+    fileFilter: (_req, file, cb) => {
+      if (!accept.pattern.test(file.originalname)) {
+        cb(new HttpError(400, accept.message, { code: accept.code }));
+        return;
+      }
+      cb(null, true);
+    },
+  });
+}
