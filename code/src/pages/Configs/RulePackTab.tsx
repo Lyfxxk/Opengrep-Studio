@@ -356,7 +356,7 @@ export default function RulePackTab() {
         <Checkbox
           checked={selection.selected.has(pack.id)}
           onCheckedChange={() => selection.toggle(pack.id)}
-          aria-label={t('rulePacks.rowSelectAria', { name: pack.name })}
+          aria-label={t('rulePacks.rowSelectAria', { name: packDisplayName(pack.name, pack.id) })}
         />
       </TableCell>
       <TableCell className="font-medium">
@@ -404,7 +404,7 @@ export default function RulePackTab() {
         <Switch
           checked={pack.enabled}
           onCheckedChange={(checked) => void handleToggle(pack, checked)}
-          aria-label={t('rulePacks.enableAria', { name: pack.name })}
+          aria-label={t('rulePacks.enableAria', { name: packDisplayName(pack.name, pack.id) })}
         />
       </TableCell>
       <TableCell className="text-right">
@@ -599,7 +599,7 @@ export default function RulePackTab() {
                       <Switch
                         checked={pack.enabled}
                         onCheckedChange={(checked) => void handleToggle(pack, checked)}
-                        aria-label={t('rulePacks.enableAria', { name: pack.name })}
+                        aria-label={t('rulePacks.enableAria', { name: packDisplayName(pack.name, pack.id) })}
                       />
                       <Button
                         variant="ghost"
@@ -693,7 +693,11 @@ export default function RulePackTab() {
       >
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{t('rulePacks.checkDialogTitle', { name: checking?.name ?? '' })}</DialogTitle>
+            <DialogTitle>
+            {t('rulePacks.checkDialogTitle', {
+              name: checking ? packDisplayName(checking.name, checking.id) : '',
+            })}
+          </DialogTitle>
           </DialogHeader>
           {!checkResult ? (
             <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
@@ -777,7 +781,9 @@ export default function RulePackTab() {
           <AlertDialogHeader>
             <AlertDialogTitle>{t('rulePacks.deleteDialogTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('rulePacks.deleteDesc', { name: deleteTarget?.name ?? '' })}
+              {t('rulePacks.deleteDesc', {
+                name: deleteTarget ? packDisplayName(deleteTarget.name, deleteTarget.id) : '',
+              })}
               {deleteRefCount > 0
                 ? t('rulePacks.deleteRefSuffix', { count: deleteRefCount })
                 : t('configs.deletePlainSuffix')}
@@ -800,7 +806,9 @@ export default function RulePackTab() {
           <AlertDialogHeader>
             <AlertDialogTitle>{t('rulePacks.disableDialogTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('rulePacks.disableDesc', { name: toggleTarget?.name ?? '' })}
+              {t('rulePacks.disableDesc', {
+                name: toggleTarget ? packDisplayName(toggleTarget.name, toggleTarget.id) : '',
+              })}
               {t('rulePacks.disableRefSuffix', { count: toggleRefCount })}
             </AlertDialogDescription>
           </AlertDialogHeader>
