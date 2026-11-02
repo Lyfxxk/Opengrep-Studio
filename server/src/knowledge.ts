@@ -30,7 +30,7 @@ export interface RuleKnowledge {
   matchedRuleId?: string;
   found: boolean;
   pack?: { id: string; name: string; builtin: boolean };
-  zhMessage?: string;
+  message?: string;
   severity?: string;
   securitySeverity?: number;
   cwe: KnowledgeCwe[];
@@ -44,6 +44,7 @@ export interface RuleKnowledge {
 interface PackRuleDoc {
   id?: unknown;
   severity?: unknown;
+  message?: unknown;
   metadata?: Record<string, unknown> | null;
 }
 
@@ -95,6 +96,8 @@ function normalizeCweId(raw: string): string {
 }
 
 export type KnowledgeLang = 'zh' | 'zh-Hant';
+
+export type RuleKnowledgeLang = KnowledgeLang | 'en';
 
 interface KnowledgeResources {
   messages: Record<string, string>;
@@ -188,16 +191,28 @@ function hitStats(ruleId: string): RuleKnowledge['stats'] {
   }
 }
 
-export function getRuleKnowledge(ruleId: string, lang: KnowledgeLang = 'zh'): RuleKnowledge {
+function cweNameFromRaw(raw: string): string | undefined {
+  const match = raw.match(/CWE-0*\d+\s*:\s*(.+)$/i);
+  return match?.[1]?.trim() || undefined;
+}
+
+function ruleMessageText(rule: PackRuleDoc | undefined): string | undefined {
+  const text = typeof rule?.message === 'string' ? rule.message.trim() : '';
+  return text ? text : undefined;
+}
+
+export function getRuleKnowledge(ruleId: string, lang: RuleKnowledgeLang = 'zh'): RuleKnowledge {
   const found = findRule(ruleId);
-  const { messages, cwe: cweMap } = loadResources(lang);
-  const zhMessage = matchZhMessage(messages, ruleId, found?.matchedRuleId);
+  const resources = lang === 'en' ? null : loadResources(lang);
+  const message = resources
+    ? matchZhMessage(resources.messages, ruleId, found?.matchedRuleId)
+    : ruleMessageText(found?.rule);
 
   const result: RuleKnowledge = {
     ruleId,
     ...(found ? { matchedRuleId: found.matchedRuleId, pack: { id: found.pack.id, name: found.pack.name, builtin: found.pack.builtin } } : {}),
     found: Boolean(found),
-    ...(zhMessage ? { zhMessage } : {}),
+    ...(message ? { message } : {}),
     cwe: [],
     owasp: [],
     stats: hitStats(ruleId),
@@ -214,15 +229,30 @@ export function getRuleKnowledge(ruleId: string, lang: KnowledgeLang = 'zh'): Ru
     result.securitySeverity = securitySeverity;
   }
 
-  const cweZhById = (id: string) => cweMap[id] ?? cweMap[id.replace(/^CWE-/i, '')];
-  const cweIds = [...new Set(asStringArray(metadata.cwe).map(normalizeCweId))].slice(0, 8);
-  result.cwe = cweIds.map((id) => ({
-    id,
-    ...(cweZhById(id)?.name ? { name: cweZhById(id).name } : {}),
-    ...(cweZhById(id)?.fix ? { fix: cweZhById(id).fix } : {}),
-  }));
-  const firstFix = cweIds.map((id) => cweZhById(id)?.fix).find(Boolean);
-  if (firstFix) result.fixSuggestion = firstFix;
+  const cweEntries = asStringArray(metadata.cwe);
+  const cweIds = [...new Set(cweEntries.map(normalizeCweId))].slice(0, 8);
+  if (resources) {
+    const cweZhById = (id: string) => resources.cwe[id] ?? resources.cwe[id.replace(/^CWE-/i, '')];
+    result.cwe = cweIds.map((id) => ({
+      id,
+      ...(cweZhById(id)?.name ? { name: cweZhById(id).name } : {}),
+      ...(cweZhById(id)?.fix ? { fix: cweZhById(id).fix } : {}),
+    }));
+    const firstFix = cweIds.map((id) => cweZhById(id)?.fix).find(Boolean);
+    if (firstFix) result.fixSuggestion = firstFix;
+  } else {
+    const nameById = new Map<string, string>();
+    for (const entry of cweEntries) {
+      const name = cweNameFromRaw(entry);
+      if (!name) continue;
+      const id = normalizeCweId(entry);
+      if (!nameById.has(id)) nameById.set(id, name);
+    }
+    result.cwe = cweIds.map((id) => ({
+      id,
+      ...(nameById.get(id) ? { name: nameById.get(id) } : {}),
+    }));
+  }
 
   result.owasp = asStringArray(metadata.owasp).slice(0, 6);
 

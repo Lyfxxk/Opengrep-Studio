@@ -1131,10 +1131,22 @@ assert(kb.json.stats.total >= 1, '命中统计', JSON.stringify(kb.json.stats));
 const kbUpstream = await api('GET', '/api/rules/knowledge/aead-no-final');
 assert((kbUpstream.json?.upstreamUrl ?? '').includes('opengrep-rules/tree/main/'),
   '内置规则上游溯源链接', kbUpstream.json?.upstreamUrl);
-assert((kbUpstream.json?.zhMessage ?? '').length > 0, '内置规则含中文说明', kbUpstream.json?.zhMessage);
+assert((kbUpstream.json?.message ?? '').length > 0, '内置规则含中文说明', kbUpstream.json?.message);
 assert(
   kbUpstream.json?.cwe?.some((item) => (item.name ?? '').length > 0) === true,
   '内置规则 CWE 中文名', JSON.stringify(kbUpstream.json?.cwe));
+
+const kbEn = await api('GET', '/api/rules/knowledge/aead-no-final?lang=en');
+assert(kbEn.status === 200 && kbEn.json?.found === true, '英文知识可取', kbEn.status);
+assert(
+  (kbEn.json?.message ?? '').length > 0 && !/[\u4e00-\u9fff]/.test(kbEn.json.message),
+  '英文说明取规则自带原文且不含汉字', kbEn.json?.message);
+assert(kbEn.json?.fixSuggestion === undefined, '英文界面不输出中文修复建议');
+assert(
+  kbEn.json?.cwe?.some((item) => (item.name ?? '').length > 0 && !/[\u4e00-\u9fff]/.test(item.name)) === true,
+  '英文 CWE 名取规则 metadata', JSON.stringify(kbEn.json?.cwe));
+const kbBadLang = await api('GET', '/api/rules/knowledge/aead-no-final?lang=fr');
+assert(kbBadLang.json?.message === kbUpstream.json?.message, '非法 lang 回落简体', kbBadLang.json?.message);
 
 const labTaintFlow = await api('POST', '/api/rulelab/run', {
   yaml: `rules:

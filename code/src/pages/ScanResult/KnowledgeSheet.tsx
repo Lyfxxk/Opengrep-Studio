@@ -50,7 +50,7 @@ export default function KnowledgeSheet({ ruleId, onClose }: KnowledgeSheetProps)
   const packDisplayName = usePackDisplayName();
   const [knowledge, setKnowledge] = useState<IRuleKnowledge | null>(null);
   const [loading, setLoading] = useState(false);
-  const lang = (i18n.resolvedLanguage ?? i18n.language).startsWith('zh-Hant') ? 'zh-Hant' : 'zh';
+  const language = i18n.resolvedLanguage ?? i18n.language;
 
   useEffect(() => {
     if (!ruleId) {
@@ -60,7 +60,7 @@ export default function KnowledgeSheet({ ruleId, onClose }: KnowledgeSheetProps)
     let mounted = true;
     setLoading(true);
     api
-      .getRuleKnowledge(ruleId, lang)
+      .getRuleKnowledge(ruleId)
       .then((data) => {
         if (mounted) setKnowledge(data);
       })
@@ -76,7 +76,7 @@ export default function KnowledgeSheet({ ruleId, onClose }: KnowledgeSheetProps)
     return () => {
       mounted = false;
     };
-  }, [ruleId, lang]);
+  }, [ruleId, language]);
 
   return (
     <Sheet open={ruleId !== null} onOpenChange={(open) => (!open ? onClose() : undefined)}>
@@ -101,17 +101,17 @@ export default function KnowledgeSheet({ ruleId, onClose }: KnowledgeSheetProps)
           <p className="text-sm text-muted-foreground">{t('knowledge.empty')}</p>
         ) : (
           <div className="space-y-5 pr-1">
-            {knowledge.zhMessage ? (
+            {knowledge.message ? (
               <div>
                 <h4 className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
                   <GraduationCap className="size-3.5" />
-                  {t('knowledge.zhMessageTitle')}
+                  {t('knowledge.messageTitle')}
                 </h4>
-                <p className="rounded-lg border bg-muted/40 p-3 text-sm leading-6">{knowledge.zhMessage}</p>
+                <p className="rounded-lg border bg-muted/40 p-3 text-sm leading-6">{knowledge.message}</p>
               </div>
             ) : (
               <p className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
-                {t('knowledge.zhMessageMissing')}
+                {t('knowledge.messageMissing')}
               </p>
             )}
 

@@ -35,9 +35,16 @@ import { diffSnapshots } from '../snapshot-diff.js';
 import { packRuleFiles } from '../rulepacks.js';
 import { buildSarifReport } from '../sarif.js';
 import { parseSarifImport } from '../sarif-import.js';
-import { buildReportData, renderReportHtml, sanitizeCommand, type ReportLang } from '../report.js';
+import { buildReportData, renderReportHtml, sanitizeCommand } from '../report.js';
 import { applyBaselineComparison, enqueueScan, requestScanCancel, type ScanPlan } from '../scan-runner.js';
-import { asyncHandler, decodeUploadFileName, limit400, requireProject, requireValidBaseline } from './shared.js';
+import {
+  asyncHandler,
+  decodeUploadFileName,
+  limit400,
+  parseProductLang,
+  requireProject,
+  requireValidBaseline,
+} from './shared.js';
 import {
   isProjectImporting,
   markProjectImporting,
@@ -469,10 +476,6 @@ scanRoutes.post(
     res.status(201).json(scan);
   }),
 );
-
-function parseProductLang(value: unknown): ReportLang {
-  return value === 'zh-Hant' ? 'zh-Hant' : value === 'en' ? 'en' : 'zh';
-}
 
 scanRoutes.get('/api/scans/:scanId/manifest', asyncHandler(async (req, res) => {
   const scan = requireScan(req.params.scanId);
