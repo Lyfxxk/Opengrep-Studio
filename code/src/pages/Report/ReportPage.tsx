@@ -33,7 +33,7 @@ import { cn } from '@/lib/utils';
 type Severity = IIssue['severity'];
 
 function firstSentence(value: string): string {
-  const cut = value.trim().split(/(?<=[。！？])|(?<=[.!?])\s/)[0] || value;
+  const cut = value.trim().split(/(?<=[。！？])/)[0] || value;
   return cut.length > 64 ? `${cut.slice(0, 64)}…` : cut;
 }
 
