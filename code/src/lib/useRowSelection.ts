@@ -23,7 +23,7 @@ export function useRowSelection(ids: readonly string[]) {
       });
     },
     toggleAll(): void {
-      setSelectedIds(allSelected ? new Set() : present);
+      setSelectedIds(allSelected ? new Set() : new Set(present));
     },
     clear(): void {
       setSelectedIds(new Set());

@@ -256,36 +256,6 @@ Honest disclosure — please read:
 - [ ] GitHub Action workflow template (scan in CI, upload SARIF back)
 - [ ] Customizable report templates (branding / header & footer)
 
-## Development
-
-Common commands (run from the repo root):
-
-| Command | Purpose |
-| :--- | :--- |
-| `npm run dev` | Backend (`tsx watch` :8787) + frontend (Vite :1022) together |
-| `npm test` | Backend unit tests (engine resolution / gitignore semantics / rule YAML / SARIF import) |
-| `npm run test-packs` | Rule-pack structure validation & sample regression |
-| `npm run i18n:check` | Language-pack consistency (3 UI packs + simplified/traditional rule texts & CWE) |
-| `npm run e2e` | Black-box REST regression (start backend + engine first; 21 scenario groups) |
-| `npm run seed` | Seed demo data |
-| `npm --prefix code run lint` | Frontend typecheck + ESLint |
-
-Directory layout:
-
-```text
-├─ code/                 # React 19 + Vite + Tailwind v4 + shadcn/ui frontend
-│  └─ src/pages/         # Dashboard / Projects / Scan results / Report / Rules center (incl. lab) / Config
-├─ server/               # Express backend (node:sqlite, no native deps)
-│  ├─ src/               # API / scan orchestration / SARIF / snapshot diff / rule packs / report
-│  ├─ rules/security/    # Built-in rules for 12 languages (curated from opengrep-rules)
-│  └─ scripts/           # Engine download / seed data / tests / rule regeneration
-└─ docs/images/          # Docs images
-```
-
-**Recommended path for contributing a rule**: write it in the Rule Lab and validate with positive/negative samples → "Save to rule pack" (with samples attached) → export the zip → open a PR. ⚠️ Do not submit rules sourced from semgrep-rules (its license restricts competitive use); keep upstream provenance for rules from opengrep-rules. The frontend has a demo mode: `VITE_USE_MOCK=true npm --prefix code run dev`.
-
-CI (`.github/workflows/ci.yml`) runs four jobs: backend typecheck + unit tests, frontend lint + build, a **full E2E with the real engine downloaded**, and a **Docker build with a container smoke test**.
-
 ## Thanks
 
 - [opengrep/opengrep](https://github.com/opengrep/opengrep) — the scan engine (LGPL-2.1); this repo does not vendor its binary, it is downloaded and verified by script
@@ -300,8 +270,3 @@ Two third-party license notes:
 
 - **The scan engine**: opengrep is released under LGPL-2.1; this repo contains no engine binary — `npm run setup:engine` downloads it from the official Releases and verifies it by SHA-256
 - **Built-in rules**: curated from opengrep-rules (LGPL 2.1 + Commons Clause) — free to use and redistribute with attribution kept, but the rules themselves must not be sold as a paid product
-
-## Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=Lyfxxk/Opengrep-Studio&type=Date)](https://star-history.com/#Lyfxxk/Opengrep-Studio)
-
