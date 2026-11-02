@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { IScanDiff, IScanDiffIssueList } from '@/data/diffs';
-import { attachProjectNames, type ScanWithProject } from '@/lib/scans';
+import { attachProjectNames, type ScanWithProject } from '@/lib/usePagedList';
 import { formatDateTime } from '@/lib/format';
 import { SEVERITY_BADGE_CLASS } from '@/lib/severity';
 import { cn } from '@/lib/utils';
