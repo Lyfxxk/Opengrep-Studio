@@ -148,8 +148,20 @@ test('缺描述与缺工具名时留空字符串，占位由界面语言渲染',
 });
 
 test('非法输入全部 400：坏 JSON / 非 2.x / 缺 runs / 顶层非对象', () => {
-  assert.throws(() => parseSarifImport('{ broken'), /JSON/);
-  assert.throws(() => parseSarifImport(JSON.stringify({ version: '1.0.0', runs: [] })), /SARIF 2\.x/);
-  assert.throws(() => parseSarifImport(JSON.stringify({ version: '2.1.0' })), /runs/);
-  assert.throws(() => parseSarifImport(JSON.stringify([1, 2])), /顶层/);
+  assert.throws(
+    () => parseSarifImport('{ broken'),
+    (error) => error.meta?.code === 'sarif.invalidJson',
+  );
+  assert.throws(
+    () => parseSarifImport(JSON.stringify({ version: '1.0.0', runs: [] })),
+    (error) => error.meta?.code === 'sarif.versionUnsupported',
+  );
+  assert.throws(
+    () => parseSarifImport(JSON.stringify({ version: '2.1.0' })),
+    (error) => error.meta?.code === 'sarif.runsMissing',
+  );
+  assert.throws(
+    () => parseSarifImport(JSON.stringify([1, 2])),
+    (error) => error.meta?.code === 'sarif.notObject',
+  );
 });
