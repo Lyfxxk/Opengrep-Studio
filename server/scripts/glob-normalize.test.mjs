@@ -1,16 +1,11 @@
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
+import { trackTempDir, useTempDataDir } from './script-utils.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-const tempDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'og-glob-'));
-process.env.DATA_DIR = tempDataDir;
-process.env.CUSTOM_RULES_DIR = path.join(tempDataDir, 'rules-custom');
+const tempDataDir = useTempDataDir('og-glob-');
 
 const { normalizeGlob, ScanError } = await import('../src/scan-runner.ts');
 const { closeDatabase } = await import('../src/db.ts');
-const { trackTempDir } = await import('./temp-dir.mjs');
 trackTempDir(tempDataDir, closeDatabase);
 
 test('include：中间 **/ 展开为零层与一层以上', () => {

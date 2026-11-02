@@ -1,16 +1,11 @@
-import os from 'node:os';
-import fs from 'node:fs';
-import path from 'node:path';
+import { trackTempDir, useTempDataDir } from './script-utils.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-const tempDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'og-report-'));
-process.env.DATA_DIR = tempDataDir;
-process.env.CUSTOM_RULES_DIR = path.join(tempDataDir, 'rules-custom');
+const tempDataDir = useTempDataDir('og-report-');
 
 const { buildReportData, renderReportHtml } = await import('../src/report.ts');
 const { closeDatabase } = await import('../src/db.ts');
-const { trackTempDir } = await import('./temp-dir.mjs');
 trackTempDir(tempDataDir, closeDatabase);
 
 const SCAN = {

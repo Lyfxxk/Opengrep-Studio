@@ -1,16 +1,11 @@
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
+import { trackTempDir, useTempDataDir } from './script-utils.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-const tempDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'og-fallback-cfg-'));
-process.env.DATA_DIR = tempDataDir;
-process.env.CUSTOM_RULES_DIR = path.join(tempDataDir, 'rules-custom');
+const tempDataDir = useTempDataDir('og-fallback-cfg-');
 
 const db = await import('../src/db.ts');
 const { ensureFallbackScanConfig } = await import('../src/fallback-config.ts');
-const { trackTempDir } = await import('./temp-dir.mjs');
 trackTempDir(tempDataDir, db.closeDatabase);
 
 const now = () => new Date().toISOString();
