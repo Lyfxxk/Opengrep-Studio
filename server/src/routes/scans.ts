@@ -191,9 +191,9 @@ scanRoutes.post('/api/projects/:id/scans', asyncHandler(async (req, res) => {
 
   const scanDir = scanSourceDir(project.id, scan.id);
   fs.mkdirSync(path.dirname(scanDir), { recursive: true });
-  insertScan(scan);
   markProjectImporting(project.id);
   try {
+    insertScan(scan);
     await copyDirectory(pendingDir, scanDir);
   } catch (error) {
     fs.rmSync(scanSnapshotRoot(project.id, scan.id), { recursive: true, force: true });
