@@ -932,7 +932,13 @@ export const api = {
       saveScans(
         loadScans().map((scan) =>
           scan.id === id && scan.status === 'scanning'
-            ? { ...scan, status: 'failed' as const, finishedAt: new Date().toISOString(), message: '已被手动取消' }
+            ? {
+                ...scan,
+                status: 'failed' as const,
+                finishedAt: new Date().toISOString(),
+                message: '已被手动取消',
+                errorCode: 'scan.cancelled',
+              }
             : scan,
         ),
       );
