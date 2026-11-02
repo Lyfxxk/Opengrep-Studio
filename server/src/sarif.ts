@@ -85,7 +85,7 @@ export function buildSarifReport(
         },
         automationDetails: { id: `opengrep-studio/${scan.id}` },
         originalUriBaseIds: {
-          SRCROOT: { description: { text: '扫描源码快照根目录' } },
+          SRCROOT: { description: { text: 'Source snapshot root' } },
         },
         results: current.map((issue) => ({
           ruleId: issue.ruleId,
@@ -96,7 +96,7 @@ export function buildSarifReport(
             {
               physicalLocation: {
                 artifactLocation: {
-                  uri: issue.filePath.replace(/\\/g, '/'),
+                  uri: (issue.filePath || '.').replace(/\\/g, '/'),
                   uriBaseId: 'SRCROOT',
                 },
                 region: {
