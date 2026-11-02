@@ -19,6 +19,7 @@ import type { IProject } from '@/data/projects';
 import type { IRulePack } from '@/data/rulepacks';
 import type { IScanResult } from '@/data/scanresults';
 import { api, translateApiError, type UploadItem } from '@/lib/api';
+import { useConfigDisplayName } from '@/lib/configName';
 import ScanHistoryTable from './ScanHistoryTable';
 import UploadZone, { type UploadZoneState } from './UploadZone';
 
@@ -26,6 +27,7 @@ const POLL_INTERVAL_MS = 1500;
 
 export default function ProjectDetailPage() {
   const { t } = useTranslation();
+  const configDisplay = useConfigDisplayName();
   const { id } = useParams();
   const navigate = useNavigate();
   const [project, setProject] = useState<IProject | null>(null);
@@ -350,7 +352,7 @@ export default function ProjectDetailPage() {
                 <SelectContent>
                   {configs.map((config) => (
                     <SelectItem key={config.id} value={config.id}>
-                      {config.name}
+                      {configDisplay(config).name}
                     </SelectItem>
                   ))}
                 </SelectContent>

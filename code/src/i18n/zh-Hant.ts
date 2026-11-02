@@ -427,6 +427,8 @@ const zhHant: typeof zh = {
     selectAllAria: '全選設定',
     fallbackBadge: '備用',
     fallbackHint: '未綁定設定（或綁定已失效）的專案掃描時自動使用；可調整但不可刪除',
+    fallbackName: '預設掃描設定',
+    fallbackDescription: '備用設定：未綁定設定（或綁定已失效）的專案掃描時自動使用；可調整但不可刪除',
     rowSelectAria: '選擇設定 {{name}}',
     colName: '設定名稱',
     colRulePacks: '規則包',
