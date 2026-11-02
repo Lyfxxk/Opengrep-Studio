@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseSarifImport } from '../src/sarif-import.ts';
+import { parseSarifImport } from '../src/sarif.ts';
 
 const RULE_ID = 'ts/hardcoded-secret';
 
