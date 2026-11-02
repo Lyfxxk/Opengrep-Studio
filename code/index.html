@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Opengrep Studio | 码审工作台</title>
+    <title>Opengrep Studio</title>
     <script>
       try {
         var mode = localStorage.getItem('__global_opengrep_theme');
@@ -12,6 +12,10 @@
           mode === 'dark' ||
           (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
         if (dark) document.documentElement.classList.add('dark');
+        var lang = localStorage.getItem('__global_opengrep_lang');
+        if (lang === 'en' || lang === 'zh-Hant' || lang === 'zh') {
+          document.documentElement.lang = lang === 'zh' ? 'zh-CN' : lang;
+        }
       } catch (e) {
       }
     </script>
