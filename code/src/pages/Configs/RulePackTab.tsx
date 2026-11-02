@@ -28,8 +28,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import BatchDeleteBar, { BatchDeleteConfirm } from '@/components/BatchDeleteBar';
-import { useRowSelection } from '@/lib/useRowSelection';
-import { usePagedList } from '@/lib/usePagedList';
+import { usePagedList, useRowSelection } from '@/lib/usePagedList';
 import {
   Dialog,
   DialogContent,
