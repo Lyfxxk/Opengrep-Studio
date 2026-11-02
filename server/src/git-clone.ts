@@ -106,16 +106,20 @@ export async function cloneRepo(
 
   console.log(`[git-clone] git ${redactSecrets(args.map((a) => JSON.stringify(a)).join(' '))}`);
   const { code, stderr, timedOut, spawnError } = await runGit(args, config.cloneTimeoutMs);
-  const fail = (message: string): never => {
+  const fail = (code: string, message: string, params?: Record<string, unknown>): never => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
-    throw new HttpError(400, message);
+    throw new HttpError(400, message, { code, params });
   };
 
   if (spawnError?.code === 'ENOENT') {
-    fail('服务器未安装 Git，无法使用仓库直扫；请安装 Git 后重试，或改用 ZIP 上传');
+    fail('git.notInstalled', '服务器未安装 Git，无法使用仓库直扫；请安装 Git 后重试，或改用 ZIP 上传');
   }
   if (timedOut) {
-    fail(`克隆超过 ${Math.round(config.cloneTimeoutMs / 60000)} 分钟被终止，请确认地址可访问，或改用 ZIP 上传`);
+    fail(
+      'git.cloneTimeout',
+      `克隆超过 ${Math.round(config.cloneTimeoutMs / 60000)} 分钟被终止，请确认地址可访问，或改用 ZIP 上传`,
+      { minutes: Math.round(config.cloneTimeoutMs / 60000) },
+    );
   }
   if (code !== 0) {
     const detail = stderr.trim().split('\n').filter(Boolean).pop() ?? `git exit ${code}`;
@@ -126,13 +130,21 @@ export async function cloneRepo(
   fs.rmSync(path.join(tmpDir, '.git'), { recursive: true, force: true });
   const { files, bytes } = walkAndStripSymlinks(tmpDir);
   if (files === 0) {
-    fail('仓库没有任何文件（可能是空仓库，或默认分支不含源码），请确认后重试');
+    fail('git.emptyRepo', '仓库没有任何文件（可能是空仓库，或默认分支不含源码），请确认后重试');
   }
   if (files > config.maxImportEntries) {
-    fail(`仓库文件数超过 ${config.maxImportEntries} 上限，请改用 ZIP 上传部分源码`);
+    fail(
+      'git.tooManyFiles',
+      `仓库文件数超过 ${config.maxImportEntries} 上限，请改用 ZIP 上传部分源码`,
+      { limit: config.maxImportEntries },
+    );
   }
   if (bytes > config.maxExtractedBytes) {
-    fail(`仓库源码总体积超过 ${config.maxExtractedBytes / 1024 ** 3}GB 上限，请改用 ZIP 上传部分源码`);
+    fail(
+      'git.totalTooLarge',
+      `仓库源码总体积超过 ${config.maxExtractedBytes / 1024 ** 3}GB 上限，请改用 ZIP 上传部分源码`,
+      { gb: config.maxExtractedBytes / 1024 ** 3 },
+    );
   }
 
   fs.rmSync(destDir, { recursive: true, force: true });
