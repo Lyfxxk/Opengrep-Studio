@@ -72,6 +72,8 @@ export interface ScanRecord {
   finishedAt?: string;
   baselineScanId?: string;
   rules?: string;
+  importSource?: string;
+  toolName?: string;
   rulepacks?: RulePackRef[];
   fileCount: number;
   message?: string;
@@ -244,6 +246,7 @@ for (const sql of [
   'ALTER TABLE scans ADD COLUMN dequeued_at TEXT',
   'ALTER TABLE scans ADD COLUMN error_code TEXT',
   'ALTER TABLE scans ADD COLUMN error_params TEXT',
+  'ALTER TABLE scans ADD COLUMN import_meta TEXT',
   'ALTER TABLE configs ADD COLUMN is_protected INTEGER NOT NULL DEFAULT 0',
   'ALTER TABLE issues ADD COLUMN dataflow_trace TEXT',
 ]) {
@@ -306,6 +309,7 @@ function parseRulePackRefs(value: unknown): RulePackRef[] | undefined {
 
 function rowToScan(row: SqlRow): ScanRecord {
   const snapshotRaw = parseJsonObject(row.config_snapshot);
+  const importMeta = parseJsonObject(row.import_meta) as { source?: string; toolName?: string } | null;
   return {
     id: String(row.id),
     projectId: String(row.project_id),
@@ -317,6 +321,8 @@ function rowToScan(row: SqlRow): ScanRecord {
     fileCount: Number(row.file_count ?? 0),
     baselineScanId: str(row.baseline_scan_id as string | null),
     rules: str(row.rules as string | null),
+    ...(importMeta?.source ? { importSource: importMeta.source } : {}),
+    ...(importMeta?.toolName ? { toolName: importMeta.toolName } : {}),
     rulepacks: parseRulePackRefs(row.rulepacks),
     message: str(row.message as string | null),
     errorCode: str(row.error_code as string | null),
@@ -450,7 +456,7 @@ export function listAllScans(): ScanRecord[] {
 
 export function insertScan(scan: ScanRecord): void {
   db.prepare(
-    'INSERT INTO scans (id, project_id, status, issue_count, scanned_at, finished_at, file_count, baseline_scan_id, rules, rulepacks, message, src_hash, command_line, config_snapshot, engine_version) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO scans (id, project_id, status, issue_count, scanned_at, finished_at, file_count, baseline_scan_id, rules, import_meta, rulepacks, message, src_hash, command_line, config_snapshot, engine_version) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
   ).run(
     scan.id,
     scan.projectId,
@@ -461,6 +467,9 @@ export function insertScan(scan: ScanRecord): void {
     scan.fileCount || null,
     scan.baselineScanId ?? null,
     scan.rules ?? null,
+    scan.importSource
+      ? JSON.stringify({ source: scan.importSource, ...(scan.toolName ? { toolName: scan.toolName } : {}) })
+      : null,
     scan.rulepacks?.length ? JSON.stringify(scan.rulepacks) : null,
     scan.message ?? null,
     scan.srcHash ?? null,
