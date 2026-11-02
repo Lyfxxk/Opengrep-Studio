@@ -183,7 +183,6 @@ export interface HealthInfo {
   engineManaged?: boolean;
   engineReady?: boolean;
   engineSource?: 'env' | 'bundled-dir' | 'path' | 'missing';
-  engineSourceLabel?: string;
   engine?: string;
   engineHint?: string;
   engineHintCode?: string;
@@ -804,7 +803,11 @@ export const api = {
     await request<void>(`/api/rulepacks/${id}`, { method: 'DELETE' });
   },
 
-  importRulePack(file: File): Promise<IRulePack & { message?: string }> {
+  importRulePack(file: File): Promise<IRulePack & {
+    message?: string;
+    messageCode?: string;
+    messageParams?: Record<string, unknown>;
+  }> {
     if (USE_MOCK) {
       const name = file.name.replace(/\.zip$/i, '');
       const pack: IRulePack & { message?: string } = {
