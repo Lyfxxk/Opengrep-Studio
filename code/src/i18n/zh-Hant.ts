@@ -51,6 +51,7 @@ const zhHant: typeof zh = {
     sidebar: '側邊欄',
     sidebarDescription: '顯示行動版側邊欄',
     toggleSidebar: '切換側邊欄',
+    breadcrumbAria: '麵包屑導覽',
   },
   pagination: {
     prev: '上一頁',
@@ -305,6 +306,8 @@ const zhHant: typeof zh = {
     packsBtn: '本次掃描規則包',
     packsUnit: ' 個',
     rulesetDir: '規則集目錄：{{rules}}',
+    sarifImport: 'SARIF 匯入',
+    sarifImportTool: 'SARIF 匯入（{{tool}}）',
     failedTitle: '本次掃描執行失敗',
     failedHint: '原始碼快照仍在，返回專案詳情頁可直接重新發起掃描，無需重新上傳',
     queuedHint: '佇列等待中，其他掃描完成後自動開始',
@@ -964,6 +967,8 @@ const zhHant: typeof zh = {
   login: {
     title: '登入 · Opengrep Studio',
     introPanel: '產品介紹',
+    eyebrow: '// 本地優先程式碼稽核',
+    copyright: '© 2026 Opengrep Studio · 作者',
     formPanel: '登入',
     heroTitle1: '讓隱患，先於攻擊者',
     heroTitleEm: '現形',

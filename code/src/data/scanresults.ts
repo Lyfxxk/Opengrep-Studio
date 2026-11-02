@@ -9,6 +9,8 @@ export interface IScanResult {
   fileCount?: number
   baselineScanId?: string
   rules?: string
+  importSource?: string
+  toolName?: string
   rulepacks?: Array<{ id: string; name: string }>
   engineVersion?: string
   queuedAt?: string

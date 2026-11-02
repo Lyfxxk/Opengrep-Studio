@@ -49,6 +49,7 @@ const zh = {
     sidebar: '侧边栏',
     sidebarDescription: '显示移动端侧边栏',
     toggleSidebar: '切换侧边栏',
+    breadcrumbAria: '面包屑导航',
   },
   pagination: {
     prev: '上一页',
@@ -303,6 +304,8 @@ const zh = {
     packsBtn: '本次扫描规则包',
     packsUnit: ' 个',
     rulesetDir: '规则集目录：{{rules}}',
+    sarifImport: 'SARIF 导入',
+    sarifImportTool: 'SARIF 导入（{{tool}}）',
     failedTitle: '本次扫描执行失败',
     failedHint: '源码快照仍在，返回项目详情页可直接重新发起扫描，无需重新上传',
     queuedHint: '排队等待中，其他扫描完成后自动开始',
@@ -961,6 +964,8 @@ const zh = {
   login: {
     title: '登录 · Opengrep Studio',
     introPanel: '产品介绍',
+    eyebrow: '// 本地优先代码审计',
+    copyright: '© 2026 Opengrep Studio · 作者',
     formPanel: '登录',
     heroTitle1: '让隐患，先于攻击者',
     heroTitleEm: '现形',
