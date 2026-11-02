@@ -5,28 +5,11 @@ import * as SelectPrimitive from "@radix-ui/react-select"
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-const EMPTY_SENTINEL = "__dont__use__this__empty__value__"
 
 function Select({
-  value,
-  defaultValue,
-  onValueChange,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Root>) {
-  const mappedValue = value === "" ? EMPTY_SENTINEL : value
-  const mappedDefaultValue = defaultValue === "" ? EMPTY_SENTINEL : defaultValue
-  const handleChange = (val: string) => {
-    onValueChange?.(val === EMPTY_SENTINEL ? "" : val)
-  }
-  return (
-    <SelectPrimitive.Root
-      data-slot="select"
-      value={mappedValue}
-      defaultValue={mappedDefaultValue}
-      onValueChange={handleChange}
-      {...props}
-    />
-  )
+  return <SelectPrimitive.Root data-slot="select" {...props} />
 }
 
 function SelectValue({
@@ -130,7 +113,7 @@ function SelectItem({
         "focus:bg-accent focus:text-accent-foreground data-[state=checked]:text-primary data-[state=checked]:[&_svg:not([class*='text-'])]:text-primary relative flex w-full cursor-default items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-sm outline-hidden select-none data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
         className
       )}
-      value={value === "" ? EMPTY_SENTINEL : value}
+      value={value}
       disabled={disabled}
       onClick={(event) => {
         if (disabled) {
