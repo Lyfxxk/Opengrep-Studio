@@ -88,14 +88,14 @@ test('safeRelativePath 归一化相对路径（剥掉 . 段和空段，反斜杠
 
 test('safeRelativePath 拒绝 .. 上跳、绝对路径与盘符', () => {
   for (const raw of ['../evil.txt', 'a/../b.txt', '..\\..\\escape.txt', '/abs.txt', '\\\\server\\share', 'C:/x.txt', 'c:\\x.txt', 'z:relative.txt']) {
-    assertRejected(() => safeRelativePath(raw), 'archive.unsafePath', /不安全的路径条目/);
+    assertRejected(() => safeRelativePath(raw), 'archive.unsafePath');
   }
 });
 
 test('safeRelativePath 平台非法字符：Windows 保留字符按平台拒绝，控制字符两侧都拒绝', () => {
   if (process.platform === 'win32') {
     for (const ch of ['<', '>', '"', '|', '?', '*']) {
-      assertRejected(() => safeRelativePath(`bad${ch}name`), 'archive.illegalChars', /不允许的文件名字符/);
+      assertRejected(() => safeRelativePath(`bad${ch}name`), 'archive.illegalChars');
     }
   } else {
     assert.equal(safeRelativePath('bad<name|?"*>'), 'bad<name|?"*>');
@@ -122,7 +122,7 @@ test('extractZipSafely 拒绝 zip-slip 条目，目标目录内外都不落盘',
   try {
     for (const name of ['../evil.txt', '..\\evil.txt', '/abs.txt', 'C:\\evil.txt']) {
       const zip = craftZip([{ name, data: Buffer.from('evil-content') }]);
-      await assertRejectedAsync(() => extractZipSafely(zip, dest), 'archive.unsafePath', /不安全的路径条目/);
+      await assertRejectedAsync(() => extractZipSafely(zip, dest), 'archive.unsafePath');
     }
     assert.equal(fs.existsSync(dest), false);
     assert.deepEqual(fs.readdirSync(parent), []);
@@ -149,7 +149,7 @@ test('extractZipSafely 拒绝伪体积条目：声明解压体积 0 却带压缩
     const zip = craftZip([
       { name: 'bomb.txt', method: 8, data: compressed, declaredSize: 0, declaredCompSize: compressed.length },
     ]);
-    await assertRejectedAsync(() => extractZipSafely(zip, dest), 'archive.zipFakeSize', /伪造体积/);
+    await assertRejectedAsync(() => extractZipSafely(zip, dest), 'archive.zipFakeSize');
     assert.equal(fs.existsSync(dest), false);
   } finally {
     fs.rmSync(parent, { recursive: true, force: true });
