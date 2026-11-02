@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import type { Response } from 'express';
 import AdmZip from 'adm-zip';
 import { Router } from 'express';
 import multer from 'multer';
@@ -514,6 +515,120 @@ function detectLooseRoot(dir: string): string {
   return dirs.length === 1 ? path.join(dir, dirs[0].name) : dir;
 }
 
+async function importPortablePack(root: string, res: Response): Promise<void> {
+  let manifest: PackManifest;
+  try {
+    manifest = parsePackManifest(fs.readFileSync(path.join(root, 'pack.yaml'), 'utf8'));
+  } catch (error) {
+    if (error instanceof HttpError) throw error;
+    throw new HttpError(400, error instanceof Error ? error.message : String(error));
+  }
+  const rulesStat = fs.statSync(path.join(root, 'rules'), { throwIfNoEntry: false });
+  if (!rulesStat?.isDirectory()) {
+    throw new HttpError(400, '包内缺少 rules/ 目录：请按 pack.yaml + rules/ + samples/ 结构打包', {
+      code: 'srv.noRulesDir',
+    });
+  }
+  const ruleFiles = collectRuleFiles(path.join(root, 'rules'));
+  if (ruleFiles.length === 0) {
+    throw new HttpError(400, '包内 rules/ 目录没有任何 YAML 规则文件', {
+      code: 'srv.noRulesInZip',
+    });
+  }
+  if (ruleFiles.length > 50) {
+    throw new HttpError(400, '规则文件数超过 50 上限，请拆分规则包', {
+      code: 'srv.tooManyRuleFiles',
+    });
+  }
+  const ids = new Set<string>();
+  let ruleCount = 0;
+  let language = '';
+  for (const file of ruleFiles) {
+    let text: string;
+    try {
+      text = fs.readFileSync(file, 'utf8');
+      const parsed = parseRuleYaml(text);
+      if (!language && parsed.firstLanguage) {
+        language = parsed.firstLanguage;
+      }
+      for (const id of parsed.ruleIds) {
+        if (ids.has(id)) {
+          throw new RuleYamlError('ruleYaml.duplicateId', `存在重复的规则 id：${id}`, { id });
+        }
+        ids.add(id);
+        ruleCount += 1;
+      }
+    } catch (error) {
+      const rel = path.relative(root, file).replace(/\\/g, '/');
+      throw asRuleFileHttpError(error, rel);
+    }
+  }
+  const { sampleCount } = scanPackSamples(root, ids);
+  const packId = newId('rp');
+  const destDir = customPackDir(packId);
+  fs.mkdirSync(config.customRulesDir, { recursive: true });
+  try {
+    await copyDirectory(root, destDir);
+  } catch (error) {
+    fs.rmSync(destDir, { recursive: true, force: true });
+    throw error;
+  }
+  const pack: RulePack = {
+    id: packId,
+    name: manifest.name,
+    language: language || manifest.frameworks[0] || 'Other',
+    builtin: false,
+    enabled: true,
+    ruleCount,
+    createdAt: new Date().toISOString(),
+    version: manifest.version,
+    manifest,
+    sampleCount,
+    isDir: true,
+    lastCheck: null,
+  };
+  insertRulePack(pack);
+  res.status(201).json({
+    ...pack,
+    message: `导入成功：${ruleCount} 条规则、${sampleCount} 个样本，建议先运行质量检查`,
+    messageCode: 'srv.importSuccess',
+    messageParams: { rules: ruleCount, samples: sampleCount },
+  });
+}
+
+async function importLoosePack(
+  options: { root: string; zipName: string; originalName: string; nameInput: string; languageInput: string },
+  res: Response,
+): Promise<void> {
+  const looseFiles = fs
+    .readdirSync(options.root, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && /\.ya?ml$/i.test(entry.name));
+  if (looseFiles.length === 0) {
+    throw new HttpError(400, '压缩包中没有找到 YAML 规则文件', { code: 'srv.noYamlInZip' });
+  }
+  if (looseFiles.length > 1) {
+    throw new HttpError(
+      400,
+      '压缩包含多个规则文件但缺少 pack.yaml 清单，请按可移植格式打包（pack.yaml + rules/ 目录）',
+      { code: 'srv.packManifestMissing' },
+    );
+  }
+  const content = fs.readFileSync(path.join(options.root, looseFiles[0].name), 'utf8');
+  const name = requireValidPackName(options.nameInput || options.zipName);
+  let language = options.languageInput;
+  try {
+    language = language || parseRuleYaml(content).firstLanguage;
+  } catch (error) {
+    throw asRuleFileHttpError(error, looseFiles[0].name);
+  }
+  const pack = saveNewRulePack(name, language || 'Other', content, options.originalName);
+  res.status(201).json({
+    ...pack,
+    message: '导入成功（单文件包，无样本，basic 档）',
+    messageCode: 'srv.importSuccessBasic',
+  });
+}
+
 rulepackRoutes.post(
   '/api/rulepacks/import',
   limit400(importPackUpload.single('file'), MAX_PACK_ZIP_BYTES),
@@ -531,117 +646,20 @@ rulepackRoutes.post(
     try {
       await extractZipSafely(req.file.buffer, tmpDir);
       const root = detectPackRoot(tmpDir);
-
       if (root) {
-        let manifest: PackManifest;
-        try {
-          manifest = parsePackManifest(fs.readFileSync(path.join(root, 'pack.yaml'), 'utf8'));
-        } catch (error) {
-          if (error instanceof HttpError) throw error;
-          throw new HttpError(400, error instanceof Error ? error.message : String(error));
-        }
-        const rulesStat = fs.statSync(path.join(root, 'rules'), { throwIfNoEntry: false });
-        if (!rulesStat?.isDirectory()) {
-          throw new HttpError(400, '包内缺少 rules/ 目录：请按 pack.yaml + rules/ + samples/ 结构打包', {
-            code: 'srv.noRulesDir',
-          });
-        }
-        const ruleFiles = collectRuleFiles(path.join(root, 'rules'));
-        if (ruleFiles.length === 0) {
-          throw new HttpError(400, '包内 rules/ 目录没有任何 YAML 规则文件', {
-            code: 'srv.noRulesInZip',
-          });
-        }
-        if (ruleFiles.length > 50) {
-          throw new HttpError(400, '规则文件数超过 50 上限，请拆分规则包', {
-            code: 'srv.tooManyRuleFiles',
-          });
-        }
-        const ids = new Set<string>();
-        let ruleCount = 0;
-        let language = '';
-        for (const file of ruleFiles) {
-          let text: string;
-          try {
-            text = fs.readFileSync(file, 'utf8');
-            const parsed = parseRuleYaml(text);
-            if (!language && parsed.firstLanguage) {
-              language = parsed.firstLanguage;
-            }
-            for (const id of parsed.ruleIds) {
-              if (ids.has(id)) {
-                throw new RuleYamlError('ruleYaml.duplicateId', `存在重复的规则 id：${id}`, { id });
-              }
-              ids.add(id);
-              ruleCount += 1;
-            }
-          } catch (error) {
-            const rel = path.relative(root, file).replace(/\\/g, '/');
-            throw asRuleFileHttpError(error, rel);
-          }
-        }
-        const { sampleCount } = scanPackSamples(root, ids);
-        const packId = newId('rp');
-        const destDir = customPackDir(packId);
-        fs.mkdirSync(config.customRulesDir, { recursive: true });
-        try {
-          await copyDirectory(root, destDir);
-        } catch (error) {
-          fs.rmSync(destDir, { recursive: true, force: true });
-          throw error;
-        }
-        const pack: RulePack = {
-          id: packId,
-          name: manifest.name,
-          language: language || manifest.frameworks[0] || 'Other',
-          builtin: false,
-          enabled: true,
-          ruleCount,
-          createdAt: new Date().toISOString(),
-          version: manifest.version,
-          manifest,
-          sampleCount,
-          isDir: true,
-          lastCheck: null,
-        };
-        insertRulePack(pack);
-        res.status(201).json({
-          ...pack,
-          message: `导入成功：${ruleCount} 条规则、${sampleCount} 个样本，建议先运行质量检查`,
-          messageCode: 'srv.importSuccess',
-          messageParams: { rules: ruleCount, samples: sampleCount },
-        });
+        await importPortablePack(root, res);
         return;
       }
-
-      const looseRoot = detectLooseRoot(tmpDir);
-      const looseFiles = fs
-        .readdirSync(looseRoot, { withFileTypes: true })
-        .filter((entry) => entry.isFile() && /\.ya?ml$/i.test(entry.name));
-      if (looseFiles.length === 0) {
-        throw new HttpError(400, '压缩包中没有找到 YAML 规则文件', { code: 'srv.noYamlInZip' });
-      }
-      if (looseFiles.length > 1) {
-        throw new HttpError(
-          400,
-          '压缩包含多个规则文件但缺少 pack.yaml 清单，请按可移植格式打包（pack.yaml + rules/ 目录）',
-          { code: 'srv.packManifestMissing' },
-        );
-      }
-      const content = fs.readFileSync(path.join(looseRoot, looseFiles[0].name), 'utf8');
-      const name = requireValidPackName(String(req.body?.name ?? '').trim() || zipName);
-      let language = String(req.body?.language ?? '').trim();
-      try {
-        language = language || parseRuleYaml(content).firstLanguage;
-      } catch (error) {
-        throw asRuleFileHttpError(error, looseFiles[0].name);
-      }
-      const pack = saveNewRulePack(name, language || 'Other', content, originalName);
-      res.status(201).json({
-        ...pack,
-        message: '导入成功（单文件包，无样本，basic 档）',
-        messageCode: 'srv.importSuccessBasic',
-      });
+      await importLoosePack(
+        {
+          root: detectLooseRoot(tmpDir),
+          zipName,
+          originalName,
+          nameInput: String(req.body?.name ?? '').trim(),
+          languageInput: String(req.body?.language ?? '').trim(),
+        },
+        res,
+      );
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     }
