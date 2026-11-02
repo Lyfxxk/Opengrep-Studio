@@ -420,6 +420,7 @@ export default function LabPage() {
   const openSaveDialog = () => {
     const label = engineLangToPackLabel(language);
     if (label) setSaveLanguage(label);
+    setSaveName('');
     setSaveDialog({ mode: 'create' });
   };
 
