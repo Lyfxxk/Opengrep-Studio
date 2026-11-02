@@ -88,7 +88,7 @@ function verdictLabel(
 }
 
 export default function RulePackTab() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const packDisplayName = usePackDisplayName();
   const [rulePacks, setRulePacks] = useState<IRulePack[]>([]);
   const [loading, setLoading] = useState(true);
@@ -383,7 +383,9 @@ export default function RulePackTab() {
         </div>
         {pack.manifest?.description && (
           <p className="mt-1 max-w-md truncate text-xs font-normal text-muted-foreground">
-            {pack.manifest.description}
+            {i18n.language === 'en'
+              ? pack.manifest.descriptionEn ?? pack.manifest.description
+              : pack.manifest.description}
           </p>
         )}
       </TableCell>
