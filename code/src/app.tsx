@@ -10,7 +10,7 @@ import ReportPage from "@/pages/Report/ReportPage";
 import ScansCenterPage from "@/pages/Scans/ScansCenterPage";
 import ReportsCenterPage from "@/pages/Reports/ReportsCenterPage";
 import RulesCenterPage from "@/pages/Rules/RulesCenterPage";
-import ConfigsPage from "@/pages/Configs/ConfigsPage";
+import ScanConfigTab from "@/pages/Configs/ScanConfigTab";
 
 export default function App() {
   return (
@@ -26,7 +26,7 @@ export default function App() {
         <Route path="reports" element={<ReportsCenterPage />} />
         <Route path="rules" element={<RulesCenterPage />} />
         <Route path="lab" element={<Navigate to="/rules?tab=lab" replace />} />
-        <Route path="configs" element={<ConfigsPage />} />
+        <Route path="configs" element={<ScanConfigTab />} />
       </Route>
       <Route path="login" element={<LoginPage />} />
       <Route path="*" element={<NotFoundPage />} />
