@@ -9,6 +9,16 @@ const BASE = process.env.BASE_URL ?? 'http://127.0.0.1:8787';
 let failures = 0;
 const failedLabels = [];
 
+try {
+  const preflight = await fetch(`${BASE}/api/health`, { signal: AbortSignal.timeout(5000) });
+  if (!preflight.ok) throw new Error(`HTTP ${preflight.status}`);
+} catch {
+  console.error(
+    '[e2e] 后端未就绪：请先 npm run dev 启动后端（默认 127.0.0.1:8787，可用 BASE_URL 覆盖）后再执行 npm run e2e',
+  );
+  process.exit(1);
+}
+
 function assert(cond, label, extra = '') {
   if (cond) { console.log(`  PASS ${label}`); }
   else { failures += 1; failedLabels.push(label); console.log(`  FAIL ${label} ${extra}`); }
@@ -562,6 +572,18 @@ assert((reportHtmlRes.headers.get('content-disposition') ?? '').includes('attach
 assert(!/[A-Za-z]:[\\/]/.test(reportHtml), 'HTML 报告不含 Windows 盘符绝对路径');
 assert(!/[\\/]workspace[\\/]/.test(reportHtml), 'HTML 报告不泄漏源码快照目录');
 assert(reportHtml.includes('&lt;repo&gt;/'), 'HTML 报告的命令行路径已折叠为 <repo>/');
+const reportHantRes = await fetchRetry(`${BASE}/api/scans/${s2.id}/report?format=html&lang=zh-Hant`);
+const reportHant = await reportHantRes.text();
+assert(
+  reportHantRes.ok && reportHant.includes('程式碼稽核測試報告') && reportHant.includes('風險分佈')
+    && reportHant.includes('問題明細') && reportHant.includes('方法與證據') && reportHant.includes('已修復'),
+  'HTML 报告 zh-Hant 章节随 ?lang= 渲染');
+const reportEnRes = await fetchRetry(`${BASE}/api/scans/${s2.id}/report?format=html&lang=en`);
+const reportEn = await reportEnRes.text();
+assert(
+  reportEnRes.ok && reportEn.includes('Code Audit Test Report') && reportEn.includes('Risk distribution')
+    && reportEn.includes('Issue details') && reportEn.includes('Method & evidence') && reportEn.includes('Fixed'),
+  'HTML 报告 en 章节随 ?lang= 渲染');
 const reportSummaryRes = await fetchRetry(`${BASE}/api/scans/${s2.id}/report?format=html&detail=summary`);
 const reportSummary = await reportSummaryRes.text();
 assert(
@@ -909,8 +931,9 @@ roundtripForm.append('baselineScanId', packScanDone.id);
 const importedScan = await api('POST', `/api/projects/${packProject}/sarif`, roundtripForm);
 assert(importedScan.status === 201 && importedScan.json.status === 'completed',
   'SARIF 导入生成已完成扫描', JSON.stringify(importedScan.json));
-assert((importedScan.json.rules ?? '').startsWith('SARIF 导入（'),
-  '扫描记录标注导入来源与工具名', importedScan.json.rules);
+assert(importedScan.json.importSource === 'sarif' && importedScan.json.toolName === 'Opengrep Studio (opengrep)',
+  '扫描记录带结构化导入来源与工具名', JSON.stringify(importedScan.json));
+assert(!importedScan.json.rules, 'SARIF 导入不再把中文冻结进规则集快照', importedScan.json.rules);
 const { json: importedIssues } = await api('GET', `/api/scans/${importedScan.json.id}/issues`);
 assert(importedIssues.length === sarifResults.length,
   `导入 issue 数与 SARIF results 一致 (${importedIssues.length} vs ${sarifResults.length})`);
