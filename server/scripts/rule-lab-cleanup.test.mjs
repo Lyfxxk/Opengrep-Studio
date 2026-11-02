@@ -1,16 +1,13 @@
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
+import { trackTempDir, useTempDataDir } from './script-utils.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-const tempDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'og-rulelab-cleanup-'));
-process.env.DATA_DIR = tempDataDir;
-process.env.CUSTOM_RULES_DIR = path.join(tempDataDir, 'rules-custom');
+const tempDataDir = useTempDataDir('og-rulelab-cleanup-');
 
 const { cleanupRuleLabScratch } = await import('../src/rule-lab.ts');
 const { closeDatabase } = await import('../src/db.ts');
-const { trackTempDir } = await import('./temp-dir.mjs');
 trackTempDir(tempDataDir, closeDatabase);
 
 const scratchRoot = path.join(tempDataDir, 'rulelab');

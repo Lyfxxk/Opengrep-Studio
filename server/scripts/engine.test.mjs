@@ -4,14 +4,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { engineExecutableName, resolveEngineBin } from '../src/config.ts';
-
-const { trackTempDir } = await import('./temp-dir.mjs');
-
-function makeTempDir(prefix) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
-  trackTempDir(dir);
-  return dir;
-}
+import { makeTempDir } from './script-utils.mjs';
 
 function makeDirWith(fileName) {
   const dir = makeTempDir('engine-test-');

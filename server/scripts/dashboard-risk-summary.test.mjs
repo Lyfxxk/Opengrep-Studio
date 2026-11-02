@@ -1,12 +1,8 @@
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
+import { trackTempDir, useTempDataDir } from './script-utils.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-const tempDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'og-risk-summary-'));
-process.env.DATA_DIR = tempDataDir;
-process.env.CUSTOM_RULES_DIR = path.join(tempDataDir, 'rules-custom');
+const tempDataDir = useTempDataDir('og-risk-summary-');
 
 const {
   getRiskSummary,
@@ -16,7 +12,6 @@ const {
   upsertReview,
   closeDatabase,
 } = await import('../src/db.ts');
-const { trackTempDir } = await import('./temp-dir.mjs');
 trackTempDir(tempDataDir, closeDatabase);
 
 function makeProject(id, createdAt) {
