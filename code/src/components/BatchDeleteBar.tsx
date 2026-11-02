@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 
-export type BatchEntity = 'project' | 'scan' | 'config' | 'rulePack';
+type BatchEntity = 'project' | 'scan' | 'config' | 'rulePack';
 
 export default function BatchDeleteBar({ count, entity, deleting, onDelete, onClear }: {
   count: number;
