@@ -38,10 +38,17 @@ if (process.platform === 'win32') {
   else killPids(pids);
 } else {
   for (const port of ports) {
+    let pids = [];
     try {
       const out = execSync(`lsof -ti tcp:${port} -sTCP:LISTEN`, { encoding: 'utf8' });
-      killPids(out.split(/\r?\n/).filter(Boolean));
-    } catch {
+      pids = out.split(/\r?\n/).filter(Boolean);
+    } catch (e) {
+      if (e?.status !== 1) {
+        console.log(`[kill-port] 端口 ${port} 占用检测失败（lsof 不可用）：请安装 lsof 后重试，或自行确认端口空闲`);
+        continue;
+      }
     }
+    if (pids.length === 0) console.log(`[kill-port] 端口 ${port} 未被占用，直接启动`);
+    else killPids(pids);
   }
 }
