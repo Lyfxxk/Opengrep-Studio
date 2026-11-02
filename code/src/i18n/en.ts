@@ -795,6 +795,8 @@ const en: typeof zh = {
       packDirMissing: 'The rule pack directory is missing',
       noRulesDir: 'The pack is missing a rules/ directory — package it as pack.yaml + rules/ + samples/',
       noRulesInZip: 'No YAML rule files found in the rules/ directory',
+      sampleLangUnsupported: 'Test samples are not supported for the {{language}} language',
+      ruleLanguageMissing: 'Cannot infer the language from the rules — set languages on the first rule',
       tooManyRuleFiles: 'More than 50 rule files — split the rule pack.',
       noYamlInZip: 'No YAML rule files found in the archive',
       builtinNoSamples: 'Built-in packs have no samples; quality checks are not supported.',
@@ -856,6 +858,14 @@ const en: typeof zh = {
       authRequired:
         'Clone failed: this repository requires authentication. Use a public repo, or upload a ZIP for private ones.',
       cloneFailed: 'Clone failed: {{reason}}',
+      notInstalled:
+        'Git is not installed on the server, so repository cloning is unavailable. Install Git and try again, or upload a ZIP archive instead.',
+      cloneTimeout:
+        'The clone was stopped after {{minutes}} minutes. Check that the URL is reachable, or upload a ZIP archive instead.',
+      emptyRepo:
+        'The repository contains no files (it may be empty, or the default branch has no source). Verify it and try again.',
+      tooManyFiles: 'The repository exceeds the {{limit}}-file limit. Upload part of the source as a ZIP instead.',
+      totalTooLarge: 'The repository source exceeds the {{gb}}GB size limit. Upload part of it as a ZIP instead.',
     },
     sarif: {
       invalidJson: 'The SARIF file is not valid JSON: {{reason}}',

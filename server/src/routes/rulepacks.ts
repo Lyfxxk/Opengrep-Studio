@@ -162,6 +162,9 @@ function savePortablePackFromLab(
       sampleLanguage
         ? `暂不支持为语言 ${sampleLanguage} 提供测试样本`
         : '无法从规则推断语言，请在第一条规则的 languages 中填写',
+      sampleLanguage
+        ? { code: 'srv.sampleLangUnsupported', params: { language: sampleLanguage } }
+        : { code: 'srv.ruleLanguageMissing' },
     );
   }
   if (parsed.ruleIds[0] && !isSafeSampleDirName(parsed.ruleIds[0])) {
