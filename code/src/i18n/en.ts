@@ -51,6 +51,7 @@ const en: typeof zh = {
     sidebar: 'Sidebar',
     sidebarDescription: 'Displays the mobile sidebar',
     toggleSidebar: 'Toggle Sidebar',
+    breadcrumbAria: 'Breadcrumb',
   },
   pagination: {
     prev: 'Previous',
@@ -310,6 +311,8 @@ const en: typeof zh = {
     packsBtn: 'Rule packs of this scan',
     packsUnit: '',
     rulesetDir: 'Ruleset directory: {{rules}}',
+    sarifImport: 'SARIF import',
+    sarifImportTool: 'SARIF import ({{tool}})',
     failedTitle: 'This scan failed',
     failedHint:
       'The source snapshot is still available — go back to the project detail page and start a new scan directly, no re-upload needed.',
@@ -999,6 +1002,8 @@ const en: typeof zh = {
   login: {
     title: 'Sign in · Opengrep Studio',
     introPanel: 'Product introduction',
+    eyebrow: '// LOCAL-FIRST CODE AUDIT',
+    copyright: '© 2026 Opengrep Studio by',
     formPanel: 'Sign in',
     heroTitle1: 'See risks ',
     heroTitleEm: 'before',

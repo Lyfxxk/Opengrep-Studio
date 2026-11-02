@@ -336,6 +336,12 @@ export default function ReportPage() {
   }
 
   const { meta, totals, conclusion, conclusionCode, issues, reviewStats } = report;
+  const rulesetMeta =
+    meta.importSource === 'sarif'
+      ? meta.toolName
+        ? t('scanResult.sarifImportTool', { tool: meta.toolName })
+        : t('scanResult.sarifImport')
+      : meta.rules;
   const conclusionKey =
     conclusionCode?.code === 'summary'
       ? `${conclusionCode.params.baseline ? 'summaryBaseline' : 'summary'}${
@@ -406,7 +412,7 @@ export default function ReportPage() {
               </div>
               <div>
                 {meta.engineVersion ? `opengrep v${meta.engineVersion}` : '—'}
-                {meta.rules ? ` · ${meta.rules}` : ''}
+                {rulesetMeta ? ` · ${rulesetMeta}` : ''}
               </div>
             </div>
           </header>
@@ -685,7 +691,7 @@ export default function ReportPage() {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={2} className="text-xs text-muted-foreground">
-                      {meta.rules ?? t('report.noPacks')}
+                      {rulesetMeta ?? t('report.noPacks')}
                     </TableCell>
                   </TableRow>
                 )}

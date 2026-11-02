@@ -220,7 +220,7 @@ export default function ScanResultPage() {
         )}
       </div>
 
-      {scan.status !== 'failed' && (scan.rulepacks?.length || scan.rules) && (
+      {scan.status !== 'failed' && (scan.rulepacks?.length || scan.rules || scan.importSource === 'sarif') && (
         <div
           className="relative"
           onMouseEnter={() => setPacksOpen(true)}
@@ -241,7 +241,14 @@ export default function ScanResultPage() {
             </Button>
           ) : (
             <span className="text-xs text-muted-foreground">
-              {t('scanResult.rulesetDir', { rules: scan.rules })}
+              {t('scanResult.rulesetDir', {
+                rules:
+                  scan.importSource === 'sarif'
+                    ? scan.toolName
+                      ? t('scanResult.sarifImportTool', { tool: scan.toolName })
+                      : t('scanResult.sarifImport')
+                    : scan.rules,
+              })}
             </span>
           )}
           {packsOpen && (scan.rulepacks?.length ?? 0) > 0 && (
@@ -331,7 +338,13 @@ export default function ScanResultPage() {
                     {t('scanResult.dtRuleset')}
                   </dt>
                   <dd className="min-w-0 truncate font-medium">
-                    {scan.rules && !scan.rules.startsWith('cfg-') ? scan.rules : '—'}
+                    {scan.importSource === 'sarif'
+                      ? scan.toolName
+                        ? t('scanResult.sarifImportTool', { tool: scan.toolName })
+                        : t('scanResult.sarifImport')
+                      : scan.rules && !scan.rules.startsWith('cfg-')
+                        ? scan.rules
+                        : '—'}
                   </dd>
                 </div>
                 <div className="flex items-start justify-between gap-3 border-b py-2.5">

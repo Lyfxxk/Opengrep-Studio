@@ -27,6 +27,15 @@ export default function RulePackCell({
       </span>
     );
   }
+  if (scan.importSource === 'sarif') {
+    return (
+      <span className={`block truncate text-xs text-muted-foreground ${className}`}>
+        {scan.toolName
+          ? t('scanResult.sarifImportTool', { tool: scan.toolName })
+          : t('scanResult.sarifImport')}
+      </span>
+    );
+  }
   if (scan.rules && !scan.rules.startsWith('cfg-')) {
     return (
       <span

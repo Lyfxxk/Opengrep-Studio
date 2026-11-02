@@ -17,6 +17,8 @@ interface IReportMeta {
   baselineScanId?: string;
   rulepacks?: Array<{ id: string; name: string }>;
   rules?: string;
+  importSource?: string;
+  toolName?: string;
   engineVersion?: string;
   sourceHash?: string;
   commandLine?: string;
