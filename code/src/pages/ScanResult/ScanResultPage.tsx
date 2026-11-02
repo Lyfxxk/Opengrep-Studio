@@ -160,6 +160,7 @@ export default function ScanResultPage() {
     setSelectedIssueId(null);
     setReviewTarget(null);
     setKnowledgeRuleId(null);
+    setCompareOpen(false);
     setPacksOpen(false);
     loadedOnceRef.current = false;
     pollErrorShownRef.current = false;
