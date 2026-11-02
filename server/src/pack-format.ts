@@ -149,9 +149,9 @@ export function buildLegacyManifestYaml(pack: {
   return yamlDump({
     name: pack.name,
     version: '0.1.0',
-    author: 'Opengrep Studio 本地创建',
+    author: 'Created in Opengrep Studio',
     license: 'UNLICENSED',
-    changelog: `0.1.0 - 导出于 ${pack.createdAt}`,
+    changelog: `0.1.0 - exported ${pack.createdAt}`,
   });
 }
 
