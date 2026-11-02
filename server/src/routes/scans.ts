@@ -29,8 +29,7 @@ import {
 } from '../db.js';
 import { ensureFallbackScanConfig } from '../fallback-config.js';
 import { listRuleMessages } from '../knowledge.js';
-import { engineAvailable, engineInstallHint, getEngineVersion } from '../engine.js';
-import { engineUpgradeRunning } from '../engine-update.js';
+import { engineAvailable, engineInstallHint, engineUpgradeRunning, getEngineVersion } from '../engine.js';
 import { diffSnapshots } from '../snapshot-diff.js';
 import { packRuleFiles } from '../rulepacks.js';
 import { buildSarifReport, parseSarifImport } from '../sarif.js';

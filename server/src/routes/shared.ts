@@ -2,7 +2,7 @@ import type { NextFunction, Request, Response } from 'express';
 import multer from 'multer';
 import { getProject, getScan, type Project } from '../db.js';
 import { HttpError } from '../errors.js';
-import { engineUpgradeRunning } from '../engine-update.js';
+import { engineUpgradeRunning } from '../engine.js';
 import type { ReportLang } from '../report.js';
 
 export const MAX_RULE_YAML_BYTES = 1024 * 1024;
