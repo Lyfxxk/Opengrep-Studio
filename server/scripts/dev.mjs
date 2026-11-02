@@ -20,13 +20,13 @@ function probeFree(port) {
 }
 
 async function pickPort(base, label) {
-  for (let offset = 0; offset <= PORT_TRIES; offset += 1) {
+  for (let offset = 0; offset < PORT_TRIES; offset += 1) {
     const port = base + offset;
     if (await probeFree(port)) return port;
     console.log(`[dev] ${label}端口 ${port} 已被占用（可能是另一个使用中的实例，不杀），顺延到 ${port + 1}…`);
   }
   console.error(
-    `[dev] ${base} ~ ${base + PORT_TRIES} 全部被占用。请关闭不再使用的实例后重试；` +
+    `[dev] ${base} ~ ${base + PORT_TRIES - 1} 全部被占用。请关闭不再使用的实例后重试；` +
     `确认是残留进程（无窗口在跑）时，可执行 node server/scripts/kill-port.mjs <端口> 清理`,
   );
   process.exit(1);
@@ -37,9 +37,15 @@ const webPort = await pickPort(WEB_BASE, '前端');
 console.log(`[dev] 后端 http://${HOST}:${backendPort}    前端 http://${HOST}:${webPort}`);
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const concurrentPkg = JSON.parse(
-  fs.readFileSync(path.join(rootDir, 'node_modules', 'concurrently', 'package.json'), 'utf8'),
-);
+let concurrentPkg;
+try {
+  concurrentPkg = JSON.parse(
+    fs.readFileSync(path.join(rootDir, 'node_modules', 'concurrently', 'package.json'), 'utf8'),
+  );
+} catch {
+  console.error('[dev] 根目录缺少 concurrently 依赖：请先执行 npm run install:all 安装依赖后重试');
+  process.exit(1);
+}
 const concurrentBin = path.join(
   rootDir, 'node_modules', 'concurrently', concurrentPkg.bin.concurrently,
 );
@@ -94,6 +100,11 @@ function shutdown(code) {
   killTree(child.pid);
   process.exit(code);
 }
+
+child.on('error', (error) => {
+  console.error(`[dev] 启动 concurrently 失败：${error.message}`);
+  shutdown(1);
+});
 
 child.on('exit', (code) => shutdown(code ?? 1));
 
