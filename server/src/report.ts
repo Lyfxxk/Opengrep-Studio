@@ -24,6 +24,8 @@ interface ReportMeta {
   baselineScanId?: string;
   rulepacks?: RulePackRef[];
   rules?: string;
+  importSource?: string;
+  toolName?: string;
   engineVersion?: string;
   sourceHash?: string;
   commandLine?: string;
@@ -165,6 +167,7 @@ const REPORT_TEXT_ZH = {
   packThName: '规则包',
   packThId: '标识',
   noPacks: '未记录规则包',
+  sarifImport: (tool?: string) => (tool ? `SARIF 导入（${tool}）` : 'SARIF 导入'),
   filesChecked: '扫描文件',
   filesUnit: (n: number) => `${n} 个`,
   issuesUnit: (n: number) => `${n} 条`,
@@ -253,6 +256,7 @@ const REPORT_TEXT_HANT: typeof REPORT_TEXT_ZH = {
   packThName: '規則包',
   packThId: '標識',
   noPacks: '未記錄規則包',
+  sarifImport: (tool?: string) => (tool ? `SARIF 匯入（${tool}）` : 'SARIF 匯入'),
   filesChecked: '掃描檔案',
   filesUnit: (n: number) => `${n} 個`,
   issuesUnit: (n: number) => `${n} 條`,
@@ -359,6 +363,7 @@ const REPORT_TEXT_EN: typeof REPORT_TEXT_ZH = {
   packThName: 'Rule pack',
   packThId: 'ID',
   noPacks: 'No rule packs recorded',
+  sarifImport: (tool?: string) => (tool ? `SARIF import (${tool})` : 'SARIF import'),
   filesChecked: 'Files scanned',
   filesUnit: (n: number) => `${n} files`,
   issuesUnit: (n: number) => (n === 1 ? '1 issue' : `${n} issues`),
@@ -523,6 +528,8 @@ export function buildReportData(
     baselineScanId: scan.baselineScanId,
     rulepacks: scan.rulepacks,
     rules: scan.rules?.startsWith('cfg-') ? undefined : scan.rules,
+    ...(scan.importSource ? { importSource: scan.importSource } : {}),
+    ...(scan.toolName ? { toolName: scan.toolName } : {}),
     engineVersion,
     sourceHash: scan.srcHash,
     commandLine: scan.commandLine,
@@ -901,7 +908,9 @@ export function renderReportHtml(
               `<tr><td>${escapeHtml(pack.name)}</td><td class="cell-mono">${escapeHtml(pack.id)}</td></tr>`,
           )
           .join('')
-      : `<tr><td colspan="2" class="hint">${meta.rules ? escapeHtml(meta.rules) : text.noPacks}</td></tr>`;
+      : meta.importSource === 'sarif'
+        ? `<tr><td colspan="2" class="hint">${escapeHtml(text.sarifImport(meta.toolName))}</td></tr>`
+        : `<tr><td colspan="2" class="hint">${meta.rules ? escapeHtml(meta.rules) : text.noPacks}</td></tr>`;
 
   const ruleCards = ruleList
     .map((rule, index) => {
