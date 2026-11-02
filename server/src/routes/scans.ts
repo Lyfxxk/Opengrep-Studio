@@ -12,6 +12,7 @@ import {
   getProject,
   getRulePack,
   getScan,
+  getRiskSummary,
   insertScan,
   isActiveIssue,
   listAllScans,
@@ -205,6 +206,10 @@ scanRoutes.get('/api/projects/:id/scans', asyncHandler(async (req, res) => {
 
 scanRoutes.get('/api/scans', asyncHandler(async (_req, res) => {
   res.json(listAllScans().map(toScanSummary));
+}));
+
+scanRoutes.get('/api/dashboard/risk-summary', asyncHandler(async (_req, res) => {
+  res.json(getRiskSummary());
 }));
 
 scanRoutes.get('/api/scans/:scanId', asyncHandler(async (req, res) => {
