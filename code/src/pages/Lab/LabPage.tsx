@@ -92,10 +92,21 @@ const DEFAULT_DRAFT: LabDraft = {
 `,
 };
 
-const LAB_EXAMPLES: Array<{ nameKey: 'lab.exampleEval' | 'lab.exampleWeakHash' | 'lab.exampleTaint'; draft: LabDraft }> = [
-  { nameKey: 'lab.exampleEval', draft: DEFAULT_DRAFT },
+type ExampleMessageKey = 'lab.exampleEvalMessage' | 'lab.exampleWeakHashMessage' | 'lab.exampleTaintMessage';
+
+function withExampleMessage(draft: LabDraft, message: string): LabDraft {
+  return { ...draft, yaml: draft.yaml.replace(/(\n\s*message: ).*/, (_match, prefix: string) => `${prefix}${message}`) };
+}
+
+const LAB_EXAMPLES: Array<{
+  nameKey: 'lab.exampleEval' | 'lab.exampleWeakHash' | 'lab.exampleTaint';
+  messageKey: ExampleMessageKey;
+  draft: LabDraft;
+}> = [
+  { nameKey: 'lab.exampleEval', messageKey: 'lab.exampleEvalMessage', draft: DEFAULT_DRAFT },
   {
     nameKey: 'lab.exampleWeakHash',
+    messageKey: 'lab.exampleWeakHashMessage',
     draft: {
       yaml: `rules:
   - id: py-weak-hash-md5
@@ -121,6 +132,7 @@ def digest(token):
   },
   {
     nameKey: 'lab.exampleTaint',
+    messageKey: 'lab.exampleTaintMessage',
     draft: {
       yaml: `rules:
   - id: js-taint-eval
@@ -145,18 +157,18 @@ def digest(token):
   },
 ];
 
-function loadDraft(): LabDraft {
+function loadDraft(fallback: LabDraft = DEFAULT_DRAFT): LabDraft {
   try {
     const raw = localStorage.getItem(DRAFT_KEY);
-    if (!raw) return DEFAULT_DRAFT;
+    if (!raw) return fallback;
     const parsed = JSON.parse(raw) as Partial<LabDraft>;
     return {
-      yaml: typeof parsed.yaml === 'string' ? parsed.yaml : DEFAULT_DRAFT.yaml,
+      yaml: typeof parsed.yaml === 'string' ? parsed.yaml : fallback.yaml,
       positive: typeof parsed.positive === 'string' ? parsed.positive : '',
       negative: typeof parsed.negative === 'string' ? parsed.negative : '',
     };
   } catch {
-    return DEFAULT_DRAFT;
+    return fallback;
   }
 }
 
@@ -277,7 +289,13 @@ function engineLangToPackLabel(engineLang: string): string | undefined {
 export default function LabPage() {
   const { t } = useTranslation();
   const { resolvedTheme } = useTheme();
-  const [draft, setDraft] = useState<LabDraft>(loadDraft);
+  const examples = LAB_EXAMPLES.map((item) => ({
+    ...item,
+    draft: withExampleMessage(item.draft, t(item.messageKey)),
+  }));
+  const [draft, setDraft] = useState<LabDraft>(() =>
+    loadDraft(withExampleMessage(DEFAULT_DRAFT, t('lab.exampleEvalMessage'))),
+  );
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<RuleLabRunResult | null>(null);
   const [saveDialog, setSaveDialog] = useState<SaveDialogState>(null);
@@ -379,7 +397,7 @@ export default function LabPage() {
     const hasContent = Boolean(draft.yaml.trim() || draft.positive.trim() || draft.negative.trim());
     const edited =
       hasContent &&
-      !LAB_EXAMPLES.some(
+      !examples.some(
         (item) =>
           item.draft.yaml === draft.yaml &&
           item.draft.positive === draft.positive &&
@@ -654,7 +672,7 @@ export default function LabPage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                {LAB_EXAMPLES.map((example) => (
+                {examples.map((example) => (
                   <DropdownMenuItem
                     key={example.nameKey}
                     onSelect={() => pickExample(example.draft)}

@@ -23,10 +23,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { PACK_LANGUAGES } from '@/data/constants';
 import { api } from '@/lib/api';
 
-const YAML_TEMPLATE = `rules:
+const yamlTemplate = (message: string): string => `rules:
   - id: my-first-rule
     languages: [javascript]
-    message: 在这里写规则说明
+    message: ${message}
     severity: WARNING
     pattern: eval(...)
 `;
@@ -45,7 +45,7 @@ export default function RulePackCreateDialog({
   const { t } = useTranslation();
   const [name, setName] = useState('');
   const [language, setLanguage] = useState('Java');
-  const [content, setContent] = useState(YAML_TEMPLATE);
+  const [content, setContent] = useState(() => yamlTemplate(t('rulePacks.packTemplateMessage')));
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -53,10 +53,10 @@ export default function RulePackCreateDialog({
     if (open) {
       setName('');
       setLanguage('Java');
-      setContent(YAML_TEMPLATE);
+      setContent(yamlTemplate(t('rulePacks.packTemplateMessage')));
       setError('');
     }
-  }, [open]);
+  }, [open, t]);
 
   const handleSubmit = async () => {
     const trimmed = name.trim();
