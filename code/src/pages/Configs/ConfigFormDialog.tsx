@@ -274,7 +274,6 @@ export default function ConfigFormDialog({
                 </p>
               )}
 
-              {}
               <button
                 type="button"
                 aria-expanded={builtinOpen}

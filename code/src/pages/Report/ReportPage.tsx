@@ -354,7 +354,6 @@ export default function ReportPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-[860px] flex-col gap-4">
-      {}
       <div className="no-print flex flex-wrap items-center gap-2 print:hidden">
         <Button variant="outline" asChild>
           <Link to={`/projects/${id}/scans/${scanId}`}>
@@ -382,9 +381,7 @@ export default function ReportPage() {
         </div>
       </div>
 
-      {}
       <article className="report-paper rounded-xl border bg-card px-6 py-8 shadow-sm sm:px-10 print:max-w-none print:rounded-none print:border-0 print:p-0 print:shadow-none">
-        {}
         <section className="mb-8">
           <header className="mb-5 flex flex-wrap items-start justify-between gap-3 border-b-2 pb-4">
             <div className="min-w-0">
@@ -528,7 +525,6 @@ export default function ReportPage() {
 
         </section>
 
-        {}
         <section className="mb-8 print:break-before-page">
           <SectionTitle>{t('report.sectionActions')}</SectionTitle>
           <p className="mb-2 text-xs text-muted-foreground">
@@ -579,7 +575,6 @@ export default function ReportPage() {
           </div>
         </section>
 
-        {}
         <section className="mb-8 print:break-before-page">
           <SectionTitle>{t('report.sectionDetails')}</SectionTitle>
           {current.length === 0 ? (
@@ -657,7 +652,6 @@ export default function ReportPage() {
           </div>
         </section>
 
-        {}
         <section className="mb-4 print:break-before-page">
           <SectionTitle>{t('report.sectionMethod')}</SectionTitle>
 

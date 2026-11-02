@@ -270,7 +270,6 @@ export default function IssueFilterList({
                     : 'border-border hover:bg-muted/50',
                 )}
               >
-                {}
                 <div className="flex min-w-0 flex-wrap items-center gap-2">
                   <Badge
                     variant="outline"
@@ -317,7 +316,6 @@ export default function IssueFilterList({
                     </span>
                   )}
                 </div>
-                {}
                 <p className="mt-2 text-sm font-medium">
                   {lookupRuleMessage(messageMap, issue.ruleId, issue.message)}
                 </p>

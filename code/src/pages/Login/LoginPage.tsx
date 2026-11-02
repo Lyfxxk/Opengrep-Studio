@@ -80,7 +80,6 @@ export default function LoginPage() {
 
   return (
     <div className="login-shell">
-      {}
       <section className="brand-panel" aria-label={t('login.introPanel')}>
         <div className="brand-hero">
           <p className="hero-eyebrow">// LOCAL-FIRST CODE AUDIT</p>
@@ -176,9 +175,7 @@ export default function LoginPage() {
         </div>
       </section>
 
-      {}
       <section className="form-panel" aria-label={t('login.formPanel')}>
-        {}
         <LanguageMenu className="lang-switch" />
         <div className="form-col">
           <div className="form-brand">

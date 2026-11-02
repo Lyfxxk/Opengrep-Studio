@@ -220,7 +220,6 @@ export default function ScanResultPage() {
         )}
       </div>
 
-      {}
       {scan.status !== 'failed' && (scan.rulepacks?.length || scan.rules) && (
         <div
           className="relative"
@@ -283,7 +282,6 @@ export default function ScanResultPage() {
               <p className="text-sm text-muted-foreground">{t('scanResult.queuedHint')}</p>
             ) : (
               <>
-                {}
                 {scan.fileCount ? (
                   <p className="text-xs text-muted-foreground">
                     {t('scanResult.scannedFiles', { count: scan.fileCount })}
@@ -328,7 +326,6 @@ export default function ScanResultPage() {
                     {t('scanResult.dtRuleset')}
                   </dt>
                   <dd className="min-w-0 truncate font-medium">
-                    {}
                     {scan.rules && !scan.rules.startsWith('cfg-') ? scan.rules : '—'}
                   </dd>
                 </div>

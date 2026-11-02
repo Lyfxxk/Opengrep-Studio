@@ -512,7 +512,6 @@ export default function RulePackTab() {
         </Card>
       ) : (
         <>
-          {}
           <Card className="overflow-hidden">
             <div className="flex items-center gap-2 border-b bg-muted/20 px-4 py-2.5">
               <PackageOpen className="size-4 shrink-0 text-primary" />
@@ -545,7 +544,6 @@ export default function RulePackTab() {
             </CardContent>
           </Card>
 
-          {}
           <Card className="overflow-hidden">
             <button
               type="button"
@@ -625,14 +623,12 @@ export default function RulePackTab() {
         </>
       )}
 
-      {}
       <RulePackCreateDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
         onCreated={() => void loadAll()}
       />
 
-      {}
       <RulePackContentDialog
         open={contentTarget !== null}
         onOpenChange={handleContentDialogOpenChange}
@@ -640,7 +636,6 @@ export default function RulePackTab() {
         onSaved={() => void loadAll()}
       />
 
-      {}
       <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
@@ -684,7 +679,6 @@ export default function RulePackTab() {
         </DialogContent>
       </Dialog>
 
-      {}
       <Dialog
         open={checking !== null}
         onOpenChange={(open) => {
