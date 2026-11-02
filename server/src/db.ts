@@ -507,7 +507,7 @@ export function updateScan(id: string, patch: Partial<Omit<ScanRecord, 'id' | 'p
   db.prepare(`UPDATE scans SET ${sets.join(', ')} WHERE id = ?`).run(...values);
 }
 
-const SEVERITY_RANK: Record<Severity, number> = { critical: 0, high: 1, medium: 2, low: 3 };
+export const SEVERITY_RANK: Record<Severity, number> = { critical: 0, high: 1, medium: 2, low: 3 };
 
 export function listIssues(scanId: string): IssueRow[] {
   const rows = db.prepare('SELECT * FROM issues WHERE scan_id = ?').all(scanId) as SqlRow[];
