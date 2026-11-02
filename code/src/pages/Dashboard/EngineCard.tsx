@@ -95,7 +95,6 @@ export default function EngineCard({ health, scanRunning, onUpgraded }: EngineCa
           <p className="text-muted-foreground">{t('common.loading')}</p>
         ) : ready ? (
           <>
-            {}
             <div className="flex flex-wrap items-center gap-2 border-b py-3">
               <CheckCircle2 className="size-4 text-success" />
               <span className="font-medium">{t('engine.ready')}</span>

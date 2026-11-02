@@ -176,7 +176,6 @@ export default function CompareDialog({ scanId, onClose }: CompareDialogProps) {
           </Button>
         </div>
 
-        {}
         {diff?.engine?.mismatch && (
           <p className="flex items-start gap-1.5 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
             <CircleAlert className="mt-0.5 size-3.5 shrink-0" />

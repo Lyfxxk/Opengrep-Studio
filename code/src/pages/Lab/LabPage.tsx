@@ -542,7 +542,6 @@ export default function LabPage() {
 
   return (
     <div className="space-y-4">
-      {}
       {engineMissing === true && (
         <div className="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning/10 p-4">
           <ShieldAlert className="mt-0.5 size-5 shrink-0 text-warning" />
@@ -552,7 +551,6 @@ export default function LabPage() {
           </div>
         </div>
       )}
-      {}
       <div className="flex flex-wrap items-center justify-end gap-2">
         {language && (
           <Badge variant="outline" className="font-normal">
@@ -609,7 +607,6 @@ export default function LabPage() {
           </Button>
       </div>
 
-      {}
       <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
         <Card>
           <CardHeader className="pb-3">
@@ -763,7 +760,6 @@ export default function LabPage() {
         </DialogContent>
       </Dialog>
 
-      {}
       <AlertDialog
         open={confirmExample !== null}
         onOpenChange={(open) => {

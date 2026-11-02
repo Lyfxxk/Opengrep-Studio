@@ -12,7 +12,6 @@ import "./index.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    {}
     <ThemeProvider
       attribute="class"
       defaultTheme="light"
@@ -20,7 +19,6 @@ createRoot(document.getElementById("root")!).render(
       storageKey="__global_opengrep_theme"
     >
       <BrowserRouter>
-        {}
         <Toaster richColors position="top-center" />
         <ErrorBoundary
           fallbackRender={({ error, resetErrorBoundary }) => (

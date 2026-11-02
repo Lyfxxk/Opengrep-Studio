@@ -278,7 +278,6 @@ export default function ScanConfigTab() {
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap items-center gap-1">
-                          {}
                           {config.rulePackIds.slice(0, 2).map((packId) => (
                             <Badge
                               key={packId}

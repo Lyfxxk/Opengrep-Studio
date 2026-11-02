@@ -420,7 +420,6 @@ export default function ProjectDetailPage() {
       <Card className="overflow-hidden">
         <CardHeader className="flex-row items-center justify-between space-y-0">
           <CardTitle className="text-base">{t('projectDetail.scanHistoryTitle')}</CardTitle>
-          {}
           {!api.isMockMode && (
             <div className="flex items-center gap-2">
               <span className="hidden text-xs text-muted-foreground sm:inline">

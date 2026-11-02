@@ -45,7 +45,6 @@ export default function ComparisonSummary({
                 <div className={`text-2xl font-bold tabular-nums ${item.tone}`}>
                   {item.value}
                 </div>
-                {}
                 <div className="truncate text-xs text-muted-foreground">
                   {t(`comparison.${item.key}`)}
                 </div>

@@ -52,7 +52,6 @@ export default function Pagination({ page, pageCount, onPage, className }: Pagin
       </Button>
       <span className="flex shrink-0 items-center gap-1 px-1 text-muted-foreground">
         <span>{t('pagination.pagePrefix')}</span>
-        {}
         <input
           key={page}
           type="text"
