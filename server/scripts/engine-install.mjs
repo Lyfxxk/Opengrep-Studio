@@ -54,6 +54,21 @@ export function sha256File(file) {
   return createHash('sha256').update(readFileSync(file)).digest('hex');
 }
 
+const LEGACY_CHANNEL_CODES = [
+  [/^镜像 /, 'mirror'],
+  [/^github\.com 直链$/, 'github-direct'],
+  [/^api\.github\.com 资产通道$/, 'github-api'],
+];
+
+function normalizeChannel(raw) {
+  const value = String(raw).trim();
+  if (!value) return undefined;
+  for (const [pattern, code] of LEGACY_CHANNEL_CODES) {
+    if (pattern.test(value)) return code;
+  }
+  return value;
+}
+
 export function readInstalledManifest(toolDir) {
   const file = path.join(toolDir, INSTALLED_MANIFEST_NAME);
   try {
@@ -65,7 +80,7 @@ export function readInstalledManifest(toolDir) {
       version,
       sha256,
       assetFile: parsed?.assetFile ? String(parsed.assetFile) : undefined,
-      channel: parsed?.channel ? String(parsed.channel) : undefined,
+      channel: parsed?.channel ? normalizeChannel(parsed.channel) : undefined,
       installedAt: parsed?.installedAt ? String(parsed.installedAt) : undefined,
     };
   } catch {
@@ -224,13 +239,15 @@ export async function downloadAsset({
   const mirror = process.env.OPENGREP_DOWNLOAD_BASE?.trim().replace(/\/+$/, '');
   const channels = [];
   if (mirror) {
-    channels.push({ name: `镜像 ${mirror}`, resolveUrl: () => `${mirror}/${tag}/${assetFile}` });
+    channels.push({ code: 'mirror', name: `镜像 ${mirror}`, resolveUrl: () => `${mirror}/${tag}/${assetFile}` });
   }
   channels.push({
+    code: 'github-direct',
     name: 'github.com 直链',
     resolveUrl: () => `${GITHUB_DOWNLOAD_BASE}/${tag}/${assetFile}`,
   });
   channels.push({
+    code: 'github-api',
     name: 'api.github.com 资产通道',
     headers: { Accept: 'application/octet-stream' },
     resolveUrl: async () => {
@@ -255,7 +272,7 @@ export async function downloadAsset({
           throw new Error(`SHA-256 不符（期望 ${expectedSha256.slice(0, 12)}…，实际 ${hash.slice(0, 12)}…）`);
         }
       }
-      return { channel: channel.name, bytes: statSync(target).size };
+      return { channel: channel.code, bytes: statSync(target).size };
     } catch (error) {
       rmSync(target, { force: true });
       const message = error instanceof Error ? error.message : String(error);

@@ -102,13 +102,31 @@ test('installed.json 读写往返，损坏或字段缺失时视为不存在', ()
     version: 'v1.32.0',
     assetFile: 'opengrep_windows_x86.exe',
     sha256: 'e'.repeat(64),
-    channel: 'api.github.com 资产通道',
+    channel: 'github-api',
   });
   const read = readInstalledManifest(dir);
   assert.equal(read.version, 'v1.32.0');
   assert.equal(read.sha256, 'e'.repeat(64));
-  assert.equal(read.channel, 'api.github.com 资产通道');
+  assert.equal(read.channel, 'github-api');
   assert.ok(read.installedAt, '自动补 installedAt');
+
+  const legacyFile = path.join(dir, 'installed.json');
+  fs.writeFileSync(
+    legacyFile,
+    JSON.stringify({
+      version: 'v1.31.0',
+      sha256: 'd'.repeat(64),
+      channel: '镜像 https://mirror.example.com',
+    }),
+    'utf8',
+  );
+  assert.equal(readInstalledManifest(dir)?.channel, 'mirror', '旧中文通道名归一化为 code');
+  fs.writeFileSync(
+    legacyFile,
+    JSON.stringify({ version: 'v1.31.0', sha256: 'd'.repeat(64), channel: 'github.com 直链' }),
+    'utf8',
+  );
+  assert.equal(readInstalledManifest(dir)?.channel, 'github-direct', '旧中文通道名归一化为 code');
 
   fs.writeFileSync(path.join(dir, 'installed.json'), '{"version":"v1.32.0"}', 'utf8');
   assert.equal(readInstalledManifest(dir), undefined, '缺 sha256 时视为无效');
