@@ -739,211 +739,7 @@ export interface HtmlRenderOptions {
   includeSnippets: boolean;
 }
 
-export function renderReportHtml(
-  data: ReportData,
-  issues: IssueRow[],
-  options: HtmlRenderOptions,
-  lang: ReportLang = 'zh',
-  messages?: Record<string, string>,
-): string {
-  const { meta, totals, reviewStats } = data;
-  const text = REPORT_TEXT[lang];
-  const reviewById = new Map(
-    data.issues.filter((issue) => issue.review).map((issue) => [issue.id, issue.review!]),
-  );
-  const withReview = (rows: IssueRow[]): ReportIssue[] =>
-    rows.map((issue) => ({ ...issue, review: reviewById.get(issue.id) }));
-  const current = withReview(issues.filter(isActiveIssue));
-  const fixed = withReview(issues.filter((issue) => issue.comparisonStatus === 'fixed'));
-  const lookup = buildMessageLookup(messages);
-
-  const snippets = new Map<string, string>();
-  if (options.includeSnippets) {
-    for (const issue of issues) {
-      if (issue.matchedLines) snippets.set(issue.id, issue.matchedLines);
-    }
-  }
-  const snippetBudget = { left: SNIPPET_LIMIT };
-
-  const fileMap = new Map<
-    string,
-    { path: string; count: number; bySev: Record<Severity, number>; maxSev: Severity; ruleCounts: Map<string, number> }
-  >();
-  for (const issue of current) {
-    let file = fileMap.get(issue.filePath);
-    if (!file) {
-      file = {
-        path: issue.filePath,
-        count: 0,
-        bySev: { critical: 0, high: 0, medium: 0, low: 0 },
-        maxSev: issue.severity,
-        ruleCounts: new Map(),
-      };
-      fileMap.set(issue.filePath, file);
-    }
-    file.count += 1;
-    file.bySev[issue.severity] += 1;
-    file.ruleCounts.set(issue.ruleId, (file.ruleCounts.get(issue.ruleId) ?? 0) + 1);
-    if (SEVERITY_RANK[issue.severity] < SEVERITY_RANK[file.maxSev]) file.maxSev = issue.severity;
-  }
-  const fileList = [...fileMap.values()]
-    .map(({ ruleCounts, ...rest }) => {
-      const [topRule] = [...ruleCounts.entries()].sort((a, b) => b[1] - a[1]);
-      return { ...rest, topRule: topRule?.[0] ?? '' };
-    })
-    .sort((a, b) => SEVERITY_RANK[a.maxSev] - SEVERITY_RANK[b.maxSev] || b.count - a.count);
-
-  const ruleMap = new Map<string, { id: string; count: number; files: Set<string>; maxSev: Severity }>();
-  for (const issue of current) {
-    let rule = ruleMap.get(issue.ruleId);
-    if (!rule) {
-      rule = { id: issue.ruleId, count: 0, files: new Set(), maxSev: issue.severity };
-      ruleMap.set(issue.ruleId, rule);
-    }
-    rule.count += 1;
-    rule.files.add(issue.filePath);
-    if (SEVERITY_RANK[issue.severity] < SEVERITY_RANK[rule.maxSev]) rule.maxSev = issue.severity;
-  }
-  const ruleList = [...ruleMap.values()].sort(
-    (a, b) => SEVERITY_RANK[a.maxSev] - SEVERITY_RANK[b.maxSev] || b.count - a.count,
-  );
-
-  const conclusionText = escapeHtml(
-    composeConclusion(
-      {
-        fileCount: data.meta.fileCount,
-        baselineScanId: data.meta.baselineScanId,
-        totals: data.totals,
-        ...(data.reviewStats ? { reviewStats: data.reviewStats } : {}),
-      },
-      text,
-    ),
-  );
-  const metricsHtml = `
-    <div class="metrics">
-      <div class="metric"><div class="k">${text.metrics.total}</div><div class="v">${totals.total}</div></div>
-      <div class="metric"><div class="k">${text.metrics.critical}</div><div class="v" style="color:${totals.bySeverity.critical ? SEVERITY_COLOR.critical : 'var(--faint)'}">${totals.bySeverity.critical}</div></div>
-      <div class="metric"><div class="k">${text.metrics.high}</div><div class="v" style="color:${totals.bySeverity.high ? SEVERITY_COLOR.high : 'var(--faint)'}">${totals.bySeverity.high}</div></div>
-      <div class="metric"><div class="k">${text.metrics.files}</div><div class="v">${fileList.length}</div></div>
-    </div>`;
-
-  const distBars = SEVERITY_ORDER.map((sev) => {
-    const count = totals.bySeverity[sev];
-    const pct = totals.total ? Math.round((count / totals.total) * 100) : 0;
-    return `<div class="bar-row">
-      <span class="bar-label"><i class="dot" style="background:${SEVERITY_COLOR[sev]}"></i>${text.severity[sev]}</span>
-      <span class="bar-track"><span class="bar-fill" style="width:${pct}%;background:${SEVERITY_COLOR[sev]}"></span></span>
-      <span class="bar-value">${count}<em>${pct}%</em></span>
-    </div>`;
-  }).join('');
-
-  const top5Rows = [...fileList]
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 5)
-    .map(
-      (file) => `<tr>
-        <td class="path">${pathHtml(file.path, text.unknownPath)}</td>
-        <td class="num strong">${file.count}</td>
-        ${SEVERITY_ORDER.filter((sev) => sev !== 'low' && totals.bySeverity[sev] > 0)
-          .map((sev) => `<td class="num">${file.bySev[sev] || '—'}</td>`)
-          .join('')}
-        <td><span class="sev-chip" style="color:#fff;background:${SEVERITY_COLOR[file.maxSev]}">${text.severity[file.maxSev]}</span></td>
-      </tr>`,
-    )
-    .join('');
-
-  const actionRows = fileList
-    .map(
-      (file) => `<tr>
-        <td class="path">${pathHtml(file.path, text.unknownPath)}<div class="sub-rule">${escapeHtml(file.topRule)}</div></td>
-        <td class="num strong">${file.count}</td>
-        <td class="num crit">${file.bySev.critical || '—'}</td>
-        <td class="num hi">${file.bySev.high || '—'}</td>
-        <td class="num mid">${file.bySev.medium || '—'}</td>
-        <td class="num low">${file.bySev.low || '—'}</td>
-      </tr>`,
-    )
-    .join('');
-
-  const detailHtml =
-    current.length === 0
-      ? `<p class="conclusion">${text.noIssues}</p>`
-      : SEVERITY_ORDER.map((sev, index) => {
-          const list = current.filter((issue) => issue.severity === sev);
-          if (list.length === 0) return '';
-          const byFileCount = new Set(list.map((issue) => issue.filePath)).size;
-          return detailGroupHtml({
-            heading: text.severity[sev],
-            sub: text.groupCount(list.length, byFileCount),
-            hint: text.groupHint[sev],
-            accent: SEVERITY_COLOR[sev],
-            first: index === 0,
-            list,
-            snippets,
-            snippetBudget,
-            text,
-            lookup,
-          });
-        }).join('');
-
-  const fixedHtml = fixed.length
-    ? detailGroupHtml({
-        heading: text.fixedHeading(fixed.length),
-        sub: '',
-        accent: '#1e9e6a',
-        first: false,
-        list: fixed,
-        snippets: new Map(),
-        snippetBudget: { left: 0 },
-        text,
-        lookup,
-      })
-    : '';
-
-  const packsRows =
-    meta.rulepacks?.length
-      ? meta.rulepacks
-          .map(
-            (pack) =>
-              `<tr><td>${escapeHtml(pack.name)}</td><td class="cell-mono">${escapeHtml(pack.id)}</td></tr>`,
-          )
-          .join('')
-      : meta.importSource === 'sarif'
-        ? `<tr><td colspan="2" class="hint">${escapeHtml(text.sarifImport(meta.toolName))}</td></tr>`
-        : `<tr><td colspan="2" class="hint">${meta.rules ? escapeHtml(meta.rules) : text.noPacks}</td></tr>`;
-
-  const ruleCards = ruleList
-    .map((rule, index) => {
-      const note = lang === 'en' ? '' : lookup(rule.id, '');
-      return `<div class="rule-card">
-      <div class="rule-head">
-        <span class="rule-idx">${String(index + 1).padStart(2, '0')}</span>
-        <span class="rule-name">${escapeHtml(rule.id)}</span>
-        <span class="rule-stat">${text.ruleStat(rule.count, rule.files.size)} · <i class="dot" style="background:${SEVERITY_COLOR[rule.maxSev]}"></i>${text.severity[rule.maxSev]}</span>
-      </div>
-      ${note ? `<p class="rule-text">${escapeHtml(note)}</p>` : lang !== 'en' ? `<p class="rule-text muted">${text.noMessage}</p>` : ''}
-    </div>`;
-    })
-    .join('');
-
-  const reviewValue = reviewStats ? text.reviewLine(reviewStats) : text.reviewNone;
-  const scopeValue = `${text.filesUnit(meta.fileCount)}${meta.language ? ` · ${escapeHtml(meta.language)}` : ''}`;
-  const baselineValue = meta.baselineScanId
-    ? text.baselineSentence(
-        meta.baselineScanId,
-        totals.byComparison.new,
-        totals.byComparison.remaining,
-        totals.byComparison.fixed,
-      )
-    : text.firstScanNoBaseline;
-
-  return `<!DOCTYPE html>
-<html lang="${text.htmlLang}">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${text.docTitle} · ${escapeHtml(meta.projectName)} · ${escapeHtml(meta.scanId)}</title>
-<style>
+const REPORT_CSS = `
   :root{
     --fg:#1a1f29; --fg-2:#3d4657; --muted:#6b7689; --faint:#8a94a6;
     --line:#e3e8f0; --soft:#f5f7fb; --softer:#fafbfd; --brand:#1a4f9c;
@@ -1057,6 +853,242 @@ export function renderReportHtml(
     tr, .metric, .bar-row, .conclusion, .rule-card { break-inside: avoid; page-break-inside: avoid; }
     h2.sec, h2.group, h3.sub, .file-head { break-after: avoid; page-break-after: avoid; }
   }
+`;
+
+interface FileStat {
+  path: string;
+  count: number;
+  bySev: Record<Severity, number>;
+  maxSev: Severity;
+  topRule: string;
+}
+
+function aggregateFileStats(issues: ReportIssue[]): FileStat[] {
+  const fileMap = new Map<
+    string,
+    FileStat & { ruleCounts: Map<string, number> }
+  >();
+  for (const issue of issues) {
+    let file = fileMap.get(issue.filePath);
+    if (!file) {
+      file = {
+        path: issue.filePath,
+        count: 0,
+        bySev: { critical: 0, high: 0, medium: 0, low: 0 },
+        maxSev: issue.severity,
+        topRule: '',
+        ruleCounts: new Map(),
+      };
+      fileMap.set(issue.filePath, file);
+    }
+    file.count += 1;
+    file.bySev[issue.severity] += 1;
+    file.ruleCounts.set(issue.ruleId, (file.ruleCounts.get(issue.ruleId) ?? 0) + 1);
+    if (SEVERITY_RANK[issue.severity] < SEVERITY_RANK[file.maxSev]) file.maxSev = issue.severity;
+  }
+  return [...fileMap.values()]
+    .map(({ ruleCounts, ...rest }) => {
+      const [topRule] = [...ruleCounts.entries()].sort((a, b) => b[1] - a[1]);
+      return { ...rest, topRule: topRule?.[0] ?? '' };
+    })
+    .sort((a, b) => SEVERITY_RANK[a.maxSev] - SEVERITY_RANK[b.maxSev] || b.count - a.count);
+}
+
+interface RuleStat {
+  id: string;
+  count: number;
+  files: Set<string>;
+  maxSev: Severity;
+}
+
+function aggregateRuleStats(issues: ReportIssue[]): RuleStat[] {
+  const ruleMap = new Map<string, RuleStat>();
+  for (const issue of issues) {
+    let rule = ruleMap.get(issue.ruleId);
+    if (!rule) {
+      rule = { id: issue.ruleId, count: 0, files: new Set(), maxSev: issue.severity };
+      ruleMap.set(issue.ruleId, rule);
+    }
+    rule.count += 1;
+    rule.files.add(issue.filePath);
+    if (SEVERITY_RANK[issue.severity] < SEVERITY_RANK[rule.maxSev]) rule.maxSev = issue.severity;
+  }
+  return [...ruleMap.values()].sort(
+    (a, b) => SEVERITY_RANK[a.maxSev] - SEVERITY_RANK[b.maxSev] || b.count - a.count,
+  );
+}
+
+export function renderReportHtml(
+  data: ReportData,
+  issues: IssueRow[],
+  options: HtmlRenderOptions,
+  lang: ReportLang = 'zh',
+  messages?: Record<string, string>,
+): string {
+  const { meta, totals, reviewStats } = data;
+  const text = REPORT_TEXT[lang];
+  const reviewById = new Map(
+    data.issues.filter((issue) => issue.review).map((issue) => [issue.id, issue.review!]),
+  );
+  const withReview = (rows: IssueRow[]): ReportIssue[] =>
+    rows.map((issue) => ({ ...issue, review: reviewById.get(issue.id) }));
+  const current = withReview(issues.filter(isActiveIssue));
+  const fixed = withReview(issues.filter((issue) => issue.comparisonStatus === 'fixed'));
+  const lookup = buildMessageLookup(messages);
+
+  const snippets = new Map<string, string>();
+  if (options.includeSnippets) {
+    for (const issue of issues) {
+      if (issue.matchedLines) snippets.set(issue.id, issue.matchedLines);
+    }
+  }
+  const snippetBudget = { left: SNIPPET_LIMIT };
+
+  const fileList = aggregateFileStats(current);
+  const ruleList = aggregateRuleStats(current);
+
+  const conclusionText = escapeHtml(
+    composeConclusion(
+      {
+        fileCount: data.meta.fileCount,
+        baselineScanId: data.meta.baselineScanId,
+        totals: data.totals,
+        ...(data.reviewStats ? { reviewStats: data.reviewStats } : {}),
+      },
+      text,
+    ),
+  );
+  const metricsHtml = `
+    <div class="metrics">
+      <div class="metric"><div class="k">${text.metrics.total}</div><div class="v">${totals.total}</div></div>
+      <div class="metric"><div class="k">${text.metrics.critical}</div><div class="v" style="color:${totals.bySeverity.critical ? SEVERITY_COLOR.critical : 'var(--faint)'}">${totals.bySeverity.critical}</div></div>
+      <div class="metric"><div class="k">${text.metrics.high}</div><div class="v" style="color:${totals.bySeverity.high ? SEVERITY_COLOR.high : 'var(--faint)'}">${totals.bySeverity.high}</div></div>
+      <div class="metric"><div class="k">${text.metrics.files}</div><div class="v">${fileList.length}</div></div>
+    </div>`;
+
+  const distBars = SEVERITY_ORDER.map((sev) => {
+    const count = totals.bySeverity[sev];
+    const pct = totals.total ? Math.round((count / totals.total) * 100) : 0;
+    return `<div class="bar-row">
+      <span class="bar-label"><i class="dot" style="background:${SEVERITY_COLOR[sev]}"></i>${text.severity[sev]}</span>
+      <span class="bar-track"><span class="bar-fill" style="width:${pct}%;background:${SEVERITY_COLOR[sev]}"></span></span>
+      <span class="bar-value">${count}<em>${pct}%</em></span>
+    </div>`;
+  }).join('');
+
+  const countedSeverities = SEVERITY_ORDER.filter(
+    (sev) => sev !== 'low' && totals.bySeverity[sev] > 0,
+  );
+  const engineLabel = meta.engineVersion ? `opengrep v${escapeHtml(meta.engineVersion)}` : '—';
+
+  const top5Rows = [...fileList]
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5)
+    .map(
+      (file) => `<tr>
+        <td class="path">${pathHtml(file.path, text.unknownPath)}</td>
+        <td class="num strong">${file.count}</td>
+        ${countedSeverities
+          .map((sev) => `<td class="num">${file.bySev[sev] || '—'}</td>`)
+          .join('')}
+        <td><span class="sev-chip" style="color:#fff;background:${SEVERITY_COLOR[file.maxSev]}">${text.severity[file.maxSev]}</span></td>
+      </tr>`,
+    )
+    .join('');
+
+  const actionRows = fileList
+    .map(
+      (file) => `<tr>
+        <td class="path">${pathHtml(file.path, text.unknownPath)}<div class="sub-rule">${escapeHtml(file.topRule)}</div></td>
+        <td class="num strong">${file.count}</td>
+        <td class="num crit">${file.bySev.critical || '—'}</td>
+        <td class="num hi">${file.bySev.high || '—'}</td>
+        <td class="num mid">${file.bySev.medium || '—'}</td>
+        <td class="num low">${file.bySev.low || '—'}</td>
+      </tr>`,
+    )
+    .join('');
+
+  const detailHtml =
+    current.length === 0
+      ? `<p class="conclusion">${text.noIssues}</p>`
+      : SEVERITY_ORDER.map((sev, index) => {
+          const list = current.filter((issue) => issue.severity === sev);
+          if (list.length === 0) return '';
+          const byFileCount = new Set(list.map((issue) => issue.filePath)).size;
+          return detailGroupHtml({
+            heading: text.severity[sev],
+            sub: text.groupCount(list.length, byFileCount),
+            hint: text.groupHint[sev],
+            accent: SEVERITY_COLOR[sev],
+            first: index === 0,
+            list,
+            snippets,
+            snippetBudget,
+            text,
+            lookup,
+          });
+        }).join('');
+
+  const fixedHtml = fixed.length
+    ? detailGroupHtml({
+        heading: text.fixedHeading(fixed.length),
+        sub: '',
+        accent: '#1e9e6a',
+        first: false,
+        list: fixed,
+        snippets: new Map(),
+        snippetBudget: { left: 0 },
+        text,
+        lookup,
+      })
+    : '';
+
+  const packsRows =
+    meta.rulepacks?.length
+      ? meta.rulepacks
+          .map(
+            (pack) =>
+              `<tr><td>${escapeHtml(pack.name)}</td><td class="cell-mono">${escapeHtml(pack.id)}</td></tr>`,
+          )
+          .join('')
+      : meta.importSource === 'sarif'
+        ? `<tr><td colspan="2" class="hint">${escapeHtml(text.sarifImport(meta.toolName))}</td></tr>`
+        : `<tr><td colspan="2" class="hint">${meta.rules ? escapeHtml(meta.rules) : text.noPacks}</td></tr>`;
+
+  const ruleCards = ruleList
+    .map((rule, index) => {
+      const note = lang === 'en' ? '' : lookup(rule.id, '');
+      return `<div class="rule-card">
+      <div class="rule-head">
+        <span class="rule-idx">${String(index + 1).padStart(2, '0')}</span>
+        <span class="rule-name">${escapeHtml(rule.id)}</span>
+        <span class="rule-stat">${text.ruleStat(rule.count, rule.files.size)} · <i class="dot" style="background:${SEVERITY_COLOR[rule.maxSev]}"></i>${text.severity[rule.maxSev]}</span>
+      </div>
+      ${note ? `<p class="rule-text">${escapeHtml(note)}</p>` : lang !== 'en' ? `<p class="rule-text muted">${text.noMessage}</p>` : ''}
+    </div>`;
+    })
+    .join('');
+
+  const reviewValue = reviewStats ? text.reviewLine(reviewStats) : text.reviewNone;
+  const scopeValue = `${text.filesUnit(meta.fileCount)}${meta.language ? ` · ${escapeHtml(meta.language)}` : ''}`;
+  const baselineValue = meta.baselineScanId
+    ? text.baselineSentence(
+        meta.baselineScanId,
+        totals.byComparison.new,
+        totals.byComparison.remaining,
+        totals.byComparison.fixed,
+      )
+    : text.firstScanNoBaseline;
+
+  return `<!DOCTYPE html>
+<html lang="${text.htmlLang}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${text.docTitle} · ${escapeHtml(meta.projectName)} · ${escapeHtml(meta.scanId)}</title>
+<style>
+${REPORT_CSS}
 </style>
 </head>
 <body>
@@ -1071,7 +1103,7 @@ export function renderReportHtml(
       <div class="doc-meta">
         <b class="mono">${escapeHtml(meta.scanId)}</b><br>
         ${text.meta.finishedAt} <b>${formatDateTime(meta.finishedAt ?? meta.scannedAt)}</b><br>
-        ${text.meta.engine} <b>${meta.engineVersion ? `opengrep v${escapeHtml(meta.engineVersion)}` : '—'}</b> · ${text.meta.rulesLabel} <b>${meta.importSource === 'sarif' ? escapeHtml(text.sarifImport(meta.toolName)) : escapeHtml(meta.rules ?? '—')}</b>
+        ${text.meta.engine} <b>${engineLabel}</b> · ${text.meta.rulesLabel} <b>${meta.importSource === 'sarif' ? escapeHtml(text.sarifImport(meta.toolName)) : escapeHtml(meta.rules ?? '—')}</b>
       </div>
     </div>
 
@@ -1085,7 +1117,7 @@ export function renderReportHtml(
     <h3 class="sub">${text.top5Title}</h3>
     <p class="hint">${text.top5Hint}</p>
     <table>
-      <thead><tr><th>${text.thFile}</th><th class="num">${text.thCount}</th>${SEVERITY_ORDER.filter((sev) => sev !== 'low' && totals.bySeverity[sev] > 0).map((sev) => `<th class="num">${text.severity[sev]}</th>`).join('')}<th>${text.thMaxSeverity}</th></tr></thead>
+      <thead><tr><th>${text.thFile}</th><th class="num">${text.thCount}</th>${countedSeverities.map((sev) => `<th class="num">${text.severity[sev]}</th>`).join('')}<th>${text.thMaxSeverity}</th></tr></thead>
       <tbody>${top5Rows}</tbody>
     </table>
 
@@ -1130,7 +1162,7 @@ export function renderReportHtml(
 
     <h3 class="sub">${text.methodSub.repro}</h3>
     <dl class="kv">
-      <dt>${text.meta.engine}</dt><dd>${meta.engineVersion ? `opengrep v${escapeHtml(meta.engineVersion)}` : '—'}${meta.durationSeconds !== undefined ? ` · ${formatDuration(meta.durationSeconds, text)}` : ''}</dd>
+      <dt>${text.meta.engine}</dt><dd>${engineLabel}${meta.durationSeconds !== undefined ? ` · ${formatDuration(meta.durationSeconds, text)}` : ''}</dd>
       <dt>${text.meta.sourceHash}</dt><dd class="mono">${escapeHtml(meta.sourceHash ?? '—')}</dd>
       <dt>${text.meta.generatedAt}</dt><dd>${formatDateTime(meta.generatedAt)}</dd>
     </dl>
