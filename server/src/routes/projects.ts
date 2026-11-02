@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import type { Request } from 'express';
 import { Router } from 'express';
 import multer from 'multer';
 import { config, pendingSourceDir, projectWorkspace } from '../config.js';
@@ -202,8 +203,51 @@ export function unmarkProjectImporting(projectId: string): void {
   importingProjects.delete(projectId);
 }
 
+function totalCappedMemoryStorage(maxTotalBytes: number): multer.StorageEngine {
+  const totals = new WeakMap<Request, number>();
+  return {
+    _handleFile(req, file, cb) {
+      const chunks: Buffer[] = [];
+      let settled = false;
+      const onData = (chunk: Buffer) => {
+        if (settled) return;
+        const total = (totals.get(req) ?? 0) + chunk.length;
+        totals.set(req, total);
+        if (total > maxTotalBytes) {
+          settled = true;
+          file.stream.off('data', onData);
+          cb(
+            new HttpError(
+              400,
+              `总体积超过 ${maxTotalBytes / 1024 ** 3}GB 上限`,
+              { code: 'srv.totalTooLarge', params: { gb: maxTotalBytes / 1024 ** 3 } },
+            ),
+          );
+          return;
+        }
+        chunks.push(chunk);
+      };
+      file.stream.on('data', onData);
+      file.stream.on('end', () => {
+        if (settled) return;
+        settled = true;
+        const buffer = Buffer.concat(chunks);
+        cb(null, { buffer, size: buffer.length });
+      });
+      file.stream.on('error', (error: Error) => {
+        if (settled) return;
+        settled = true;
+        cb(error);
+      });
+    },
+    _removeFile(_req, _file, cb) {
+      cb(null);
+    },
+  };
+}
+
 const upload = multer({
-  storage: multer.memoryStorage(),
+  storage: totalCappedMemoryStorage(config.maxExtractedBytes),
   limits: { fileSize: config.maxUploadBytes },
 });
 
