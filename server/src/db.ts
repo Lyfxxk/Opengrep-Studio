@@ -828,3 +828,121 @@ export function deleteReview(projectId: string, fingerprint: string): void {
 function deleteProjectReviews(projectId: string): void {
   db.prepare('DELETE FROM reviews WHERE project_id = ?').run(projectId);
 }
+
+export interface RiskProjectSummary {
+  projectId: string;
+  latestScanId?: string;
+  total: number;
+  critical: number;
+  high: number;
+}
+
+export interface RiskRuleSummary {
+  ruleId: string;
+  severity: Severity;
+  count: number;
+}
+
+export interface RiskSummary {
+  projects: RiskProjectSummary[];
+  severityCounts: Record<Severity, number>;
+  topRules: RiskRuleSummary[];
+  pendingReview: number;
+  total: number;
+}
+
+const RISK_TOP_RULES_LIMIT = 6;
+
+interface RiskSummaryRow {
+  projectId: string;
+  ruleId: string;
+  severity: Severity;
+  count: number;
+  pendingReviewCount: number;
+}
+
+function listRiskSummaryRows(): RiskSummaryRow[] {
+  const rows = db
+    .prepare(
+      `WITH latest_scan AS (
+         SELECT project_id, scan_id FROM (
+           SELECT project_id, id AS scan_id,
+                  ROW_NUMBER() OVER (PARTITION BY project_id ORDER BY scanned_at DESC, id DESC) AS rn
+           FROM scans WHERE status = 'completed'
+         ) WHERE rn = 1
+       )
+       SELECT ls.project_id AS project_id, i.rule_id AS rule_id, i.severity AS severity,
+              COUNT(*) AS count,
+              SUM(CASE WHEN r.fingerprint IS NULL OR r.status = 'pending' THEN 1 ELSE 0 END) AS pending_count
+       FROM latest_scan ls
+       JOIN issues i ON i.scan_id = ls.scan_id AND i.comparison_status <> 'fixed'
+       LEFT JOIN reviews r ON r.project_id = ls.project_id AND r.fingerprint = i.fingerprint
+       GROUP BY ls.project_id, i.rule_id, i.severity`,
+    )
+    .all() as SqlRow[];
+  return rows.map((row) => ({
+    projectId: String(row.project_id),
+    ruleId: String(row.rule_id),
+    severity: String(row.severity) as Severity,
+    count: Number(row.count ?? 0),
+    pendingReviewCount: Number(row.pending_count ?? 0),
+  }));
+}
+
+function listLatestCompletedScanByProject(): Array<{ projectId: string; latestScanId?: string }> {
+  const rows = db
+    .prepare(
+      `SELECT p.id AS project_id,
+              (SELECT s.id FROM scans s
+                WHERE s.project_id = p.id AND s.status = 'completed'
+                ORDER BY s.scanned_at DESC, s.id DESC LIMIT 1) AS scan_id
+       FROM projects p
+       ORDER BY p.created_at ASC, p.id ASC`,
+    )
+    .all() as SqlRow[];
+  return rows.map((row) => ({
+    projectId: String(row.project_id),
+    ...(row.scan_id === null || row.scan_id === undefined ? {} : { latestScanId: String(row.scan_id) }),
+  }));
+}
+
+export function getRiskSummary(): RiskSummary {
+  const projects: RiskProjectSummary[] = listLatestCompletedScanByProject().map((item) => ({
+    ...item,
+    total: 0,
+    critical: 0,
+    high: 0,
+  }));
+  const byProject = new Map(projects.map((project) => [project.projectId, project]));
+  const severityCounts: Record<Severity, number> = { critical: 0, high: 0, medium: 0, low: 0 };
+  const ruleCounts = new Map<string, RiskRuleSummary>();
+  let pendingReview = 0;
+  let total = 0;
+  for (const row of listRiskSummaryRows()) {
+    const project = byProject.get(row.projectId);
+    if (project) {
+      project.total += row.count;
+      if (row.severity === 'critical') project.critical += row.count;
+      if (row.severity === 'high') project.high += row.count;
+    }
+    severityCounts[row.severity] += row.count;
+    pendingReview += row.pendingReviewCount;
+    total += row.count;
+    const rule = ruleCounts.get(row.ruleId);
+    if (rule) {
+      rule.count += row.count;
+      if (SEVERITY_RANK[row.severity] < SEVERITY_RANK[rule.severity]) rule.severity = row.severity;
+    } else {
+      ruleCounts.set(row.ruleId, { ruleId: row.ruleId, severity: row.severity, count: row.count });
+    }
+  }
+  const topRules = [...ruleCounts.values()]
+    .sort(
+      (a, b) =>
+        b.count - a.count ||
+        SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity] ||
+        a.ruleId.localeCompare(b.ruleId),
+    )
+    .slice(0, RISK_TOP_RULES_LIMIT);
+  return { projects, severityCounts, topRules, pendingReview, total };
+}

@@ -205,6 +205,22 @@ export interface IEngineUpgradeState {
 
 const MOCK_SCAN_DURATION_MS = 3000;
 
+export interface IDashboardProjectRisk {
+  projectId: string;
+  latestScanId?: string;
+  total: number;
+  critical: number;
+  high: number;
+}
+
+export interface IDashboardRiskSummary {
+  projects: IDashboardProjectRisk[];
+  severityCounts: Record<IIssue['severity'], number>;
+  topRules: Array<{ ruleId: string; severity: IIssue['severity']; count: number }>;
+  pendingReview: number;
+  total: number;
+}
+
 function mockScanIssueCount(): number {
   return MOCK_ISSUES.filter(
     (issue) => issue.scanId === '2' && issue.comparisonStatus !== 'fixed',
@@ -247,6 +263,66 @@ function withMockReviews(issues: IIssue[], projectId?: string): IIssue[] {
       },
     };
   });
+}
+
+function mockRiskSummary(): IDashboardRiskSummary {
+  const latest = new Map<string, IScanResult>();
+  for (const scan of materializeMockScans()) {
+    if (scan.status !== 'completed') continue;
+    const prev = latest.get(scan.projectId);
+    if (
+      !prev ||
+      scan.scannedAt > prev.scannedAt ||
+      (scan.scannedAt === prev.scannedAt && scan.id > prev.id)
+    ) {
+      latest.set(scan.projectId, scan);
+    }
+  }
+  const severityCounts: Record<IIssue['severity'], number> = {
+    critical: 0,
+    high: 0,
+    medium: 0,
+    low: 0,
+  };
+  const ruleCounts = new Map<string, { ruleId: string; severity: IIssue['severity']; count: number }>();
+  const projects: IDashboardProjectRisk[] = [];
+  let pendingReview = 0;
+  let total = 0;
+  for (const project of loadProjects()) {
+    const latestScan = latest.get(project.id);
+    const row: IDashboardProjectRisk = { projectId: project.id, total: 0, critical: 0, high: 0 };
+    if (latestScan) row.latestScanId = latestScan.id;
+    const issues = latestScan
+      ? withMockReviews(mockIssuesForScan(latestScan.id), project.id).filter(
+          (issue) => issue.comparisonStatus !== 'fixed',
+        )
+      : [];
+    for (const issue of issues) {
+      severityCounts[issue.severity] += 1;
+      if (issue.severity === 'critical') row.critical += 1;
+      if (issue.severity === 'high') row.high += 1;
+      if (!issue.review) pendingReview += 1;
+      const rule = ruleCounts.get(issue.ruleId);
+      if (rule) rule.count += 1;
+      else {
+        ruleCounts.set(issue.ruleId, {
+          ruleId: issue.ruleId,
+          severity: issue.severity,
+          count: 1,
+        });
+      }
+    }
+    row.total = issues.length;
+    total += issues.length;
+    projects.push(row);
+  }
+  const topRules = [...ruleCounts.values()]
+    .sort(
+      (a, b) =>
+        b.count - a.count || a.ruleId.localeCompare(b.ruleId),
+    )
+    .slice(0, 6);
+  return { projects, severityCounts, topRules, pendingReview, total };
 }
 
 function countMockRules(yamlText: string): number {
@@ -816,6 +892,11 @@ export const api = {
   listAllScans(): Promise<IScanResult[]> {
     if (USE_MOCK) return Promise.resolve(materializeMockScans());
     return request('/api/scans');
+  },
+
+  getDashboardRiskSummary(): Promise<IDashboardRiskSummary> {
+    if (USE_MOCK) return Promise.resolve(mockRiskSummary());
+    return request<IDashboardRiskSummary>('/api/dashboard/risk-summary');
   },
 
   async deleteScan(id: string): Promise<void> {

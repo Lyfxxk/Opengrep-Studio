@@ -9,20 +9,20 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import type { IIssue } from '@/data/issues';
 import type { IProject } from '@/data/projects';
 import type { IRulePack } from '@/data/rulepacks';
 import type { IScanResult } from '@/data/scanresults';
 import { SEVERITY_BAR_CLASS, SEVERITY_ORDER } from '@/lib/severity';
 import { cn } from '@/lib/utils';
-import { api, type HealthInfo } from '@/lib/api';
+import { api, type HealthInfo, type IDashboardRiskSummary } from '@/lib/api';
 import EngineCard from '@/pages/Dashboard/EngineCard';
 
-interface ProjectRisk {
-  project: IProject;
-  latestScan?: IScanResult;
-  issues: IIssue[];
-}
+const EMPTY_SEVERITY_COUNTS: Record<keyof typeof SEVERITY_BAR_CLASS, number> = {
+  critical: 0,
+  high: 0,
+  medium: 0,
+  low: 0,
+};
 
 function StatCard({
   icon: Icon,
@@ -59,22 +59,24 @@ export default function DashboardPage() {
   const [scans, setScans] = useState<IScanResult[] | null>(null);
   const [packs, setPacks] = useState<IRulePack[] | null>(null);
   const [health, setHealth] = useState<HealthInfo | null>(null);
-  const [risks, setRisks] = useState<ProjectRisk[] | null>(null);
+  const [summary, setSummary] = useState<IDashboardRiskSummary | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
 
   const loadSeqRef = useRef(0);
-  const riskKeyRef = useRef<string | null>(null);
 
   const load = useCallback(async () => {
     const seq = ++loadSeqRef.current;
-    const [projectRes, scanRes, packRes, healthRes] = await Promise.allSettled([
+    const [projectRes, scanRes, packRes, healthRes, summaryRes] = await Promise.allSettled([
       api.listProjects(),
       api.listAllScans(),
       api.listRulePacks(),
       api.getHealth(),
+      api.getDashboardRiskSummary(),
     ]);
     if (seq !== loadSeqRef.current) return;
-    setLoadFailed([projectRes, scanRes, packRes].some((res) => res.status === 'rejected'));
+    setLoadFailed(
+      [projectRes, scanRes, packRes, summaryRes].some((res) => res.status === 'rejected'),
+    );
     setProjects(projectRes.status === 'fulfilled' ? projectRes.value : null);
     setScans((prev) => {
       if (scanRes.status !== 'fulfilled') return null;
@@ -82,6 +84,7 @@ export default function DashboardPage() {
     });
     setPacks(packRes.status === 'fulfilled' ? packRes.value : null);
     setHealth(healthRes.status === 'fulfilled' ? healthRes.value : null);
+    setSummary(summaryRes.status === 'fulfilled' ? summaryRes.value : null);
   }, []);
 
   useEffect(() => {
@@ -106,70 +109,24 @@ export default function DashboardPage() {
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, [load]);
 
-  const latestByProject = useMemo(() => {
-    const map = new Map<string, IScanResult>();
-    for (const scan of scans ?? []) {
-      if (scan.status !== 'completed') continue;
-      const prev = map.get(scan.projectId);
-      if (!prev || new Date(scan.scannedAt) > new Date(prev.scannedAt)) {
-        map.set(scan.projectId, scan);
-      }
-    }
-    return map;
-  }, [scans]);
-
-  useEffect(() => {
-    if (!projects) return;
-    const key = JSON.stringify(
-      projects.map((project) => [
-        project.id,
-        project.name,
-        latestByProject.get(project.id)?.id ?? null,
-      ]),
-    );
-    if (key === riskKeyRef.current) return;
-    riskKeyRef.current = key;
-    void (async () => {
-      const entries = await Promise.all(
-        projects.map(async (project) => {
-          const latest = latestByProject.get(project.id);
-          const issues = latest
-            ? (await api.listIssues(latest.id).catch(() => [] as IIssue[]))
-                .filter((issue) => issue.comparisonStatus !== 'fixed')
-            : [];
-          return { project, latestScan: latest, issues };
-        }),
-      );
-      if (riskKeyRef.current === key) setRisks(entries);
-    })();
-  }, [projects, latestByProject]);
-
   const completedScans = useMemo(
     () => (scans ?? []).filter((scan) => scan.status === 'completed'),
     [scans],
   );
 
-  const aggregated = useMemo(() => {
-    const allIssues = (risks ?? []).flatMap((risk) => risk.issues);
-    const severityCounts = Object.fromEntries(
-      SEVERITY_ORDER.map((severity) => [severity, 0]),
-    ) as Record<IIssue['severity'], number>;
-    const ruleCounter = new Map<string, { count: number; severity: IIssue['severity'] }>();
-    for (const issue of allIssues) {
-      severityCounts[issue.severity] += 1;
-      const entry = ruleCounter.get(issue.ruleId);
-      if (entry) entry.count += 1;
-      else ruleCounter.set(issue.ruleId, { count: 1, severity: issue.severity });
-    }
-    const topRules = [...ruleCounter.entries()]
-      .map(([ruleId, info]) => ({ ruleId, ...info }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 6);
-    const pendingReview = allIssues.filter((issue) => !issue.review).length;
-    return { severityCounts, topRules, pendingReview, total: allIssues.length };
-  }, [risks]);
-
-  const maxSeverityCount = Math.max(1, ...SEVERITY_ORDER.map((s) => aggregated.severityCounts[s]));
+  const riskById = useMemo(
+    () => new Map((summary?.projects ?? []).map((item) => [item.projectId, item])),
+    [summary],
+  );
+  const severityCounts = summary?.severityCounts ?? EMPTY_SEVERITY_COUNTS;
+  const topRules = summary?.topRules ?? [];
+  const maxSeverityCount = Math.max(
+    1,
+    ...SEVERITY_ORDER.map((severity) => severityCounts[severity]),
+  );
+  const riskTotal = summary
+    ? summary.projects.reduce((sum, project) => sum + project.total, 0)
+    : null;
   const builtinPacks = (packs ?? []).filter((pack) => pack.builtin).length;
   const customPacks = (packs ?? []).filter((pack) => !pack.builtin).length;
   const hasData = (projects ?? []).length > 0;
@@ -203,10 +160,10 @@ export default function DashboardPage() {
         <StatCard
           icon={ShieldAlert}
           label={t('dashboard.statsIssues')}
-          value={Array.from(latestByProject.values()).reduce((sum, scan) => sum + scan.issueCount, 0)}
+          value={riskTotal ?? '—'}
           sub={
-            risks
-              ? t('dashboard.issueStats', { active: aggregated.total, pending: aggregated.pendingReview })
+            summary
+              ? t('dashboard.issueStats', { active: summary.total, pending: summary.pendingReview })
               : undefined
           }
         />
@@ -230,9 +187,9 @@ export default function DashboardPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="flex min-h-0 flex-1 flex-col justify-center gap-3 overflow-y-auto">
-              {aggregated.total === 0 ? (
+              {(summary?.total ?? 0) === 0 ? (
                 <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-                  {risks === null
+                  {summary === null
                     ? loadFailed
                       ? t('common.loadFailedHint')
                       : t('common.loading')
@@ -242,7 +199,7 @@ export default function DashboardPage() {
                 </p>
               ) : (
                 SEVERITY_ORDER.map((severity) => {
-                  const count = aggregated.severityCounts[severity];
+                  const count = severityCounts[severity];
                   return (
                     <div key={severity} className="flex items-center gap-3">
                       <span className="w-10 shrink-0 text-sm text-muted-foreground">
@@ -269,11 +226,11 @@ export default function DashboardPage() {
               <CardTitle className="text-base">{t('dashboard.topRulesTitle')}</CardTitle>
             </CardHeader>
             <CardContent className="flex min-h-0 flex-1 flex-col justify-center overflow-y-auto">
-              {aggregated.topRules.length === 0 ? (
+              {topRules.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t('dashboard.topRulesEmpty')}</p>
               ) : (
                 <div className="space-y-2.5">
-                  {aggregated.topRules.map((rule) => (
+                  {topRules.map((rule) => (
                     <div key={rule.ruleId} className="flex items-center gap-3 text-sm">
                       <span className="min-w-0 flex-1 truncate font-mono text-xs" title={rule.ruleId}>
                         {rule.ruleId}
@@ -300,14 +257,13 @@ export default function DashboardPage() {
               <CardTitle className="text-base">{t('dashboard.riskOverviewTitle')}</CardTitle>
             </CardHeader>
             <CardContent className="flex min-h-0 flex-1 flex-col justify-center gap-3 overflow-y-auto">
-              {(risks ?? []).length === 0 ? (
+              {(projects ?? []).length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   {projects === null ? t('common.loading') : t('dashboard.noProjects')}
                 </p>
               ) : (
-                (risks ?? []).map(({ project, latestScan, issues }) => {
-                  const critical = issues.filter((issue) => issue.severity === 'critical').length;
-                  const high = issues.filter((issue) => issue.severity === 'high').length;
+                (projects ?? []).map((project) => {
+                  const risk = riskById.get(project.id);
                   return (
                     <div key={project.id} className="flex items-center justify-between gap-2">
                       <Link
@@ -317,23 +273,23 @@ export default function DashboardPage() {
                       >
                         {project.name}
                       </Link>
-                      {latestScan ? (
+                      {risk?.latestScanId ? (
                         <Link
-                          to={`/projects/${project.id}/scans/${latestScan.id}`}
+                          to={`/projects/${project.id}/scans/${risk.latestScanId}`}
                           className="flex shrink-0 items-center gap-1.5 text-xs tabular-nums"
                         >
-                          {critical > 0 && (
+                          {risk.critical > 0 && (
                             <Badge className="bg-destructive/15 px-1.5 font-normal text-destructive">
-                              {t('severity.critical')} {critical}
+                              {t('severity.critical')} {risk.critical}
                             </Badge>
                           )}
-                          {high > 0 && (
+                          {risk.high > 0 && (
                             <Badge className="bg-warning/15 px-1.5 font-normal text-warning">
-                              {t('severity.high')} {high}
+                              {t('severity.high')} {risk.high}
                             </Badge>
                           )}
                           <span className="text-muted-foreground hover:underline">
-                            {t('dashboard.totalCount', { count: issues.length })}
+                            {t('dashboard.totalCount', { count: risk.total })}
                           </span>
                         </Link>
                       ) : (
