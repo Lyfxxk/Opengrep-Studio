@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
+import { api } from '@/lib/api';
 import type { IProject } from '@/data/projects';
 import type { IScanResult } from '@/data/scanresults';
 
@@ -12,6 +14,52 @@ export function attachProjectNames(
   return [...scans]
     .sort((a, b) => new Date(b.scannedAt).getTime() - new Date(a.scannedAt).getTime())
     .map((scan) => ({ ...scan, projectName: nameOf.get(scan.projectId) ?? scan.projectId }));
+}
+
+export function filterScans(
+  scans: ScanWithProject[],
+  projectId: string,
+  keyword: string,
+): ScanWithProject[] {
+  const trimmed = keyword.trim().toLowerCase();
+  return scans.filter((scan) => {
+    if (projectId !== 'all' && scan.projectId !== projectId) return false;
+    if (trimmed === '') return true;
+    return (
+      scan.id.toLowerCase().includes(trimmed) ||
+      (scan.projectName ?? '').toLowerCase().includes(trimmed)
+    );
+  });
+}
+
+export function useScanRows(options?: { completedOnly?: boolean }) {
+  const completedOnly = options?.completedOnly ?? false;
+  const [scans, setScans] = useState<ScanWithProject[] | null>(null);
+  const [projects, setProjects] = useState<IProject[]>([]);
+  const [loadFailed, setLoadFailed] = useState(false);
+
+  const reload = useCallback(async () => {
+    try {
+      const [allScans, allProjects] = await Promise.all([api.listAllScans(), api.listProjects()]);
+      setProjects(allProjects);
+      setLoadFailed(false);
+      setScans(
+        attachProjectNames(
+          completedOnly ? allScans.filter((scan) => scan.status === 'completed') : allScans,
+          allProjects,
+        ),
+      );
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : String(error));
+      setLoadFailed(true);
+    }
+  }, [completedOnly]);
+
+  useEffect(() => {
+    void reload();
+  }, [reload]);
+
+  return { scans, projects, loadFailed, reload };
 }
 
 export function usePagedList<T>(items: T[], pageSize: number) {
