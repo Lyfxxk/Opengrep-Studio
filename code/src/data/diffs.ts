@@ -75,7 +75,7 @@ export interface IRuleKnowledge {
   matchedRuleId?: string;
   found: boolean;
   pack?: { id: string; name: string; builtin: boolean };
-  zhMessage?: string;
+  message?: string;
   severity?: string;
   securitySeverity?: number;
   cwe: IKnowledgeCwe[];

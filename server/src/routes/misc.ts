@@ -26,7 +26,7 @@ import { MAX_PATH_FILTER_GLOBSTARS } from '../scan-runner.js';
 import { runRuleLab } from '../rule-lab.js';
 import { engineUpgradeRunning } from '../engine-update.js';
 import { isEngineJobBusy, setEngineJobBusy } from '../engine-job.js';
-import { asyncHandler, MAX_RULE_YAML_BYTES, MAX_SAMPLE_BYTES, newId } from './shared.js';
+import { asyncHandler, MAX_RULE_YAML_BYTES, MAX_SAMPLE_BYTES, newId, parseProductLang } from './shared.js';
 
 export const miscRoutes = Router();
 
@@ -214,7 +214,7 @@ miscRoutes.get('/api/rules/knowledge/:ruleId', asyncHandler(async (req, res) => 
   if (!ruleId || ruleId.length > 200) {
     throw new HttpError(400, '需要 ruleId 路径参数', { code: 'srv.ruleIdInvalid' });
   }
-  const lang = req.query.lang === 'zh-Hant' ? 'zh-Hant' : 'zh';
+  const lang = parseProductLang(req.query.lang);
   res.json(getRuleKnowledge(ruleId, lang));
 }));
 

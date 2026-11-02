@@ -2,9 +2,14 @@ import type { NextFunction, Request, Response } from 'express';
 import multer from 'multer';
 import { getProject, getScan, type Project } from '../db.js';
 import { HttpError } from '../errors.js';
+import type { ReportLang } from '../report.js';
 
 export const MAX_RULE_YAML_BYTES = 1024 * 1024;
 export const MAX_SAMPLE_BYTES = 200 * 1024;
+
+export function parseProductLang(value: unknown): ReportLang {
+  return value === 'zh-Hant' ? 'zh-Hant' : value === 'en' ? 'en' : 'zh';
+}
 
 export const asyncHandler =
   (handler: (req: Request, res: Response) => Promise<void>) =>

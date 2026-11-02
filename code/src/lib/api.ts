@@ -1013,7 +1013,7 @@ export const api = {
     return request(`/api/scans/${scanId}/diff?${params.toString()}`);
   },
 
-  getRuleKnowledge(ruleId: string, lang: string): Promise<IRuleKnowledge> {
+  getRuleKnowledge(ruleId: string): Promise<IRuleKnowledge> {
     if (USE_MOCK) {
       const hits = MOCK_ISSUES.filter((issue) => issue.ruleId === ruleId);
       return Promise.resolve({
@@ -1025,7 +1025,7 @@ export const api = {
       });
     }
     return request(
-      `/api/rules/knowledge/${encodeURIComponent(ruleId)}?lang=${encodeURIComponent(lang)}`,
+      `/api/rules/knowledge/${encodeURIComponent(ruleId)}?lang=${encodeURIComponent(productLang())}`,
     );
   },
 
