@@ -204,6 +204,14 @@ const zhHant: typeof zh = {
     upToDate: '已是最新版本',
     checkFailed: '檢查更新失敗：{{error}}',
     unavailable: '引擎不可用',
+    hintMacosQuarantine:
+      'macOS 提示：瀏覽器手動下載的二進位檔會被 Gatekeeper 攔截（「無法驗證開發者」／「已損毀」），執行 xattr -d com.apple.quarantine <引擎路徑> 後即可使用；npm run setup:engine 下載的不受影響。',
+  },
+  engineSource: {
+    env: '環境變數 OPENGREP_BIN 指定',
+    'bundled-dir': 'opengrep-tool 安裝位置（npm run setup:engine）',
+    path: '系統 PATH 查找',
+    missing: '未找到',
   },
   langStats: {
     total: '合計 {{kb}} KB',
@@ -720,6 +728,26 @@ const zhHant: typeof zh = {
       sevenZFailed: '壓縮檔解壓失敗：{{reason}}',
       extractFailed: '壓縮檔解壓失敗：{{reason}}',
     },
+    engine: {
+      installHint:
+        '未找到 opengrep 引擎：{{bin}}\n請在儲存庫根目錄執行 npm run setup:engine 自動下載並校驗引擎（約 50MB，依平台自動選擇），\n或設定環境變數 OPENGREP_BIN 指向已安裝的引擎執行檔。',
+      installHintEnv:
+        'OPENGREP_BIN 指向的引擎不存在或無法讀取：{{bin}}\n請檢查路徑是否正確；或取消該環境變數後，在儲存庫根目錄執行 npm run setup:engine 安裝引擎。',
+      notRunnableHint:
+        '引擎檔案存在但無法執行：{{bin}}\n可能是檔案損毀、不完整，或被防毒軟體隔離／攔截。\n請在儲存庫根目錄執行 npm run setup:engine --force 重新下載並校驗引擎，\n或設定環境變數 OPENGREP_BIN 指向可正常執行的引擎執行檔。',
+      sourceEnv: '引擎由環境變數 OPENGREP_BIN 指定，請您自行管理版本',
+      sourcePath: '引擎來自系統 PATH，請用原本的安裝方式升級',
+      noAssetForPlatform: '目前平台 {{platform}} 沒有可用的自動升級資產',
+      versionUnprobed: '未偵測到已安裝引擎的版本，請先執行 npm run setup:engine 安裝',
+      checkFailed: '無法取得上游最新版本：{{reason}}',
+      checkFailedCurrent: '無法取得上游最新版本：{{reason}}；目前 v{{current}} 可正常使用',
+      tagMissing: '上游最新版本回應缺少 tag_name，無法判斷是否有更新',
+      upToDateVersion: '已是最新 stable 版本（v{{version}}）',
+      assetMissing: '上游 {{tag}} 缺少資產 {{asset}}，暫不支援自動升級',
+      digestMissing: '上游 {{tag}} 未提供 sha256 摘要，暫不支援自動升級',
+      upgraded: '引擎已升級至 v{{version}}，建議重新掃描並重建基線',
+      upgradeFailedKeepCurrent: '{{detail}}；現有引擎 v{{from}} 未變動，可繼續正常掃描',
+    },
     srv: {
       routeNotFound: '介面不存在',
       internalError: '伺服器內部錯誤',
@@ -816,8 +844,6 @@ const zhHant: typeof zh = {
       ruleFileInvalid: '規則檔案 {{name}} 不合法',
       upgradePending: '引擎升級正在進行中，請稍候',
       noUpgradeTarget: '目前沒有可升級的版本',
-      upgradeCheckFailed: '檢查更新失敗：{{error}}',
-      upgradeCheckFailedCurrent: '檢查更新失敗：{{error}}；目前 v{{current}} 仍可正常使用',
       ruleIdUnsafe: '規則 id「{{id}}」含不安全字元，無法作為樣本目錄名稱；請修改 YAML 中的規則 id 後重試',
       ruleFileInvalidDetail: '規則檔 {{name}} 不合法：{{reason}}',
       packExportParseFailed: '規則包內容無法解析，匯出中止：{{reason}}',

@@ -55,6 +55,16 @@ export function engineNotRunnableHint(binPath: string = config.opengrepBin): str
   return lines.join('\n');
 }
 
+export function engineInstallHintInfo(): { code: string; params: Record<string, unknown> } {
+  return engineSource === 'env'
+    ? { code: 'engine.installHintEnv', params: { bin: config.opengrepBin } }
+    : { code: 'engine.installHint', params: { bin: config.opengrepBin } };
+}
+
+export function engineNotRunnableHintInfo(): { code: string; params: Record<string, unknown> } {
+  return { code: 'engine.notRunnableHint', params: { bin: config.opengrepBin } };
+}
+
 export function engineDisplayPath(): string {
   return path.resolve(config.opengrepBin);
 }

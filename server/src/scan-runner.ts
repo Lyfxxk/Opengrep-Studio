@@ -6,7 +6,14 @@ import {
   config,
   scanSourceDir,
 } from './config.js';
-import { engineInstallHint, engineNotRunnableHint, getEngineVersion, runEngine } from './engine.js';
+import {
+  engineInstallHint,
+  engineInstallHintInfo,
+  engineNotRunnableHint,
+  engineNotRunnableHintInfo,
+  getEngineVersion,
+  runEngine,
+} from './engine.js';
 import { relativizeToRoot, stripRuleIdPrefix } from './engine-output.js';
 import { extractTaintFlow, relativizeTaintFlow } from './taint.js';
 import {
@@ -323,9 +330,15 @@ async function runScan(scanId: string, plan: ScanPlan): Promise<void> {
   try {
     if (!fs.existsSync(srcDir)) throw new ScanError('scan.snapshotMissing', '找不到扫描源码快照');
     if (plan.configFiles.length === 0) throw new ScanError('scan.noRuleFiles', '没有可用的规则文件');
-    if (!fs.existsSync(config.opengrepBin)) throw new Error(engineInstallHint());
+    if (!fs.existsSync(config.opengrepBin)) {
+      const hint = engineInstallHintInfo();
+      throw new ScanError(hint.code, engineInstallHint(), hint.params);
+    }
     const engineVersion = await getEngineVersion();
-    if (!engineVersion) throw new Error(engineNotRunnableHint());
+    if (!engineVersion) {
+      const hint = engineNotRunnableHintInfo();
+      throw new ScanError(hint.code, engineNotRunnableHint(), hint.params);
+    }
     const fileCount = await countFiles(srcDir);
     updateScan(scanId, { fileCount });
 

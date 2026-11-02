@@ -202,6 +202,14 @@ const zh = {
     upToDate: '已是最新版本',
     checkFailed: '检查更新失败：{{error}}',
     unavailable: '引擎不可用',
+    hintMacosQuarantine:
+      'macOS 提示：浏览器手动下载的二进制会被 Gatekeeper 拦截（“无法验证开发者”/“已损坏”），执行 xattr -d com.apple.quarantine <引擎路径> 后即可使用；npm run setup:engine 下载的不受影响。',
+  },
+  engineSource: {
+    env: '环境变量 OPENGREP_BIN 指定',
+    'bundled-dir': 'opengrep-tool 安装位（npm run setup:engine）',
+    path: '系统 PATH 查找',
+    missing: '未找到',
   },
   langStats: {
     total: '合计 {{kb}} KB',
@@ -718,6 +726,26 @@ const zh = {
       sevenZFailed: '压缩包解压失败：{{reason}}',
       extractFailed: '压缩包解压失败：{{reason}}',
     },
+    engine: {
+      installHint:
+        '未找到 opengrep 引擎：{{bin}}\n请在仓库根目录运行 npm run setup:engine 自动下载并校验引擎（约 50MB，按平台自动选择），\n或设置环境变量 OPENGREP_BIN 指向已安装的引擎可执行文件。',
+      installHintEnv:
+        'OPENGREP_BIN 指向的引擎不存在或不可读：{{bin}}\n请检查路径是否正确；或取消该环境变量后，在仓库根目录运行 npm run setup:engine 安装引擎。',
+      notRunnableHint:
+        '引擎文件存在但无法运行：{{bin}}\n可能是文件损坏、不完整，或被杀毒软件隔离/拦截。\n请在仓库根目录运行 npm run setup:engine --force 重新下载并校验引擎，\n或设置环境变量 OPENGREP_BIN 指向可正常运行的引擎可执行文件。',
+      sourceEnv: '引擎由环境变量 OPENGREP_BIN 指定，请您自行管理版本',
+      sourcePath: '引擎来自系统 PATH，请用原来的安装方式升级',
+      noAssetForPlatform: '当前平台 {{platform}} 没有可用的自动升级资产',
+      versionUnprobed: '未探测到已安装引擎的版本，请先运行 npm run setup:engine 安装',
+      checkFailed: '无法获取上游最新版本：{{reason}}',
+      checkFailedCurrent: '无法获取上游最新版本：{{reason}}；当前 v{{current}} 可正常使用',
+      tagMissing: '上游最新版本响应缺少 tag_name，无法判断是否有更新',
+      upToDateVersion: '已是最新 stable 版本（v{{version}}）',
+      assetMissing: '上游 {{tag}} 缺少资产 {{asset}}，暂不支持自动升级',
+      digestMissing: '上游 {{tag}} 未提供 sha256 摘要，暂不支持自动升级',
+      upgraded: '引擎已升级到 v{{version}}，建议重新扫描并重建基线',
+      upgradeFailedKeepCurrent: '{{detail}}；现有引擎 v{{from}} 未改动，可继续正常扫描',
+    },
     srv: {
       routeNotFound: '接口不存在',
       internalError: '服务器内部错误',
@@ -813,8 +841,6 @@ const zh = {
       ruleFileInvalid: '规则文件 {{name}} 不合法',
       upgradePending: '引擎升级正在进行中，请稍候',
       noUpgradeTarget: '当前没有可升级的版本',
-      upgradeCheckFailed: '检查更新失败：{{error}}',
-      upgradeCheckFailedCurrent: '检查更新失败：{{error}}；当前 v{{current}} 可正常使用',
       ruleIdUnsafe: '规则 id「{{id}}」含不安全字符，无法作为样本目录名；请修改 YAML 中的规则 id 后重试',
       ruleFileInvalidDetail: '规则文件 {{name}} 不合法：{{reason}}',
       packExportParseFailed: '规则包内容无法解析，导出中止：{{reason}}',
