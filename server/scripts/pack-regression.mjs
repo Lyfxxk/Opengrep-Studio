@@ -156,7 +156,12 @@ if (asJson) {
   console.log(
     `[test-packs] 汇总：verified ${summary.ok} · basic ${summary.basic} · 失败 ${summary.failed}`,
   );
-  console.log(summary.failed === 0 ? '[test-packs] 全部通过 ✔' : `[test-packs] ${summary.failed} 个包未通过 ✘`);
+  if (summary.failed === 0) {
+    console.log('[test-packs] 全部通过 ✔');
+  } else {
+    console.log(`[test-packs] ${summary.failed} 个包未通过 ✘`);
+    console.log('[test-packs] 详见上方结构错误与样本明细，或加 --json 输出完整结果');
+  }
 }
 
 process.exit(summary.failed === 0 ? 0 : 1);
