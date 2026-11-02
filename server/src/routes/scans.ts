@@ -1,7 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { Router } from 'express';
-import multer from 'multer';
 import { config, pendingSourceDir, scanSnapshotRoot, scanSourceDir } from '../config.js';
 import { copyDirectory, isPathWithin } from '../archive.js';
 import { HttpError } from '../errors.js';
@@ -39,6 +38,7 @@ import {
   asyncHandler,
   decodeUploadFileName,
   limit400,
+  memoryFileUpload,
   parseProductLang,
   requireProject,
   requireValidBaseline,
@@ -414,16 +414,10 @@ scanRoutes.get('/api/scans/:scanId/sarif', asyncHandler(async (req, res) => {
   res.json(sarif);
 }));
 
-const importSarifUpload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: MAX_SARIF_BYTES },
-  fileFilter: (_req, file, cb) => {
-    if (!/\.(sarif|json)$/i.test(file.originalname)) {
-      cb(new HttpError(400, '仅支持 .sarif / .json 文件', { code: 'srv.sarifOnly' }));
-      return;
-    }
-    cb(null, true);
-  },
+const importSarifUpload = memoryFileUpload(MAX_SARIF_BYTES, {
+  pattern: /\.(sarif|json)$/i,
+  message: '仅支持 .sarif / .json 文件',
+  code: 'srv.sarifOnly',
 });
 
 scanRoutes.post(
