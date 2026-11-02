@@ -4,13 +4,16 @@ import { Router, type Request, type Response } from 'express';
 import { config, engineSource } from '../config.js';
 import { HttpError } from '../errors.js';
 import {
+  checkEngineUpdate,
   engineAvailable,
   engineDisplayPath,
   engineInstallHint,
   engineInstallHintInfo,
   engineNotRunnableHint,
   engineNotRunnableHintInfo,
+  engineUpgradeState,
   getEngineVersion,
+  startEngineUpgrade,
 } from '../engine.js';
 import { engineTargetVersion } from '../engine-manifest.js';
 import {
@@ -23,9 +26,9 @@ import {
   type ScanConfig,
 } from '../db.js';
 import { getRuleKnowledge } from '../knowledge.js';
-import { MAX_PATH_FILTER_GLOBSTARS } from '../scan-runner.js';
+import { hasRunningScan, MAX_PATH_FILTER_GLOBSTARS } from '../scan-runner.js';
 import { runRuleLab } from '../rule-lab.js';
-import { asyncHandler, MAX_RULE_YAML_BYTES, MAX_SAMPLE_BYTES, newId, parseProductLang, withEngineJobBusy } from './shared.js';
+import { asyncHandler, isEngineJobBusy, MAX_RULE_YAML_BYTES, MAX_SAMPLE_BYTES, newId, parseProductLang, withEngineJobBusy } from './shared.js';
 
 export const miscRoutes = Router();
 
@@ -250,4 +253,26 @@ miscRoutes.post('/api/rulelab/run', asyncHandler(async (req, res) => {
       () => runRuleLab(yaml, samples, language),
     ),
   );
+}));
+
+miscRoutes.get('/api/engine/update', asyncHandler(async (req, res) => {
+  res.json(await checkEngineUpdate(req.query.refresh === '1'));
+}));
+
+miscRoutes.get('/api/engine/upgrade', (_req, res) => {
+  res.json(engineUpgradeState());
+});
+
+miscRoutes.post('/api/engine/upgrade', asyncHandler(async (_req, res) => {
+  if (hasRunningScan()) {
+    throw new HttpError(409, '有扫描任务正在运行，请等扫描结束后再升级引擎', {
+      code: 'srv.upgradeScanBusy',
+    });
+  }
+  if (isEngineJobBusy()) {
+    throw new HttpError(409, '规则实验室或规则包质量检查正在运行，请稍后再升级引擎', {
+      code: 'srv.upgradeJobBusy',
+    });
+  }
+  res.status(202).json(await startEngineUpgrade());
 }));
