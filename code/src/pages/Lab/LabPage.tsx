@@ -64,6 +64,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PACK_LANGUAGES } from '@/data/constants';
 import type { IRulePack } from '@/data/rulepacks';
 import { api, translateApiError, type HealthInfo, type RuleLabMatch, type RuleLabRunResult } from '@/lib/api';
+import { formatDuration } from '@/lib/format';
 import TaintFlow from '@/pages/ScanResult/TaintFlow';
 
 const DRAFT_KEY = 'rulelab-draft-v1';
@@ -354,7 +355,7 @@ export default function LabPage() {
           t('lab.runFailToast', {
             reasons: res.failures
               .map((failure) => translateApiError(failure.code, failure.params, failure.message))
-              .join('；'),
+              .join(t('common.listSeparator')),
           }),
         );
       } else if (res.verdict === 'error') {
@@ -498,7 +499,7 @@ export default function LabPage() {
               {' · '}
               {t('lab.passMeta', {
                 count: result.ruleIds.length,
-                duration: (result.durationMs / 1000).toFixed(1),
+                duration: formatDuration(Math.round(result.durationMs / 1000)),
               })}
             </div>
           </div>

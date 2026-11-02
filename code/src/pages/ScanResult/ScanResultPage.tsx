@@ -354,7 +354,9 @@ export default function ScanResultPage() {
                   </dt>
                   <dd className="min-w-0 text-right text-xs leading-5">
                     {scan.rulepacks?.length ? (
-                      scan.rulepacks.map((pack) => packDisplayName(pack.name, pack.id)).join('、')
+                      scan.rulepacks
+                        .map((pack) => packDisplayName(pack.name, pack.id))
+                        .join(t('common.listSeparator'))
                     ) : (
                       <span className="text-muted-foreground">—</span>
                     )}
