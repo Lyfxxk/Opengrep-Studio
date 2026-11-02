@@ -10,11 +10,11 @@ let failures = 0;
 const failedLabels = [];
 
 try {
-  const preflight = await fetch(`${BASE}/api/health`, { signal: AbortSignal.timeout(5000) });
+  const preflight = await fetch(`${BASE}/api/health`, { signal: AbortSignal.timeout(15000) });
   if (!preflight.ok) throw new Error(`HTTP ${preflight.status}`);
 } catch {
   console.error(
-    '[e2e] 后端未就绪：请先 npm run dev 启动后端（默认 127.0.0.1:8787，可用 BASE_URL 覆盖）后再执行 npm run e2e',
+    '[e2e] 后端未就绪：请先 npm run dev 启动后端（默认 127.0.0.1:8787，可用 BASE_URL 覆盖）后再执行 npm run e2e；后端首次 /api/health 会冷启动探测引擎版本，可能需要十余秒，请勿在等待期间重启后端',
   );
   process.exit(1);
 }
