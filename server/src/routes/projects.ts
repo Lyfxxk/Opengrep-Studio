@@ -213,14 +213,12 @@ projectRoutes.post(
         const languageStats = await collectLanguageStats(stagingDir);
         commitStaging();
         updateProject(project.id, { languageStats });
-        const ignoreNote = ignoredCount > 0 ? `，已按 .gitignore 忽略 ${ignoredCount} 个文件` : '';
         res.json({
           fileName: archiveName,
           fileSize: archive.size,
           fileCount,
           ignoredCount,
           languageStats,
-          message: `上传成功，已解压 ${fileCount} 个文件${ignoreNote}`,
         });
         return;
       }
@@ -280,14 +278,12 @@ projectRoutes.post(
         const languageStats = await collectLanguageStats(stagingDir);
         commitStaging();
         updateProject(project.id, { languageStats });
-        const ignoreNote = ignoredCount > 0 ? `，已按 .gitignore 忽略 ${ignoredCount} 个文件` : '';
         res.json({
           fileName: label,
           fileSize: looseTotalBytes,
           fileCount,
           ignoredCount,
           languageStats,
-          message: `上传成功，共 ${fileCount} 个文件${ignoreNote}`,
         });
         return;
       }
@@ -325,7 +321,6 @@ projectRoutes.post('/api/projects/:id/clone', asyncHandler(async (req, res) => {
       ref: ref || 'HEAD',
       fileCount,
       languageStats,
-      message: `克隆成功，共 ${fileCount} 个文件`,
     });
   } finally {
     importingProjects.delete(project.id);
