@@ -26,8 +26,7 @@ import { getRuleKnowledge } from '../knowledge.js';
 import { MAX_PATH_FILTER_GLOBSTARS } from '../scan-runner.js';
 import { runRuleLab } from '../rule-lab.js';
 import { engineUpgradeRunning } from '../engine-update.js';
-import { isEngineJobBusy, setEngineJobBusy } from '../engine-job.js';
-import { asyncHandler, MAX_RULE_YAML_BYTES, MAX_SAMPLE_BYTES, newId, parseProductLang } from './shared.js';
+import { asyncHandler, isEngineJobBusy, MAX_RULE_YAML_BYTES, MAX_SAMPLE_BYTES, newId, parseProductLang, setEngineJobBusy } from './shared.js';
 
 export const miscRoutes = Router();
 

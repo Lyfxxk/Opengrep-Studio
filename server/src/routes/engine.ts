@@ -2,8 +2,7 @@ import { Router } from 'express';
 import { HttpError } from '../errors.js';
 import { checkEngineUpdate, engineUpgradeState, startEngineUpgrade } from '../engine-update.js';
 import { hasRunningScan } from '../scan-runner.js';
-import { isEngineJobBusy } from '../engine-job.js';
-import { asyncHandler } from './shared.js';
+import { asyncHandler, isEngineJobBusy } from './shared.js';
 
 export const engineRoutes = Router();
 
