@@ -58,6 +58,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import type { IRulePack, IRulePackCheckResult } from '@/data/rulepacks';
+import { formatDuration } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { usePackDisplayName } from '@/lib/packName';
 import Pagination from '@/components/Pagination';
@@ -725,7 +726,7 @@ export default function RulePackTab() {
                     failed: checkResult.summary.failed,
                     errors: checkResult.summary.errors,
                     unverified: checkResult.summary.unverified,
-                    duration: (checkResult.durationMs / 1000).toFixed(1),
+                    duration: formatDuration(Math.round(checkResult.durationMs / 1000)),
                   })}
                 </span>
               </div>
@@ -756,7 +757,7 @@ export default function RulePackTab() {
                               .map((failure) =>
                                 translateApiError(failure.code, failure.params, failure.message),
                               )
-                              .join('；')
+                              .join(t('common.listSeparator'))
                           : translateApiError(item.errorCode, item.errorParams, item.detail ?? '')}
                       </p>
                     )}
