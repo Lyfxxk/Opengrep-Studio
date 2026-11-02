@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { formatDateTime, formatDuration } from '@/lib/format';
-import { usePackDisplayName } from '@/lib/packName';
+import { usePackDisplayName } from '@/lib/displayNames';
 import {
   CheckCircle2,
   FileDown,
@@ -21,17 +21,64 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import ScanStatusBadge from '@/components/ScanStatusBadge';
 import type { IIssue } from '@/data/issues';
+import { COMPARISON_VISUALS } from '@/data/constants';
 import type { IProject } from '@/data/projects';
 import type { IScanResult } from '@/data/scanresults';
 import { api, translateApiError } from '@/lib/api';
 import CodeSnippetViewer from './CodeSnippetViewer';
-import ComparisonSummary from './ComparisonSummary';
 import IssueFilterList from './IssueFilterList';
 import ReviewDialog from './ReviewDialog';
 import CompareDialog from './CompareDialog';
 import KnowledgeSheet from './KnowledgeSheet';
 
 const POLL_INTERVAL_MS = 1500;
+
+function ComparisonSummary({ issues }: { issues: IIssue[] }) {
+  const { t } = useTranslation();
+  const stats = useMemo(
+    () => ({
+      newCount: issues.filter((issue) => issue.comparisonStatus === 'new').length,
+      fixedCount: issues.filter((issue) => issue.comparisonStatus === 'fixed').length,
+      remainingCount: issues.filter(
+        (issue) => issue.comparisonStatus === 'remaining',
+      ).length,
+    }),
+    [issues],
+  );
+
+  const items = [
+    { key: 'summaryNew', value: stats.newCount, ...COMPARISON_VISUALS.new },
+    { key: 'summaryFixed', value: stats.fixedCount, ...COMPARISON_VISUALS.fixed },
+    { key: 'summaryRemaining', value: stats.remainingCount, ...COMPARISON_VISUALS.remaining },
+  ] as const;
+
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      {items.map((item) => {
+        const Icon = item.icon;
+        return (
+          <Card key={item.key}>
+            <CardContent className="flex items-center gap-4 p-5">
+              <div
+                className={`flex size-10 shrink-0 items-center justify-center rounded-full ${item.bg}`}
+              >
+                <Icon className={`size-5 ${item.tone}`} />
+              </div>
+              <div className="min-w-0">
+                <div className={`text-2xl font-bold tabular-nums ${item.tone}`}>
+                  {item.value}
+                </div>
+                <div className="truncate text-xs text-muted-foreground">
+                  {t(`comparison.${item.key}`)}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function ScanResultPage() {
   const { t } = useTranslation();
