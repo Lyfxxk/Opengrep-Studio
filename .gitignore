@@ -25,6 +25,8 @@ docker-compose.override.yml
 
 .zcode/
 .workbuddy/
+.box-agent/
+.box-agent-scratch/
 .claude/
 .cursor/
 .windsurf/
