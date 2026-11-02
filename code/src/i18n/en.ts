@@ -205,6 +205,14 @@ const en: typeof zh = {
     upToDate: 'Already up to date',
     checkFailed: 'Update check failed: {{error}}',
     unavailable: 'Engine unavailable',
+    hintMacosQuarantine:
+      'macOS: binaries downloaded in a browser are blocked by Gatekeeper ("cannot verify the developer" / "is damaged"). Run xattr -d com.apple.quarantine <engine-path> to unblock; downloads from npm run setup:engine are unaffected.',
+  },
+  engineSource: {
+    env: 'set by the OPENGREP_BIN environment variable',
+    'bundled-dir': 'opengrep-tool install (npm run setup:engine)',
+    path: 'found on the system PATH',
+    missing: 'not found',
   },
   langStats: {
     total: 'Total {{kb}} KB',
@@ -740,6 +748,26 @@ const en: typeof zh = {
       sevenZFailed: 'Failed to extract archive: {{reason}}',
       extractFailed: 'Failed to extract archive: {{reason}}',
     },
+    engine: {
+      installHint:
+        'opengrep engine not found: {{bin}}\nRun npm run setup:engine in the repository root to download and verify it (~50MB, picks your platform),\nor set OPENGREP_BIN to an installed engine executable.',
+      installHintEnv:
+        'The engine pointed to by OPENGREP_BIN does not exist or is unreadable: {{bin}}\nCheck the path, or unset the variable and run npm run setup:engine in the repository root.',
+      notRunnableHint:
+        'The engine file exists but cannot run: {{bin}}\nIt may be corrupted, incomplete, or quarantined by antivirus.\nRun npm run setup:engine --force in the repository root to reinstall and verify it,\nor set OPENGREP_BIN to a working engine executable.',
+      sourceEnv: 'Engine is set by the OPENGREP_BIN environment variable — version management is up to you',
+      sourcePath: 'Engine comes from the system PATH — upgrade it with the original install method',
+      noAssetForPlatform: 'No automatic upgrade asset is available for platform {{platform}}',
+      versionUnprobed: 'Could not detect the installed engine version — run npm run setup:engine first',
+      checkFailed: 'Cannot fetch the latest upstream version: {{reason}}',
+      checkFailedCurrent: 'Cannot fetch the latest upstream version: {{reason}}; the current v{{current}} still works',
+      tagMissing: 'The latest upstream response has no tag_name — cannot tell whether an update exists',
+      upToDateVersion: 'Already on the latest stable version (v{{version}})',
+      assetMissing: 'Upstream {{tag}} has no asset {{asset}} — automatic upgrade is unavailable',
+      digestMissing: 'Upstream {{tag}} provides no sha256 digest — automatic upgrade is unavailable',
+      upgraded: 'Engine upgraded to v{{version}}. Rescan and rebuild the baseline.',
+      upgradeFailedKeepCurrent: '{{detail}}; the existing engine v{{from}} is untouched and still works',
+    },
     srv: {
       routeNotFound: 'Endpoint not found',
       internalError: 'Internal server error',
@@ -838,8 +866,6 @@ const en: typeof zh = {
       ruleFileInvalid: 'Invalid rule file {{name}}',
       upgradePending: 'An engine upgrade is already in progress — please wait.',
       noUpgradeTarget: 'No upgradable version right now',
-      upgradeCheckFailed: 'Update check failed: {{error}}',
-      upgradeCheckFailedCurrent: 'Update check failed: {{error}}; the current v{{current}} still works',
       ruleIdUnsafe:
         'Rule id "{{id}}" contains unsafe characters and cannot be used as a sample directory name. Fix the rule id in the YAML and try again.',
       ruleFileInvalidDetail: 'Rule file {{name}} is invalid: {{reason}}',

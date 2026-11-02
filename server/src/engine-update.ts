@@ -25,7 +25,11 @@ export interface EngineUpdateInfo {
   publishedAt?: string;
   checkedAt: string;
   reason?: string;
+  reasonCode?: string;
+  reasonParams?: Record<string, unknown>;
   error?: string;
+  errorCode?: string;
+  errorParams?: Record<string, unknown>;
 }
 
 export type EngineUpgradePhase = 'downloading' | 'verifying' | 'installing';
@@ -37,6 +41,8 @@ export interface EngineUpgradeState {
   from?: string;
   to?: string;
   message?: string;
+  messageCode?: string;
+  messageParams?: Record<string, unknown>;
   startedAt?: string;
   finishedAt?: string;
 }
@@ -63,28 +69,56 @@ async function buildUpdateInfo(): Promise<EngineUpdateInfo> {
   };
 
   if (engineSource === 'env') {
-    return { ...base, reason: '引擎由环境变量 OPENGREP_BIN 指定，请您自行管理版本' };
+    return {
+      ...base,
+      reason: '引擎由环境变量 OPENGREP_BIN 指定，请您自行管理版本',
+      reasonCode: 'engine.sourceEnv',
+    };
   }
   if (engineSource === 'path') {
-    return { ...base, reason: '引擎来自系统 PATH，请用原来的安装方式升级' };
+    return {
+      ...base,
+      reason: '引擎来自系统 PATH，请用原来的安装方式升级',
+      reasonCode: 'engine.sourcePath',
+    };
   }
   if (!target) {
-    return { ...base, reason: `当前平台 ${platformKey()} 没有可用的自动升级资产` };
+    return {
+      ...base,
+      reason: `当前平台 ${platformKey()} 没有可用的自动升级资产`,
+      reasonCode: 'engine.noAssetForPlatform',
+      reasonParams: { platform: platformKey() },
+    };
   }
   if (!current) {
-    return { ...base, reason: '未探测到已安装引擎的版本，请先运行 npm run setup:engine 安装' };
+    return {
+      ...base,
+      reason: '未探测到已安装引擎的版本，请先运行 npm run setup:engine 安装',
+      reasonCode: 'engine.versionUnprobed',
+    };
   }
 
   let release: Record<string, unknown>;
   try {
     release = (await fetchLatestRelease()) as Record<string, unknown>;
   } catch (error) {
-    return { ...base, error: `无法获取上游最新版本：${messageOf(error)}` };
+    return {
+      ...base,
+      error: `无法获取上游最新版本：${messageOf(error)}`,
+      errorCode: 'engine.checkFailed',
+      errorParams: { reason: messageOf(error) },
+    };
   }
 
   const latestTag = String(release?.tag_name ?? '');
   const latest = normalizeVersion(latestTag);
-  if (!latest) return { ...base, error: '上游最新版本响应缺少 tag_name，无法判断是否有更新' };
+  if (!latest) {
+    return {
+      ...base,
+      error: '上游最新版本响应缺少 tag_name，无法判断是否有更新',
+      errorCode: 'engine.tagMissing',
+    };
+  }
 
   const asset = findAsset(release, target.assetFile);
   const info: EngineUpdateInfo = {
@@ -98,13 +132,28 @@ async function buildUpdateInfo(): Promise<EngineUpdateInfo> {
     updateAvailable: compareVersions(latest, current) > 0,
   };
   if (!info.updateAvailable) {
-    return { ...info, reason: `已是最新 stable 版本（v${current}）` };
+    return {
+      ...info,
+      reason: `已是最新 stable 版本（v${current}）`,
+      reasonCode: 'engine.upToDateVersion',
+      reasonParams: { version: current },
+    };
   }
   if (!asset) {
-    return { ...info, reason: `上游 ${latestTag} 缺少资产 ${target.assetFile}，暂不支持自动升级` };
+    return {
+      ...info,
+      reason: `上游 ${latestTag} 缺少资产 ${target.assetFile}，暂不支持自动升级`,
+      reasonCode: 'engine.assetMissing',
+      reasonParams: { tag: latestTag, asset: target.assetFile },
+    };
   }
   if (!asset.sha256) {
-    return { ...info, reason: `上游 ${latestTag} 未提供 sha256 摘要，暂不支持自动升级` };
+    return {
+      ...info,
+      reason: `上游 ${latestTag} 未提供 sha256 摘要，暂不支持自动升级`,
+      reasonCode: 'engine.digestMissing',
+      reasonParams: { tag: latestTag },
+    };
   }
   return { ...info, canUpgrade: true };
 }
@@ -142,17 +191,26 @@ export async function startEngineUpgrade(): Promise<EngineUpgradeState> {
       throw new HttpError(
         502,
         `${info.error}${info.current ? `；当前 v${info.current} 可正常使用` : ''}`,
-        info.current
-          ? {
-              code: 'srv.upgradeCheckFailedCurrent',
-              params: { error: info.error, current: info.current },
-            }
-          : { code: 'srv.upgradeCheckFailed', params: { error: info.error } },
+        {
+          code:
+            info.errorCode === 'engine.tagMissing'
+              ? 'engine.tagMissing'
+              : info.current
+                ? 'engine.checkFailedCurrent'
+                : 'engine.checkFailed',
+          params:
+            info.errorCode === 'engine.tagMissing'
+              ? undefined
+              : info.current
+                ? { ...(info.errorParams ?? {}), current: info.current }
+                : (info.errorParams ?? {}),
+        },
       );
     }
     if (!info.canUpgrade || !info.latestTag || !info.assetName || !info.assetSha256) {
       throw new HttpError(409, info.reason ?? '当前没有可升级的版本', {
-        code: 'srv.noUpgradeTarget',
+        code: info.reasonCode ?? 'srv.noUpgradeTarget',
+        params: info.reasonParams,
       });
     }
 
@@ -192,6 +250,8 @@ export async function startEngineUpgrade(): Promise<EngineUpgradeState> {
           percent: 100,
           to: result.version,
           message: `引擎已升级到 v${result.version}，建议重新扫描并重建基线`,
+          messageCode: 'engine.upgraded',
+          messageParams: { version: result.version },
           finishedAt: new Date().toISOString(),
         };
         console.log(`[engine-upgrade] 升级完成：v${from} → v${result.version}（${result.channel}）`);
@@ -202,6 +262,12 @@ export async function startEngineUpgrade(): Promise<EngineUpgradeState> {
           state: 'error',
           phase: undefined,
           message: `${detail}${from ? `；现有引擎 v${from} 未改动，可继续正常扫描` : ''}`,
+          ...(from
+            ? {
+                messageCode: 'engine.upgradeFailedKeepCurrent',
+                messageParams: { detail, from },
+              }
+            : {}),
           finishedAt: new Date().toISOString(),
         };
         console.error(`[engine-upgrade] 升级失败：${detail}`);

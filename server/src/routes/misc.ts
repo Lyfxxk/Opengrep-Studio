@@ -7,7 +7,9 @@ import {
   engineAvailable,
   engineDisplayPath,
   engineInstallHint,
+  engineInstallHintInfo,
   engineNotRunnableHint,
+  engineNotRunnableHintInfo,
   engineSourceLabel,
   getEngineVersion,
 } from '../engine.js';
@@ -49,6 +51,11 @@ miscRoutes.get('/api/health', asyncHandler(async (_req, res) => {
     : engineVersion
       ? undefined
       : engineNotRunnableHint();
+  const engineHintInfo = !engineReady
+    ? engineInstallHintInfo()
+    : engineVersion
+      ? undefined
+      : engineNotRunnableHintInfo();
   res.json({
     ok: true,
     platform: process.platform,
@@ -61,6 +68,8 @@ miscRoutes.get('/api/health', asyncHandler(async (_req, res) => {
     engineSource,
     engineSourceLabel: engineSourceLabel(),
     ...(engineHint ? { engineHint } : {}),
+    ...(engineHintInfo ? { engineHintCode: engineHintInfo.code, engineHintParams: engineHintInfo.params } : {}),
+    ...(engineHintInfo && process.platform === 'darwin' ? { engineHintMacos: true } : {}),
   });
 }));
 

@@ -171,10 +171,13 @@ export interface HealthInfo {
   enginePinnedVersion?: string;
   engineManaged?: boolean;
   engineReady?: boolean;
-  engineSource?: string;
+  engineSource?: 'env' | 'bundled-dir' | 'path' | 'missing';
   engineSourceLabel?: string;
   engine?: string;
   engineHint?: string;
+  engineHintCode?: string;
+  engineHintParams?: Record<string, unknown>;
+  engineHintMacos?: boolean;
 }
 
 export interface IEngineUpdateInfo {
@@ -189,7 +192,11 @@ export interface IEngineUpdateInfo {
   publishedAt?: string;
   checkedAt: string;
   reason?: string;
+  reasonCode?: string;
+  reasonParams?: Record<string, unknown>;
   error?: string;
+  errorCode?: string;
+  errorParams?: Record<string, unknown>;
 }
 
 export interface IEngineUpgradeState {
@@ -199,6 +206,8 @@ export interface IEngineUpgradeState {
   from?: string;
   to?: string;
   message?: string;
+  messageCode?: string;
+  messageParams?: Record<string, unknown>;
   startedAt?: string;
   finishedAt?: string;
 }

@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { api, type HealthInfo, type IEngineUpgradeState, type IEngineUpdateInfo } from '@/lib/api';
+import { api, translateApiError, type HealthInfo, type IEngineUpgradeState, type IEngineUpdateInfo } from '@/lib/api';
 
 interface EngineCardProps {
   health: HealthInfo | null;
@@ -22,6 +22,27 @@ export default function EngineCard({ health, scanRunning, onUpgraded }: EngineCa
   const [checking, setChecking] = useState(false);
   const [upgrade, setUpgrade] = useState<IEngineUpgradeState | null>(null);
   const running = upgrade?.state === 'running';
+
+  const sourceLabel = health?.engineSource
+    ? t(`engineSource.${health.engineSource}`)
+    : t('engine.sourceUnknown');
+  const hintText = health
+    ? [
+        translateApiError(health.engineHintCode, health.engineHintParams, health.engineHint ?? ''),
+        health.engineHintMacos ? t('engine.hintMacosQuarantine') : '',
+      ]
+        .filter(Boolean)
+        .join('\n')
+    : '';
+  const upgradeMessage = upgrade
+    ? translateApiError(upgrade.messageCode, upgrade.messageParams, upgrade.message ?? '')
+    : '';
+  const updateReason = update
+    ? translateApiError(update.reasonCode, update.reasonParams, update.reason ?? '')
+    : '';
+  const updateError = update
+    ? translateApiError(update.errorCode, update.errorParams, update.error ?? '')
+    : '';
 
   const check = useCallback(async (force: boolean) => {
     setChecking(true);
@@ -112,9 +133,7 @@ export default function EngineCard({ health, scanRunning, onUpgraded }: EngineCa
                 )}
             </div>
             <p className="border-b py-3 text-xs text-muted-foreground">
-              {t('engine.source', {
-                source: health.engineSourceLabel ?? health.engineSource ?? t('engine.sourceUnknown'),
-              })}
+              {t('engine.source', { source: sourceLabel })}
             </p>
             <div className="space-y-2 py-3">
               {!managed && (
@@ -135,11 +154,11 @@ export default function EngineCard({ health, scanRunning, onUpgraded }: EngineCa
               )}
 
               {managed && !running && upgrade?.state === 'error' && (
-                <p className="text-xs text-destructive">{upgrade.message}</p>
+                <p className="text-xs text-destructive">{upgradeMessage}</p>
               )}
 
               {managed && !running && upgrade?.state === 'done' && (
-                <p className="text-xs text-success">{upgrade.message}</p>
+                <p className="text-xs text-success">{upgradeMessage}</p>
               )}
 
               {managed && !running && update?.updateAvailable && (
@@ -159,8 +178,8 @@ export default function EngineCard({ health, scanRunning, onUpgraded }: EngineCa
                   {scanRunning && update.canUpgrade && (
                     <span className="text-xs text-muted-foreground">{t('engine.upgradeBlockedByScan')}</span>
                   )}
-                  {!update.canUpgrade && update.reason && (
-                    <span className="text-xs text-muted-foreground">{update.reason}</span>
+                  {!update.canUpgrade && updateReason && (
+                    <span className="text-xs text-muted-foreground">{updateReason}</span>
                   )}
                 </div>
               )}
@@ -168,17 +187,17 @@ export default function EngineCard({ health, scanRunning, onUpgraded }: EngineCa
               {managed &&
                 update &&
                 !update.updateAvailable &&
-                !update.error &&
+                !updateError &&
                 upgrade?.state !== 'done' && (
                   <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <CheckCircle2 className="size-3.5 text-success" />
-                    {update.reason ?? t('engine.upToDate')}
+                    {updateReason || t('engine.upToDate')}
                   </p>
                 )}
 
-              {update?.error && (
+              {updateError && (
                 <p className="break-words text-xs text-muted-foreground">
-                  {t('engine.checkFailed', { error: update.error })}
+                  {t('engine.checkFailed', { error: updateError })}
                 </p>
               )}
             </div>
@@ -189,8 +208,8 @@ export default function EngineCard({ health, scanRunning, onUpgraded }: EngineCa
               <XCircle className="size-4 text-destructive" />
               <span>{t('engine.unavailable')}</span>
             </div>
-            {health.engineHint && (
-              <p className="whitespace-pre-line text-xs text-muted-foreground">{health.engineHint}</p>
+            {hintText && (
+              <p className="whitespace-pre-line text-xs text-muted-foreground">{hintText}</p>
             )}
           </div>
         )}
