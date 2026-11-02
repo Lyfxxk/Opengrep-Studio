@@ -285,7 +285,7 @@ export interface IEngineUpgradeState {
 
 const MOCK_SCAN_DURATION_MS = 3000;
 
-export interface IDashboardProjectRisk {
+interface IDashboardProjectRisk {
   projectId: string;
   latestScanId?: string;
   total: number;
