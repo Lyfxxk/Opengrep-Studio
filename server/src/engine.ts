@@ -82,7 +82,7 @@ export function getEngineVersion(): Promise<string | undefined> {
   return engineVersionPromise;
 }
 
-export function resetEngineVersionCache(): void {
+function resetEngineVersionCache(): void {
   engineVersionPromise = null;
 }
 
