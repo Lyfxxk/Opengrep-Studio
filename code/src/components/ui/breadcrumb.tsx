@@ -1,11 +1,13 @@
 import * as React from "react"
+import { useTranslation } from "react-i18next"
 import { Slot } from "@radix-ui/react-slot"
 import { ChevronRight } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
 function Breadcrumb({ ...props }: React.ComponentProps<"nav">) {
-  return <nav aria-label="breadcrumb" data-slot="breadcrumb" {...props} />
+  const { t } = useTranslation()
+  return <nav aria-label={t("common.breadcrumbAria")} data-slot="breadcrumb" {...props} />
 }
 
 function BreadcrumbList({ className, ...props }: React.ComponentProps<"ol">) {
