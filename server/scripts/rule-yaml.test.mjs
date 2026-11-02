@@ -1,6 +1,17 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseRuleYaml } from '../src/rule-yaml.ts';
+
+const tempDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'og-rule-yaml-'));
+process.env.DATA_DIR = tempDataDir;
+process.env.CUSTOM_RULES_DIR = path.join(tempDataDir, 'rules-custom');
+
+const { parseRuleYaml } = await import('../src/rule-lab.ts');
+const { closeDatabase } = await import('../src/db.ts');
+const { trackTempDir } = await import('./script-utils.mjs');
+trackTempDir(tempDataDir, closeDatabase);
 
 const VALID = `rules:
   - id: js-dangerous-eval

@@ -2,8 +2,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { config } from '../src/config.ts';
-import { parseRuleYaml } from '../src/rule-yaml.ts';
-import { runPackCheck } from '../src/rule-lab.ts';
+import { parseRuleYaml, runPackCheck } from '../src/rule-lab.ts';
 import { parsePackManifest } from '../src/pack-format.ts';
 import { collectRuleFiles } from '../src/rulepacks.ts';
 
