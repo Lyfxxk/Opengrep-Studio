@@ -25,8 +25,7 @@ import {
 import { getRuleKnowledge } from '../knowledge.js';
 import { MAX_PATH_FILTER_GLOBSTARS } from '../scan-runner.js';
 import { runRuleLab } from '../rule-lab.js';
-import { engineUpgradeRunning } from '../engine-update.js';
-import { asyncHandler, isEngineJobBusy, MAX_RULE_YAML_BYTES, MAX_SAMPLE_BYTES, newId, parseProductLang, setEngineJobBusy } from './shared.js';
+import { asyncHandler, MAX_RULE_YAML_BYTES, MAX_SAMPLE_BYTES, newId, parseProductLang, withEngineJobBusy } from './shared.js';
 
 export const miscRoutes = Router();
 
@@ -245,16 +244,10 @@ miscRoutes.post('/api/rulelab/run', asyncHandler(async (req, res) => {
     });
   }
   const language = String(req.body?.language ?? '').trim() || undefined;
-  if (engineUpgradeRunning()) {
-    throw new HttpError(409, '引擎升级进行中，请升级完成后再运行实验室', { code: 'srv.labUpgradeBusy' });
-  }
-  if (isEngineJobBusy()) {
-    throw new HttpError(409, '上一次引擎任务（实验室/质量检查）还在运行，请稍候再试', { code: 'srv.engineJobBusy' });
-  }
-  setEngineJobBusy(true);
-  try {
-    res.json(await runRuleLab(yaml, samples, language));
-  } finally {
-    setEngineJobBusy(false);
-  }
+  res.json(
+    await withEngineJobBusy(
+      { message: '引擎升级进行中，请升级完成后再运行实验室', code: 'srv.labUpgradeBusy' },
+      () => runRuleLab(yaml, samples, language),
+    ),
+  );
 }));

@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from 'express';
 import multer from 'multer';
 import { getProject, getScan, type Project } from '../db.js';
 import { HttpError } from '../errors.js';
+import { engineUpgradeRunning } from '../engine-update.js';
 import type { ReportLang } from '../report.js';
 
 export const MAX_RULE_YAML_BYTES = 1024 * 1024;
@@ -15,6 +16,22 @@ export function isEngineJobBusy(): boolean {
 
 export function setEngineJobBusy(busy: boolean): void {
   engineJobBusy = busy;
+}
+
+export function withEngineJobBusy<T>(
+  upgradeBusy: { message: string; code: string },
+  run: () => Promise<T>,
+): Promise<T> {
+  if (engineUpgradeRunning()) {
+    throw new HttpError(409, upgradeBusy.message, { code: upgradeBusy.code });
+  }
+  if (isEngineJobBusy()) {
+    throw new HttpError(409, '上一次引擎任务（实验室/质量检查）还在运行，请稍候再试', {
+      code: 'srv.engineJobBusy',
+    });
+  }
+  setEngineJobBusy(true);
+  return run().finally(() => setEngineJobBusy(false));
 }
 
 export function parseProductLang(value: unknown): ReportLang {

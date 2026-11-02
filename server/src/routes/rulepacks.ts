@@ -32,8 +32,7 @@ import {
   scanPackSamples,
   type PackManifest,
 } from '../pack-format.js';
-import { engineUpgradeRunning } from '../engine-update.js';
-import { asyncHandler, decodeUploadFileName, isEngineJobBusy, limit400, MAX_RULE_YAML_BYTES, MAX_SAMPLE_BYTES, newId, setEngineJobBusy } from './shared.js';
+import { asyncHandler, decodeUploadFileName, limit400, MAX_RULE_YAML_BYTES, MAX_SAMPLE_BYTES, newId, withEngineJobBusy } from './shared.js';
 
 export const rulepackRoutes = Router();
 
@@ -677,29 +676,19 @@ rulepackRoutes.post('/api/rulepacks/:id/check', asyncHandler(async (req, res) =>
       code: 'srv.noSamplesToCheck',
     });
   }
-  if (engineUpgradeRunning()) {
-    throw new HttpError(409, '引擎升级进行中，请升级完成后再做质量检查', {
-      code: 'srv.checkUpgradeBusy',
-    });
-  }
-  if (isEngineJobBusy()) {
-    throw new HttpError(409, '上一次引擎任务（实验室/质量检查）还在运行，请稍候再试', { code: 'srv.engineJobBusy' });
-  }
-  setEngineJobBusy(true);
-  try {
-    const result = await runPackCheck(customPackDir(pack.id));
-    const count = (verdict: string) => result.items.filter((item) => item.verdict === verdict).length;
-    const summary = {
-      tier: result.tier,
-      passed: count('pass'),
-      failed: count('fail'),
-      errors: count('error'),
-      unverified: count('unverified'),
-      checkedAt: new Date().toISOString(),
-    };
-    updateRulePack(pack.id, { lastCheck: summary });
-    res.json({ ...result, summary });
-  } finally {
-    setEngineJobBusy(false);
-  }
+  const result = await withEngineJobBusy(
+    { message: '引擎升级进行中，请升级完成后再做质量检查', code: 'srv.checkUpgradeBusy' },
+    () => runPackCheck(customPackDir(pack.id)),
+  );
+  const count = (verdict: string) => result.items.filter((item) => item.verdict === verdict).length;
+  const summary = {
+    tier: result.tier,
+    passed: count('pass'),
+    failed: count('fail'),
+    errors: count('error'),
+    unverified: count('unverified'),
+    checkedAt: new Date().toISOString(),
+  };
+  updateRulePack(pack.id, { lastCheck: summary });
+  res.json({ ...result, summary });
 }));
