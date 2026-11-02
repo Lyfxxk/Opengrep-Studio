@@ -38,7 +38,7 @@ def load_rules(path):
         with open(path, encoding="utf-8") as f:
             data = yaml.safe_load(f)
     except Exception as e:
-        print(f"  [skip] {path}: {type(e).__name__}")
+        print(f"  [跳过] 无法解析 {path}（{type(e).__name__}），请检查 YAML 语法后重跑")
         data = None
     rules = [r for r in data["rules"] if isinstance(r, dict)] if isinstance(data, dict) and isinstance(data.get("rules"), list) else []
     _parsed[path] = rules
