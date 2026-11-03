@@ -174,5 +174,21 @@
   "java.gcm-detection": "GCM이 감지되었습니다. IV/nonce가 재사용되지 않았는지 확인하십시오. IV는 암호화를 무작위화하는 데 사용되는 nonce로, 여러 평문이 동일하더라도 생성되는 암호문은 서로 달라야 합니다. 키와 달리 IV는 일반적으로 비밀로 할 필요가 없지만 무작위이며 고유해야 합니다. 일부 암호화 방식에서는 IV가 암호문의 일부로 공개되어 전송됩니다. 동일한 키로 동일한 IV를 재사용하여 여러 평문 블록을 암호화하면, 공격자가 암호문을 비교하고 이를 통해 암호화된 데이터의 중요한 정보를 추론할 수 있게 됩니다.",
   "java.gcm-nonce-reuse": "GCM의 IV/nonce가 재사용되었습니다: 암호화가 완전히 무력화될 수 있습니다.",
   "java.hibernate-sqli": "SQL 문장에서 형식 문자열이 탐지되었습니다. 문장 내 변수가 제대로 정제되지 않으면 SQL 인젝션이 발생할 수 있습니다. 미리 컴파일된 문장(java.sql.PreparedStatement)으로 전환하십시오. 이는 'connection.prepareStatement'를 통해 얻을 수 있습니다.",
-  "java.http-response-splitting": "오래된 Java 애플리케이션 서버에는 HTTP 응답 분할 위험이 있습니다——HTTP 요청에 CRLF 문자를 주입할 수 있는 경우에 발생합니다. 이 탐지 결과는 완전성을 위한 참고 사항일 뿐이므로, 직접 테스트하여 사용자 환경이 영향을 받지 않는지 확인하는 것을 권장합니다."
+  "java.http-response-splitting": "오래된 Java 애플리케이션 서버에는 HTTP 응답 분할 위험이 있습니다——HTTP 요청에 CRLF 문자를 주입할 수 있는 경우에 발생합니다. 이 탐지 결과는 완전성을 위한 참고 사항일 뿐이므로, 직접 테스트하여 사용자 환경이 영향을 받지 않는지 확인하는 것을 권장합니다.",
+  "java.httpservlet-path-traversal": "잠재적인 경로 횡단이 감지되었습니다. 공격자는 파일 위치를 제어할 수 있습니다('../'로 디렉터리를 거슬러 올라가는 것을 포함). 파일 경로에서 사용자가 제어할 수 있는 변수를 정제하십시오. 파일명만 추출하려면 org.apache.commons.io.FilenameUtils.getName(...) 같은 유틸리티 메서드를 사용할 수도 있습니다.",
+  "java.insecure-hostname-verifier": "안전하지 않은 HostnameVerifier 구현이 감지되었습니다: 임의의 호스트명에 대한 임의의 SSL 인증서를 수락하므로 중간자 공격으로 이어질 수 있습니다.",
+  "java.insecure-jms-deserialization": "JMS Object 메시지는 ObjectMessage.getObject()를 호출할 때 메시지 페이로드를 처리하는 데 Java 직렬화에 의존합니다. 신뢰할 수 없는 데이터를 역직렬화하면 보안 결함이 발생합니다: 원격 공격자는 조작된 JMS ObjectMessage를 통해 JMS 메시지를 수신/소비하는 애플리케이션의 권한으로 임의 코드를 실행할 수 있습니다. 여기서 MessageListener는 onMessage에서 ObjectMessage를 소비하며, $Y.getObject를 호출할 때 임의 코드 실행이 트리거될 수 있습니다.",
+  "java.insecure-resteasy-deserialization": "RESTful 서비스 엔드포인트의 @Consumes 어노테이션이 와일드카드 미디어 타입 {*/*}로 설정되어 있으면, 공격자는 Content-Type이 application/x-java-serialized-object인 요청을 보내 SerializableProvider를 악용할 수 있습니다: 요청 본문은 SerializationProvider에 의해 처리되며 악성 페이로드를 포함할 수 있고, $Y.getObject를 호출할 때 임의 코드 실행이 발생할 수 있습니다.",
+  "java.insecure-smtp-connection": "안전하지 않은 SMTP 연결이 감지되었습니다: 이 연결은 임의의 SSL 인증서를 신뢰합니다. 'email.setSSLCheckServerIdentity(true)'를 설정하여 인증서 검증을 활성화하십시오.",
+  "java.insecure-trust-manager": "빈 TrustManager 구현이 감지되었습니다: 모든 인증서를 수락하여 중간자 공격을 유발합니다. 대신 KeyStore와 TrustManagerFactory를 사용하십시오. 자세한 내용은 https://stackoverflow.com/questions/2642777/trusting-all-certificates-using-httpclient-over-https 를 참조하십시오.",
+  "java.jackson-unsafe-deserialization": "Jackson으로 JSON과 Java 객체 간에 변환할 때 default typing을 활성화하는 것은 매우 위험하며 원격 코드 실행으로 이어질 수 있습니다. 공격자가 `$JSON`을 제어할 수 있다면 악성 JSON을 제출해 안전하지 않은 역직렬화를 악용할 수 있습니다. 대응 방안: default typing(전역 또는 클래스별 어노테이션)을 활성화하지 말고, Jackson 역직렬화용 클래스를 설계할 때 멤버 변수를 `Object` 같은 위험한 타입으로 선언하지 마십시오.",
+  "java.java-jwt-decode-without-verify": "JWT 토큰을 검증 없이 디코딩하는 것이 감지되었습니다. JWT는 사용 전에 반드시 검증해야 하며, 그렇지 않으면 토큰 무결성을 알 수 없어 악의적인 사용자가 임의 클레임을 담은 토큰을 위조할 수 있습니다. 토큰을 사용하기 전에 '.verify()'를 호출하십시오.",
+  "java.java-jwt-hardcoded-secret": "하드코딩된 자격 증명이 감지되었습니다. 자격 증명을 소스 코드에 저장하는 것은 권장되지 않습니다. 내부자든 외부자든 악의적인 사용자가 유출된 시크릿을 악용할 수 있습니다. 환경 변수로 자격 증명을 안전하게 주입하거나 볼트(vault)/HSM(하드웨어 보안 모듈)에서 가져오는 것을 권장합니다.",
+  "java.java-jwt-none-alg": "JWT가 'none' 알고리즘을 사용하는 것이 감지되었습니다. 이 알고리즘은 토큰 무결성이 이미 검증되었다고 가정하므로, 공격자가 위조한 JWT가 검증을 자동으로 통과하게 됩니다. 'none'을 명시적으로 사용하지 말고 'HS256' 같은 알고리즘으로 전환하십시오.",
+  "java.java-reverse-shell": "잠재적인 리버스 셸 동작이 감지되었습니다.",
+  "java.jax-rs-path-traversal": "잠재적인 경로 횡단이 감지되었습니다. 공격자는 '../'로 디렉터리를 거슬러 올라가는 것을 포함해 파일 위치를 제어할 수 있습니다. 파일 경로에서 사용자가 제어할 수 있는 변수를 정제하십시오. 파일명만 추출하려면 org.apache.commons.io.FilenameUtils.getName(...) 같은 유틸리티 메서드를 사용할 수도 있습니다.",
+  "java.jdbc-sql-formatted-string": "가능성이 있는 JDBC 인젝션이 감지되었습니다. queryForObject의 파라미터화된 쿼리 기능을 사용하고 문자열을 연결하거나 포매팅하지 마십시오: 'jdbc.queryForObject(\"select * from table where name = ?\", Integer.class, parameterName);'",
+  "java.jdbc-sqli": "SQL 문장에서 형식 문자열이 탐지되었습니다. 문장 내 변수가 제대로 정제되지 않으면 SQL 인젝션이 발생할 수 있습니다. 'connection.prepareStatement'를 통해 구현할 수 있는 미리 컴파일된 문장(java.sql.PreparedStatement)을 사용하십시오.",
+  "java.jdo-sqli": "SQL 문장에서 형식 문자열이 탐지되었습니다. 문장 내 변수가 제대로 정제되지 않으면 SQL 인젝션이 발생할 수 있습니다. 'connection.prepareStatement'를 통해 구현할 수 있는 미리 컴파일된 문장(java.sql.PreparedStatement)을 사용하십시오.",
+  "java.jjwt-none-alg": "JWT가 'none' 알고리즘을 사용하는 것이 감지되었습니다. 이 알고리즘은 토큰 무결성이 이미 검증되었다고 가정하므로, 공격자가 위조한 JWT가 검증을 자동으로 통과하게 됩니다. 'none'을 명시적으로 사용하지 말고 'HS256' 같은 알고리즘으로 전환하십시오."
 }
