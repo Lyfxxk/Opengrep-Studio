@@ -494,5 +494,21 @@
   "php.wp-sql-injection-audit": "안전하지 않은 API 메서드가 감지되었습니다. 함수에서 사용되는 변수를 사용자가 제어할 수 있고 올바르게 이스케이프/정제하지 않은 경우 SQL 삽입으로 이어질 수 있습니다. \"$wpdb->prepare\"와 같은 안전한 API 메서드를 올바르게 사용하거나 데이터를 적절히 이스케이프/정제하십시오.",
   "python.access-foreign-keys": "데이터베이스 쿼리를 한 번 더 실행하지 않도록 ITEM.user.id 대신 ITEM.user_id를 사용해야 합니다.",
   "python.aiopg-sqli": "aiopg SQL 문에서 리터럴이 아닌 변수와의 문자열 연결이 감지되었습니다. 해당 변수를 사용자가 제어할 수 있고 적절히 정제되지 않은 경우 SQL 삽입으로 이어질 수 있습니다. 파라미터화된 쿼리로 전환하십시오. 예: 'cur.execute(\"SELECT %s FROM table\", (user_value,))'",
-  "python.arbitrary-sleep": "time.sleep() 호출이 발견되었습니다. 의도적으로 남겨둔 것입니까?"
+  "python.arbitrary-sleep": "time.sleep() 호출이 발견되었습니다. 의도적으로 남겨둔 것입니까?",
+  "python.asyncpg-sqli": "asyncpg SQL 문에서 리터럴이 아닌 변수와의 문자열 연결이 감지되었습니다. 해당 변수를 사용자가 제어할 수 있고 적절히 무해화하지 않으면 SQL 삽입으로 이어질 수 있습니다. 매개변수화된 쿼리나 prepared statement로 바꿔 사용하십시오(예: 'conn.fetch(\"SELECT $1 FROM table\", value)'). 'Connection.prepare'로 prepared statement를 만들 수도 있습니다: 'stmt = conn.prepare(\"SELECT $1 FROM table\"); await stmt.fetch(user_value)'.",
+  "python.avoid-bind-to-all-interfaces": "`socket.bind`가 0.0.0.0 또는 빈 문자열로 바인딩하면 사용 가능한 모든 네트워크 인터페이스에 바인딩되어, 의도치 않게 서비스가 공용 네트워크에 노출될 수 있습니다. 올바른 주소는 환경 변수나 설정 파일에서 가져오는 것이 좋습니다.",
+  "python.avoid-cPickle": "`cPickle` 사용을 피하십시오. 역직렬화 시 데이터가 조작되어 임의의 코드가 실행될 수 있으며, 알려진 코드 실행 취약점의 원인입니다. JSON과 같은 텍스트 직렬화 형식으로 바꿔 사용하는 것이 좋습니다.",
+  "python.avoid-dill": "`dill` 사용을 피하십시오. `pickle`을 기반으로 하며, 역직렬화 시 데이터가 조작되어 임의의 코드가 실행될 수 있고, 알려진 코드 실행 취약점의 원인입니다. JSON과 같은 텍스트 직렬화 형식으로 바꿔 사용하는 것이 좋습니다.",
+  "python.avoid-insecure-deserialization": "안전하지 않은 역직렬화 라이브러리(`pickle`, `_pickle`, `cpickle`, `dill`, `shelve`, `yaml` 등)의 사용을 피하십시오. 이들은 원격 코드 실행 취약점을 유발할 수 있습니다.",
+  "python.avoid-jsonpickle": "`jsonpickle` 사용을 피하십시오. 역직렬화 시 데이터가 조작되어 임의의 코드가 실행될 수 있으며, 알려진 코드 실행 취약점의 원인입니다. 관련 데이터는 `json` 모듈로 직렬화하는 것이 좋습니다.",
+  "python.avoid-mark-safe": "'mark_safe()'는 문자열을 HTML 출력에 “안전”한 것으로 표시하여 이스케이프를 비활성화하므로, XSS 공격에 노출됩니다. 렌더링할 HTML을 생성할 때는 대신 'django.utils.html.format_html()'을 사용하십시오.",
+  "python.avoid-pickle": "`pickle` 사용을 피하십시오. 역직렬화 시 데이터가 조작되어 임의의 코드가 실행될 수 있으며, 알려진 코드 실행 취약점의 원인입니다. JSON과 같은 텍스트 직렬화 형식으로 바꿔 사용하는 것이 좋습니다.",
+  "python.avoid-pyyaml-load": "잠재적인 YAML 역직렬화 취약점이 감지되었습니다. `yaml.unsafe_load`, `yaml.Loader`, `yaml.CLoader`, `yaml.UnsafeLoader`는 모두 안전하지 않은 역직렬화 방법입니다. 공격자가 YAML 입력을 제어할 수 있으면 특수 입력을 만들어 임의의 Python 코드를 실행할 수 있고, 이어서 파일을 탈취하거나 악성코드를 설치하거나 시스템을 장악할 수 있습니다. `yaml.safe_load` 또는 `yaml.SafeLoader`를 사용하십시오.",
+  "python.avoid-query-set-extra": "'QuerySet.extra'는 SQL 삽입 방지 기능을 제공하지 않으므로 사용 시 매우 주의해야 합니다. SQL 삽입으로 인해 공격자가 중요 데이터를 탈취할 수 있습니다. '.extra'를 사용하지 말고 Django ORM과 매개변수화된 쿼리를 사용하십시오(예: `People.objects.get(name='Bob')`).",
+  "python.avoid-raw-sql": "'RawSQL' 또는 'raw'가 감지되었습니다. 이는 매개변수화되지 않은 SQL 쿼리의 실행을 의미하며, SQL 삽입이나 보호된 정보 유출로 이어질 수 있습니다. raw SQL보다 Django ORM과 매개변수화된 쿼리를 우선 사용하십시오(예: `People.objects.get(name='Bob')`).",
+  "python.avoid-shelve": "`shelve` 사용을 피하십시오. `pickle`을 기반으로 하며, 역직렬화 시 데이터가 조작되어 임의의 코드가 실행될 수 있고, 알려진 코드 실행 취약점의 원인입니다. JSON과 같은 텍스트 직렬화 형식으로 바꿔 사용하는 것이 좋습니다.",
+  "python.avoid-sqlalchemy-text": "sqlalchemy.text는 연결된 SQL 문을 거의 그대로 데이터베이스에 전달하므로 일반적인 SQL 삽입 방지 기능이 여기서는 적용되지 않습니다. 사용자 입력이 여기에 도달할 수 있다면 SQL 삽입 위험이 있습니다. SQL을 구성할 때는 SQLAlchemy의 일반 연산자(`or_`, `and_` 등)를 사용하십시오.",
+  "python.avoid-unsafe-ruamel": "안전하지 않은 `ruamel.yaml.YAML()`의 사용을 피하십시오. 이는 임의의 Python 객체를 생성할 수 있고, 공격자가 이를 악용해 임의의 코드를 실행할 수 있습니다. 대신 `YAML(typ='rt')` 또는 `YAML(typ='safe')`를 사용하십시오.",
+  "python.avoid_app_run_with_bad_host": "host 0.0.0.0으로 Flask 애플리케이션을 실행하면 서비스가 공용 네트워크에 노출될 수 있습니다.",
+  "python.avoid_hardcoded_config_DEBUG": "하드코딩된 변수 `DEBUG`가 감지되었습니다. 대신 환경 변수 FLASK_DEBUG로 설정하십시오."
 }
