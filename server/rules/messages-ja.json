@@ -190,5 +190,21 @@
   "java.jdbc-sql-formatted-string": "JDBC インジェクションの可能性が検出されました。queryForObject のパラメーター化クエリの機能を使用し、文字列の連結やフォーマットは行わないでください：'jdbc.queryForObject(\"select * from table where name = ?\", Integer.class, parameterName);'",
   "java.jdbc-sqli": "SQL ステートメント内にフォーマットされた文字列が検出されました。ステートメント内の変数が適切にサニタイズされていない場合、SQL インジェクションを引き起こします。プリコンパイルされたステートメント（java.sql.PreparedStatement）に切り替えてください。これは 'connection.prepareStatement' で取得できます。",
   "java.jdo-sqli": "SQL ステートメント内にフォーマットされた文字列が検出されました。ステートメント内の変数が適切にサニタイズされていない場合、SQL インジェクションを引き起こします。プリコンパイルされたステートメント（java.sql.PreparedStatement）に切り替えてください。これは 'connection.prepareStatement' で取得できます。",
-  "java.jjwt-none-alg": "JWT に 'none' アルゴリズムが使用されていることが検出されました。このアルゴリズムはトークンの完全性がすでに検証されていると見なすため、攻撃者が偽造した JWT が検証を自動的に通過してしまいます。'none' を明示的に使用することは避け、'HS256' などのアルゴリズムを使用してください。"
+  "java.jjwt-none-alg": "JWT に 'none' アルゴリズムが使用されていることが検出されました。このアルゴリズムはトークンの完全性がすでに検証されていると見なすため、攻撃者が偽造した JWT が検証を自動的に通過してしまいます。'none' を明示的に使用することは避け、'HS256' などのアルゴリズムを使用してください。",
+  "java.jpa-sqli": "SQL ステートメント内にフォーマットされた文字列が検出されました。ステートメント内の変数が適切にサニタイズされていない場合、SQL インジェクションを引き起こします。プリコンパイルされたステートメント（java.sql.PreparedStatement）に切り替えてください。これは 'connection.prepareStatement' で取得できます。",
+  "java.ldap-entry-poisoning": "オブジェクトを返す LDAP クエリにより、攻撃者が LDAP レスポンスを制御できるようになり、リモートコード実行につながる可能性があります。",
+  "java.ldap-injection": "定数以外のデータが LDAP クエリに入力されていることが検出されました。このデータを外部ユーザーが制御できる場合、LDAP インジェクションとなります。LDAP クエリに入るデータがユーザーの制御下にないことを確認するか、データを適切にサニタイズしてください。",
+  "java.md5-used-as-password": "MD5 がパスワードハッシュとして使用されていることが検出されました。MD5 は衝突耐性が不十分で、攻撃者がごく短時間で解読できるため、パスワードハッシュには適していません。PBKDF2 や bcrypt などの専用のパスワードハッシュ関数に切り替えてください：`javax.crypto.SecretKeyFactory` の `SecretKeyFactory.getInstance(\"PBKDF2WithHmacSHA1\")` を使用できます。Spring プロジェクトでは `org.springframework.security.crypto.bcrypt` を使用できます。",
+  "java.mongodb-nosqli": "定数以外のデータが 'where' 評価演算子を通じて NoSQL クエリに入力されていることが検出されました。このデータを外部ユーザーが制御できる場合、NoSQL インジェクションとなります。クエリに入るデータがユーザーの制御下にないこと、または適切にサニタイズされていることを確認してください。より良い方法は、'where' をまったく使わず、com.mongodb.client.model.Filters が提供する eq、ne、lt、gt などの比較演算子ヘルパーメソッドを使うことです。",
+  "java.no-direct-response-writer": "ユーザー入力の可能性があるデータが OutputStream または Writer オブジェクトに直接書き込まれていることが検出されました。これにより、HTML エスケープを含むビュー/テンプレート環境がバイパスされ、アプリケーションがクロスサイトスクリプティング（XSS）の脆弱性にさらされる恐れがあります。HTML ビューを自動的にエスケープする JavaServer Faces（JSF）などのビュー技術を使用することを推奨します。",
+  "java.no-null-cipher": "NullCipher が検出されました。NullCipher は暗号化を一切行わないため、暗号文は平文と同一になります。有効で安全な暗号を使用してください：Cipher.getInstance(\"AES/CBC/PKCS7PADDING\")。詳細は https://owasp.org/www-community/Using_the_Java_Cryptographic_Extensions を参照してください。",
+  "java.no-static-initialization-vector": "ブロック暗号の初期化ベクトル（IV）は、使用するたびにランダムに生成する必要があります。静的な IV では、同じ平文が毎回同じ暗号文に暗号化され、暗号強度が弱まります。",
+  "java.object-deserialization": "ObjectInputStream を使用したオブジェクトのデシリアライズが検出されました。Java オブジェクト全体をデシリアライズすることは危険です——攻撃者は予期しない結果をもたらす Java オブジェクトストリームを構築できます。デシリアライズするオブジェクトがユーザーの制御下にないことを確認してください。どうしても必要な場合は、HMAC でデータストリームに署名して改ざんを防ぐか、オブジェクトのフィールドだけを転送して新しいオブジェクトに格納することを検討してください。",
+  "java.ognl-injection": "式が動的な値から組み立てられています。これらの値の出所を確認し、フィルターされていない値がこのリスクのあるコード評価に入らないようにしてください。",
+  "java.overly-permissive-file-permission": "過度に緩いファイル権限（読み取り、書き込み、実行）が検出されました。すべてのユーザーに読み取り+書き込み+実行のような過度に広い権限を設定するのは、通常は悪いプラクティスです：影響を受けるのが設定、バイナリ、スクリプト、機密データの場合、権限昇格や情報漏洩につながる可能性があります。最小権限の原則に従い、ユーザーに必要な権限だけを付与してください。",
+  "java.permissive-cors": "過度に緩い CORS ポリシーは、悪意のあるアプリケーションが被害者のアプリケーションと不適切に通信することを許してしまい、なりすまし、データ窃取、中継などの攻撃につながります。詳細は https://find-sec-bugs.github.io/bugs.htm#PERMISSIVE_CORS を参照してください。",
+  "java.saxparserfactory-disallow-doctype-decl-missing": "この SAXParserFactory は DOCTYPE 宣言が有効になっているため、XML 外部エンティティ（XXE）攻撃に対して脆弱です。機能 `http://apache.org/xml/features/disallow-doctype-decl` を true に設定して無効化してください。または、DOCTYPE は残しつつ外部エンティティを禁止してください——機能 `http://xml.org/sax/features/external-general-entities` と `http://xml.org/sax/features/external-parameter-entities` を false に設定します。注意：これらは設定キーのリテラルであり、クリックできるリンクではありません。詳細は https://semgrep.dev/docs/cheat-sheets/java-xxe/#3a-documentbuilderfactory を参照してください。",
+  "java.script-engine-injection": "ScriptEngine を経由した潜在的なコードインジェクションが検出されました。ユーザーが制御できるデータが '.eval()' に入らないようにしてください。そうしない場合、コードインジェクションの脆弱性となります。",
+  "java.seam-log-injection": "Seam ログ API はログメッセージに式言語を取り込むことができ、式言語は意図しないコード実行の原因にもなり得ます。ここでは式が動的な値から構築されているため、値の出所を確認し、フィルターされていない値がこの高リスクの評価ロジックに入らないようにしてください。",
+  "java.server-dangerous-class-deserialization": "Java RMI でプリミティブ型以外のクラスを使用すると、安全でないデシリアライズの脆弱性になる可能性があります：基盤となる実装によっては、攻撃者がそのオブジェクトを操作してシステム上でコードを実行できてしまいます。整数 ID によるオブジェクト検索に切り替えるか、JSON などの代替シリアライズ方式を検討してください。"
 }
