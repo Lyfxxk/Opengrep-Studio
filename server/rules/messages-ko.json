@@ -222,5 +222,21 @@
   "java.tainted-sql-from-http-request": "HTTPServletRequest의 입력이 SQL 실행 지점 또는 구문으로 들어가는 것이 감지되었습니다. SQL 구문의 변수를 안전하게 처리하지 않으면 SQL 삽입으로 이어질 수 있습니다. 파라미터화된 쿼리를 사용하거나 사용자 입력을 안전하게 처리하십시오.",
   "java.tainted-sql-string": "사용자 입력이 SQL 문자열을 수동으로 조합하는 데 사용되는 것이 감지되었습니다. 수동 조합은 실수로 SQL 삽입을 일으키기 쉽고, 공격자가 이를 통해 데이터베이스 내용을 유출하거나 변조할 수 있습니다. 대신 대부분의 데이터베이스 엔진이 기본적으로 지원하는 파라미터화된 쿼리를 사용하거나, ORM 프레임워크로 쿼리를 보호하십시오.",
   "java.tainted-sqli": "`$EVENT` 객체로 테인트된 SQL 구문이 감지되었습니다. 구문의 변수를 안전하게 처리하지 않으면 SQL 삽입으로 이어질 수 있습니다. 파라미터화된 쿼리를 사용하거나 사용자 입력을 안전하게 처리하십시오.",
-  "java.tainted-system-command": "사용자 입력이 시스템 명령을 실행하는 메서드로 들어가는 것이 감지되었습니다. 명령 삽입 취약점이 생길 수 있으며, 공격자가 서버에 임의의 명령을 삽입하거나 악성 코드를 다운로드하거나 데이터를 탈취할 수 있습니다. 대신 ProcessBuilder를 사용하고 명령을 `new ProcessBuilder(\"ls\", \"-al\", targetDirectory)`처럼 독립된 인수로 분리하십시오. 또한 실제 명령을 하드코딩하거나 허용 목록으로 관리하여 공격자가 임의의 명령을 실행하지 못하게 하십시오."
+  "java.tainted-system-command": "사용자 입력이 시스템 명령을 실행하는 메서드로 들어가는 것이 감지되었습니다. 명령 삽입 취약점이 생길 수 있으며, 공격자가 서버에 임의의 명령을 삽입하거나 악성 코드를 다운로드하거나 데이터를 탈취할 수 있습니다. 대신 ProcessBuilder를 사용하고 명령을 `new ProcessBuilder(\"ls\", \"-al\", targetDirectory)`처럼 독립된 인수로 분리하십시오. 또한 실제 명령을 하드코딩하거나 허용 목록으로 관리하여 공격자가 임의의 명령을 실행하지 못하게 하십시오.",
+  "java.tainted-url-host": "사용자 데이터가 수동으로 구성한 URL의 호스트 부분으로 흘러 들어가는 것이 감지되었습니다. 공격자는 이를 악용해 데이터를 자신의 서버로 보내 요청과 함께 전송되는 cookie, 인증 정보 등 민감한 데이터를 유출할 수 있고, 이 코드가 실행되는 서버가 접근할 수 있는 내부 리소스를 탐색할 수도 있습니다(즉, 서버 측 요청 위조 SSRF). 임의의 호스트를 허용하지 마십시오. 승인된 호스트의 허용 목록을 만들거나, 올바른 호스트를 하드코딩하거나, 사용자 데이터가 경로나 파라미터 부분에만 영향을 미치도록 보장하십시오.",
+  "java.tainted-xpath-from-http-request": "HTTPServletRequest의 입력이 XPath evaluate/compile 명령으로 들어가는 것이 감지되었습니다. 전달된 변수를 제대로 정제하지 않으면 XPath 삽입으로 이어져 XML 문서의 민감한 정보에 무단으로 접근할 수 있습니다. 사용자 입력을 철저히 정제하거나 가능한 한 파라미터화된 XPath 쿼리를 사용하십시오.",
+  "java.transformerfactory-dtds-not-disabled": "이 TransformerFactory는 DOCTYPE 선언이 활성화되어 있어 XML 외부 엔티티(XXE) 공격에 취약합니다. \"accessExternalDTD\"와 \"accessExternalStylesheet\" 속성을 \"\"으로 설정해 비활성화하십시오.",
+  "java.turbine-sqli": "SQL 문장에 형식 문자열이 포함된 것이 감지되었습니다. 문장의 변수를 제대로 정제하지 않으면 SQL 삽입으로 이어질 수 있습니다. 'connection.prepareStatement'를 통해 얻을 수 있는 미리 컴파일된 문장(java.sql.PreparedStatement)으로 전환하십시오.",
+  "java.unencrypted-socket": "암호화되지 않은 Java 소켓이 감지되었습니다. 트래픽을 네트워크 도청자가 읽을 수 있습니다. 'SSLSocketFactory' 또는 'SSLServerSocketFactory'로 생성한 SSLSocket으로 전환하십시오.",
+  "java.unrestricted-request-mapping": "'RequestMapping' 어노테이션이 지정되었지만 HTTP 메서드가 명시되지 않은 메서드가 감지되었습니다. GET/HEAD/TRACE/OPTIONS는 CSRF 보호를 받지 않으며, 메서드를 명시적으로 지정하지 않으면 기본적으로 모든 HTTP 메서드가 허용되므로 상태를 변경하는 메서드가 CSRF 공격에 노출될 수 있습니다. 'method' 필드를 추가하고 HTTP 메서드(예: 'RequestMethod.POST')를 지정하십시오.",
+  "java.unsafe-reflection": "공격자가 어떤 클래스를 인스턴스화하고 어떤 메서드를 호출할지 결정하는 값을 제공할 수 있다면, 개발자가 예상하지 못한 제어 흐름 경로를 만들어 인증 또는 접근 제어 검사를 우회하거나 애플리케이션에 비정상 동작을 일으킬 수 있습니다.",
+  "java.unvalidated-redirect": "애플리케이션이 사용자가 제공한 검증되지 않은 URL 파라미터로 리다이렉트하여 사용자를 악성 위치로 유도할 수 있습니다. 허용 목록으로 리다이렉트 주소를 검증하십시오.",
+  "java.url-rewriting": "URL 재작성에는 뚜렷한 보안 위험이 있습니다: 세션 ID가 URL에 그대로 나타나 제3자가 쉽게 볼 수 있습니다.",
+  "java.use-of-aes-ecb": "ECB 모드의 AES가 감지되었습니다. ECB는 메시지 기밀성을 제공하지 않고 의미론적으로도 안전하지 않으므로 사용해서는 안 됩니다. `Cipher.getInstance(\"AES/CBC/PKCS7PADDING\")`과 같은 강력한 암호화 알고리즘으로 전환하십시오. 자세한 내용은 https://owasp.org/www-community/Using_the_Java_Cryptographic_Extensions 에서 확인하십시오.",
+  "java.use-of-blowfish": "Blowfish가 감지되었습니다. 64비트 블록 길이로 인해 생일 공격에 취약하며 부적합한 것으로 간주됩니다. `Cipher.getInstance(\"AES/CBC/PKCS7PADDING\")`과 같은 강력한 암호화 알고리즘으로 전환하십시오. 자세한 내용은 https://owasp.org/www-community/Using_the_Java_Cryptographic_Extensions 에서 확인하십시오.",
+  "java.use-of-default-aes": "설정 없이 사용된 AES가 감지되었습니다. java.crypto.Cipher는 기본적으로 ECB 모드를 사용하며, ECB는 메시지 기밀성을 제공하지 않고 의미론적으로도 안전하지 않으므로 사용해서는 안 됩니다. 강력한 암호화 알고리즘으로 전환하십시오: java.crypto.Cipher.getInstance(\"AES/CBC/PKCS7PADDING\"). 자세한 내용은 https://owasp.org/www-community/Using_the_Java_Cryptographic_Extensions 에서 확인하십시오.",
+  "java.use-of-md5": "안전하지 않은 것으로 간주되는 MD5 해시 알고리즘이 감지되었습니다. MD5는 충돌 저항성이 없어 암호학적 서명 용도로 적합하지 않습니다. HMAC으로 전환하십시오.",
+  "java.use-of-md5-digest-utils": "안전하지 않은 것으로 간주되는 MD5 해시 알고리즘이 감지되었습니다. MD5는 충돌 저항성이 없어 암호학적 서명 용도로 적합하지 않습니다. HMAC으로 전환하십시오.",
+  "java.use-of-rc2": "RC2가 감지되었습니다. RC2는 관련 키 공격에 취약하며 부적합한 것으로 간주됩니다. `Cipher.getInstance(\"AES/CBC/PKCS7PADDING\")`과 같은 강력한 암호화 알고리즘으로 전환하십시오. 자세한 내용은 https://owasp.org/www-community/Using_the_Java_Cryptographic_Extensions 에서 확인하십시오.",
+  "java.use-of-rc4": "RC4가 감지되었습니다. RC4는 스트림 암호 공격과 비트 플립 공격 등 다양한 공격에 취약하므로 `Cipher.getInstance(\"AES/CBC/PKCS7PADDING\")`과 같은 강력한 암호화 알고리즘으로 전환하십시오. 자세한 내용은 https://owasp.org/www-community/Using_the_Java_Cryptographic_Extensions 에서 확인하십시오."
 }
