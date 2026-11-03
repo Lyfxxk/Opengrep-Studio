@@ -142,5 +142,21 @@
   "go.use-of-sha1": "안전하지 않은 것으로 간주되는 SHA1 해시 알고리즘이 감지되었습니다. SHA1은 충돌 저항성이 없어 암호학적 서명 용도로 적합하지 않습니다. 대신 SHA256이나 SHA3를 사용하십시오.",
   "go.use-of-unsafe-block": "Go에서 unsafe 패키지를 사용하면 저수준 메모리 관리와 C 언어의 여러 기능을 활용할 수 있지만, Go의 타입 안전성을 우회하므로 버퍼 오버플로로 이어지거나 공격자가 임의의 코드를 실행할 수 있습니다. 자신이 무엇을 하는지 정확히 알고 있을 때만 이 패키지를 사용하십시오.",
   "go.use-of-weak-rsa-key": "RSA 키 길이는 2048비트 이상이어야 합니다.",
-  "go.use-tls": "TLS가 활성화되지 않은 HTTP 서비스가 발견되었습니다. 대신 'http.ListenAndServeTLS'를 사용하십시오. 자세한 내용은 https://golang.org/pkg/net/http/#ListenAndServeTLS 에서 확인하십시오."
+  "go.use-tls": "TLS가 활성화되지 않은 HTTP 서비스가 발견되었습니다. 대신 'http.ListenAndServeTLS'를 사용하십시오. 자세한 내용은 https://golang.org/pkg/net/http/#ListenAndServeTLS 에서 확인하십시오.",
+  "go.useless-if-body": "if 문의 if 분기와 else 분기에 완전히 동일한 문이 포함되어 조건이 참이든 거짓이든 같은 코드가 실행되는 것이 감지되었습니다. 해당 if 문을 바로 제거하십시오.",
+  "go.useless-if-conditional": "if 블록의 두 분기가 동일한 조건(`$X`)을 검사하는 것이 감지되었습니다. 두 번째 조건 검사는 첫 번째 검사와 같아 아무런 역할도 하지 않으므로 코드에서 제거하십시오.",
+  "go.websocket-missing-origin-check": "HTTP WebSocket 핸드셰이크의 Origin 헤더는 WebSocket이 수락하는 연결이 신뢰할 수 있는 출처 도메인에서 오도록 보장하는 데 사용됩니다. 이 검증을 강제하지 않으면 크로스 사이트 요청 위조(CSRF)로 이어질 수 있습니다. \"gorilla/websocket\" 문서의 말을 빌리면: \"CheckOrigin 함수는 크로스 사이트 요청 위조를 방지하기 위해 요청 출처를 신중하게 검증해야 합니다.\"",
+  "go.wip-xss-using-responsewriter-and-printf": "데이터가 URL 쿼리 파라미터에서 ResponseWriter에 기록되는 포맷된 내용으로 흘러 들어가는 것이 발견되었습니다. 이는 XSS로 이어질 수 있으므로 그렇게 해서는 안 됩니다. 실제로 필요한 경우 데이터가 정화되거나 이스케이프되었는지 반드시 확인하십시오.",
+  "java.anonymous-ldap-bind": "익명 LDAP 바인딩이 감지되어 익명 사용자가 LDAP 문을 실행할 수 있습니다. LDAP에 인증을 강제하는 것을 고려하십시오. 자세한 내용은 https://docs.oracle.com/javase/tutorial/jndi/ldap/auth_mechs.html 에서 확인하십시오.",
+  "java.avoid-implementing-custom-digests": "암호화 알고리즘은 올바르게 구현하기가 매우 어렵습니다. 메시지 다이제스트를 직접 구현하면 프로그램에 보안 위험이 생기므로, 다음과 같이 이미 검증된 신뢰할 수 있는 다이제스트 알고리즘을 바로 사용하십시오: MessageDigest sha256Digest = MessageDigest.getInstance(\"SHA256\");",
+  "java.bad-hexa-conversion": "바이트를 하나씩 읽을 때 'Integer.toHexString()'은 바이트의 앞쪽 0을 떼어내며, 이 오류는 해시 값을 약화시키고 충돌을 늘립니다. 대신 'String.format(\"%02X\", ...)'을 사용하십시오.",
+  "java.blowfish-insufficient-key-size": "Blowfish 키는 128비트 미만이면 안전하지 않은 것으로 간주됩니다. 128비트 이상을 사용하거나 대신 AES를 사용하십시오.",
+  "java.cbc-padding-oracle": "CBC + PKCS5Padding은 패딩 오라클(padding oracle) 공격에 취약합니다: 공격자는 패딩 유효 여부에 따라 평문을 구분할 수 있고 CBC에는 어떤 무결성 검증도 없습니다. 대신 'AES/GCM/NoPadding'을 사용하십시오.",
+  "java.command-injection-formatted-runtime-call": "포맷되거나 연결된 문자열이 java.lang.Runtime 호출에 전달되는 것이 감지되었습니다. 변수를 사용자가 제어할 수 있다면 명령 인젝션으로 이어질 수 있습니다. 변수를 사용자가 제어할 수 없거나 충분히 정화되었는지 확인하십시오.",
+  "java.command-injection-process-builder": "포맷되거나 연결된 문자열이 ProcessBuilder 호출에 전달되는 것이 감지되었습니다. 변수를 사용자가 제어할 수 있다면 명령 인젝션으로 이어질 수 있습니다. 변수를 사용자가 제어할 수 없거나 충분히 정화되었는지 확인하십시오.",
+  "java.cookie-issecure-false": "기본 세션 미들웨어 설정: `setSecure`가 true로 설정되어 있지 않습니다. true로 설정하면 쿠키가 HTTPS를 통해서만 전송되도록 보장하여 크로스 사이트 스크립팅 공격을 방지할 수 있습니다.",
+  "java.cookie-missing-httponly": "cookie에 'HttpOnly' 플래그가 설정되지 않은 것이 감지되었습니다. 이 플래그는 클라이언트 스크립트가 cookie를 읽지 못하도록 브라우저에 지시합니다. 'cookie.setHttpOnly(true);'를 호출하여 설정하십시오.",
+  "java.cookie-missing-secure-flag": "cookie에 'secure' 플래그가 설정되지 않은 것이 감지되었습니다. 이 플래그는 클라이언트가 HTTP 등 안전하지 않은 채널을 통해 cookie를 전송하는 것을 방지합니다. '$COOKIE.setSecure(true);'를 호출하여 설정하십시오.",
+  "java.cookie-setSecure": "기본 세션 미들웨어 설정: `setSecure`가 true로 설정되어 있지 않습니다. true로 설정하면 쿠키가 HTTPS를 통해서만 전송되도록 보장하여 크로스 사이트 스크립팅 공격을 방지할 수 있습니다.",
+  "java.crlf-injection-logs": "신뢰할 수 없는 출처에서 온 데이터가 올바르게 무력화되지 않은 채 로그에 들어가면 공격자가 로그 항목을 위조하거나 악성 콘텐츠를 주입할 수 있습니다."
 }
