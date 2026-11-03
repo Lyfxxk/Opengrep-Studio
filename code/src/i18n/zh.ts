@@ -28,6 +28,8 @@ const zh = {
     zh: '简体中文',
     zhHant: '繁體中文',
     en: 'English',
+    ja: '日语',
+    ko: '韩语',
   },
   theme: {
     light: '浅色',
