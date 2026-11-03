@@ -558,5 +558,21 @@
   "python.dangerous-template-string": "文字列のフォーマットによって作成されたテンプレートが見つかりました。サーバーサイドテンプレートインジェクション（SSTI）やクロスサイトスクリプティング攻撃を受けやすくなります。",
   "python.dangerous-testcapi-run-in-subinterp": "`run_in_subinterp` にユーザーが制御可能な内容が見つかりました。攻撃者はこれを悪用して任意の Python コードを実行できてしまい、非常に危険です。",
   "python.dangerous-testcapi-run-in-subinterp-audit": "`run_in_subinterp` に動的コンテンツが見つかりました。外部データがこの呼び出しに到達できる場合、攻撃者は任意の Python コードを実行できてしまいます。外部データがここに到達しないようにしてください。",
-  "python.dangerous-testcapi-run-in-subinterp-tainted-env-args": "`run_in_subinterp` にユーザーが制御可能な内容が見つかりました。攻撃者はこれを悪用して任意の Python コードを実行できてしまい、非常に危険です。"
+  "python.dangerous-testcapi-run-in-subinterp-tainted-env-args": "`run_in_subinterp` にユーザーが制御可能な内容が見つかりました。攻撃者はこれを悪用して任意の Python コードを実行できてしまい、非常に危険です。",
+  "python.debug-enabled": "debug=True が有効な Flask アプリケーションが検出されました。このスイッチを付けたまま本番環境にデプロイしないでください。機密情報が漏洩します。代わりに Flask の設定変数を使用するか、システム環境変数で 'debug' を設定してください。",
+  "python.direct-use-of-httpresponse": "データが 'HttpResponse' などのオブジェクトを介してエンドユーザーに直接レンダリングされていることが検出されました。Django 組み込みのクロスサイトスクリプティング（XSS）防御を迂回するため、XSS 脆弱性が生じる可能性があります。代わりに Django テンプレートエンジンで安全に HTML をレンダリングしてください。",
+  "python.direct-use-of-jinja2": "jinja2 の直接使用が検出されました。扱い方を誤ると HTML エスケープが迂回され、アプリケーションがクロスサイトスクリプティング（XSS）脆弱性にさらされます。XSS を防ぐため、Flask の 'render_template()' メソッドを使用し、拡張子 '.html' のテンプレートを使うことを推奨します。",
+  "python.directly-returned-format-string": "Flask ルートがフォーマット文字列を直接返していることが検出されました。ユーザー入力がその文字列に到達できる場合、クロスサイトスクリプティング脆弱性が生じます。代わりにテンプレートエンジンを使用し、'render_template()' でページをレンダリングしてください。",
+  "python.disabled-cert-validation": "SSL 証明書の検証が明示的に無効化されており、安全でない接続が生じる可能性があります。",
+  "python.django-compat-2_0-assert-redirects-helper": "assertRedirects の host パラメータは Django 2.0 で削除されました。",
+  "python.django-compat-2_0-assignment-tag": "assignment_tag ヘルパー関数は Django 2.0 で削除されました。",
+  "python.django-compat-2_0-check-aggregate-support": "django.db.backends.base.BaseDatabaseOperations.check_aggregate_support() は Django 2.0 で削除されました。",
+  "python.django-compat-2_0-extra-forms": "django.forms.extras パッケージは Django 2.0 で削除されました。",
+  "python.django-compat-2_0-signals-weak": "django.dispatch.signals.Signal.disconnect() の weak パラメータは Django 2.0 で削除されました。",
+  "python.django-secure-set-cookie": "Django の Cookie は安全に扱う必要があります。response.set_cookie(...) で secure=True、httponly=True、samesite='Lax' を設定してください。実際の状況で異なる設定が必要な場合は、明示的に宣言してください。Cookie を HTTP で送信する場合は secure=False、クライアント側 JavaScript に Cookie の読み取りを許可する場合は httponly=False、外部サイト宛てのリクエストに Cookie を添付する場合は samesite=None を設定します。",
+  "python.django-using-request-post-after-is-valid": "form.is_valid() の実行後は、request.POST[] の代わりに $FORM.cleaned_data[] を使用し、サニタイズ済みのデータのみにアクセスするようにしてください。",
+  "python.docker-arbitrary-container-run": "検証されていないユーザーデータが `run` または `create` メソッドに到達できる場合、任意のコンテナの実行につながる可能性があります。",
+  "python.duplicate-name-assignment": "名前 `$NAME` が `$URL` と `$OTHER_URL` の両方に使用されています。URL の逆解決を行うと予期しない動作が発生します。各パスには一意の名前を付けてください。",
+  "python.duplicate-path-assignment": "`$URL` の path が無意味に 2 回代入されています。",
+  "python.duplicate-path-assignment-different-names": "`$URL` の path が異なる名前で 2 回代入されています。"
 }
