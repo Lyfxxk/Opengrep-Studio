@@ -590,5 +590,21 @@
   "python.flask-class-method-get-side-effects": "Flask 클래스 기반 뷰의 GET 메서드가 부수 효과를 일으킵니다.",
   "python.flask-cors-misconfiguration": "'support_credentials=True'와 'origin=\"*\"'를 동시에 설정하는 것은 잘못된 CORS 구성이며, 제3자 출처가 민감한 데이터를 읽을 수 있게 합니다. 이 구성에서는 flask_cors가 Access-Control-Allow-Origin 헤더에 각 요청의 Origin을 동적으로 반영하므로, 모든 출처를 허용하고 Cookie와 자격 증명이 요청과 함께 전송되도록 허용하는 것과 같습니다. 'support_credentials=True'를 설정할 때는 허용할 출처를 명시적으로 나열하고 \"*\"를 사용하지 마십시오.",
   "python.flask-deprecated-apis": "더 이상 사용되지 않는 Flask API입니다.",
-  "python.flask-wtf-csrf-disabled": "'WTF_CSRF_ENABLED'를 'False'로 설정하면 CSRF 보호가 명시적으로 비활성화됩니다."
+  "python.flask-wtf-csrf-disabled": "'WTF_CSRF_ENABLED'를 'False'로 설정하면 CSRF 보호가 명시적으로 비활성화됩니다.",
+  "python.formathtml-fstring-parameter": "포맷 문자열을 `format_html`의 첫 번째 인수로 사용하면 변수가 올바르게 인코딩되지 않습니다. 첫 번째 인수 안의 HTML은 전혀 인코딩되지 않으며, 어떤 인수가 인코딩되는지도 가려집니다. 올바른 사용법은 첫 번째 인수로 정적 포맷 문자열을 전달하고, 치환할 변수는 후속 인수로 전달하는 것입니다.",
+  "python.formatted-sql-query": "포맷될 가능성이 있는 SQL 쿼리가 탐지되었습니다. 매개변수화된 쿼리를 사용하십시오.",
+  "python.formatted-string-bashoperator": "BashOperator에서 포맷 문자열이 발견되었습니다: $CMD. 인젝션 위험이 있을 수 있습니다. 변수가 외부 출처의 통제를 받지 않는지 반드시 확인하십시오.",
+  "python.global-autoescape-off": "이 Django 애플리케이션의 자동 이스케이프가 전역적으로 비활성화되어 있습니다. 어떤 웹 페이지를 렌더링하든 애플리케이션이 교차 사이트 스크립팅(XSS) 취약점에 노출됩니다. 'autoescape: False'를 제거하거나 'True'로 설정하십시오.",
+  "python.globals-as-template-context": "'globals()'를 'render(...)'의 컨텍스트로 사용하는 것은 극도로 위험합니다. 노출되어서는 안 되는 Python 함수까지 템플릿에 노출되며, 공격자는 이를 이용해 예상치 못한 코드를 실행하고 애플리케이션을 장악할 수 있습니다(서버 측 템플릿 인젝션 SSTI). 'globals()'를 사용하지 말고, '{\"var1\": \"hello\"}'처럼 딕셔너리나 'django.template.Context'에 변수를 하나씩 지정하십시오.",
+  "python.globals-misuse-code-execution": "요청 데이터가 'globals()'의 인덱스로 사용되는 것이 발견되었습니다. 극도로 위험하며, 공격자가 시스템에서 임의의 코드를 실행할 수 있습니다. 'globals()'를 사용하지 않도록 코드를 리팩터링하십시오.",
+  "python.hardcoded-password-default-argument": "하드코딩된 비밀번호가 '$FUNC'의 기본 인수로 사용되고 있습니다. 호출자가 실제 비밀번호를 전달하지 않으면 위험이 있습니다.",
+  "python.hardcoded-tmp-path": "하드코딩된 임시 디렉터리 경로가 탐지되었습니다. 'tempfile.TemporaryFile'을 대신 사용하십시오.",
+  "python.hardcoded-token": "하드코딩된 자격 증명이 탐지되었습니다. 자격 증명을 소스 코드에 저장하는 것은 권장되지 않습니다. 내부든 외부든 악의적인 사용자가 유출된 기밀을 이용할 수 있습니다. 환경 변수로 자격 증명을 안전하게 주입하거나 볼트(vault)/HSM(하드웨어 보안 모듈)에서 가져오는 것을 권장합니다.",
+  "python.hashids-with-django-secret": "Django의 secret key가 HashIDs의 솔트로 사용되고 있습니다. HashIDs 메커니즘은 안전하지 않습니다. 충분히 많은 결과를 관찰하면 솔트 값을 복원할 수 있으며, 공격자는 이를 통해 Django secret key를 얻을 수 있습니다.",
+  "python.hashids-with-flask-secret": "Flask의 secret key가 HashIDs의 솔트로 사용되고 있습니다. HashIDs 메커니즘은 안전하지 않습니다. 충분히 많은 결과를 관찰하면 솔트 값을 복원할 수 있으며, 공격자는 이를 통해 Flask secret key를 얻을 수 있습니다.",
+  "python.host-header-injection-python": "`flask.request.host`가 HTTP 요청을 구성하는 데 사용되고 있어 Host 헤더 인젝션이 발생할 수 있습니다. 이로 인한 대표적인 취약점으로는 인증 우회, 비밀번호 재설정 결함, 서버 측 요청 위조(SSRF) 등이 있습니다. URL을 요청 라이브러리에 전달하기 전에 먼저 검증하거나, 인증 및 비밀번호 재설정 같은 비즈니스 로직에서 신중하게 처리하십시오.",
+  "python.html-magic-method": "`__html__` 메서드는 Django 템플릿 엔진에 이 값이 '안전하게' 렌더링될 수 있음을 알리며, 일반적인 HTML 이스케이프가 반환 값에 적용되지 않게 하여 애플리케이션을 XSS 취약점에 노출시킵니다. 정말로 원시 HTML을 렌더링해야 한다면 `mark_safe()`를 대신 사용하는 것이 좋습니다. 매직 메서드보다 '원시 HTML을 렌더링한다'는 의도를 더 명확히 표현할 수 있습니다.",
+  "python.html-safe": "`html_safe()`는 지정된 클래스에 `__html__` 매직 메서드를 추가하여 Django 템플릿 엔진에 이 값이 '안전하게' 렌더링될 수 있음을 알리고, 일반적인 HTML 이스케이프가 반환 값에 적용되지 않게 하여 애플리케이션을 XSS 취약점에 노출시킵니다. 정말로 원시 HTML을 렌더링해야 한다면 `mark_safe()`를 대신 사용하는 것이 좋습니다. 매직 메서드보다 의도를 더 명확히 표현할 수 있습니다.",
+  "python.http-not-https-connection": "HTTPConnectionPool이 탐지되었습니다. 데이터가 평문으로 전송됩니다. HTTPSConnectionPool을 사용해 통신을 암호화하는 것이 좋습니다.",
+  "python.httpsconnection-detected": "HTTPSConnection API는 Python 마이너 버전 간에 자주 변경됩니다. 사용 중인 Python 버전에 맞게 이 API를 안전하게 사용하고 있는지 확인하십시오. 예를 들어 3.4.3 이전의 Python 3는 기본적으로 SSL 인증서를 검증하지 않습니다. 자세한 내용은 https://docs.python.org/3/library/http.client.html#http.client.HTTPSConnection 을 참조하십시오."
 }
