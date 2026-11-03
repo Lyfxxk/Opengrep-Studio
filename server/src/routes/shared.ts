@@ -34,8 +34,16 @@ export function withEngineJobBusy<T>(
   return run().finally(() => setEngineJobBusy(false));
 }
 
-export function parseProductLang(value: unknown): ReportLang {
-  return value === 'zh-Hant' ? 'zh-Hant' : value === 'en' ? 'en' : 'zh';
+export function parseProductLang(value: unknown): ReportLang | 'ja' | 'ko' {
+  return value === 'zh-Hant'
+    ? 'zh-Hant'
+    : value === 'en'
+      ? 'en'
+      : value === 'ja'
+        ? 'ja'
+        : value === 'ko'
+          ? 'ko'
+          : 'zh';
 }
 
 export const asyncHandler =

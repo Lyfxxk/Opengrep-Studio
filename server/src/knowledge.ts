@@ -95,7 +95,7 @@ function normalizeCweId(raw: string): string {
   return match ? `CWE-${match[1]}` : raw.trim();
 }
 
-export type KnowledgeLang = 'zh' | 'zh-Hant';
+export type KnowledgeLang = 'zh' | 'zh-Hant' | 'ja' | 'ko';
 
 export type RuleKnowledgeLang = KnowledgeLang | 'en';
 
@@ -109,7 +109,6 @@ const resourcesCache = new Map<KnowledgeLang, KnowledgeResources>();
 function loadResources(lang: KnowledgeLang): KnowledgeResources {
   const cached = resourcesCache.get(lang);
   if (cached) return cached;
-  const suffix = lang === 'zh-Hant' ? '-Hant' : '';
   const read = <T,>(fileName: string, fallback: T): T => {
     try {
       return JSON.parse(fs.readFileSync(path.join(rulesDir, fileName), 'utf8')) as T;
@@ -118,8 +117,8 @@ function loadResources(lang: KnowledgeLang): KnowledgeResources {
     }
   };
   const resources: KnowledgeResources = {
-    messages: read(`messages-zh${suffix}.json`, {}),
-    cwe: read(`cwe-zh${suffix}.json`, {}),
+    messages: read(`messages-${lang}.json`, {}),
+    cwe: read(`cwe-${lang}.json`, {}),
   };
   resourcesCache.set(lang, resources);
   return resources;
