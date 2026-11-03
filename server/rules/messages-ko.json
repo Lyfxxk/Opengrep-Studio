@@ -670,5 +670,21 @@
   "python.no-set-ciphers": "'ssl' 모듈은 기본적으로 안전하지 않은 암호 스위트를 비활성화합니다. 따라서 특별한 필요가 있을 때만 'set_ciphers()'를 호출해야 하며, 그렇지 않으면 SSL 채널의 보안이 낮아질 수 있습니다.",
   "python.non-literal-import": "`importlib.import_module()`의 신뢰할 수 없는 사용자 입력으로 인해 공격자가 임의 코드를 로드할 수 있습니다. `importlib.import_module()`에 동적 값을 사용하지 않거나, 허용 목록으로 신뢰할 수 없는 코드의 실행을 차단하십시오.",
   "python.open-never-closed": "파일 객체를 연 후 이에 대응하는 닫기 작업이 없습니다.",
-  "python.open-redirect": "요청 데이터($DATA)가 redirect()로 전달되어 악용될 수 있는 오픈 리다이렉트가 됩니다. django.utils.http.is_safe_url()를 사용하여 안전한 URL로만 리다이렉트되도록 하십시오. 자세한 내용은 https://cwe.mitre.org/data/definitions/601.html 을 참조하십시오."
+  "python.open-redirect": "요청 데이터($DATA)가 redirect()로 전달되어 악용될 수 있는 오픈 리다이렉트가 됩니다. django.utils.http.is_safe_url()를 사용하여 안전한 URL로만 리다이렉트되도록 하십시오. 자세한 내용은 https://cwe.mitre.org/data/definitions/601.html 을 참조하십시오.",
+  "python.os-system-injection": "os.system에서 사용자 데이터가 사용되는 것이 감지되었습니다. 명령 삽입 위험이 있을 수 있으므로 피해야 합니다. 부득이 실행해야 하는 경우 'subprocess' 모듈을 대신 사용하고 인수를 목록 형태로 전달하십시오.",
+  "python.paramiko-exec-command": "검증되지 않은 SSL 컨텍스트가 감지되었습니다. 인증서를 확인하지 않는 안전하지 않은 연결이 허용됩니다. 대신 'ssl.create_default_context()'를 사용하십시오.",
+  "python.paramiko-implicit-trust-host-key": "서버 호스트 키를 암묵적으로 신뢰하는 paramiko HostKey 정책이 감지되었습니다. 호스트 키를 검증하여 악성 서버에 연결되지 않도록 해야 합니다. RejectPolicy 또는 사용자 지정 하위 클래스를 사용하십시오.",
+  "python.pass-body-fn": "함수 $X의 본문이 `pass`뿐입니다. 이를 제거하십시오. 할 일 표시인 경우에는 NotImplementedError()를 발생시키십시오.",
+  "python.pass-body-range": "`for $X in $Y`의 루프 본문이 `pass`뿐입니다. 이를 제거하십시오. 할 일 표시인 경우에는 NotImplementedError()를 발생시키십시오.",
+  "python.password-empty-string": "'$VAR'은(는) 빈 문자열인데 '$MODEL'의 비밀번호를 설정하는 데 사용되었습니다. 사용 불가능한 비밀번호를 설정하려는 경우 None으로 설정하거나 'set_unusable_password()'를 호출하십시오.",
+  "python.path-traversal-file-name": "요청 데이터가 파일 이름 `$FILE`로 사용되어 경로 횡단 취약점이 되며, 민감한 데이터 유출로 이어질 수 있습니다. 완화 조치: os.path.abspath, os.path.realpath 또는 pathlib 라이브러리를 사용하십시오.",
+  "python.path-traversal-join": "요청 데이터가 os.path.join()과 open()에 전달되어 경로 횡단 취약점이 되며, 민감한 데이터 유출로 이어질 수 있습니다. 완화 조치: os.path.abspath, os.path.realpath 또는 pathlib 라이브러리를 사용하십시오.",
+  "python.path-traversal-open": "요청 데이터가 'open' 호출에 들어가는 것이 발견되었습니다. 요청 데이터를 검증하거나 정제하십시오. 그렇지 않으면 경로 횡단 공격으로 인해 민감한 데이터 유출이 발생할 수 있습니다. 완화 조치: os.path.abspath, os.path.realpath 또는 pathlib 라이브러리를 사용하십시오.",
+  "python.pg8000-sqli": "pg8000 SQL 문에서 리터럴이 아닌 변수와의 문자열 연결이 감지되었습니다. 해당 변수를 사용자가 제어할 수 있고 적절히 정제되지 않으면 SQL 인젝션으로 이어질 수 있습니다. 매개변수화된 쿼리나 prepared statement로 바꿔 사용하십시오(예: 'conn.run(\"SELECT :value FROM table\", value=myvalue)'). 'conn.prepare'로 prepared statement를 만들 수도 있습니다: 'conn.prepare(\"SELECT (:v) FROM table\")'.",
+  "python.psycopg-sqli": "`event` 객체로 테인트된 SQL 문이 감지되었습니다. 해당 변수를 사용자가 제어할 수 있고 적절히 정제되지 않으면 SQL 인젝션으로 이어질 수 있습니다. 매개변수화된 쿼리나 prepared statement로 바꿔 사용하십시오(예: `cursor.execute('SELECT * FROM projects WHERE status = %s', 'active')`).",
+  "python.pymssql-sqli": "`event` 객체로 테인트된 SQL 문이 감지되었습니다. 해당 변수를 사용자가 제어할 수 있고 적절히 정제되지 않으면 SQL 인젝션으로 이어질 수 있습니다. 매개변수화된 쿼리나 prepared statement로 바꿔 사용하십시오(예: `cursor.execute('SELECT * FROM projects WHERE status = %s', 'active')`).",
+  "python.pymysql-sqli": "`event` 객체로 테인트된 SQL 문이 감지되었습니다. 해당 변수를 사용자가 제어할 수 있고 적절히 정제되지 않으면 SQL 인젝션으로 이어질 수 있습니다. 매개변수화된 쿼리나 prepared statement로 바꿔 사용하십시오(예: `cursor.execute('SELECT * FROM projects WHERE status = %s', ('active'))`).",
+  "python.pyramid-authtkt-cookie-httponly-unsafe-default": "Pyramid 인증 티켓 Cookie에 httponly 옵션이 올바르게 설정되지 않은 것이 발견되었습니다. httponly=True로 설정하여 Cookie를 안전하게 처리해야 합니다. 이 매개변수가 올바르지 않으면 Cookie가 제대로 보호되지 않아 공격자에게 탈취될 위험이 있습니다.",
+  "python.pyramid-authtkt-cookie-httponly-unsafe-value": "Pyramid 인증 티켓 Cookie에 httponly 옵션이 올바르게 설정되지 않은 것이 발견되었습니다. httponly=True로 설정하여 Cookie를 안전하게 처리해야 합니다. 이 매개변수가 올바르지 않으면 Cookie가 제대로 보호되지 않아 공격자에게 탈취될 위험이 있습니다.",
+  "python.pyramid-authtkt-cookie-samesite": "Pyramid 인증 티켓에 samesite 옵션이 올바르게 설정되지 않은 것이 발견되었습니다. samesite='Lax'로 설정하여 Pyramid Cookie를 안전하게 처리해야 합니다. 이 매개변수가 올바르지 않으면 Cookie가 제대로 보호되지 않아 공격자에게 탈취될 위험이 있습니다."
 }
