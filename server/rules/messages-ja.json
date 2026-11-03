@@ -638,5 +638,21 @@
   "python.insecure-urlretrieve-ftp": "'urllib.urlretrieve()' が 'ftp://' を使用していることが検出されました。リクエストは暗号化されません。代わりに SFTP を使用してください。urllib は SFTP をサポートしていないため、SFTP に対応したライブラリへの置き換えを検討してください。",
   "python.insecure-uuid-version": "UUID バージョン 1 で UUID を生成すると、システム情報（MAC アドレス、タイムスタンプなど）に基づいて予測可能な UUID が生成され、サンドイッチ攻撃などのセキュリティリスクにつながる可能性があります。より優れたランダム性とセキュリティを得るために、代わりに `uuid.uuid4()` を使用してください。",
   "python.insufficient-dsa-key-size": "DSA の鍵長が不十分であることが検出されました。NIST は鍵長を 2048ビット以上にすることを推奨しています。",
-  "python.insufficient-ec-key-size": "EC 楕円曲線の位数が不十分であることが検出されました。NIST は 224ビット以上の位数を推奨しています。例えば 'ec.SECP256R1' を使用してください。"
+  "python.insufficient-ec-key-size": "EC 楕円曲線の位数が不十分であることが検出されました。NIST は 224ビット以上の位数を推奨しています。例えば 'ec.SECP256R1' を使用してください。",
+  "python.insufficient-rsa-key-size": "RSA 鍵の長さが不足していることが検出されました。NIST は 2048 ビット以上の鍵長を推奨しています。",
+  "python.is-function-without-parentheses": "\"$FUNC\" は関数でしょうか、それとも属性でしょうか。関数であれば $X.$FUNC() と書くつもりだったかもしれません——$X.$FUNC は常に真と評価されるためです。",
+  "python.jwt-python-exposed-credentials": "パスワードが JWT ペイロード経由で露出しています。JWT は暗号化を行わないため、パスワードが漏洩する恐れがあります。JWT にパスワードを保存しないでください。",
+  "python.jwt-python-exposed-data": "このオブジェクトは jwt.encode(...) に直接渡されています。機密情報が JWT ペイロード経由で漏洩しないようにしてください。",
+  "python.jwt-python-hardcoded-secret": "ハードコードされた JWT secret または秘密鍵の使用は、資格情報の保護が不十分な欠陥に該当します（https://cwe.mitre.org/data/definitions/522.html を参照）。適切なセキュリティ機構で資格情報を保護することを推奨します（環境変数に格納するなど）。",
+  "python.jwt-python-none-alg": "JWT で 'none' アルゴリズムが使用されていることが検出されました。このアルゴリズムはトークンの完全性がすでに検証されていると仮定するため、攻撃者が偽造した JWT が検証を自動的に通過してしまいます。'none' を明示的に使用せず、'HS256' などのアルゴリズムを使用してください。",
+  "python.len-all-count": "len(QUERY.all()) の代わりに QUERY.count() を使用してください。SQLAlchemy の count はサーバー側で実行されるため、クライアントに転送されるデータが少なくなります。",
+  "python.listen-eval": "ログ設定の一部は eval() を通じて処理されます。この関数の使用はセキュリティ上のリスクをもたらす恐れがあります。localhost 上の socket にのみバインドされ、リモート接続を受け付けないとはいえ、listen() を呼び出すプロセスのアカウントで信頼できないコードが実行されるシナリオは残ります。`listen()` の `verify()` パラメーターを使用して、認識されない設定を防いでください。",
+  "python.locals-as-template-context": "'locals()' を 'render(...)' のコンテキストとして渡すのは極めて危険です——テンプレートに公開すべきでない Python 関数がさらされ、攻撃者はこれを利用して意図しないコードを実行し、アプリケーションを侵害できます（サーバーサイドテンプレートインジェクション SSTI）。'locals()' は使用せず、'{\"var1\": \"hello\"}' のように、辞書または 'django.template.Context' で変数を 1 つずつ指定してください。",
+  "python.logging-error-without-handling": "エラーは処理される場合にのみ記録すべきです。このコードはエラーを記録しながら例外を上位に送出し続けているため、レベルを warning または info に下げることを推奨します。",
+  "python.make-response-with-unknown-content": "`flask.make_response()` は慎重に使用してください。このレスポンスが Web ページにレンダリングされると、クロスサイトスクリプティング（XSS）の脆弱性が生じる恐れがあります——HTML は自動的にエスケープされません。HTML をレンダリングする場合は、HTML をテンプレートファイルに記述し、`flask.render_template()`（自動的にエスケープされます）を使用してください。API データを返す場合は `flask.jsonify()` を使用してください。",
+  "python.mako-templates-detected": "Mako テンプレートにはグローバルな HTML エスケープ機構がないため、テンプレート内ですべての機密データを手動でエスケープする必要があります。URL エスケープには '| u'、HTML エスケープには '| h' を使用します。Mako で Web コンテンツを提供する場合は、グローバルエスケープをサポートする Jinja2 などの方式に切り替えることを推奨します。",
+  "python.manual-counter-create": "カウンターを手動で実装しています——代わりに collections.Counter を使用してください。",
+  "python.manual-defaultdict-dict-create": "defaultdict を手動で実装しています——代わりに collections.defaultdict(dict) を使用してください。",
+  "python.manual-defaultdict-list-create": "defaultdict を手動で実装しています——代わりに collections.defaultdict(list) を使用してください。",
+  "python.manual-defaultdict-set-create": "defaultdict を手動で実装しています——代わりに collections.defaultdict(set) を使用してください。"
 }
