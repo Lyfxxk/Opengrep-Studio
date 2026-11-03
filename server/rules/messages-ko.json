@@ -334,5 +334,21 @@
   "js-ts.insecure-createnodesfrommarkup": "`createNodesFromMarkup` 내의 사용자 제어 데이터는 XSS 취약점을 유발할 수 있는 안티패턴입니다.",
   "js-ts.insecure-document-method": "`innerHTML`, `outerHTML`, `document.write` 등의 메서드에 사용자 제어 데이터를 사용하는 것은 XSS 취약점을 유발할 수 있는 안티패턴입니다.",
   "js-ts.insecure-innerhtml": "`$EL.innerHTML`에 사용자 제어 데이터를 사용하는 것은 XSS 취약점을 유발할 수 있는 안티패턴입니다.",
-  "js-ts.insecure-object-assign": "컨텍스트에 따라 `Object.assign` 내의 사용자 제어 데이터로 인해 웹 응답에 반환해서는 안 되는 데이터가 포함되거나 대량 할당(mass assignment) 취약점이 발생할 수 있습니다."
+  "js-ts.insecure-object-assign": "컨텍스트에 따라 `Object.assign` 내의 사용자 제어 데이터로 인해 웹 응답에 반환해서는 안 되는 데이터가 포함되거나 대량 할당(mass assignment) 취약점이 발생할 수 있습니다.",
+  "js-ts.insufficient-postmessage-origin-validation": "addEventListener API가 메시지 출처(origin)에 대한 검증을 전혀 수행하지 않습니다. 이 결함은 교차 출처 공격, 예를 들어 크로스 사이트 스크립팅(XSS)을 수행하는 데 악용될 수 있습니다.",
+  "js-ts.javascript-alert": "alert() 호출이 발견되었습니다. 이 코드를 프로덕션 환경에 남겨 두어야 합니까?",
+  "js-ts.javascript-confirm": "confirm() 호출이 발견되었습니다. 이 코드를 프로덕션 환경에 남겨 두어야 합니까?",
+  "js-ts.javascript-debugger": "debugger 호출이 발견되었습니다. 이 코드를 프로덕션 환경에 남겨 두어야 합니까?",
+  "js-ts.javascript-prompt": "prompt() 호출이 발견되었습니다. 이 코드를 프로덕션 환경에 남겨 두어야 합니까?",
+  "js-ts.jose-exposed-data": "이 객체는 jose.JWT.sign(...)에 직접 전달됩니다. 민감한 정보가 JWT 페이로드를 통해 유출되지 않도록 하십시오.",
+  "js-ts.jquery-insecure-method": "jQuery의 `.$METHOD(...)`에 들어가는 사용자가 제어할 수 있는 데이터는 XSS 취약점을 유발할 수 있는 안티패턴입니다.",
+  "js-ts.jquery-insecure-selector": "사용자가 제어할 수 있는 데이터가 `$(...)` 셀렉터에 들어가는 것은 XSS 취약점을 유발할 수 있는 안티패턴입니다.",
+  "js-ts.js-open-redirect": "애플리케이션은 사용자가 제어할 수 있는 입력 `$PROP`을 받아들이며, 이 입력은 현재 창 컨텍스트의 이동 위치를 제어할 수 있습니다. 이로 인해 오픈 리다이렉트와 javascript: URI 유형의 크로스 사이트 스크립팅(XSS)이라는 두 가지 취약점이 발생합니다. 사용자 입력이 이동 대상을 제어하도록 허용하기 전에 먼저 검증하십시오.",
+  "js-ts.js-open-redirect-from-function": "애플리케이션은 사용자가 제어할 수 있는 입력 `$PROP`을 받아들이며, 이 입력은 현재 창 컨텍스트의 이동 위치를 제어할 수 있습니다. 이로 인해 오픈 리다이렉트와 javascript: URI 유형의 크로스 사이트 스크립팅(XSS)이라는 두 가지 취약점이 발생합니다. 사용자 입력이 이동 대상을 제어하도록 허용하기 전에 먼저 검증하십시오.",
+  "js-ts.jsx-label-not-i18n": "JSX 컴포넌트 문구가 국제화되지 않았습니다: '$MESSAGE'.",
+  "js-ts.jsx-not-internationalized": "JSX 요소가 국제화되지 않았습니다: '$MESSAGE'. 웹사이트나 애플리케이션은 국제화를 통해 다국어를 지원해야 합니다. 요소의 국제화에는 `i18next`와 같은 패키지를 사용하십시오.",
+  "js-ts.jwt-decode-without-verify": "검증 없이 JWT 토큰을 디코딩하는 동작이 감지되었습니다. JWT는 사용 전에 반드시 검증해야 하며, 그렇지 않으면 토큰 무결성을 알 수 없어 공격자가 임의의 클레임을 담은 토큰을 위조할 수 있습니다. 토큰을 사용하기 전에 '.verify()'를 호출하십시오.",
+  "js-ts.jwt-exposed-data": "이 객체는 jsonwebtoken.sign(...)에 직접 전달됩니다. 민감한 정보가 JWT 페이로드를 통해 유출되지 않도록 하십시오.",
+  "js-ts.jwt-none-alg": "JWT가 'none' 알고리즘을 사용하는 것이 감지되었습니다. 이 알고리즘은 토큰 무결성이 이미 검증되었다고 가정하므로 공격자가 위조한 JWT가 검증을 자동으로 통과하게 됩니다. 'none'을 명시적으로 사용하지 말고 'HS256'과 같은 알고리즘을 사용하십시오.",
+  "js-ts.jwt-simple-noverify": "JWT를 디코딩할 때 검증하지 않는 것이 감지되었습니다. JWT는 사용 전에 반드시 검증해야 하며, 그렇지 않으면 토큰 무결성을 알 수 없어 공격자가 임의의 클레임을 위조할 수 있습니다. 사용하기 전에 'verify'를 `true`로 설정하십시오."
 }
