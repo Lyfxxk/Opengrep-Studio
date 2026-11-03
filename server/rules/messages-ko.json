@@ -94,5 +94,21 @@
   "go.go-insecure-templates": "안전하지 않은 템플릿 타입이 사용되었습니다. 공식 문서에서 이를 보안 위험으로 지목했습니다. 자세한 내용은 https://golang.org/pkg/html/template/#HTML 에서 확인하십시오.",
   "go.go-ssti": "서버 측 템플릿 삽입(SSTI)은 공격자가 템플릿 고유 문법을 이용해 악성 페이로드를 템플릿에 주입하고 서버 측에서 실행하는 것을 말합니다. \"html/template\"를 사용할 때는 사용자 입력이 템플릿에 들어가기 전에 검증 및 정제되었는지 반드시 확인하십시오.",
   "go.gorm-dangerous-method-usage": "위험한 메서드 $METHOD의 사용이 감지되었습니다. 이 메서드는 입력을 이스케이프하지 않습니다(references의 링크 참조). 매개변수가 사용자가 제어할 수 있는 값이라면 SQL 인젝션이 발생할 수 있습니다. $METHOD를 사용할 때는 사용자가 제출한 데이터를 신뢰하지 말고 승인된 입력만 허용하십시오(화이트리스트 방식 사용).",
-  "go.gosql-sqli": "\"database/sql\"의 Go SQL 문장에서 리터럴이 아닌 변수와의 문자열 연결이 감지되었습니다. 변수를 사용자가 제어할 수 있고 제대로 정제되지 않으면 SQL 인젝션이 발생합니다. 이를 방지하려면 매개변수화된 쿼리나 사전 컴파일된 문장('Prepare' 및 'PrepareContext' 호출로 사용 가능)으로 전환하십시오."
+  "go.gosql-sqli": "\"database/sql\"의 Go SQL 문장에서 리터럴이 아닌 변수와의 문자열 연결이 감지되었습니다. 변수를 사용자가 제어할 수 있고 제대로 정제되지 않으면 SQL 인젝션이 발생합니다. 이를 방지하려면 매개변수화된 쿼리나 사전 컴파일된 문장('Prepare' 및 'PrepareContext' 호출로 사용 가능)으로 전환하십시오.",
+  "go.grpc-client-insecure-connection": "'grpc.WithInsecure()'를 사용하는 안전하지 않은 gRPC 연결이 발견되었습니다: gRPC 서버로 암호화되지 않은 연결이 생성되며, 공격자가 gRPC 메시지를 변조해 머신 보안을 위협할 수 있습니다. 'grpc.WithTransportCredentials()'을 사용해 SSL 인증서 기반으로 안전한 연결을 설정하십시오: 'tls.Config{}' 구조체와 'credentials.NewTLS()'를 조합해 자격 증명을 생성하고, 최종적으로 'grpc.WithTransportCredentials(credentials.NewTLS(<config>))' 형태가 되도록 합니다.",
+  "go.grpc-server-insecure-connection": "gRPC 서버가 'grpc.Creds()' 또는 자격 증명이 포함된 옵션을 사용하지 않는 것이 발견되었습니다: 해당 서버로의 연결은 암호화되지 않아 공격자가 gRPC 메시지를 변조해 머신 보안을 위협할 수 있습니다. SSL 인증서 기반의 자격 증명을 추가해 안전한 연결을 설정하십시오. 'credentials.NewServerTLSFromFile(\"cert.pem\", \"cert.key\")'로 생성할 수 있습니다.",
+  "go.handler-assignment-from-multiple-sources": "변수 $VAR에 서로 다른 두 소스에서 값이 할당됩니다: '$Y'와 '$R'. 이것이 의도된 동작인지 확인하십시오. 그렇지 않으면 둘이 동일한 객체로 취급될 때 논리 오류가 발생합니다.",
+  "go.hardcoded-jwt-key": "하드코딩된 자격 증명이 감지되었습니다. 자격 증명을 소스 코드에 저장하는 것은 권장되지 않습니다. 내부자든 외부자든 악의적인 사용자가 이러한 시크릿을 유출해 악용할 수 있습니다. 환경 변수로 자격 증명을 안전하게 제공하거나 보안 볼트/HSM(하드웨어 보안 모듈)에서 가져오는 것을 권장합니다.",
+  "go.hidden-goroutine": "숨겨진 goroutine이 감지되었습니다. 함수 호출은 기본적으로 동기적이어야 하지만, 이 함수의 유일한 동작은 goroutine을 시작하는 것이며 실제로는 비동기적으로 실행됩니다. 내부의 goroutine을 제거하고 대신 호출부에서 'go'로 명시적으로 시작하십시오.",
+  "go.import-text-template": "사용자 생성 콘텐츠를 렌더링하는 웹 애플리케이션은 크로스 사이트 스크립팅(XSS)을 방지하기 위해 HTML 콘텐츠를 올바르게 이스케이프해야 합니다. Go의 `text/template` 패키지는 HTML을 자동으로 이스케이프하지 않으므로 애플리케이션이 이러한 공격에 노출됩니다. HTML 이스케이프 기능이 내장된 `html/template` 패키지로 콘텐츠를 렌더링하면 애플리케이션이 더 안전해지고 XSS에 덜 취약해집니다.",
+  "go.insecure-module-used": "`net/http/cgi` 패키지는 임포트 블랙리스트에 포함되어 있습니다: 해당 패키지에는 httpoxy 취약점(CVE-2015-5386)이 있습니다. 대신 `net/http`나 웹 프레임워크를 사용해 애플리케이션을 구축하는 것을 권장합니다.",
+  "go.jwt-go-none-algorithm": "'none' 알고리즘을 사용하는 JWT가 감지되었습니다. 이 알고리즘은 토큰 무결성이 이미 검증되었다고 가정하기 때문에 공격자가 위조한 JWT가 검증을 자동으로 통과하게 됩니다. 'none'을 명시적으로 사용하지 말고 'HS256' 등의 알고리즘으로 대체하십시오.",
+  "go.jwt-go-parse-unverified": "검증 없이 JWT를 디코딩하는 것이 감지되었습니다. 꼭 필요한 경우가 아니라면 `ParseUnverified` 사용을 피하십시오. 이 메서드는 토큰을 파싱만 할 뿐 서명을 검증하지 않으며, 서명이 유효함(호출 체인 상위에서 이미 검증됨)을 확실히 알고 그 안의 값만 추출하려는 경우에만 적합합니다.",
+  "go.math-random-used": "`math/rand` 사용을 피하고 `crypto/rand` 사용으로 전환하십시오.",
+  "go.md5-used-as-password": "MD5가 비밀번호 해시로 사용되는 것이 감지되었습니다. MD5는 더 이상 안전한 비밀번호 해시로 간주되지 않습니다. 공격자가 짧은 시간 안에 깨뜨릴 수 있습니다. bcrypt 등 적절한 비밀번호 해시 함수를 사용하십시오. `golang.org/x/crypto/bcrypt` 패키지를 사용할 수 있습니다.",
+  "go.missing-ssl-minversion": "이 TLS 구성에는 `MinVersion`이 없습니다. 기본적으로 클라이언트의 최소 버전은 TLS 1.2이고 서버의 최소 버전은 TLS 1.0입니다. 일반적인 웹 애플리케이션은 TLS 1.3을 최소 버전으로 사용하고 다른 프로토콜은 비활성화해야 합니다. 오래되어 안전하지 않은 브라우저(예: IE10) 지원이 꼭 필요한 서버만 TLS 1.0을 활성화해야 할 수 있습니다. TLS 구성에 `MinVersion: tls.VersionTLS13`을 추가해 최소 버전을 TLS 1.3으로 올리십시오.",
+  "go.no-direct-write-to-responsewriter": "'http.ResponseWriter.write()'에서 직접 쓰는 것이 감지되었습니다. 이는 XSS를 방지하는 HTML 이스케이프를 우회합니다. 'html/template' 패키지로 바꿔 'template.Execute()'을 사용해 데이터를 렌더링하십시오.",
+  "go.no-fprintf-to-responsewriter": "'Fprintf' 등이 'http.ResponseWriter'에 직접 쓰는 것이 감지되었습니다. 이는 XSS를 방지하는 HTML 이스케이프를 우회합니다. 'html/template' 패키지로 바꿔 사용자에게 데이터를 렌더링하십시오.",
+  "go.no-io-writestring-to-responsewriter": "'io.WriteString()'이 'http.ResponseWriter'에 직접 쓰는 것이 감지되었습니다. 이는 XSS를 방지하는 HTML 이스케이프를 우회합니다. 'html/template' 패키지로 바꿔 사용자에게 데이터를 렌더링하십시오.",
+  "go.no-printf-in-responsewriter": "'printf' 등이 'http.ResponseWriter.write()'에 사용되는 것이 감지되었습니다. 이는 XSS를 방지하는 HTML 이스케이프를 우회합니다. 'html/template' 패키지로 바꿔 사용자에게 데이터를 렌더링하십시오."
 }
