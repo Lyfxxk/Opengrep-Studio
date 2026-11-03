@@ -702,5 +702,21 @@
   "python.pyramid-set-cookie-secure-unsafe-value": "Pyramid Cookie で secure オプションが正しく設定されていないことが検出されました。response.set_cookie(...) で secure=True を設定する必要があります。このパラメータが正しくない場合、Cookie は適切に保護されず、攻撃者に窃取される恐れがあります。",
   "python.pyramid-sqlalchemy-sql-injection": "SQLAlchemy の Distinct、Having、Group_by、Order_by、Filter に生の SQL を渡すと、SQL インジェクションを引き起こす恐れがあります。このルールが対象とするのは、開発者がこれらの句に生の SQL を渡し、\"bindparams\" 以外の関数でユーザー入力を注入している場合です。bindparams を使用して、ユーザー入力を SQL 文に安全にバインドしてください。",
   "python.python-debugger-found": "Python デバッガーのインポートが見つかりました。これは意図的に残されたものですか？",
-  "python.python-logger-credential-disclosure": "ログ呼び出しがハードコードされた機密情報 $FORMAT_STRING を出力している可能性を検出しました。資格情報の漏えいにつながる恐れがあります。ログに機密情報が記録されないようにしてください。"
+  "python.python-logger-credential-disclosure": "ログ呼び出しがハードコードされた機密情報 $FORMAT_STRING を出力している可能性を検出しました。資格情報の漏えいにつながる恐れがあります。ログに機密情報が記録されないようにしてください。",
+  "python.python-reverse-shell": "Python のリバースシェルが検出されました：$BINPATH 経由で $IP:$PORT へ接続します。",
+  "python.python.requests.best-practice.use-request-json-shortcut": "requests ライブラリには JSON リクエストを送信するための便利なパラメータが用意されており、リクエストボディを自分でシリアライズする必要はありません。`body=json.dumps(...)` を `json=...` に置き換えるだけで済みます。",
+  "python.python.requests.best-practice.use-response-json-shortcut": "requests ライブラリには JSON レスポンスを読み取るための便利なメソッドが用意されており、レスポンスを自分でデシリアライズする必要はありません。",
+  "python.python36-compatibility-Popen1": "Popen の `errors` パラメータは Python 3.6+ でのみ利用可能です。",
+  "python.python36-compatibility-Popen2": "Popen の `encoding` パラメータは Python 3.6+ でのみ利用可能です。",
+  "python.python36-compatibility-ssl": "この関数は Python 3.6+ でのみ利用可能です。",
+  "python.python37-compatibility-httpconn": "HTTPConnection の呼び出しで 'blocksize' パラメータが使用されていることが見つかりました。このパラメータは Python 3.7+ でのみ利用可能で、後方互換性がありません。Python 3.6 以前との互換性を保つため、このパラメータを削除してください。",
+  "python.python37-compatibility-httpsconn": "HTTPSConnection の呼び出しで 'blocksize' パラメータが使用されていることが見つかりました。このパラメータは Python 3.7+ でのみ利用可能で、後方互換性がありません。Python 3.6 以前との互換性を保つため、このパラメータを削除してください。",
+  "python.python37-compatibility-importlib": "'source_hash' は Python 3.7+ でのみ利用可能であり、低バージョンでは使用できず、後方互換性もありません。他のハッシュ関数に変更してください。",
+  "python.python37-compatibility-importlib2": "'importlib.resources' が見つかりました。このモジュールは Python 3.7+ でのみ利用可能であり、低バージョンでは使用できず、後方互換性もありません。旧バージョンの Python では importlib_resources を使用してください。",
+  "python.python37-compatibility-importlib3": "'importlib.abc.ResourceReader' が見つかりました。このモジュールは Python 3.7+ でのみ利用可能で、後方互換性がありません。他の loader に変更してください。",
+  "python.python37-compatibility-ipv4network1": "IPv4Network.subnet_of は Python 3.7+ でのみ利用可能で、後方互換性がありません。代わりに、サブネットが 'subnets' に含まれているかどうかを確認してください。",
+  "python.python37-compatibility-ipv4network2": "IPv4Network.supernet_of は Python 3.7+ でのみ利用可能で、後方互換性がありません。代わりに、スーパーネットが 'supernet' に含まれているかどうかを確認してください。",
+  "python.python37-compatibility-ipv6network1": "IPv6Network.subnet_of は Python 3.7+ でのみ利用可能で、後方互換性がありません。代わりに、サブネットが 'subnets' に含まれているかどうかを確認してください。",
+  "python.python37-compatibility-ipv6network2": "IPv6Network.supernet_of は Python 3.7+ でのみ利用可能で、後方互換性がありません。代わりに、スーパーネットが 'supernet' に含まれているかどうかを確認してください。",
+  "python.python37-compatibility-locale1": "'locale.format_string' の呼び出しで 'monetary' パラメータが使用されていることが見つかりました。このパラメータは Python 3.7+ でのみ利用可能で、後方互換性がありません。'monetary' パラメータを削除してください。"
 }
