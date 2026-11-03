@@ -110,5 +110,21 @@
   "go.no-direct-write-to-responsewriter": "'http.ResponseWriter.write()'에서 직접 쓰는 것이 감지되었습니다. 이는 XSS를 방지하는 HTML 이스케이프를 우회합니다. 'html/template' 패키지로 바꿔 'template.Execute()'을 사용해 데이터를 렌더링하십시오.",
   "go.no-fprintf-to-responsewriter": "'Fprintf' 등이 'http.ResponseWriter'에 직접 쓰는 것이 감지되었습니다. 이는 XSS를 방지하는 HTML 이스케이프를 우회합니다. 'html/template' 패키지로 바꿔 사용자에게 데이터를 렌더링하십시오.",
   "go.no-io-writestring-to-responsewriter": "'io.WriteString()'이 'http.ResponseWriter'에 직접 쓰는 것이 감지되었습니다. 이는 XSS를 방지하는 HTML 이스케이프를 우회합니다. 'html/template' 패키지로 바꿔 사용자에게 데이터를 렌더링하십시오.",
-  "go.no-printf-in-responsewriter": "'printf' 등이 'http.ResponseWriter.write()'에 사용되는 것이 감지되었습니다. 이는 XSS를 방지하는 HTML 이스케이프를 우회합니다. 'html/template' 패키지로 바꿔 사용자에게 데이터를 렌더링하십시오."
+  "go.no-printf-in-responsewriter": "'printf' 등이 'http.ResponseWriter.write()'에 사용되는 것이 감지되었습니다. 이는 XSS를 방지하는 HTML 이스케이프를 우회합니다. 'html/template' 패키지로 바꿔 사용자에게 데이터를 렌더링하십시오.",
+  "go.open-redirect": "HTTP 리다이렉트 대상이 사용자 입력 `$REQUEST`으로 구성되어 오픈 리다이렉트 취약점이 발생할 수 있으며, 공격자는 이를 악용해 사용자를 악성 웹사이트로 리다이렉트할 수 있습니다. 가능한 한 사용자 입력으로 리다이렉트 URL을 구성하지 않도록 하십시오. 반드시 필요한 경우 OWASP 모범 사례를 따라 URL을 허용 목록 도메인으로 제한하십시오.",
+  "go.parsing-external-entities-enabled": "\"XMLParseNoEnt\" 활성화가 감지되었습니다: 이 옵션은 외부 엔티티 구문 분석을 허용하며, 라이브러리가 사용자가 제어 가능한 데이터를 구문 분석할 경우 XXE로 이어질 수 있습니다. \"XMLParseNoEnt\"를 활성화하지 마시거나, 구문 분석 시 사용자가 제어 가능한 데이터를 충분히 정화하십시오.",
+  "go.path-traversal-inside-zip-extraction": "zip 압축 파일을 해제할 때 파일 경로 순회가 발생합니다.",
+  "go.pg-orm-sqli": "go-pg ORM SQL 문에서 리터럴이 아닌 변수와의 문자열 연결이 감지되었습니다. 변수를 사용자가 제어할 수 있고 올바르게 정화되지 않은 경우 SQL 인젝션으로 이어질 수 있습니다. 사용자가 제어 가능한 입력과 연결하는 문자열을 사용하지 말고, 매개변수화된 구문으로 대체하여 방지하십시오.",
+  "go.pg-sqli": "go-pg SQL 문에서 리터럴이 아닌 변수와의 문자열 연결이 감지되었습니다. 변수를 사용자가 제어할 수 있고 올바르게 정화되지 않은 경우 SQL 인젝션으로 이어질 수 있습니다. 문자열 연결 대신 매개변수화된 쿼리를 사용하십시오. 예: '(SELECT ? FROM table, data1)'.",
+  "go.pgx-sqli": "pgx SQL 문에서 리터럴이 아닌 변수와의 문자열 연결이 감지되었습니다. 변수를 사용자가 제어할 수 있고 올바르게 정화되지 않은 경우 SQL 인젝션으로 이어질 수 있습니다. 매개변수화된 쿼리로 전환하십시오. 예: (`SELECT $1 FROM table`, `data1)`.",
+  "go.potential-dos-via-decompression-bomb": "zip 폭탄을 통한 서비스 거부 가능성이 감지되었습니다. 최대 읽기 바이트 수를 제한하면 이 공격을 완화할 수 있으며, `io.CopyN()`으로 크기를 지정할 수 있습니다.",
+  "go.pprof-debug-exposure": "프로파일링 'pprof' 엔드포인트는 /debug/pprof에 자동으로 노출되며 서버 정보를 유출할 수 있습니다. `import \"net/http/pprof\"`는 신중하게 사용하십시오. 자세한 내용과 완화 조치는 https://www.farsightsecurity.com/blog/txt-record/go-remote-profiling-20161028/ 에서 확인하십시오.",
+  "go.raw-html-format": "사용자 입력이 수동으로 구성된 HTML 문자열로 유입되는 것이 감지되었습니다. HTML을 수동으로 조합하면 안전한 렌더링 방식을 우회하게 되어 크로스 사이트 스크립팅(XSS) 취약점이 생길 수 있으며, 공격자가 사용자의 민감한 데이터를 탈취할 수 있습니다. HTML을 안전하게 렌더링하는 `html/template` 패키지를 대신 사용하거나, HTML 렌더링이 안전한지 확인하십시오.",
+  "go.reflect-makefunc": "'reflect.MakeFunc'가 감지되었습니다. 이는 Go 타입 시스템이 일반적으로 제공하는 보호를 우회합니다. 이 호출을 감사하여 사용자 입력이 MakeFunc가 생성한 코드에 영향을 줄 수 없도록 보장하십시오. 그렇지 않으면 심각한 보안 취약점으로 이어질 수 있습니다.",
+  "go.reverseproxy-director": "ReverseProxy는 Director가 추가한 헤더를 제거할 수 있습니다. ReverseProxy.Director 대신 ReverseProxy.Rewrite를 사용하는 것을 고려하십시오.",
+  "go.session-cookie-missing-httponly": "세션 cookie에 'HttpOnly' 플래그가 설정되지 않은 것이 감지되었습니다. 이 플래그는 클라이언트 스크립트가 cookie를 읽지 못하도록 브라우저에 지시하며, XSS 공격을 완화할 수 있습니다. Options 구조체에서 'HttpOnly'를 'true'로 설정하십시오.",
+  "go.session-cookie-missing-secure": "세션 cookie에 'Secure' 플래그가 설정되지 않은 것이 감지되었습니다. 이 플래그는 클라이언트가 HTTP 등 안전하지 않은 채널을 통해 cookie를 전송하는 것을 방지합니다. Options 구조체에서 'Secure'를 'true'로 설정하십시오.",
+  "go.session-cookie-samesitenone": "Gorilla 세션 옵션에 SameSiteNoneMode가 설정된 것이 발견되었습니다. 보안을 강화하려면 SameSite를 Lax, Strict 또는 Default로 설정하는 것을 고려하십시오.",
+  "go.shared-url-struct-mutation": "공유되는 URL 구조체가 의도치 않게 수정될 수 있으므로, 의도한 동작인지 확인하십시오.",
+  "go.ssl-v3-is-insecure": "SSLv3는 알려진 취약점이 있어 안전하지 않습니다. go1.14부터 SSLv3 지원이 제거되었습니다. 'tls.VersionTLS13'로 전환하십시오."
 }
