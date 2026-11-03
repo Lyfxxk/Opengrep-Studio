@@ -382,5 +382,21 @@
   "js-ts.puppeteer-evaluate-code-injection": "検証されていないユーザーデータが `evaluate` メソッドに到達できる場合、サーバーサイドリクエストフォージェリ（SSRF）の脆弱性となる恐れがあります。",
   "js-ts.puppeteer-exposed-chrome-devtools": "リモートデバッグプロトコルは一切の認証を行いません。露出範囲が大きすぎるとセキュリティ上のリスクがあります。",
   "js-ts.puppeteer-goto-injection": "検証されていないユーザーデータが `goto` メソッドに到達できる場合、サーバーサイドリクエストフォージェリ（SSRF）の脆弱性となる恐れがあります。",
-  "js-ts.puppeteer-setcontent-injection": "検証されていないユーザーデータが `setContent` メソッドに到達できる場合、サーバーサイドリクエストフォージェリ（SSRF）の脆弱性となる恐れがあります。"
+  "js-ts.puppeteer-setcontent-injection": "検証されていないユーザーデータが `setContent` メソッドに到達できる場合、サーバーサイドリクエストフォージェリ（SSRF）の脆弱性となる恐れがあります。",
+  "js-ts.raw-html-concat": "HTML 文字列内のユーザー制御可能なデータは、XSS を引き起こす恐れがあります。",
+  "js-ts.raw-html-format": "ユーザーデータが、手動で連結された HTML の本文部分に流れ込んでいます。データがユーザー入力に由来する場合、クロスサイトスクリプティング（XSS）の脆弱性が生じます。HTML の処理には、DOMPurify などのサニタイズライブラリの使用を検討してください。",
+  "js-ts.raw-html-join": "HTML 文字列内のユーザー制御可能なデータは、XSS を引き起こす恐れがあります。",
+  "js-ts.react-dangerouslysetinnerhtml": "定数以外の定義に由来する dangerouslySetInnerHTML が検出されました。内容がユーザー入力に由来する場合、意図せずユーザーをクロスサイトスクリプティング（XSS）攻撃に晒すことになります。dangerouslySetInnerHTML を使用する必要がある場合は、DOMPurify などのサニタイズライブラリで HTML を処理してください。",
+  "js-ts.react-find-dom": "findDOMNode は、基礎となる DOM ノードにアクセスするための「エスケープハッチ」です。多くの場合、使用は推奨されません——コンポーネントの抽象化を突き抜けてしまうためです。",
+  "js-ts.react-href-var": "アンカータグの 'href' 属性に変数が使用されていることが検出されました。悪意のある人物が 'javascript:' URI を注入し、クロスサイトスクリプティング（XSS）を引き起こす恐れがあります。アプリケーションでは 'javascript:' URI を無効にすることを推奨します。",
+  "js-ts.react-insecure-request": "HTTP 経由の暗号化されていないリクエストが検出されました。",
+  "js-ts.react-jwt-decoded-property": "このプロパティは、検証されていない JWT トークンからデコードされたものであり、信頼できません。",
+  "js-ts.react-jwt-in-localstorage": "JWT トークンを localStorage に保存するのは既知の悪いプラクティスです。トークンを localStorage から HTTP Cookie へ移行することを検討してください。",
+  "js-ts.react-legacy-component": "レガシーなコンポーネントライフサイクル——$METHOD が検出されました。",
+  "js-ts.react-markdown-insecure-html": "`transformLinkUri` または `transformImageUri` を安全でない実装でオーバーライドすること、`allowDangerousHtml` を有効にすること、`escapeHtml` を無効にすることは、いずれもコードを XSS 攻撃のリスクに晒します。",
+  "js-ts.react-props-in-state": "React で props を state にコピーするのは悪いプラクティスです——その後の props へのすべての更新が無視されます。props は state にコピーせず、コンポーネント内で直接読み取ってください。",
+  "js-ts.react-props-spreading": "ベストプラクティスは、スプレッド構文を使わずに props を HTML コンポーネントへ明示的に渡すことです。スプレッド構文は無効な HTML props を要素に渡す可能性があり、軽ければコンソールの警告を引き起こし、重ければ悪意のある人物に意図しない属性を注入する手段を与えてしまいます。",
+  "js-ts.react-unsanitized-method": "定数以外の定義に由来する $HTML が検出されました。内容がユーザー入力に由来する場合、意図せずユーザーをクロスサイトスクリプティング（XSS）攻撃に晒すことになります。$HTML を使用する必要がある場合は、DOMPurify などのサニタイズライブラリで HTML を処理してください。",
+  "js-ts.react-unsanitized-property": "定数以外の定義に由来する $HTML が検出されました。内容がユーザー入力に由来する場合、意図せずユーザーをクロスサイトスクリプティング（XSS）攻撃に晒すことになります。$HTML を使用する必要がある場合は、DOMPurify などのサニタイズライブラリで HTML を処理してください。",
+  "js-ts.remote-property-injection": "ユーザー入力をキーに使ったオブジェクトの角括弧アクセスが存在します。攻撃者はこれを悪用して、オブジェクトのすべてのプロパティ、さらにはプロトタイプにアクセスする恐れがあります。オブジェクトのプロパティにはリテラルを使用してください。"
 }
