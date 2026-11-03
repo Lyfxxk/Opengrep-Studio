@@ -8,10 +8,15 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { changeAppLanguage, type AppLanguage } from '@/i18n';
 
-const LANGUAGES: Array<{ code: AppLanguage; labelKey: 'lang.zh' | 'lang.zhHant' | 'lang.en' }> = [
+const LANGUAGES: Array<{
+  code: AppLanguage;
+  labelKey: 'lang.zh' | 'lang.zhHant' | 'lang.en' | 'lang.ja' | 'lang.ko';
+}> = [
   { code: 'zh', labelKey: 'lang.zh' },
   { code: 'zh-Hant', labelKey: 'lang.zhHant' },
   { code: 'en', labelKey: 'lang.en' },
+  { code: 'ja', labelKey: 'lang.ja' },
+  { code: 'ko', labelKey: 'lang.ko' },
 ];
 
 export default function LanguageMenu({ className = '' }: { className?: string }) {

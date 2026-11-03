@@ -91,6 +91,8 @@ function productLang(): string {
   const lang = (i18n.resolvedLanguage ?? i18n.language).toLowerCase();
   if (lang.startsWith('zh-hant')) return 'zh-Hant';
   if (lang.startsWith('en')) return 'en';
+  if (lang.startsWith('ja')) return 'ja';
+  if (lang.startsWith('ko')) return 'ko';
   return 'zh';
 }
 

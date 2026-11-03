@@ -30,6 +30,8 @@ const zhHant: typeof zh = {
     zh: '简体中文',
     zhHant: '繁體中文',
     en: 'English',
+    ja: '日語',
+    ko: '韓語',
   },
   theme: {
     light: '淺色',

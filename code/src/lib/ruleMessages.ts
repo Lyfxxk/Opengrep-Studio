@@ -8,6 +8,8 @@ const cache = new Map<string, Promise<RuleMessageMap>>();
 
 function messagePath(language: string): string | null {
   if (language.startsWith('zh-Hant')) return '/api/messages-zh-Hant';
+  if (language.startsWith('ja')) return '/api/messages-ja';
+  if (language.startsWith('ko')) return '/api/messages-ko';
   return language.startsWith('zh') ? '/api/messages-zh' : null;
 }
 

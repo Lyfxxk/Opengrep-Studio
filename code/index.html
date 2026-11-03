@@ -13,7 +13,7 @@
           (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
         if (dark) document.documentElement.classList.add('dark');
         var lang = localStorage.getItem('__global_opengrep_lang');
-        if (lang === 'en' || lang === 'zh-Hant' || lang === 'zh') {
+        if (lang === 'en' || lang === 'zh-Hant' || lang === 'zh' || lang === 'ja' || lang === 'ko') {
           document.documentElement.lang = lang === 'zh' ? 'zh-CN' : lang;
         }
       } catch (e) {
