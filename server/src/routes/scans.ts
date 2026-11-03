@@ -502,7 +502,11 @@ scanRoutes.get('/api/scans/:scanId/manifest', asyncHandler(async (req, res) => {
           ? 'sha256（按相對路徑排序，對 路徑 + \\0 + 檔案內容 + \\0 序列計算）'
           : lang === 'en'
             ? 'sha256 (paths sorted, then hash the path + \\0 + file content + \\0 sequence)'
-            : 'sha256（按相对路径排序，对 路径 + \\0 + 文件内容 + \\0 序列计算）',
+            : lang === 'ja'
+              ? 'sha256（相対パス順にソートし、パス + \\0 + ファイル内容 + \\0 の並びに対して計算）'
+              : lang === 'ko'
+                ? 'sha256（상대 경로 기준 정렬 후, 경로 + \\0 + 파일 내용 + \\0 시퀀스에 대해 계산）'
+                : 'sha256（按相对路径排序，对 路径 + \\0 + 文件内容 + \\0 序列计算）',
       sha256: scan.srcHash ?? null,
       fileCount: scan.fileCount,
     },
