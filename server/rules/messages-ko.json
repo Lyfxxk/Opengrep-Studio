@@ -206,5 +206,21 @@
   "java.saxparserfactory-disallow-doctype-decl-missing": "이 SAXParserFactory는 DOCTYPE 선언이 활성화되어 있어 XML 외부 엔티티(XXE) 공격에 취약합니다. 기능 `http://apache.org/xml/features/disallow-doctype-decl`을 true로 설정하여 비활성화하십시오. 또는 DOCTYPE을 유지하되 외부 엔티티를 금지하려면 기능 `http://xml.org/sax/features/external-general-entities`와 `http://xml.org/sax/features/external-parameter-entities`를 false로 설정하십시오. 참고: 이는 설정 키의 리터럴이며 클릭할 수 있는 링크가 아닙니다. 추가 설명은 https://semgrep.dev/docs/cheat-sheets/java-xxe/#3a-documentbuilderfactory 을 참조하십시오.",
   "java.script-engine-injection": "ScriptEngine을 통한 잠재적 코드 인젝션을 탐지했습니다. 사용자가 제어할 수 있는 데이터가 '.eval()'에 들어가지 못하도록 하십시오. 그렇지 않으면 코드 인젝션 취약점에 해당합니다.",
   "java.seam-log-injection": "Seam 로그 API는 로그 메시지에 표현 언어를 사용할 수 있게 하며, 표현 언어는 예상치 못한 코드 실행의 원인이 되기도 합니다. 여기서 표현식은 동적 값으로 구성되므로 값의 출처를 확인하고, 필터링되지 않은 값이 이 고위험 평가 로직에 들어가지 않도록 하십시오.",
-  "java.server-dangerous-class-deserialization": "Java RMI에서 원시 타입이 아닌 클래스를 사용하면 안전하지 않은 역직렬화 취약점이 될 수 있습니다. 기반 구현에 따라 공격자가 이 객체를 조작하여 시스템에서 코드를 실행할 수 있습니다. 정수 ID로 객체를 찾는 방식으로 전환하거나, JSON 등 대체 직렬화 방식을 고려하십시오."
+  "java.server-dangerous-class-deserialization": "Java RMI에서 원시 타입이 아닌 클래스를 사용하면 안전하지 않은 역직렬화 취약점이 될 수 있습니다. 기반 구현에 따라 공격자가 이 객체를 조작하여 시스템에서 코드를 실행할 수 있습니다. 정수 ID로 객체를 찾는 방식으로 전환하거나, JSON 등 대체 직렬화 방식을 고려하십시오.",
+  "java.server-dangerous-object-deserialization": "Java RMI에서 임의 객체('$PARAMTYPE $PARAM')를 사용하는 것은 안전하지 않은 역직렬화 취약점입니다. 공격자가 해당 객체를 조작하여 시스템에서 코드를 실행할 수 있습니다. 정수 ID로 객체를 조회하는 방식으로 변경하거나 JSON과 같은 다른 직렬화 방식을 고려하십시오.",
+  "java.servletresponse-writer-xss": "HttpServletResponse에 '$VAR' 변수를 쓸 때 크로스 사이트 스크립팅(XSS)이 감지되었습니다: 사용자 입력이 HttpServletRequest에서 출력으로 직접 들어갑니다. org.owasp.encoder.Encode.forHtml을 사용하여 올바르게 인코딩하십시오: 'Encode.forHtml($VAR)'.",
+  "java.spel-injection": "Spring 표현식은 동적 값으로 구성됩니다. 이러한 값의 출처를 확인하고, 필터링되지 않은 값이 이 위험한 코드의 평가에 들어가지 않도록 하십시오.",
+  "java.spring-csrf-disabled": "이 설정은 CSRF 보호를 비활성화했으므로 보안 위험이 있습니다.",
+  "java.spring-sqli": "공개 메서드 시그니처의 매개변수에서 온 문자열이 네이티브 SQL 구문에 들어가는 것이 감지되었습니다. 구문의 변수를 안전하게 처리하지 않으면 SQL 삽입으로 이어질 수 있습니다. 대신 Prepared Statement(java.sql.PreparedStatement)를 사용하십시오. 'connection.prepareStatement'를 통해 얻을 수 있습니다.",
+  "java.spring-unvalidated-redirect": "애플리케이션이 사용자를 사용자가 제공한 검증되지 않은 URL 매개변수로 리디렉션합니다.",
+  "java.tainted-cmd-from-http-request": "HTTPServletRequest의 입력이 'ProcessBuilder' 또는 'exec' 명령으로 들어가는 것이 감지되었습니다. 전달된 변수를 올바르게 처리하지 않으면 명령 삽입으로 이어질 수 있습니다. 사용자 입력에는 이러한 OS 명령을 사용하지 마십시오. 반드시 사용해야 한다면 구체적인 값을 허용 목록으로 관리하십시오.",
+  "java.tainted-env-from-http-request": "HTTPServletRequest의 입력이 'exec' 명령의 환경 변수로 들어가는 것이 감지되었습니다. String 배열을 받는 오버로드 메서드로 변경하고, `exec({\"command\", \"arg1\", \"arg2\"})` 형식으로 인수를 전달하십시오.",
+  "java.tainted-file-path": "사용자 입력이 파일 경로를 제어하는 것이 감지되었습니다. 공격자가 파일 위치를 제어할 수 있습니다('../'로 디렉터리를 거슬러 올라가는 경우 포함). 파일 경로의 사용자 제어 변수를 안전하게 처리하거나, org.apache.commons.io.FilenameUtils.getName(...) 같은 유틸리티 메서드로 파일명만 가져올 수도 있습니다.",
+  "java.tainted-html-string": "사용자 입력이 수동으로 구성한 HTML 문자열로 흘러 들어가는 것이 감지되었습니다. HTML을 수동으로 조합하면 안전한 렌더링 방식을 우회할 수 있어 크로스 사이트 스크립팅(XSS) 취약점이 생기며, 공격자가 사용자의 민감한 데이터를 탈취할 수 있습니다. HTML 렌더링이 안전한지 확인하십시오. 사용자 데이터를 렌더링해야 한다면 OWASP ESAPI 인코더를 사용할 수 있습니다.",
+  "java.tainted-ldapi-from-http-request": "HTTPServletRequest의 입력이 LDAP 쿼리로 들어가는 것이 감지되었습니다. 입력을 안전하게 처리하지 않으면 LDAP 삽입으로 이어져 공격자가 LDAP 디렉터리 트리의 객체를 수정할 수 있습니다. LDAP 쿼리에 들어가는 데이터가 사용자의 영향을 받지 않도록 하거나 데이터를 안전하게 처리하십시오.",
+  "java.tainted-session-from-http-request": "HTTPServletRequest의 입력이 `setAttribute` 등 세션 작업으로 들어가는 것이 감지되었습니다. 사용자 입력이 세션 매개변수에 직접 들어가면 공격자가 악성 코드를 삽입할 기회를 얻어 신뢰할 수 있는 데이터와 신뢰할 수 없는 데이터의 경계가 훼손됩니다. 이러한 호출에 전달하기 전에 사용자 입력을 철저히 안전하게 처리하십시오.",
+  "java.tainted-sql-from-http-request": "HTTPServletRequest의 입력이 SQL 실행 지점 또는 구문으로 들어가는 것이 감지되었습니다. SQL 구문의 변수를 안전하게 처리하지 않으면 SQL 삽입으로 이어질 수 있습니다. 파라미터화된 쿼리를 사용하거나 사용자 입력을 안전하게 처리하십시오.",
+  "java.tainted-sql-string": "사용자 입력이 SQL 문자열을 수동으로 조합하는 데 사용되는 것이 감지되었습니다. 수동 조합은 실수로 SQL 삽입을 일으키기 쉽고, 공격자가 이를 통해 데이터베이스 내용을 유출하거나 변조할 수 있습니다. 대신 대부분의 데이터베이스 엔진이 기본적으로 지원하는 파라미터화된 쿼리를 사용하거나, ORM 프레임워크로 쿼리를 보호하십시오.",
+  "java.tainted-sqli": "`$EVENT` 객체로 테인트된 SQL 구문이 감지되었습니다. 구문의 변수를 안전하게 처리하지 않으면 SQL 삽입으로 이어질 수 있습니다. 파라미터화된 쿼리를 사용하거나 사용자 입력을 안전하게 처리하십시오.",
+  "java.tainted-system-command": "사용자 입력이 시스템 명령을 실행하는 메서드로 들어가는 것이 감지되었습니다. 명령 삽입 취약점이 생길 수 있으며, 공격자가 서버에 임의의 명령을 삽입하거나 악성 코드를 다운로드하거나 데이터를 탈취할 수 있습니다. 대신 ProcessBuilder를 사용하고 명령을 `new ProcessBuilder(\"ls\", \"-al\", targetDirectory)`처럼 독립된 인수로 분리하십시오. 또한 실제 명령을 하드코딩하거나 허용 목록으로 관리하여 공격자가 임의의 명령을 실행하지 못하게 하십시오."
 }
