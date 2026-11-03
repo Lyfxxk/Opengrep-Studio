@@ -189,6 +189,39 @@ const ja = {
     totalCount: '合計 {{count}}',
     unscanned: '未スキャン',
   },
+  engine: {
+    title: 'エンジンの状態',
+    checkUpdate: '更新を確認',
+    ready: 'エンジン準備完了',
+    source: '出所：{{source}}',
+    pinnedVersion: 'マニフェスト v{{version}}',
+    sourceUnknown: '不明',
+    selfManaged: 'エンジンはユーザー自身で管理されています（OPENGREP_BIN またはシステム PATH）。ワンクリックアップグレードには対応していません。',
+    downloading: 'ダウンロード中',
+    verifying: '検証中',
+    installing: 'インストール中',
+    upgradeTarget: ' アップグレード先 v{{version}}',
+    newVersion: '新しいバージョン v{{version}} が見つかりました',
+    upgrade: 'ワンクリックアップグレード',
+    upgradeBlockedByScan: 'スキャン実行中のため、アップグレードは利用できません',
+    upToDate: '最新バージョンです',
+    checkFailed: '更新の確認に失敗しました：{{error}}',
+    unavailable: 'エンジン利用不可',
+    hintMacosQuarantine: 'macOS での注意：ブラウザーで手動ダウンロードしたバイナリーは Gatekeeper にブロックされます（「開発者を検証できない」/「壊れている」）。xattr -d com.apple.quarantine <エンジンパス> を実行すると使用できます。npm run setup:engine でダウンロードしたものは影響を受けません。',
+  },
+  engineSource: {
+    env: '環境変数 OPENGREP_BIN で指定',
+    'bundled-dir': 'opengrep-tool インストール先（npm run setup:engine）',
+    path: 'システム PATH から検索',
+    missing: '見つかりません',
+  },
+  issues: {
+    noDescription: '（結果に説明がありません）',
+    unknownPath: '（不明なパス）',
+  },
+  langStats: {
+    total: '合計 {{kb}} KB',
+  },
 };
 
 export default ja;
