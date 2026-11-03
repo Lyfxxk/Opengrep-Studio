@@ -430,5 +430,21 @@
   "js-ts.wkhtmltoimage-injection": "검증되지 않은 사용자 데이터가 `wkhtmltoimage`에 도달할 수 있는 경우 서버 측 요청 위조(SSRF) 취약점이 발생할 수 있습니다.",
   "js-ts.wkhtmltopdf-injection": "검증되지 않은 사용자 데이터가 `wkhtmltopdf`에 도달할 수 있는 경우 서버 측 요청 위조(SSRF) 취약점이 발생할 수 있습니다.",
   "js-ts.x-frame-options-misconfiguration": "사용자 입력이 `X-Frame-Options` 응답 헤더를 제어하면 소프트웨어가 브라우저가 `iframe` 안에서 페이지를 렌더링해도 되는지 올바르게 판단하지 못할 수 있습니다.",
-  "js-ts.xml2json-xxe": "검증되지 않은 사용자 데이터가 XML 파서에 도달할 수 있는 경우 XML 외부/내부 엔티티(XXE) 처리 취약점이 발생합니다."
+  "js-ts.xml2json-xxe": "검증되지 않은 사용자 데이터가 XML 파서에 도달할 수 있는 경우 XML 외부/내부 엔티티(XXE) 처리 취약점이 발생합니다.",
+  "js-ts.zlib-async-loop": "대량의 zlib 객체를 동시에 생성하고 사용하면 심각한 메모리 단편화가 발생합니다. 반복되는 오버헤드를 피하려면 압축 작업의 결과를 캐시하거나 동기 실행으로 전환하는 것을 강력히 권장합니다.",
+  "kotlin.build-gradle-password-hardcoded": "애플리케이션에 하드코딩된 시크릿이 있습니다. 소스 코드에 저장된 자격 증명, 식별자 및 기타 민감한 데이터는 내외부의 악의적인 사용자에 의해 유출되어 악용될 수 있습니다. 해당 시크릿을 교체하고 보안 볼트나 하드웨어 보안 모듈(HSM)에서 가져오도록 변경하는 것을 권장합니다. 회사 정책이 허용하는 경우 환경 변수를 사용할 수도 있습니다.",
+  "php.assert-use": "사용자 입력으로 assert를 호출하는 것은 eval을 실행하는 것과 같습니다.",
+  "php.assert-use-audit": "사용자 입력으로 assert를 호출하는 것은 eval을 실행하는 것과 같습니다.",
+  "php.backticks-use": "백틱을 사용하여 명령을 실행하면 명령 주입 취약점이 발생할 수 있습니다.",
+  "php.base-convert-loses-precision": "base_convert는 내부적으로 64비트 숫자를 사용하므로 큰 수를 올바르게 변환할 수 없으며, 세션 토큰, CSRF 토큰과 같은 무작위 토큰을 생성하는 데 적합하지 않습니다.",
+  "php.curl-ssl-verifypeer-off": "SSL 검증이 비활성화되어 있으나 비활성화되어서는 안 됩니다(현재 CURLOPT_SSL_VERIFYPEER = $IS_VERIFIED).",
+  "php.doctrine-dbal-dangerous-query": "Doctrine DBAL 쿼리 메서드에서 리터럴이 아닌 변수와의 문자열 연결이 감지되었습니다. 변수가 사용자가 제어할 수 있고 올바르게 정제되지 않으면 SQL 주입으로 이어질 수 있습니다. 파라미터화된 쿼리 또는 프리페어드 스테이트먼트를 사용하여 방지하십시오.",
+  "php.doctrine-orm-dangerous-query": "`$QUERY`의 Doctrine QueryBuilder 메서드에서 리터럴이 아닌 변수와의 문자열 연결이 감지되었습니다. 변수가 사용자가 제어할 수 있고 올바르게 정제되지 않으면 SQL 주입으로 이어질 수 있습니다. 파라미터화된 쿼리 또는 프리페어드 스테이트먼트를 사용하여 방지하십시오.",
+  "php.echoed-request": "사용자 입력을 `Echo`로 출력하는 것은 크로스 사이트 스크립팅(XSS) 위험이 있습니다. 사용자에게 데이터를 표시할 때는 `htmlentities()`를 사용해야 합니다.",
+  "php.eval-use": "상수가 아닌(비상수) 표현식을 실행하면 코드 주입이 발생할 수 있습니다.",
+  "php.exec-use": "상수가 아닌(비상수) 명령을 실행하면 명령 주입이 발생할 수 있습니다.",
+  "php.extract-user-data": "사용자가 제어할 수 있는 데이터에 대해 'extract()'를 호출하지 마십시오. 반드시 호출해야 하는 경우 기존 변수가 덮어써지지 않도록 EXTR_SKIP 플래그를 함께 제공하십시오.",
+  "php.file-inclusion": "상수가 아닌 파일 포함이 감지되었습니다. 사용자 입력이 이 구문에 도달하면 로컬 파일 포함(LFI) 또는 원격 파일 포함(RFI)으로 이어져 공격자가 민감한 파일을 획득할 수 있습니다. 포함할 파일을 명시적으로 지정하고, 불가능한 경우 사용자 입력을 철저히 검증하십시오.",
+  "php.ftp-use": "FTP 전송은 암호화되어 있지 않으므로 암호화된 대체 방안으로 전환하는 것을 고려하십시오.",
+  "php.laravel-active-debug-code": "APP_DEBUG 환경 변수를 true로 설정하는 구성이 발견되었습니다. 프로덕션 환경에서는 항상 false여야 하며, 그렇지 않으면 민감한 구성 값이 공격자에게 노출될 수 있습니다. false로 설정하십시오."
 }
