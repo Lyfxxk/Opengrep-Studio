@@ -174,5 +174,21 @@
   "java.gcm-detection": "GCM が検出されました。IV/nonce が再利用されていないことを確認してください。IV は暗号化をランダム化するための nonce であり、複数の平文が同じであっても、生成される暗号文は異なるものであるべきです。鍵とは異なり、IV は通常秘密にする必要はありませんが、ランダムかつ一意でなければなりません。一部の暗号化方式では、IV は暗号文の一部として公開送信されます。同じ鍵で同じ IV を再利用して複数の平文ブロックを暗号化すると、攻撃者が暗号文を比較し、それを手がかりに暗号化されたデータの重要な情報を推測できてしまいます。",
   "java.gcm-nonce-reuse": "GCM の IV/nonce が再利用されています：暗号化が完全に機能しなくなる恐れがあります。",
   "java.hibernate-sqli": "SQL ステートメント内にフォーマット文字列が検出されました。ステートメント内の変数が適切にサニタイズされていない場合、SQL インジェクションを引き起こす恐れがあります。代わりにプリコンパイル済みステートメント（java.sql.PreparedStatement）を使用してください。これは 'connection.prepareStatement' で取得できます。",
-  "java.http-response-splitting": "古い Java アプリケーションサーバーには HTTP レスポンス分割のリスクがあります——HTTP リクエストに CRLF 文字を注入できる場合に発生します。この検出結果は完全性のための提示にすぎないため、ご自身でテストを行い、お使いの環境が影響を受けていないことを確認することを推奨します。"
+  "java.http-response-splitting": "古い Java アプリケーションサーバーには HTTP レスポンス分割のリスクがあります——HTTP リクエストに CRLF 文字を注入できる場合に発生します。この検出結果は完全性のための提示にすぎないため、ご自身でテストを行い、お使いの環境が影響を受けていないことを確認することを推奨します。",
+  "java.httpservlet-path-traversal": "潜在的なパストラバーサルが検出されました。攻撃者はファイルの場所を制御できます（'../' によるディレクトリの遡りを含む）。ファイルパス内のユーザー制御可能な変数をサニタイズしてください。org.apache.commons.io.FilenameUtils.getName(...) のようなユーティリティメソッドを使用してファイル名のみを取得することもできます。",
+  "java.insecure-hostname-verifier": "安全ではない HostnameVerifier の実装が検出されました：この実装は任意のホスト名の任意の SSL 証明書を受け入れるため、中間者攻撃につながる恐れがあります。",
+  "java.insecure-jms-deserialization": "JMS Object メッセージは、ObjectMessage.getObject() の呼び出し時に、メッセージペイロードの処理を Java シリアライズに依存しています。信頼できないデータをデシリアライズするとセキュリティ上の欠陥につながります：リモートの攻撃者は、細工された JMS ObjectMessage を通じて、JMS メッセージをリスン/消費するアプリケーションの権限で任意のコードを実行できてしまいます。ここでは MessageListener が onMessage 内で ObjectMessage を消費しており、$Y.getObject の呼び出し時に任意のコード実行が引き起こされる恐れがあります。",
+  "java.insecure-resteasy-deserialization": "RESTful サービスエンドポイントの @Consumes アノテーションにワイルドカードメディアタイプ {*/*} が設定されている場合、攻撃者は Content-Type が application/x-java-serialized-object のリクエストを送信して SerializableProvider を悪用できます：リクエストボディは SerializationProvider によって処理され、悪意のあるペイロードが含まれている恐れがあり、$Y.getObject の呼び出し時に任意のコード実行につながる恐れがあります。",
+  "java.insecure-smtp-connection": "安全ではない SMTP 接続が検出されました：この接続は任意の SSL 証明書を信頼します。'email.setSSLCheckServerIdentity(true)' を設定して証明書の検証を有効にしてください。",
+  "java.insecure-trust-manager": "空の TrustManager の実装が検出されました：この実装はすべての証明書を受け入れ、中間者攻撃につながります。代わりに KeyStore と TrustManagerFactory を使用してください。詳しくは https://stackoverflow.com/questions/2642777/trusting-all-certificates-using-httpclient-over-https を参照してください。",
+  "java.jackson-unsafe-deserialization": "Jackson で JSON と Java オブジェクトの間で変換を行う際に default typing を有効にするのは非常に危険であり、リモートコード実行につながる恐れがあります。攻撃者が `$JSON` を制御できる場合、悪意のある JSON を送信して安全でないデシリアライズを悪用できてしまいます。対策：default typing（グローバルまたはクラス単位のアノテーション）を有効にしないようにし、Jackson のデシリアライズ用にクラスを設計する際は、`Object` などの危険な型でメンバー変数を宣言しないでください。",
+  "java.java-jwt-decode-without-verify": "検証なしで JWT トークンをデコードしていることが検出されました。JWT は使用前に必ず検証する必要があります。検証しない場合、トークンの完全性は不明のままであり、悪意のある人物が任意のクレームを含むトークンを偽造できてしまいます。トークンを使用する前に '.verify()' を呼び出してください。",
+  "java.java-jwt-hardcoded-secret": "ハードコードされた資格情報が検出されました。資格情報をソースコードに保存することは推奨されません——内部・外部を問わず、悪意のある人物が漏洩した秘密を悪用する恐れがあります。資格情報は環境変数で安全に注入するか、保管庫（vault）/HSM（ハードウェアセキュリティモジュール）から取得することを推奨します。",
+  "java.java-jwt-none-alg": "JWT に 'none' アルゴリズムが使用されていることが検出されました。このアルゴリズムはトークンの完全性がすでに検証されていると見なすため、攻撃者が偽造した JWT が検証を自動的に通過してしまいます。'none' を明示的に使用することは避け、'HS256' などのアルゴリズムを使用してください。",
+  "java.java-reverse-shell": "潜在的なリバースシェルの動作が検出されました。",
+  "java.jax-rs-path-traversal": "潜在的なパストラバーサルが検出されました。攻撃者はファイルの場所を制御できます。これには '../' によるディレクトリの遡りも含まれます。ファイルパス内のユーザー制御可能な変数をサニタイズしてください。org.apache.commons.io.FilenameUtils.getName(...) のようなユーティリティメソッドを使用してファイル名のみを取得することもできます。",
+  "java.jdbc-sql-formatted-string": "JDBC インジェクションの可能性が検出されました。queryForObject のパラメーター化クエリの機能を使用し、文字列の連結やフォーマットは行わないでください：'jdbc.queryForObject(\"select * from table where name = ?\", Integer.class, parameterName);'",
+  "java.jdbc-sqli": "SQL ステートメント内にフォーマットされた文字列が検出されました。ステートメント内の変数が適切にサニタイズされていない場合、SQL インジェクションを引き起こします。プリコンパイルされたステートメント（java.sql.PreparedStatement）に切り替えてください。これは 'connection.prepareStatement' で取得できます。",
+  "java.jdo-sqli": "SQL ステートメント内にフォーマットされた文字列が検出されました。ステートメント内の変数が適切にサニタイズされていない場合、SQL インジェクションを引き起こします。プリコンパイルされたステートメント（java.sql.PreparedStatement）に切り替えてください。これは 'connection.prepareStatement' で取得できます。",
+  "java.jjwt-none-alg": "JWT に 'none' アルゴリズムが使用されていることが検出されました。このアルゴリズムはトークンの完全性がすでに検証されていると見なすため、攻撃者が偽造した JWT が検証を自動的に通過してしまいます。'none' を明示的に使用することは避け、'HS256' などのアルゴリズムを使用してください。"
 }
