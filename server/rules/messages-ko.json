@@ -238,5 +238,21 @@
   "java.use-of-md5": "안전하지 않은 것으로 간주되는 MD5 해시 알고리즘이 감지되었습니다. MD5는 충돌 저항성이 없어 암호학적 서명 용도로 적합하지 않습니다. HMAC으로 전환하십시오.",
   "java.use-of-md5-digest-utils": "안전하지 않은 것으로 간주되는 MD5 해시 알고리즘이 감지되었습니다. MD5는 충돌 저항성이 없어 암호학적 서명 용도로 적합하지 않습니다. HMAC으로 전환하십시오.",
   "java.use-of-rc2": "RC2가 감지되었습니다. RC2는 관련 키 공격에 취약하며 부적합한 것으로 간주됩니다. `Cipher.getInstance(\"AES/CBC/PKCS7PADDING\")`과 같은 강력한 암호화 알고리즘으로 전환하십시오. 자세한 내용은 https://owasp.org/www-community/Using_the_Java_Cryptographic_Extensions 에서 확인하십시오.",
-  "java.use-of-rc4": "RC4가 감지되었습니다. RC4는 스트림 암호 공격과 비트 플립 공격 등 다양한 공격에 취약하므로 `Cipher.getInstance(\"AES/CBC/PKCS7PADDING\")`과 같은 강력한 암호화 알고리즘으로 전환하십시오. 자세한 내용은 https://owasp.org/www-community/Using_the_Java_Cryptographic_Extensions 에서 확인하십시오."
+  "java.use-of-rc4": "RC4가 감지되었습니다. RC4는 스트림 암호 공격과 비트 플립 공격 등 다양한 공격에 취약하므로 `Cipher.getInstance(\"AES/CBC/PKCS7PADDING\")`과 같은 강력한 암호화 알고리즘으로 전환하십시오. 자세한 내용은 https://owasp.org/www-community/Using_the_Java_Cryptographic_Extensions 에서 확인하십시오.",
+  "java.use-of-sha1": "안전하지 않은 것으로 간주되는 SHA1 해시 알고리즘이 탐지되었습니다. SHA1은 충돌 저항성이 없어 암호학적 서명에 적합하지 않습니다. 비밀번호 해시에는 PBKDF2를, 그 밖의 해시 용도에는 SHA256 또는 SHA512를 사용하십시오.",
+  "java.use-of-weak-rsa-key": "NIST 권고에 따르면 RSA 키 길이는 2048비트 이상이어야 합니다.",
+  "java.use-snakeyaml-constructor": "인자 없는 SnakeYAML org.yaml.snakeyaml.Yaml() 생성자를 사용하고 있어 역직렬화 공격에 취약합니다. SafeConstructor 또는 사용자 지정 Constructor를 전달하는 단일 인자 Yaml(...) 생성자로 변경하십시오.",
+  "java.vertx-sqli": "SQL 문에서 포맷 문자열이 사용된 것이 탐지되었습니다. 문에 포함된 변수가 적절히 정제되지 않으면 SQL 삽입으로 이어질 수 있습니다. 'connection.prepareStatement'를 통해 얻을 수 있는 프리컴파일된 문(java.sql.PreparedStatement)으로 변경하십시오.",
+  "java.weak-random": "`Math.random()` 또는 `java.util.Random()`이 탐지되었습니다. 둘 다 암호학적으로 안전한 난수 생성기가 아닙니다. 비밀번호나 기밀 토큰을 생성하는 데 사용하는 경우 `java.security.SecureRandom`으로 변경하십시오.",
+  "java.weak-ssl-context": "안전하지 않은 SSL 컨텍스트가 탐지되었습니다. TLS 1.0, 1.1 및 모든 SSL 버전은 약한 암호화로 간주되며 사용이 중단되었습니다. 최상의 보안을 위해 SSLContext.getInstance(\"TLSv1.2\")를 사용하십시오.",
+  "java.xml-decoder": "XMLDecoder는 신뢰할 수 없는 데이터를 파싱하는 데 사용해서는 안 됩니다. 사용자 입력을 역직렬화하면 임의 코드 실행으로 이어질 수 있습니다. 대안을 사용하고 외부 엔티티를 명시적으로 비활성화하십시오. 대안과 취약점 예방 방법은 https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html 을 참조하십시오.",
+  "java.xmlinputfactory-external-entities-enabled": "이 XMLInputFactory는 XML 외부 엔티티를 활성화하고 있어 XXE 공격에 취약합니다. \"javax.xml.stream.isSupportingExternalEntities\"를 false로 설정하여 외부 엔티티를 비활성화하십시오.",
+  "java.xmlinputfactory-possible-xxe": "이 XMLInputFactory는 XML 외부 엔티티를 명시적으로 비활성화하지 않아 XXE 취약점이 있을 수 있습니다. \"javax.xml.stream.isSupportingExternalEntities\"를 false로 설정하여 외부 엔티티를 명시적으로 비활성화하십시오.",
+  "java.xssrequestwrapper-is-insecure": "dzone의 XSSRequestWrapper 구현(https://www.javacodegeeks.com/2012/07/anti-cross-site-scripting-xss-filter.html)이 사용된 것이 탐지되었습니다. 이 구현의 XSS 필터링은 안전하지 않으며 악의적인 공격자가 우회할 수 있습니다. 직접 필터링하기보다는 뷰/템플릿 계층에서 자동으로 이스케이프 처리하는 기술 스택으로 전환할 것을 권장합니다.",
+  "js-ts.aead-no-final": "Decipher 객체의 'final' 호출은 인증 암호화 모드에서 인증 태그를 검증합니다. 'final'을 호출하지 않으면 이미 출력된 암호문에 대한 무결성 보장이 모두 무효화됩니다.",
+  "js-ts.ajv-allerrors-true": "`Ajv` 라이브러리에서 `allErrors: true`를 설정하면 모든 오류 객체가 무제한으로 할당되어, 공격자가 대량의 오류를 만들어 서비스 거부를 유발할 수 있습니다. 프로덕션 환경에서는 `allErrors: true`를 사용하지 마십시오.",
+  "js-ts.angular-bypasssecuritytrust": "`$TRUST`의 사용이 탐지되었습니다. 내용이 사용자 입력에서 온 것이라면 XSS 취약점이 발생할 수 있습니다. 반드시 사용해야 하는 경우 내용이 사용자 입력에서 비롯되지 않도록 보장하거나, 문맥에 따라 입력 검증, 정제 등의 적절한 방어 조치를 취하십시오.",
+  "js-ts.apollo-axios-ssrf": "사용자가 제어할 수 있는 매개변수 $DATAVAL이 내부 처리 함수 $INNERFUNC를 거쳐 $METHOD의 Axios 요청으로 전달되어 서버 측 요청 위조(SSRF)가 될 수 있습니다: 사용자가 제한된 API를 호출하거나 비인가 대상에게 내부 헤더 정보를 노출할 수 있습니다. 알려진 URL 허용 목록과 대조하여 사용자 매개변수를 검증하거나, 사용자가 제어할 수 있는 데이터를 제거하도록 리팩터링하십시오.",
+  "js-ts.assigned-undefined": "`undefined`는 JavaScript의 예약어가 아닙니다. 이렇게 작성하는 것은 \"합법적\"이긴 하지만 혼란을 일으키고 버그를 유발하기 쉽습니다.",
+  "js-ts.awscdk-bucket-encryption": "Bucket 구성 $X의 속성에 \"encryption: $Y.BucketEncryption.KMS_MANAGED\" 또는 \"encryption: $Y.BucketEncryption.S3_MANAGED\"를 추가하십시오."
 }
