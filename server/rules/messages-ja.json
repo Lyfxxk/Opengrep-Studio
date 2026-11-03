@@ -446,5 +446,21 @@
   "php.extract-user-data": "ユーザー制御可能なデータに対して 'extract()' を呼び出さないでください。呼び出す必要がある場合は、既存の変数が上書きされないよう EXTR_SKIP フラグを指定してください。",
   "php.file-inclusion": "定数でないファイルインクルードが検出されました。ユーザー入力がこのステートメントに到達すると、ローカルファイルインクルージョン（LFI）やリモートファイルインクルージョン（RFI）が発生し、攻撃者に機密ファイルを取得されるおそれがあります。インクルードするファイルを明示的に指定してください。それが難しい場合は、ユーザー入力を徹底的に検証してください。",
   "php.ftp-use": "FTP による転送は暗号化されません。暗号化された代替手段への変更を検討してください。",
-  "php.laravel-active-debug-code": "APP_DEBUG 環境変数を true に設定した構成が見つかりました。本番環境では常に false である必要があり、そうでない場合、機密性の高い設定値が攻撃者にさらされるおそれがあります。false に設定してください。"
+  "php.laravel-active-debug-code": "APP_DEBUG 環境変数を true に設定した構成が見つかりました。本番環境では常に false である必要があり、そうでない場合、機密性の高い設定値が攻撃者にさらされるおそれがあります。false に設定してください。",
+  "php.laravel-api-route-sql-injection": "Laravel ルート $ROUTE_NAME の HTTP メソッド [$METHOD] には、文字列連結または安全でない補間による SQL インジェクションのリスクがあります。",
+  "php.laravel-cookie-http-only": "設定ファイルの HttpOnly 属性が true に設定されていません。`http_only` を true に設定すると、cookie を Javascript から読み取れなくなり、XSS 攻撃を緩和できます。`http_only` => true と設定してください。",
+  "php.laravel-cookie-long-timeout": "設定ファイルの lifetime 属性が 30分を超えています。",
+  "php.laravel-cookie-null-domain": "設定ファイルの domain 属性が null に設定されていません。（サブドメインルート登録を使用している場合を除き）null に設定することを推奨します。同一オリジンからのみ cookie を設定できるようになり、お使いの cookie を保護できます。",
+  "php.laravel-cookie-same-site": "設定ファイルの same_site 属性が 'lax' または 'strict' に設定されていません。'lax' または 'strict' に設定すると、cookie をファーストパーティ/同一サイトのコンテキストに制限でき、cookie を保護して CSRF を防げます。",
+  "php.laravel-cookie-secure-set": "設定ファイルの secure 属性が 'true' に設定されていません。'true' に設定すると、cookie が暗号化されていないチャネル経由で送信されるのを防ぎ、中間者攻撃による窃取を回避できます。",
+  "php.laravel-dangerous-model-construction": "`$guarded` を空配列に設定すると、Laravel モデルのすべての属性への一括代入が許可され、Eloquent が既定で行う安全な一括代入保護を明示的に無効にしたことになります。",
+  "php.laravel-sql-injection": "ユーザー入力に基づく SQL クエリが検出されました。SQL インジェクションにつながり、攻撃者が機密データを窃取するおそれがあります。パラメータ化クエリとプリペアドステートメントに切り替えてください。",
+  "php.laravel-unsafe-validator": "リクエストパラメータが Rule 制約の `ignore()` 定義に渡されており、SQL インジェクションにつながるおそれがあります。",
+  "php.ldap-bind-without-password": "匿名 LDAP バインドが検出されました。匿名ユーザーが LDAP ステートメントを実行できます。LDAP に認証を強制することを検討してください。",
+  "php.mb-ereg-replace-eval": "mb_ereg_replace のオプションにユーザー入力を取り込むと、任意のコード実行につながるおそれがあります。eval 修飾子（`e`）は置換パラメータをコードとして評価します。",
+  "php.mcrypt-use": "Mcrypt は近年の PHP バージョンで非推奨/削除されています。Sodium または OpenSSL の使用を検討してください。",
+  "php.md5-loose-equality": "md5 値が関わる比較では、必ず厳密比較（`==` ではなく `===`）を使用し、型変換（type juggling）の問題を回避してください。",
+  "php.md5-used-as-password": "MD5 がパスワードハッシュとして使用されています。MD5 はもはや安全なパスワードハッシュとはみなされず、攻撃者は短時間で解読できます。bcrypt など適切なパスワードハッシュ関数を使用してください。`password_hash($PASSWORD, PASSWORD_BCRYPT, $OPTIONS);` が利用できます。",
+  "php.openssl-cbc-static-iv": "AES CBC モードに静的 IV が使用されています。静的 IV は、暗号文を選択平文攻撃にさらします。",
+  "php.openssl-decrypt-validate": "`openssl_decrypt` は成功時に復号された文字列を返し、失敗時には `false` を返します。失敗ケースを処理しない場合、アプリケーションが未定義動作を起こすおそれがあります。`openssl_decrypt` が `false` を返した場合を処理してください。"
 }
