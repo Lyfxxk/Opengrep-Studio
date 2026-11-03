@@ -254,5 +254,21 @@
   "js-ts.angular-bypasssecuritytrust": "`$TRUST`의 사용이 탐지되었습니다. 내용이 사용자 입력에서 온 것이라면 XSS 취약점이 발생할 수 있습니다. 반드시 사용해야 하는 경우 내용이 사용자 입력에서 비롯되지 않도록 보장하거나, 문맥에 따라 입력 검증, 정제 등의 적절한 방어 조치를 취하십시오.",
   "js-ts.apollo-axios-ssrf": "사용자가 제어할 수 있는 매개변수 $DATAVAL이 내부 처리 함수 $INNERFUNC를 거쳐 $METHOD의 Axios 요청으로 전달되어 서버 측 요청 위조(SSRF)가 될 수 있습니다: 사용자가 제한된 API를 호출하거나 비인가 대상에게 내부 헤더 정보를 노출할 수 있습니다. 알려진 URL 허용 목록과 대조하여 사용자 매개변수를 검증하거나, 사용자가 제어할 수 있는 데이터를 제거하도록 리팩터링하십시오.",
   "js-ts.assigned-undefined": "`undefined`는 JavaScript의 예약어가 아닙니다. 이렇게 작성하는 것은 \"합법적\"이긴 하지만 혼란을 일으키고 버그를 유발하기 쉽습니다.",
-  "js-ts.awscdk-bucket-encryption": "Bucket 구성 $X의 속성에 \"encryption: $Y.BucketEncryption.KMS_MANAGED\" 또는 \"encryption: $Y.BucketEncryption.S3_MANAGED\"를 추가하십시오."
+  "js-ts.awscdk-bucket-encryption": "Bucket 구성 $X의 속성에 \"encryption: $Y.BucketEncryption.KMS_MANAGED\" 또는 \"encryption: $Y.BucketEncryption.S3_MANAGED\"를 추가하십시오.",
+  "js-ts.chrome-remote-interface-compilescript-injection": "검증되지 않은 사용자 데이터가 `compileScript` 메서드에 도달하면 코드 삽입으로 이어질 수 있습니다.",
+  "js-ts.code-string-concat": "Express 또는 Next 웹 요청에서 유래한 데이터가 `eval`로 흘러들어가는 것이 발견되었습니다. 해당 데이터를 사용자가 제어할 수 있다면 애플리케이션 프로세스 컨텍스트에서 임의의 시스템 명령이 실행될 수 있습니다. `eval` 사용은 가급적 피하십시오.",
+  "js-ts.cors-misconfiguration": "사용자 입력이 CORS 매개변수를 제어하게 두면 출처 검증이 무력화될 위험이 있습니다. CORS 설정에는 리터럴 값을 사용하십시오.",
+  "js-ts.create-de-cipher-no-iv": "이미 지원이 중단된 'createCipher'와 'createDecipher'는 호출할 때마다 동일한 초기화 벡터를 생성합니다. CTR·GCM·CCM 같은 카운터 모드에서는 키를 재사용할 경우 기밀성과 무결성이 모두 훼손되며, 다른 모드의 강도에도 영향을 미칩니다. 'createCipheriv' 또는 'createDecipheriv'로 대체하십시오.",
+  "js-ts.dangerous-spawn-shell": "$EXEC()에 대한 리터럴이 아닌 호출이 감지되었습니다. 명령 삽입 취약점으로 이어질 수 있습니다.",
+  "js-ts.define-styled-components-on-module-level": "React 컴포넌트의 render 메서드 안에서 styled 컴포넌트를 선언하면 렌더링할 때마다 새 컴포넌트가 동적으로 생성되어, React는 두 렌더링 간의 차이만 계산하는 대신 이후 매 렌더링마다 해당 DOM 서브트리를 폐기하고 다시 계산해야 하므로 성능 병목과 예측할 수 없는 동작이 발생합니다.",
+  "js-ts.deno-dangerous-run": "Deno.run()에 대한 리터럴이 아닌 호출이 감지되었습니다. 명령 삽입 취약점으로 이어질 수 있습니다.",
+  "js-ts.detect-angular-element-methods": "사용자 입력이 `$SINK`의 HTML 요소 일부로 사용될 경우 angular.element를 사용하면 XSS가 발생할 수 있습니다. `$SINK`에 삽입하기 전에 사용자 입력에 컨텍스트에 맞는 출력 인코딩을 적용하고, HTML을 유지해야 하는 경우 $sce.getTrustedHTML 또는 $sanitize로 정화하십시오.",
+  "js-ts.detect-angular-element-taint": "사용자 입력이 `$SINK`의 HTML 요소 일부로 사용될 경우 angular.element를 사용하면 XSS가 발생할 수 있습니다. `$SINK`에 삽입하기 전에 사용자 입력에 컨텍스트에 맞는 출력 인코딩을 적용하고, HTML을 유지해야 하는 경우 $sce.getTrustedHTML 또는 $sanitize로 정화하십시오.",
+  "js-ts.detect-angular-open-redirect": "$window.location.href를 사용할 때 리다이렉트 대상이 사용자 입력에서 비롯되면 오픈 리다이렉트가 발생합니다.",
+  "js-ts.detect-angular-resource-loading": "$sceDelegateProvider 화이트리스트에 와일드카드를 사용할 경우 보안 문제가 발생할 수 있습니다.",
+  "js-ts.detect-angular-sce-disabled": "$sceProvider가 false로 설정되었습니다. AngularJS 애플리케이션에서 엄격한 컨텍스트 이스케이프(SCE)를 비활성화하면 XSS 취약점의 공격 표면이 넓어집니다.",
+  "js-ts.detect-angular-translateprovider-translations-method": "사용자 입력이 $translateProvider.translations 메서드에 들어가면 매우 위험합니다.",
+  "js-ts.detect-angular-trust-as-css-method": "정화되지 않은 사용자 입력이 $sce.trustAsCss로 흘러들어가면 매우 위험합니다.",
+  "js-ts.detect-angular-trust-as-html-method": "정화되지 않은 사용자 입력이 $sce.trustAsHtml로 흘러들어가면 매우 위험합니다.",
+  "js-ts.detect-angular-trust-as-js-method": "정화되지 않은 사용자 입력이 $sce.trustAsJs로 흘러들어가면 매우 위험합니다."
 }
