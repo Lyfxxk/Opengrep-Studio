@@ -734,5 +734,21 @@
   "python.request-data-fileresponse": "ユーザー制御可能なリクエストデータがファイルを開くのに使用され、その後パラメータとして FileResponse に渡されています。これは危険です。攻撃者が任意のファイルを指定して読み取り、重要なデータを漏えいさせる恐れがあります。ユーザーが入力したファイル名を FileResponse に使用する前に、必ず検証またはサニタイズを行ってください。",
   "python.request-data-write": "ユーザー制御可能なリクエストデータが '.write(...)' に渡されていることが見つかりました。悪意のある者が機密ファイルに書き込むデータを制御できると危険です。例えば、重要なログファイルを強制的にローテーションさせたり、ディスク容量を枯渇させてサービス拒否を引き起こしたりするおそれがあります。リクエストデータが適切にエスケープまたはサニタイズされていることを確認してください。",
   "python.request-session-http-in-with-context": "'http://' を使用したリクエストが検出されました。内容は暗号化されません。代わりに 'https://' を使用してください。",
-  "python.request-session-with-http": "'http://' を使用したリクエストが検出されました。内容は暗号化されません。代わりに 'https://' を使用してください。"
+  "python.request-session-with-http": "'http://' を使用したリクエストが検出されました。内容は暗号化されません。代わりに 'https://' を使用してください。",
+  "python.request-with-http": "'http://' を使用したリクエストが検出されました。内容は暗号化されないため、攻撃者がネットワーク上でトラフィックを盗聴し、機密情報を取得する恐れがあります。代わりに 'https://' を使用してください。",
+  "python.require-encryption": "Dask（`distributed`）のセキュリティコンテキストを初期化する際に \"require_encryption\" キーワード引数が渡されておらず、気づかないうちにセキュリティ保護が得られない恐れがあります。",
+  "python.response-contains-unsanitized-input": "Flask のレスポンスにサニタイズされていないユーザー入力がそのまま出力されており、クロスサイトスクリプティング（XSS）の脆弱性（https://owasp.org/www-community/attacks/xss/）につながる恐れがあります——攻撃者はユーザーのブラウザーで任意のコードを実行できてしまいます。ユーザー入力はサニタイズしてください。たとえば、レスポンスを Jinja2 テンプレートでレンダリングするように変更してください（https://flask.palletsprojects.com/en/1.0.x/security/ のセキュリティに関する注意事項を参照）。",
+  "python.return-not-in-function": "`return` は関数内でのみ意味を持ちます。",
+  "python.secure-set-cookie": "Cookie 属性の設定が安全でない Flask Cookie が検出されました。secure、httponly、samesite のデフォルト値はいずれも安全ではないため、response.set_cookie(...) で `secure=True`、`httponly=True`、`samesite='Lax'` を設定してください。これらのパラメータが正しくない場合、Cookie は適切に保護されず、攻撃者に窃取される恐れがあります。これらのパラメータを明示的に渡すか、Flask の設定で一括して有効にしてください。",
+  "python.sql-injection-db-cursor-execute": "リクエスト内のユーザー制御可能なデータが 'execute()' に渡されており、SQL インジェクションや保護された情報の漏洩につながる恐れがあります。代わりに Django QuerySet を使用してください——クエリのパラメータ化が組み込まれており、SQL インジェクションの影響を受けません。例：`Entry.objects.filter(date=2006)`。",
+  "python.sql-injection-using-extra-where": "リクエスト内のユーザー制御可能なデータが 'extra()' に渡されており、SQL インジェクションや保護された情報の漏洩につながる恐れがあります。代わりにパラメータ化クエリを使用するか、ユーザー制御可能なデータを `params` で渡し、SQL 文字列内で引用符付きプレースホルダーを使用しないでください。",
+  "python.sql-injection-using-raw": "リクエスト内のユーザーが制御した可能性のあるデータが `raw()` に渡されており、SQL インジェクションや攻撃者による保護された情報の取得につながる恐れがあります。代わりに Django QuerySet を使用してください——クエリのパラメータ化が組み込まれており、SQL インジェクションの影響を受けません。例：`Entry.objects.filter(date=2006)`。",
+  "python.sql-injection-using-rawsql": "リクエスト内のユーザー制御可能なデータが 'RawSQL()' に渡されており、SQL インジェクションや保護された情報の漏洩につながる恐れがあります。代わりにパラメータ化クエリを使用するか、ユーザー制御可能なデータを `params` で渡し、SQL 文字列内で引用符付きプレースホルダーを使用しないでください。",
+  "python.sqlalchemy-execute-raw-query": "SQL 文字列の連結は避けてください：信頼できない入力を生の SQL と連結すると、SQL インジェクションにつながります。生のクエリを安全に実行するには、プリペアドステートメントを使用します。SQLAlchemy には TextualSQL が用意されており、名前付きパラメータを持つプリペアドステートメントを簡単に利用できます。複雑な SQL の組み合わせには、SQL 式言語または Schema 定義言語を使用してください。多くの場合、SQLAlchemy ORM の方が優れた選択肢です。",
+  "python.sqlalchemy-sql-injection": "SQLAlchemy の Distinct、Having、Group_by、Order_by、Filter に生の SQL を渡すと、SQL インジェクションを引き起こす恐れがあります。このルールが対象とするのは、開発者がこれらの句に生の SQL を渡し、\"bindparams\" 以外の関数でユーザー入力を注入している場合です。bindparams を使用して、ユーザー入力を SQL 文に安全にバインドしてください。",
+  "python.sqlalchemy-sqli": "`event` オブジェクトによって汚染された SQL 文が検出されました。変数がユーザーによって制御可能で、適切にサニタイズされていない場合、SQL インジェクションにつながります。代わりにパラメータ化クエリまたはプリペアドステートメントを使用してください。例：`cursor.execute('SELECT * FROM projects WHERE status = ?', 'active')`。",
+  "python.ssl-wrap-socket-is-deprecated": "'ssl.wrap_socket()' は非推奨です。この関数が作成する socket にはサーバー名表示（SNI）がなく、ホスト名の検証も行われないため、安全ではありません。代わりに 'ssl.SSLContext()' で SSL コンテキストを作成し、そのコンテキストで socket をラップしてください。",
+  "python.ssrf-injection-requests": "リクエストオブジェクトのデータが新しいサーバー側リクエストに渡されており、サーバーサイドリクエストフォージェリ（SSRF）を引き起こす恐れがあります。緩和策：scheme と host をホワイトリストで検証する、レスポンスをユーザーに転送しない、プロキシするリクエストには認証とトランスポート層のセキュリティを確保する。SSRF の脆弱性に関する詳細は https://owasp.org/www-community/attacks/Server_Side_Request_Forgery を参照してください。",
+  "python.ssrf-injection-urllib": "リクエストオブジェクトのデータが新しいサーバー側リクエストに渡されており、サーバーサイドリクエストフォージェリ（SSRF）を引き起こす恐れがあり、攻撃者はこれを悪用して組織のプライバシー情報を取得できます。緩和策：scheme と host をホワイトリストで検証する、レスポンスをユーザーに転送しない、プロキシするリクエストには認証とトランスポート層のセキュリティを確保する。",
+  "python.ssrf-requests": "リクエストオブジェクトのデータが新しいサーバー側リクエストに渡されており、サーバーサイドリクエストフォージェリ（SSRF）を引き起こす恐れがあります。緩和策：scheme と host をホワイトリストで検証する、レスポンスをユーザーに転送しない、プロキシするリクエストには認証とトランスポート層のセキュリティを確保する。"
 }
