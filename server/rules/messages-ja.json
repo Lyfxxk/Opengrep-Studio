@@ -622,5 +622,21 @@
   "python.insecure-hash-algorithm-md2": "安全でないとされる MD2 ハッシュアルゴリズムが検出されました。MD2 には衝突耐性がなく、暗号学的署名には適していません。代わりに SHA-2、SHA-3、BLAKE2 ファミリーなどの最新のハッシュアルゴリズムを使用してください。",
   "python.insecure-hash-algorithm-md4": "安全でないとされる MD4 ハッシュアルゴリズムが検出されました。MD4 には衝突耐性がなく、暗号学的署名には適していません。代わりに SHA-2、SHA-3、BLAKE2 ファミリーなどの最新のハッシュアルゴリズムを使用してください。",
   "python.insecure-hash-algorithm-md5": "安全でないとされる MD5 ハッシュアルゴリズムが検出されました。MD5 には衝突耐性がなく、暗号学的署名には適していません。代わりに SHA256 または SHA3 を使用してください。",
-  "python.insecure-hash-algorithm-sha1": "安全でないとされる SHA1 ハッシュアルゴリズムが検出されました。SHA1 には衝突耐性がなく、暗号学的署名には適していません。代わりに SHA256 または SHA3 を使用してください。"
+  "python.insecure-hash-algorithm-sha1": "安全でないとされる SHA1 ハッシュアルゴリズムが検出されました。SHA1 には衝突耐性がなく、暗号学的署名には適していません。代わりに SHA256 または SHA3 を使用してください。",
+  "python.insecure-hash-function": "安全でない MD4 または MD5 ハッシュ関数が検出されました。これらの関数には既知の脆弱性があり、非推奨とされています。代わりに 'SHA256' または同等の関数を使用してください。",
+  "python.insecure-openerdirector-open": "安全でない通信チャネルが検出されました：'OpenerDirector.open(...)' が 'http://' を使用しています。代わりに 'https://' による暗号化チャネルを使用してください。",
+  "python.insecure-openerdirector-open-ftp": "安全でない通信チャネルが検出されました：'OpenerDirector.open(...)' が 'ftp://' を使用しており、この接続で送信される情報は暗号化されません。代わりに SFTP を使用してください。urllib は SFTP をサポートしていないため、SFTP に対応したライブラリへの置き換えを検討してください。",
+  "python.insecure-request-object": "'urllib.request.Request()' オブジェクトが安全でない通信プロトコル 'http://' を使用していることが検出されました。接続は暗号化されません。代わりに 'https://' を使用してください。",
+  "python.insecure-request-object-ftp": "'urllib.request.Request()' オブジェクトが安全でない通信プロトコル 'ftp://' を使用していることが検出されました。接続は暗号化されません。代わりに SFTP を使用してください。urllib は SFTP をネイティブにサポートしていないため、SFTP に対応したライブラリへの置き換えを検討してください。",
+  "python.insecure-urlopen": "'urllib.urlopen()' が 'http://' を使用していることが検出されました。リクエストは暗号化されません。代わりに 'https://' を使用してください。",
+  "python.insecure-urlopen-ftp": "'urllib.urlopen()' が 'ftp://' を使用していることが検出されました。このリクエストは暗号化されません。代わりに SFTP を使用してください。urllib は SFTP をサポートしていないため、SFTP に対応したライブラリへの置き換えを検討してください。",
+  "python.insecure-urlopener-open": "安全でない通信チャネルが検出されました：'URLopener.open(...)' が 'http://' を使用しています。代わりに 'https://' による暗号化チャネルを使用してください。",
+  "python.insecure-urlopener-open-ftp": "安全でない通信チャネルが検出されました：'URLopener.open(...)' が 'ftp://' を使用しています。代わりに SFTP を使用してください。urllib は SFTP をサポートしていないため、SFTP に対応したライブラリへの置き換えを検討してください。",
+  "python.insecure-urlopener-retrieve": "安全でない通信チャネルが検出されました：'URLopener.retrieve(...)' が 'http://' を使用しています。代わりに 'https://' による暗号化チャネルを使用してください。",
+  "python.insecure-urlopener-retrieve-ftp": "安全でない通信チャネルが検出されました：'URLopener.retrieve(...)' が 'ftp://' を使用しています。代わりに SFTP を使用してください。urllib は SFTP をサポートしていないため、SFTP に対応したライブラリへの置き換えを検討してください。",
+  "python.insecure-urlretrieve": "'urllib.urlretrieve()' が 'http://' を使用していることが検出されました。リクエストは暗号化されません。代わりに 'https://' を使用してください。",
+  "python.insecure-urlretrieve-ftp": "'urllib.urlretrieve()' が 'ftp://' を使用していることが検出されました。リクエストは暗号化されません。代わりに SFTP を使用してください。urllib は SFTP をサポートしていないため、SFTP に対応したライブラリへの置き換えを検討してください。",
+  "python.insecure-uuid-version": "UUID バージョン 1 で UUID を生成すると、システム情報（MAC アドレス、タイムスタンプなど）に基づいて予測可能な UUID が生成され、サンドイッチ攻撃などのセキュリティリスクにつながる可能性があります。より優れたランダム性とセキュリティを得るために、代わりに `uuid.uuid4()` を使用してください。",
+  "python.insufficient-dsa-key-size": "DSA の鍵長が不十分であることが検出されました。NIST は鍵長を 2048ビット以上にすることを推奨しています。",
+  "python.insufficient-ec-key-size": "EC 楕円曲線の位数が不十分であることが検出されました。NIST は 224ビット以上の位数を推奨しています。例えば 'ec.SECP256R1' を使用してください。"
 }
