@@ -574,5 +574,21 @@
   "python.docker-arbitrary-container-run": "검증되지 않은 사용자 데이터가 `run` 또는 `create` 메서드에 도달하면 임의의 컨테이너가 실행될 수 있습니다.",
   "python.duplicate-name-assignment": "이름 `$NAME`이(가) `$URL`과 `$OTHER_URL`에 동시에 사용되고 있어, URL 역방향 해석 시 예기치 않은 동작이 발생할 수 있습니다. 각 경로에 고유한 이름을 지정하십시오.",
   "python.duplicate-path-assignment": "`$URL`의 path가 의미 없이 두 번 할당되었습니다.",
-  "python.duplicate-path-assignment-different-names": "`$URL`의 path가 서로 다른 이름으로 두 번 할당되었습니다."
+  "python.duplicate-path-assignment-different-names": "`$URL`의 path가 서로 다른 이름으로 두 번 할당되었습니다.",
+  "python.dynamic-urllib-use-detected": "동적 값이 urllib에 사용되는 것이 감지되었습니다. urllib은 'file://' 프로토콜을 지원하며, 악의적인 사용자가 제어하는 동적 값으로 인해 임의의 파일을 읽을 수 있습니다. 모든 urllib 호출을 감사하고 사용자 데이터가 URL을 제어할 수 없도록 보장하거나, 'requests' 라이브러리로 전환하는 것을 고려하십시오.",
+  "python.dynamodb-filter-injection": "`$EVENT` 객체로 오염된 DynamoDB 쿼리 필터 조건이 감지되었습니다. 해당 변수를 사용자가 제어할 수 있고 제대로 정제되지 않으면 NoSQL 인젝션이 발생합니다. 쿼리 매개변수를 명시적으로 지정하고 `$EVENT` 데이터를 DynamoDB 클라이언트에 직접 전달하지 마십시오.",
+  "python.empty-aes-key": "비어 있는 AES 암호화 키로 의심됩니다. AES에 빈 키를 사용하면 약한 암호화가 되어 공격자가 민감한 데이터를 쉽게 복호화할 수 있습니다. AES 암호화에는 강력하고 비어 있지 않은 키를 사용하십시오.",
+  "python.eval-detected": "eval()이 탐지되었습니다. 동적 콘텐츠를 eval()로 평가하는 것은 위험합니다. 콘텐츠가 프로그램 외부에서 유래할 수 있다면 코드 인젝션 취약점이 됩니다. 평가되는 콘텐츠가 외부에서 정의될 수 없도록 보장하십시오.",
+  "python.eval-injection": "사용자 데이터가 eval로 유입되는 것이 감지되었습니다. 코드 인젝션에 해당하므로 피해야 합니다.",
+  "python.exec-detected": "exec()이 탐지되었습니다. 동적 콘텐츠를 exec()로 평가하는 것은 위험합니다. 콘텐츠가 프로그램 외부에서 유래할 수 있다면 코드 인젝션 취약점이 됩니다. 평가되는 콘텐츠가 외부에서 정의될 수 없도록 보장하십시오.",
+  "python.exec-injection": "사용자 데이터가 exec로 유입되는 것이 감지되었습니다. 코드 인젝션에 해당하므로 피해야 합니다.",
+  "python.explicit-unescape-with-markup": "이스케이프되지 않은 콘텐츠를 'Markup()'으로 명시적으로 출력하는 것이 감지되었습니다. 이스케이프되지 않은 데이터의 HTML은 크로스 사이트 스크립팅을 유발할 수 있습니다. 해당 데이터가 외부에 의해 제어되지 않도록 보장하거나, 'Markup()'을 사용하지 않도록 다시 작성하십시오.",
+  "python.extends-custom-expression": "사용자 지정 표현식 확장이 발견되었습니다: $CLASS. 이러한 방식으로 표현식을 확장하면 의도치 않게 SQL 인젝션 취약점이 생겨 민감한 데이터가 탈취될 수 있습니다. 사용자 입력이 해당 함수로 들어가지 않도록 보장하거나 사용자 입력을 적절히 정제하십시오.",
+  "python.filter-with-is-safe": "'is_safe'가 표시된 Django 필터가 감지되었습니다. 'is_safe'는 Django가 해당 필터의 반환값을 이스케이프하지 않도록 만듭니다(입력은 이스케이프됩니다). 잘못 사용하면 애플리케이션이 크로스 사이트 스크립팅(XSS) 취약점에 노출됩니다. 해당 필터가 다음을 충족하는지 확인하십시오: 1) HTML 문자를 추가하지 않음; 2) 문자를 삭제하지 않음; 3) 어떠한 방식으로도 외부 데이터를 사용하지 않음. 'is_safe'를 제거하고 'mark_safe()'를 사용해 안전한 콘텐츠를 명시적으로 표시하는 것이 좋습니다.",
+  "python.flask-api-method-string-format": "API 컨트롤러 $CLASS의 메서드 $METHOD가 사용자 매개변수 $ARG를 요청 메서드 $REQMETHOD에 전달합니다.",
+  "python.flask-cache-query-string": "Flask-caching은 기본적으로 쿼리 문자열을 캐시하지 않으므로 `query_string=True`를 명시적으로 사용해야 합니다. 또한 상태를 변경하는 동사(POST/PUT/DELETE 등)는 캐시하지 마십시오.",
+  "python.flask-class-method-get-side-effects": "Flask 클래스 기반 뷰의 GET 메서드가 부수 효과를 일으킵니다.",
+  "python.flask-cors-misconfiguration": "'support_credentials=True'와 'origin=\"*\"'를 동시에 설정하는 것은 잘못된 CORS 구성이며, 제3자 출처가 민감한 데이터를 읽을 수 있게 합니다. 이 구성에서는 flask_cors가 Access-Control-Allow-Origin 헤더에 각 요청의 Origin을 동적으로 반영하므로, 모든 출처를 허용하고 Cookie와 자격 증명이 요청과 함께 전송되도록 허용하는 것과 같습니다. 'support_credentials=True'를 설정할 때는 허용할 출처를 명시적으로 나열하고 \"*\"를 사용하지 마십시오.",
+  "python.flask-deprecated-apis": "더 이상 사용되지 않는 Flask API입니다.",
+  "python.flask-wtf-csrf-disabled": "'WTF_CSRF_ENABLED'를 'False'로 설정하면 CSRF 보호가 명시적으로 비활성화됩니다."
 }
