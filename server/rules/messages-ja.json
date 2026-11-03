@@ -526,5 +526,21 @@
   "python.crypto-mode-without-authentication": "暗号モードがメッセージ認証と組み合わされておらず、攻撃者が暗号文の内容を解読するおそれがあります。GCM などの AEAD 認証付き暗号モードを使用することをお勧めします。",
   "python.csv-writer-injection": "ユーザー入力が組み込みの `csv` モジュールを通じて CSV ファイルに書き込まれていることが検出されました。攻撃者は数式を注入できます——CSV が表計算ソフトにインポートされると攻撃スクリプトが実行され、データの窃取、さらにはマルウェアのインストールにつながります。`defusedcsv` は API 互換の代替品であり、数式インジェクションを防御できます。安全に CSV を生成するにはこれに切り替えてください。",
   "python.custom-expression-as-sql": "カスタム式 '$EXPRESSION' が 'as_sql(...)' を呼び出していることが検出されました。これにより SQL インジェクションが発生し、攻撃者に機密データを窃取されるおそれがあります。ユーザー入力がこの関数に入らないようにするか、ユーザー入力を適切にサニタイズしてください。",
-  "python.dangerous-annotations-usage": "`typing.get_type_hints` に渡されたアノテーションは、`globals` と `locals` の名前空間で評価されます。任意の値がアノテーションとして書き込まれ、`typing.get_type_hints` に渡されることがないようにしてください。"
+  "python.dangerous-annotations-usage": "`typing.get_type_hints` に渡されたアノテーションは、`globals` と `locals` の名前空間で評価されます。任意の値がアノテーションとして書き込まれ、`typing.get_type_hints` に渡されることがないようにしてください。",
+  "python.dangerous-asyncio-create-exec": "`event` オブジェクトによって汚染された 'create_subprocess_exec' 関数の引数が検出されました。このデータが攻撃者に制御可能な場合、コマンドインジェクションを引き起こします。この呼び出しを監査し、外部リソースに制御されていないことを確認してください。'shlex.escape()' の使用を検討してください。",
+  "python.dangerous-asyncio-create-exec-audit": "'create_subprocess_exec' 関数に非リテラルの文字列が使用されていることが検出されました。このデータが攻撃者に制御可能な場合、コマンドインジェクションを引き起こします。この呼び出しを監査し、外部リソースに制御されていないことを確認してください。'shlex.escape()' の使用を検討してください。",
+  "python.dangerous-asyncio-create-exec-tainted-env-args": "'create_subprocess_exec' 関数にユーザー制御可能なデータが使用されていることが検出されました。'shlex.escape()' の使用を検討してください。",
+  "python.dangerous-asyncio-exec": "`event` オブジェクトによって汚染された子プロセス関数 '$LOOP.subprocess_exec' の引数が検出されました。このデータが攻撃者に制御可能な場合、コマンドインジェクションを引き起こします。この呼び出しを監査し、外部リソースに制御されていないことを確認してください。'shlex.escape()' の使用を検討してください。",
+  "python.dangerous-asyncio-exec-audit": "子プロセス関数 '$LOOP.subprocess_exec' に非リテラルの文字列が使用されていることが検出されました。このデータが攻撃者に制御可能な場合、コマンドインジェクションを引き起こします。この呼び出しを監査し、外部リソースに制御されていないことを確認してください。'shlex.escape()' の使用を検討してください。",
+  "python.dangerous-asyncio-exec-tainted-env-args": "子プロセス関数 '$LOOP.subprocess_exec' にユーザー制御可能なデータが使用されていることが検出されました。'shlex.escape()' の使用を検討してください。",
+  "python.dangerous-asyncio-shell": "`event` オブジェクトによって汚染された asyncio 子プロセス関数の引数が検出されました。このデータが攻撃者に制御可能な場合、コマンドインジェクションを引き起こします。この呼び出しを監査し、外部リソースに制御されていないことを確認してください。'shlex.escape()' の使用を検討してください。",
+  "python.dangerous-asyncio-shell-audit": "asyncio 子プロセス関数に非リテラルの文字列が使用されていることが検出されました。このデータが攻撃者に制御可能な場合、コマンドインジェクションを引き起こします。この呼び出しを監査し、外部リソースに制御されていないことを確認してください。'shlex.escape()' の使用を検討してください。",
+  "python.dangerous-asyncio-shell-tainted-env-args": "asyncio 子プロセス関数にユーザー制御可能なデータが使用されていることが検出されました。'shlex.escape()' の使用を検討してください。",
+  "python.dangerous-globals-use": "定数以外のデータが 'globals()' のインデックスとして使用されていることが検出されました。これは極めて危険であり、攻撃者がシステム上で任意のコードを実行できてしまいます。'globals()' を使用しないようコードをリファクタリングしてください。",
+  "python.dangerous-interactive-code-run": "InteractiveConsole/InteractiveInterpreter のメソッド内にユーザー制御可能なデータが検出されました。外部データがこの呼び出しに到達できる場合、攻撃者に任意の Python コードを実行されるおそれがあり、非常に危険です。",
+  "python.dangerous-interactive-code-run-audit": "InteractiveConsole/InteractiveInterpreter のメソッド内に動的なコンテンツが検出されました。外部データがこの呼び出しに到達できる場合、攻撃者に任意の Python コードを実行されるおそれがあります。外部データがここに到達していないことを確認してください。",
+  "python.dangerous-interactive-code-run-tainted-env-args": "InteractiveConsole/InteractiveInterpreter のメソッド内にユーザー制御可能なデータが検出されました。外部データがこの呼び出しに到達できる場合、攻撃者に任意の Python コードを実行されるおそれがあり、非常に危険です。",
+  "python.dangerous-os-exec": "プロセスの作成時にユーザー制御可能なコンテンツが検出されました。攻撃者に任意のコマンドを実行されるおそれがあり、非常に危険です。",
+  "python.dangerous-os-exec-audit": "プロセスの作成時に動的なコンテンツが検出されました。外部データがこの呼び出しに到達できる場合、攻撃者に任意のコマンドを実行されるおそれがあります。外部データがここに到達していないことを確認してください。",
+  "python.dangerous-os-exec-tainted-env-args": "プロセスの作成時にユーザー制御可能なコンテンツが検出されました。攻撃者に任意のコマンドを実行されるおそれがあり、非常に危険です。"
 }
