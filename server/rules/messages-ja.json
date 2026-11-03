@@ -366,5 +366,21 @@
   "js-ts.node-mssql-sqli": "`mssql` の JS SQL ステートメント内で非リテラル変数と文字列連結されていることを検出しました。その変数がユーザー制御可能で適切にサニタイズされていない場合、SQLインジェクションにつながります。パラメータ化クエリまたはプリペアドステートメントの使用に切り替えてください。例：`$REQ.input('USER_ID', mssql.Int, id);`",
   "js-ts.node-mysql-sqli": "関数の引数に由来する `$IMPORT` SQL ステートメントを検出しました。変数がユーザー制御可能で適切にサニタイズされていない場合、SQLインジェクションにつながります。SQLインジェクションを防ぐため、パラメータ化クエリまたはプリペアドステートメントの使用に切り替えてください。",
   "js-ts.node-postgres-sqli": "node-postgres の SQL ステートメント内で非リテラル変数と文字列連結されていることを検出しました。その変数がユーザー制御可能で適切にサニタイズされていない場合、SQLインジェクションにつながります。パラメータ化クエリまたはプリペアドステートメントの使用に切り替えてください。例：`client.query('SELECT $1 from table', [userinput])`。",
-  "js-ts.path-join-resolve-traversal": "ユーザー入力の可能性がある値が `path.join` または `path.resolve` に渡されていることを検出しました。これはパストラバーサルの脆弱性となり、攻撃者はファイルシステム内の任意のファイルにアクセスできる可能性があります。まず、ユーザー入力をサニタイズまたは検証してください。"
+  "js-ts.path-join-resolve-traversal": "ユーザー入力の可能性がある値が `path.join` または `path.resolve` に渡されていることを検出しました。これはパストラバーサルの脆弱性となり、攻撃者はファイルシステム内の任意のファイルにアクセスできる可能性があります。まず、ユーザー入力をサニタイズまたは検証してください。",
+  "js-ts.pg-sqli": "`$EVENT` オブジェクトによって汚染された SQL ステートメントを検出しました。変数がユーザー制御可能で適切にサニタイズされていない場合、SQLインジェクションにつながります。パラメータ化クエリまたはプリペアドステートメントの使用に切り替えてください。例：`connection.query('SELECT $1 from table', [userinput])`。",
+  "js-ts.phantom-injection": "検証されていないユーザーデータが `phantom` メソッドに到達できる場合、サーバーサイドリクエストフォージェリ（SSRF）の脆弱性となる恐れがあります。",
+  "js-ts.playwright-addinitscript-code-injection": "検証されていないユーザーデータが `addInitScript` メソッドに到達できる場合、サーバーサイドリクエストフォージェリ（SSRF）の脆弱性となる恐れがあります。",
+  "js-ts.playwright-evaluate-arg-injection": "検証されていないユーザーデータが `evaluate` メソッドに到達できる場合、サーバーサイドリクエストフォージェリ（SSRF）の脆弱性となる恐れがあります。",
+  "js-ts.playwright-evaluate-code-injection": "検証されていないユーザーデータが `evaluate` メソッドに到達できる場合、サーバーサイドリクエストフォージェリ（SSRF）の脆弱性となる恐れがあります。",
+  "js-ts.playwright-exposed-chrome-devtools": "リモートデバッグプロトコルは一切の認証を行いません。露出範囲が大きすぎるとセキュリティ上のリスクがあります。",
+  "js-ts.playwright-goto-injection": "検証されていないユーザーデータが `goto` メソッドに到達できる場合、サーバーサイドリクエストフォージェリ（SSRF）の脆弱性となる恐れがあります。",
+  "js-ts.playwright-setcontent-injection": "検証されていないユーザーデータが `setContent` メソッドに到達できる場合、サーバーサイドリクエストフォージェリ（SSRF）の脆弱性となる恐れがあります。",
+  "js-ts.prohibit-jquery-html": "jQuery の `html` 関数はクロスサイトスクリプティング（XSS）攻撃を受けやすいです。テキストを渡すだけであれば `text` を使用してください。それ以外の場合は、HTML をエスケープする edX の `HtmlUtils.setHtml()` などの関数を使用してください。",
+  "js-ts.prototype-pollution-assignment": "プロトタイプ汚染の可能性がある代入を検出しました。オブジェクトのプロトタイプにプロパティを追加または変更することで、攻撃者はすべてのオブジェクトに特定のプロパティを出現させたり、hasOwnProperty、toString、valueOf などの重要なプロパティを悪意のある値で置き換えたりできます。有効な緩和策：オブジェクトのプロトタイプの凍結、プロトタイプなしのオブジェクト（Object.create(null)）の使用、プロトタイプに解決されるプロパティ変更の阻止、または Map への切り替え。",
+  "js-ts.prototype-pollution-loop": "プロトタイプ汚染の可能性がある関数を検出しました。オブジェクトのプロトタイプにプロパティを追加または変更することで、攻撃者はすべてのオブジェクトに特定のプロパティを出現させたり、hasOwnProperty、toString、valueOf などの重要なプロパティを悪意のある値で置き換えたりできます。有効な緩和策：オブジェクトのプロトタイプの凍結、プロトタイプなしのオブジェクト（Object.create(null)）の使用、プロトタイプに解決されるプロパティ変更の阻止、または Map への切り替え。",
+  "js-ts.puppeteer-evaluate-arg-injection": "検証されていないユーザーデータが `evaluate` メソッドに到達できる場合、サーバーサイドリクエストフォージェリ（SSRF）の脆弱性となる恐れがあります。",
+  "js-ts.puppeteer-evaluate-code-injection": "検証されていないユーザーデータが `evaluate` メソッドに到達できる場合、サーバーサイドリクエストフォージェリ（SSRF）の脆弱性となる恐れがあります。",
+  "js-ts.puppeteer-exposed-chrome-devtools": "リモートデバッグプロトコルは一切の認証を行いません。露出範囲が大きすぎるとセキュリティ上のリスクがあります。",
+  "js-ts.puppeteer-goto-injection": "検証されていないユーザーデータが `goto` メソッドに到達できる場合、サーバーサイドリクエストフォージェリ（SSRF）の脆弱性となる恐れがあります。",
+  "js-ts.puppeteer-setcontent-injection": "検証されていないユーザーデータが `setContent` メソッドに到達できる場合、サーバーサイドリクエストフォージェリ（SSRF）の脆弱性となる恐れがあります。"
 }
