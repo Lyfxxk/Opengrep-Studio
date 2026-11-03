@@ -302,5 +302,21 @@
   "js-ts.express-data-exfiltration": "컨텍스트에 따라 `Object.assign`에 있는 사용자가 제어할 수 있는 데이터로 인해 Web 응답에 반환해서는 안 되는 데이터가 포함되거나 대량 할당(mass assignment) 취약점이 발생할 수 있습니다.",
   "js-ts.express-detect-notevil-usage": "`notevil` 패키지가 탐지되었습니다. 이 프로젝트는 유지보수되지 않으며 취약점이 있습니다. 어떤 형태의 `eval()` 기능이든 위험합니다. 정말 필요한 경우 지속적으로 업데이트되는 `eval` 패키지로 대체하고 신뢰할 수 있는 입력만 `eval()` 함수에 도달하도록 보장하십시오.",
   "js-ts.express-expat-xxe": "검증되지 않은 사용자 데이터가 XML 파서에 도달하지 못하도록 보장하십시오. 그러지 않으면 XML 외부/내부 엔티티(XXE) 인젝션 취약점이 발생합니다.",
-  "js-ts.express-insecure-template-usage": "`$REQ`에서 유래한 사용자 데이터가 템플릿으로 컴파일되어 서버 측 템플릿 인젝션(SSTI) 취약점이 발생할 수 있습니다."
+  "js-ts.express-insecure-template-usage": "`$REQ`에서 유래한 사용자 데이터가 템플릿으로 컴파일되어 서버 측 템플릿 인젝션(SSTI) 취약점이 발생할 수 있습니다.",
+  "js-ts.express-jwt-hardcoded-secret": "하드코딩된 자격 증명이 감지되었습니다. 자격 증명을 소스 코드에 저장하는 것은 권장되지 않습니다. 내부자든 외부자든 악의적인 사용자가 유출된 시크릿을 악용할 수 있습니다. 환경 변수로 자격 증명을 안전하게 주입하거나 볼트(vault)/HSM(하드웨어 보안 모듈)에서 가져오는 것을 권장합니다.",
+  "js-ts.express-jwt-not-revoked": "`express-jwt`에 토큰 폐기가 구성되어 있지 않습니다. 유출된 토큰은 계속 사용할 수 있으며 폐기할 수 없습니다. `isRevoked` 옵션에 함수를 전달하는 것을 고려하십시오.",
+  "js-ts.express-libxml-noent": "libxml 라이브러리가 `noent` 속성이 `true`일 때 사용자 입력을 처리하면 XXE(XML 외부 엔티티) 공격 위험이 발생합니다. 이 기능을 사용할 때는 보호를 위해 `noent`를 `false`로 설정하는 것이 좋습니다.",
+  "js-ts.express-libxml-vm-noent": "parseXml() 사용이 감지되었으며 `noent`가 `true`로 설정되어 있습니다. 신뢰할 수 없는 데이터가 들어오면 XML 외부 엔티티(XXE) 공격이 발생합니다.",
+  "js-ts.express-open-redirect": "애플리케이션이 사용자가 제공한 검증되지 않은 URL `$REQ`로 리다이렉트하여 사용자를 악성 위치로 유도할 수 있습니다. 화이트리스트로 URL을 검증하거나, 이동하기 전에 사용자에게 제3자 웹사이트로 이동함을 알리십시오.",
+  "js-ts.express-path-join-resolve-traversal": "대상 디렉터리 외부에 쓰기가 발생할 수 있습니다. 대상 경로가 예상 디렉터리 안에 포함되도록 보장하십시오.",
+  "js-ts.express-phantom-injection": "검증되지 않은 사용자 데이터가 `phantom` 관련 메서드에 도달할 수 있는 경우 서버 측 요청 위조(SSRF) 취약점이 발생할 수 있습니다.",
+  "js-ts.express-puppeteer-injection": "검증되지 않은 사용자 데이터가 `puppeteer` 관련 메서드에 도달할 수 있는 경우 서버 측 요청 위조(SSRF) 취약점이 발생할 수 있습니다.",
+  "js-ts.express-res-sendfile": "애플리케이션이 사용자 입력을 처리하여 res.sendFile에 전달하므로 공격자가 경로 순회를 통해 시스템 파일을 임의로 읽을 수 있습니다. 경로 정규화 외에 입력 검증도 수행하여 접근 경로를 예상 디렉터리와 대조하여 검증하는 것이 좋습니다.",
+  "js-ts.express-sandbox-code-injection": "검증되지 않은 사용자 데이터가 `sandbox`에 도달하지 못하도록 보장하십시오.",
+  "js-ts.express-sequelize-injection": "사용자 입력으로 오염된 sequelize 문장이 감지되었습니다. 변수를 사용자가 제어할 수 있고 적절하게 정제되지 않으면 SQL 인젝션이 발생합니다. SQL 인젝션을 방지하려면 매개변수화된 쿼리나 사전 컴파일된 문장을 사용하는 것이 좋습니다.",
+  "js-ts.express-session-hardcoded-secret": "하드코딩된 자격 증명이 감지되었습니다. 자격 증명을 소스 코드에 저장하는 것은 권장되지 않습니다. 내부자든 외부자든 악의적인 사용자가 유출된 시크릿을 악용할 수 있습니다. 환경 변수로 자격 증명을 안전하게 주입하거나 볼트(vault)/HSM(하드웨어 보안 모듈)에서 가져오는 것을 권장합니다.",
+  "js-ts.express-ssrf": "사용자 입력 `$REQ`로 구성된 요청 $REQUEST.$METHOD()이(가) 발견되었습니다. 서버 측 요청 위조(SSRF) 취약점으로 이어질 수 있습니다. 가급적 요청 기본 주소를 사용자 입력으로 구성하지 말고 사용자 입력은 경로나 쿼리 파라미터에만 포함시키는 것이 좋습니다. 사용자 입력이 반드시 요청 구성에 포함되어야 하는 경우에는 OWASP 모범 사례를 따라 악용을 방지하십시오.",
+  "js-ts.express-third-party-object-deserialization": "함수 호출 $SER.$FUNC가 사용자가 제어할 수 있는 데이터를 받아들이며 객체 역직렬화를 통해 원격 코드 실행(RCE)으로 이어질 수 있습니다. JSON.parse(), Buffer.from() 등 안전한 데이터 처리 방식으로 전환하는 것이 좋습니다.",
+  "js-ts.express-vm-injection": "검증되지 않은 사용자 데이터가 `$VM`에 도달하지 못하도록 보장하십시오.",
+  "js-ts.express-vm2-injection": "검증되지 않은 사용자 데이터가 `vm2`에 도달하지 못하도록 보장하십시오."
 }
