@@ -686,5 +686,21 @@
   "python.pymysql-sqli": "`event` オブジェクトによって汚染された SQL 文が検出されました。変数がユーザーによって制御可能で、適切にサニタイズされていない場合、SQL インジェクションにつながります。代わりにパラメータ化クエリまたはプリペアドステートメントを使用してください。例：`cursor.execute('SELECT * FROM projects WHERE status = %s', ('active'))`。",
   "python.pyramid-authtkt-cookie-httponly-unsafe-default": "Pyramid の認証チケット Cookie で httponly オプションが正しく設定されていないことを検出しました。Cookie を安全に扱うには httponly=True を設定してください。このパラメータが正しくない場合、Cookie が適切に保護されず、攻撃者に盗み取られるリスクがあります。",
   "python.pyramid-authtkt-cookie-httponly-unsafe-value": "Pyramid の認証チケット Cookie で httponly オプションが正しく設定されていないことを検出しました。Cookie を安全に扱うには httponly=True を設定してください。このパラメータが正しくない場合、Cookie が適切に保護されず、攻撃者に盗み取られるリスクがあります。",
-  "python.pyramid-authtkt-cookie-samesite": "Pyramid の認証チケットで samesite オプションが正しく設定されていないことを検出しました。Pyramid Cookie を安全に扱うには samesite='Lax' を設定してください。このパラメータが正しくない場合、Cookie が適切に保護されず、攻撃者に盗み取られるリスクがあります。"
+  "python.pyramid-authtkt-cookie-samesite": "Pyramid の認証チケットで samesite オプションが正しく設定されていないことを検出しました。Pyramid Cookie を安全に扱うには samesite='Lax' を設定してください。このパラメータが正しくない場合、Cookie が適切に保護されず、攻撃者に盗み取られるリスクがあります。",
+  "python.pyramid-authtkt-cookie-secure-unsafe-default": "Pyramid の認証チケット Cookie の secure オプションに安全でないデフォルト値が使用されていることが検出されました。secure=True を設定して Cookie を安全に扱う必要があります。このパラメータが正しくない場合、Cookie は適切に保護されず、攻撃者に窃取される恐れがあります。",
+  "python.pyramid-authtkt-cookie-secure-unsafe-value": "Pyramid の認証チケット Cookie で secure オプションが正しく設定されていないことが検出されました。secure=True を設定して Cookie を安全に扱う必要があります。このパラメータが正しくない場合、Cookie は適切に保護されず、攻撃者に窃取される恐れがあります。",
+  "python.pyramid-csrf-check-disabled": "このビューは CSRF 保護を無効にしており、セキュリティ上のリスクがあります。",
+  "python.pyramid-csrf-check-disabled-globally": "CSRF トークンの自動チェックが明示的にグローバルで無効化されており、一部のビューの保護が失われる恐れがあります。'pyramid.config.Configurator.set_default_csrf_options(require_csrf=True)' を使用して、すべての安全でないメソッド（RFC 2616 準拠）に対して自動チェックを有効にしてください。",
+  "python.pyramid-csrf-origin-check-disabled": "このビューは CSRF トークンの Origin 検証を無効にしています。CSRF ストレージポリシーの安全性に確信が持てない場合、セキュリティ上のリスクとなります。",
+  "python.pyramid-csrf-origin-check-disabled-globally": "CSRF トークンの Referer 自動チェックが明示的にグローバルで無効化されており、CSRF ストレージポリシーが安全でない場合にビューの保護が失われる恐れがあります。'pyramid.config.Configurator.set_default_csrf_options(check_origin=True)' を使用して、すべての安全でないメソッド（RFC 2616 準拠）に対して自動チェックを有効にしてください。",
+  "python.pyramid-direct-use-of-response": "データが 'Response' でエンドユーザーに直接レンダリングされ、Pyramid に組み込まれたクロスサイトスクリプティング（XSS）防御がバイパスされていることが検出されました。XSS 脆弱性が生じる恐れがあります。代わりに Pyramid のテンプレートエンジンを使用して HTML を安全にレンダリングしてください。",
+  "python.pyramid-set-cookie-httponly-unsafe-default": "Pyramid Cookie の httponly オプションに安全でないデフォルト値が使用されていることが検出されました。response.set_cookie(...) で httponly=True を設定する必要があります。このパラメータが正しくない場合、Cookie は適切に保護されず、攻撃者に窃取される恐れがあります。",
+  "python.pyramid-set-cookie-httponly-unsafe-value": "Pyramid Cookie で httponly オプションが正しく設定されていないことが検出されました。response.set_cookie(...) で httponly=True を設定する必要があります。このパラメータが正しくない場合、Cookie は適切に保護されず、攻撃者に窃取される恐れがあります。",
+  "python.pyramid-set-cookie-samesite-unsafe-default": "Pyramid Cookie の samesite オプションに安全でない値が使用されていることが検出されました。response.set_cookie(...) で samesite='Lax' を設定する必要があります。このパラメータが正しくない場合、Cookie は適切に保護されず、攻撃者に窃取される恐れがあります。",
+  "python.pyramid-set-cookie-samesite-unsafe-value": "Pyramid Cookie で samesite オプションが正しく設定されていないことが検出されました。response.set_cookie(...) で samesite='Lax' を設定する必要があります。このパラメータが正しくない場合、Cookie は適切に保護されず、攻撃者に窃取される恐れがあります。",
+  "python.pyramid-set-cookie-secure-unsafe-default": "Pyramid Cookie の secure オプションに安全でないデフォルト値が使用されていることが検出されました。response.set_cookie(...) で secure=True を設定する必要があります。このパラメータが正しくない場合、Cookie は適切に保護されず、攻撃者に窃取される恐れがあります。",
+  "python.pyramid-set-cookie-secure-unsafe-value": "Pyramid Cookie で secure オプションが正しく設定されていないことが検出されました。response.set_cookie(...) で secure=True を設定する必要があります。このパラメータが正しくない場合、Cookie は適切に保護されず、攻撃者に窃取される恐れがあります。",
+  "python.pyramid-sqlalchemy-sql-injection": "SQLAlchemy の Distinct、Having、Group_by、Order_by、Filter に生の SQL を渡すと、SQL インジェクションを引き起こす恐れがあります。このルールが対象とするのは、開発者がこれらの句に生の SQL を渡し、\"bindparams\" 以外の関数でユーザー入力を注入している場合です。bindparams を使用して、ユーザー入力を SQL 文に安全にバインドしてください。",
+  "python.python-debugger-found": "Python デバッガーのインポートが見つかりました。これは意図的に残されたものですか？",
+  "python.python-logger-credential-disclosure": "ログ呼び出しがハードコードされた機密情報 $FORMAT_STRING を出力している可能性を検出しました。資格情報の漏えいにつながる恐れがあります。ログに機密情報が記録されないようにしてください。"
 }
