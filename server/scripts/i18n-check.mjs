@@ -24,7 +24,7 @@ function leafEntries(value, prefix = '', out = new Map()) {
   return out;
 }
 
-const langs = ['zh', 'en', 'zh-Hant'];
+const langs = ['zh', 'en', 'zh-Hant', 'ja', 'ko'];
 const ui = {};
 const uiValues = {};
 for (const lang of langs) {
@@ -45,18 +45,23 @@ for (const lang of langs) {
 const readJson = (file) =>
   JSON.parse(fs.readFileSync(path.join(root, 'server', 'rules', file), 'utf8'));
 
-const checkPair = (file, display) => {
-  const zh = readJson(`${file}.json`);
-  const hant = readJson(`${file}-Hant.json`);
-  const missing = Object.keys(zh).filter((key) => !(key in hant));
-  const extra = Object.keys(hant).filter((key) => !(key in zh));
-  if (missing.length) {
-    problems.push(`${file}-Hant 缺少 ${missing.length} 条：${missing.slice(0, 5).join('、')}`);
+const ruleLangs = ['zh-Hant', 'ja', 'ko'];
+const checkPair = (prefix, display) => {
+  const zh = readJson(`${prefix}-zh.json`);
+  const counts = [`zh=${Object.keys(zh).length}`];
+  for (const lang of ruleLangs) {
+    const other = readJson(`${prefix}-${lang}.json`);
+    const missing = Object.keys(zh).filter((key) => !(key in other));
+    const extra = Object.keys(other).filter((key) => !(key in zh));
+    if (missing.length) {
+      problems.push(`${prefix}-${lang} 缺少 ${missing.length} 条：${missing.slice(0, 5).join('、')}`);
+    }
+    if (extra.length) {
+      problems.push(`${prefix}-${lang} 多出 ${extra.length} 条：${extra.slice(0, 5).join('、')}`);
+    }
+    counts.push(`${lang}=${Object.keys(other).length}`);
   }
-  if (extra.length) {
-    problems.push(`${file}-Hant 多出 ${extra.length} 条：${extra.slice(0, 5).join('、')}`);
-  }
-  console.log(`${display}：zh=${Object.keys(zh).length} / zh-Hant=${Object.keys(hant).length}`);
+  console.log(`${display}：${counts.join(' / ')}`);
 };
 
 const serverSrc = path.join(root, 'server', 'src');
@@ -114,22 +119,27 @@ for (const [key, zhValue] of uiValues.zh) {
 }
 
 const CJK = /[\u4e00-\u9fff]/;
-const cjkAllowed = new Set(['lang.zh', 'lang.zhHant']);
-for (const [key, value] of uiValues.en) {
-  if (CJK.test(value) && !cjkAllowed.has(key)) {
-    problems.push(`en.${key} 仍含汉字：${value.slice(0, 40)}`);
+const hanChecks = [
+  ['en', new Set(['lang.zh', 'lang.zhHant'])],
+  ['ko', new Set(['lang.zh', 'lang.zhHant', 'lang.ja'])],
+];
+for (const [lang, cjkAllowed] of hanChecks) {
+  for (const [key, value] of uiValues[lang]) {
+    if (CJK.test(value) && !cjkAllowed.has(key)) {
+      problems.push(`${lang}.${key} 仍含汉字：${value.slice(0, 40)}`);
+    }
   }
 }
 
 console.log(`UI 叶子键：${langs.map((lang) => `${lang}=${ui[lang].size}`).join(' / ')}`);
-console.log(`服务端错误码：${serverCodes.size}（三包 apiErrors 覆盖校验）`);
-checkPair('messages-zh', '规则说明');
-checkPair('cwe-zh', 'CWE 知识库');
+console.log(`服务端错误码：${serverCodes.size}（五包 apiErrors 覆盖校验）`);
+checkPair('messages', '规则说明');
+checkPair('cwe', 'CWE 知识库');
 
 if (problems.length) {
   console.error('\n发现不一致：');
   for (const line of problems) console.error(`- ${line}`);
-  console.error('请同步 code/src/i18n 三份语言包与 server/rules/messages-zh*.json（简繁同键），再重跑 npm run i18n:check');
+  console.error('请同步 code/src/i18n 五份语言包与 server/rules/messages-*.json、cwe-*.json（各语言同键），再重跑 npm run i18n:check');
   process.exitCode = 1;
 } else {
   console.log('i18n 资源一致');
