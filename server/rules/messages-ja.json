@@ -654,5 +654,21 @@
   "python.manual-counter-create": "カウンターを手動で実装しています——代わりに collections.Counter を使用してください。",
   "python.manual-defaultdict-dict-create": "defaultdict を手動で実装しています——代わりに collections.defaultdict(dict) を使用してください。",
   "python.manual-defaultdict-list-create": "defaultdict を手動で実装しています——代わりに collections.defaultdict(list) を使用してください。",
-  "python.manual-defaultdict-set-create": "defaultdict を手動で実装しています——代わりに collections.defaultdict(set) を使用してください。"
+  "python.manual-defaultdict-set-create": "defaultdict を手動で実装しています——代わりに collections.defaultdict(set) を使用してください。",
+  "python.marshal-usage": "marshal モジュールは、設計上、誤ったデータや悪意を持って構築されたデータに対する防御を行いません。信頼できない、または認証されていない出所からのデータに対して unmarshal を行わないでください。詳細は https://docs.python.org/3/library/marshal.html?highlight=security を参照してください。",
+  "python.mass-assignment": "一括代入（mass assignment）が検出されました。予期しないモデルフィールドへの代入につながり、攻撃者に悪用される恐れがあります。'**request.$W' を使用せず、編集対象のフィールドを 1 つずつ代入してください。詳細は https://cheatsheetseries.owasp.org/cheatsheets/Mass_Assignment_Cheat_Sheet.html を参照してください。",
+  "python.md5-used-as-password": "MD5 がパスワードハッシュとして使用されています。MD5 は安全なパスワードハッシュではないため、攻撃者は短時間で解読できます。scrypt などの専用のパスワードハッシュ関数に変更してください。`hashlib.scrypt` を直接使用できます。",
+  "python.missing-autoescape-disabled": "自動エスケープが無効な Jinja2 環境が検出されました。Jinja2 はデフォルトでは自動エスケープを行わないため、レンダリング内容がブラウザー向けの場合、クロスサイトスクリプティング（XSS）攻撃を招きます。Web で使用する場合は 'autoescape=True' を設定して自動エスケープを有効にしてください。'jinja2.select_autoescape()' を使用すれば、特定の拡張子に対してのみ有効にすることもできます。",
+  "python.missing-hash-with-eq": "クラス `$A` は `__eq__` を定義しています。慣例に従い、`__hash__` も定義してください。",
+  "python.missing-throttle-config": "Django REST framework の設定にはデフォルトのスロットリングオプションがないため、意図せずリソースの枯渇やサービス拒否（DoS）攻撃を招く恐れがあります。'DEFAULT_THROTTLE_CLASSES' と 'DEFAULT_THROTTLE_RATES' を追加し、アプリケーションにスロットリングを設定してください。",
+  "python.mongo-client-bad-auth": "警告：MONGODB-CR 認証メカニズムは MongoDB 3.6 から非推奨となり、MongoDB 4.0 ではサポートされなくなりました（詳細は https://api.mongodb.com/python/current/examples/authentication.html を参照）。",
+  "python.multiprocessing-recv": "Connection.recv() は受信したデータを自動的に逆シリアル化します。送信側のプロセスを信頼しない限り、セキュリティ上のリスクがあります。接続オブジェクトが Pipe() で作成されたものでない場合は、必ず認証を行ってから recv()/send() を使用してください。詳細は https://docs.python.org/3/library/multiprocessing.html?highlight=security#multiprocessing.connection.Connection を参照してください。",
+  "python.mysql-sqli": "`event` オブジェクトによって汚染された SQL 文が検出されました。変数がユーザー制御可能で適切にサニタイズされていない場合、SQL インジェクションにつながります。パラメータ化クエリまたはプリペアードステートメントを使用してください。例：`cursor.execute('SELECT * FROM projects WHERE status = %s', ('active'))`",
+  "python.nan-injection": "ユーザー入力が bool()、float()、complex() の型変換に直接渡されています。攻撃者は Python の NaN（非数値）を注入でき、未定義動作（特に比較演算に影響）を引き起こします。別の型に変更するか、文字列 'nan'（大文字・小文字の各表記を含む）に対する防御チェックを追加してください。",
+  "python.no-auth-over-http": "HTTP 経由の認証が検出されました。HTTP は認証情報に暗号化や保護を一切提供しないため、認証情報が許可されていない相手にさらされる恐れがあります。'https://' を使用してください。",
+  "python.no-csrf-exempt": "@csrf_exempt が検出されました。これはこのルートに CSRF トークンが設定されていないことを意味し、攻撃者はこれを利用してユーザーアカウントの操作やプライバシーデータの窃取ができます。このデコレーターを付けない関数を作成してください。",
+  "python.no-set-ciphers": "'ssl' モジュールはデフォルトで安全でない暗号スイートを無効化しています。そのため、'set_ciphers()' は特別な必要がある場合にのみ呼び出すべきであり、それ以外の場合は SSL チャネルのセキュリティが低下する恐れがあります。",
+  "python.non-literal-import": "`importlib.import_module()` 内の信頼できないユーザー入力により、攻撃者が任意のコードを読み込むことができます。`importlib.import_module()` で動的な値を使用しないようにするか、ホワイトリストによって信頼できないコードの実行を防いでください。",
+  "python.open-never-closed": "ファイルオブジェクトが開かれたまま、対応するクローズ処理が行われていません。",
+  "python.open-redirect": "リクエストデータ（$DATA）が redirect() に渡されており、悪用可能なオープンリダイレクトとなっています。django.utils.http.is_safe_url() を使用して、安全な URL にのみリダイレクトするようにしてください。詳細は https://cwe.mitre.org/data/definitions/601.html を参照してください。"
 }
