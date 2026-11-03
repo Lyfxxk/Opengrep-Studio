@@ -14,5 +14,21 @@
   "c.insecure-use-strcat-fn": "strcat または strncat の使用が検出されました。バッファオーバーフローの脆弱性を引き起こす恐れがあるため、strcat_s に置き換えて修正してください。",
   "c.insecure-use-string-copy-fn": "strcpy または strncpy の使用が検出されました。strcpy はコピー先配列のサイズを確認せず、strncpy も NULL 終端を自動的に補わないため、いずれもバッファオーバーフローを引き起こし、プログラムのクラッシュやコード注入につながる恐れがあります。strcpy_s に置き換えて修正してください（strcpy_s は C11 規格のオプション機能であり、必ずしも利用できるとは限らない点に注意してください）。",
   "c.insecure-use-strtok-fn": "'strtok()' は避けてください。第1引数のバッファを直接変更し、区切り文字を永久に消去します。代わりに 'strtok_r()' を使用してください。",
-  "c.random-fd-exhaustion": "'read()' の呼び出しがエラーチェックを行っておらず、ファイル記述子の枯渇の影響を受けやすくなっています。'getrandom()' 関数の使用を検討してください。"
+  "c.random-fd-exhaustion": "'read()' の呼び出しがエラーチェックを行っておらず、ファイル記述子の枯渇の影響を受けやすくなっています。'getrandom()' 関数の使用を検討してください。",
+  "c.use-after-free": "変数 '$VAR' が解放された後に再度使用されており、未定義動作を引き起こす恐れがあります。",
+  "csharp.X509-subject-name-validation": "サブジェクト名（subject name）に基づく証明書の検証は望ましくないプラクティスです。代わりに X509Certificate2.Verify() メソッドを使用してください。",
+  "csharp.csharp-sqli": "SQL ステートメント内にフォーマット文字列が検出されました。ステートメント内の変数が適切にサニタイズされていない場合、SQL インジェクションを引き起こす恐れがあります。代わりにプリコンパイル済みステートメントを使用してください。これは 'SqlCommand' と 'SqlParameter' によって実現できます。",
+  "csharp.insecure-newtonsoft-deserialization": "TypeNameHandling $TYPEHANDLER は安全ではなく、プロセスのコンテキストで任意のコード実行につながる恐れがあります。TypeNameHandling.None 以外の設定を使用する場合は、必ずカスタムの SerializationBinder を併用してください。",
+  "csharp.jwt-tokenvalidationparameters-no-expiry-validation": "TokenValidationParameters.$LIFETIME が $FALSE に設定されています。これは JWT の有効期間を検証しないことを意味し、トークンが期限切れになった後も使用できてしまい、セキュリティ上のリスクがあります。JWT の有効期間を検証し、有効なトークンのみを使用することを推奨します。",
+  "csharp.ldap-injection": "LDAP クエリがユーザーが制御できる入力から動的に構築されており、この欠陥により任意の LDAP クエリを実行される恐れがあります。",
+  "csharp.mass-assignment": "コード内のマスアサインメント（Autobinding）の脆弱性により、攻撃者は過剰ポスティング（over-posting）攻撃を行えます。バインドされるリクエストにパラメータを追加し、アプリケーションの基盤となるオブジェクトを操作します。",
+  "csharp.misconfigured-lockout-option": "ロックアウト機構の構成が不適切だと、攻撃者にブルートフォース攻撃を許してしまいます。この種の攻撃を防ぐには、アカウントロックアウトを正しく構成して有効にしなければなりません。",
+  "csharp.missing-hsts-header": "HSTS レスポンスセキュリティヘッダーが不足しており、やり取りと通信に安全でない HTTP プロトコルが使用され得ます。",
+  "csharp.missing-or-broken-authorization": "設計上明示的に許可されている場合を除き、匿名アクセスを許可すべきではありません。ここではアクセス制御のチェックが欠落しており、バイパスされる恐れがあるため、最小権限／デフォルト拒否の原則に反します。アクセスは、特定のロールまたはカスタムポリシー／ユーザーリストに合致する対象にのみ付与すべきです。",
+  "csharp.mvc-missing-antiforgery": "$METHOD は状態を変更する MVC メソッドですが、偽造防止トークンの検証もコンテンツタイプの厳密なチェックも行っていません。単純な HTTP リクエストタイプによる CORS プリフライト制御のバイパスを防ぐため、状態を変更するコントローラーメソッドでは偽造防止トークンを強制するか、コンテンツタイプを厳密にチェックする必要があります。",
+  "csharp.open-directory-listing": "ディレクトリの一覧表示が公開されており、機密情報が攻撃者に漏洩する恐れがあります。",
+  "csharp.open-redirect": "クエリ文字列パラメータに URL 値が含まれていると、Web アプリケーションがリクエストを攻撃者が制御する悪意のあるサイトへリダイレクトしてしまいます。このパラメータは十分にサニタイズしてください。",
+  "csharp.os-command-injection": "ソフトウェアは、上流コンポーネントからの外部の影響を受ける入力を使用して OS コマンドの全部または一部を構築していますが、コマンドの意味を変え得る特殊要素を無効化できていません（または無効化に誤りがあります）。",
+  "csharp.razor-template-injection": "ユーザーが制御できる文字列が Razor.Parse に渡されており、プロセスのコンテキストにおけるコード実行を直接引き起こします。",
+  "csharp.ssrf": "SSRF は、アプリケーションと内部／外部ネットワークまたはローカルマシン自身とのやり取りを悪用する攻撃手法です。"
 }
