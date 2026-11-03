@@ -318,5 +318,21 @@
   "js-ts.express-ssrf": "사용자 입력 `$REQ`로 구성된 요청 $REQUEST.$METHOD()이(가) 발견되었습니다. 서버 측 요청 위조(SSRF) 취약점으로 이어질 수 있습니다. 가급적 요청 기본 주소를 사용자 입력으로 구성하지 말고 사용자 입력은 경로나 쿼리 파라미터에만 포함시키는 것이 좋습니다. 사용자 입력이 반드시 요청 구성에 포함되어야 하는 경우에는 OWASP 모범 사례를 따라 악용을 방지하십시오.",
   "js-ts.express-third-party-object-deserialization": "함수 호출 $SER.$FUNC가 사용자가 제어할 수 있는 데이터를 받아들이며 객체 역직렬화를 통해 원격 코드 실행(RCE)으로 이어질 수 있습니다. JSON.parse(), Buffer.from() 등 안전한 데이터 처리 방식으로 전환하는 것이 좋습니다.",
   "js-ts.express-vm-injection": "검증되지 않은 사용자 데이터가 `$VM`에 도달하지 못하도록 보장하십시오.",
-  "js-ts.express-vm2-injection": "검증되지 않은 사용자 데이터가 `vm2`에 도달하지 못하도록 보장하십시오."
+  "js-ts.express-vm2-injection": "검증되지 않은 사용자 데이터가 `vm2`에 도달하지 못하도록 보장하십시오.",
+  "js-ts.express-wkhtmltoimage-injection": "검증되지 않은 사용자 데이터가 `wkhtmltoimage` 관련 메서드에 도달하면 서버 측 요청 위조(SSRF) 취약점이 발생할 수 있습니다.",
+  "js-ts.express-wkhtmltopdf-injection": "검증되지 않은 사용자 데이터가 `wkhtmltopdf` 관련 메서드에 도달하면 서버 측 요청 위조(SSRF) 취약점이 발생할 수 있습니다.",
+  "js-ts.express-xml2json-xxe": "검증되지 않은 사용자 데이터가 XML 파서에 도달하지 못하도록 하십시오. 그렇지 않으면 XML 외부/내부 엔터티(XXE) 삽입 취약점이 발생합니다.",
+  "js-ts.express-xml2json-xxe-event": "요청 이벤트 내에서 XML 파서를 사용하고 있습니다. 검증되지 않은 사용자 데이터가 XML 파서에 도달하지 못하도록 하십시오. 그렇지 않으면 XML 외부/내부 엔터티(XXE) 처리 취약점이 발생합니다.",
+  "js-ts.gcm-no-tag-length": "GCM 모드로 'createDecipheriv'를 호출할 때 예상되는 인증 태그 길이가 누락되었습니다. 예상 태그 길이를 지정하지 않거나 검증하지 않으면 애플리케이션이 예상보다 짧은 태그를 검증하도록 유도될 수 있으며, 공격자는 이를 악용해 암호문을 위조하거나 GCM의 묵시적 인증 키를 복구하여 임의의 위조를 수행할 수 있습니다.",
+  "js-ts.grpc-nodejs-insecure-connection": "안전하지 않은 gRPC 연결이 발견되었습니다: gRPC 클라이언트/서버에 대한 암호화되지 않은 연결이 생성되었습니다. 공격자는 gRPC 메시지를 변조하여 시스템 보안을 위협할 수 있습니다.",
+  "js-ts.hardcoded-hmac-key": "하드코딩된 HMAC 키가 감지되었습니다. 기밀 정보를 하드코딩하지 말고 설정 파일에서 읽어오거나 환경 변수를 사용하십시오.",
+  "js-ts.hardcoded-jwt-secret": "하드코딩된 자격 증명이 감지되었습니다. 소스 코드에 자격 증명을 보관하는 것은 권장되지 않습니다. 내부자이든 외부자이든 악의적인 사용자가 유출된 기밀 정보를 악용할 수 있습니다. 환경 변수를 통해 자격 증명을 안전하게 주입하거나 볼트(vault)/HSM(하드웨어 보안 모듈)에서 가져오십시오.",
+  "js-ts.hardcoded-passport-secret": "하드코딩된 자격 증명이 감지되었습니다. 소스 코드에 자격 증명을 보관하는 것은 권장되지 않습니다. 내부자이든 외부자이든 악의적인 사용자가 유출된 기밀 정보를 악용할 수 있습니다. 환경 변수를 통해 자격 증명을 안전하게 주입하거나 볼트(vault)/HSM(하드웨어 보안 모듈)에서 가져오십시오.",
+  "js-ts.html-in-template-string": "이 템플릿 문자열은 HTML과 비슷한 형태이며 변수를 보간하는데, 이 변수들은 기본적으로 HTML 인코딩이 적용되지 않습니다. 변수에 HTML 태그가 포함되어 있으면 브라우저가 이를 해석·실행하여 크로스 사이트 스크립팅(XSS)이 발생할 수 있습니다.",
+  "js-ts.i18next-key-format": "번역 키 '$KEY'는 'MODULE.FEATURE.*' 형식을 따라야 합니다.",
+  "js-ts.incomplete-sanitization": "`$STR.replace`가 문자열을 인수($CHAR)로 받으면 첫 번째 일치 항목만 치환합니다. 이를 사용해 위험한 데이터를 이스케이프하면 우회될 수 있습니다. 대신 정제 라이브러리를 사용하거나 전역 플래그가 설정된 정규식을 사용하십시오.",
+  "js-ts.insecure-createnodesfrommarkup": "`createNodesFromMarkup` 내의 사용자 제어 데이터는 XSS 취약점을 유발할 수 있는 안티패턴입니다.",
+  "js-ts.insecure-document-method": "`innerHTML`, `outerHTML`, `document.write` 등의 메서드에 사용자 제어 데이터를 사용하는 것은 XSS 취약점을 유발할 수 있는 안티패턴입니다.",
+  "js-ts.insecure-innerhtml": "`$EL.innerHTML`에 사용자 제어 데이터를 사용하는 것은 XSS 취약점을 유발할 수 있는 안티패턴입니다.",
+  "js-ts.insecure-object-assign": "컨텍스트에 따라 `Object.assign` 내의 사용자 제어 데이터로 인해 웹 응답에 반환해서는 안 되는 데이터가 포함되거나 대량 할당(mass assignment) 취약점이 발생할 수 있습니다."
 }
