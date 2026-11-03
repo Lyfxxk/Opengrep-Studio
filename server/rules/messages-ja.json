@@ -590,5 +590,21 @@
   "python.flask-class-method-get-side-effects": "Flask クラスビューの GET メソッドが副作用を生じています。",
   "python.flask-cors-misconfiguration": "'support_credentials=True' と 'origin=\"*\"' を同時に設定するのは誤った CORS 設定であり、サードパーティーのオリジンに機密データを読み取られる恐れがあります。この設定では、flask_cors が Access-Control-Allow-Origin ヘッダーに各リクエストの Origin を動的にエコーバックするため、すべてのオリジンを許可して Cookie と認証情報をリクエストと一緒に送信することを認めるのと同じことになります。'support_credentials=True' を設定する場合は、許可するオリジンを明示的に列挙し、\"*\" は使用しないでください。",
   "python.flask-deprecated-apis": "非推奨の Flask API。",
-  "python.flask-wtf-csrf-disabled": "'WTF_CSRF_ENABLED' を 'False' に設定すると、CSRF 保護が明示的に無効化されます。"
+  "python.flask-wtf-csrf-disabled": "'WTF_CSRF_ENABLED' を 'False' に設定すると、CSRF 保護が明示的に無効化されます。",
+  "python.formathtml-fstring-parameter": "フォーマット文字列を `format_html` の第 1 引数として渡すと、変数が正しくエンコードされなくなります——第 1 引数内の HTML は一切エンコードされず、どの引数がエンコードされるのかも分からなくなります。正しい使い方は、第 1 引数に静的なフォーマット文字列を渡し、置き換え対象の変数を後続の引数として渡すことです。",
+  "python.formatted-sql-query": "フォーマットされる可能性のある SQL クエリが検出されました。パラメータ化クエリに切り替えてください。",
+  "python.formatted-string-bashoperator": "BashOperator 内にフォーマット文字列が見つかりました：$CMD。インジェクションのリスクが生じるおそれがあります。この変数が外部リソースに制御されていないことを必ず確認してください。",
+  "python.global-autoescape-off": "この Django アプリケーションの自動エスケープがグローバルに無効化されています。何らかの Web ページをレンダリングすると、アプリケーションがクロスサイトスクリプティング（XSS）の脆弱性にさらされます。'autoescape: False' を削除するか、'True' に設定してください。",
+  "python.globals-as-template-context": "'globals()' を 'render(...)' のコンテキストとして渡すのは極めて危険です——テンプレートに公開すべきでない Python 関数がさらされ、攻撃者はこれを利用して意図しないコードを実行し、アプリケーションを侵害できます（サーバーサイドテンプレートインジェクション SSTI）。'globals()' は使用せず、'{\"var1\": \"hello\"}' のように、辞書または 'django.template.Context' で変数を 1 つずつ指定してください。",
+  "python.globals-misuse-code-execution": "リクエストデータが 'globals()' のインデックスとして使用されていることが見つかりました。これは極めて危険です——攻撃者はシステム上で任意のコードを実行できてしまいます。'globals()' を使用しない形にコードをリファクタリングしてください。",
+  "python.hardcoded-password-default-argument": "ハードコードされたパスワードが '$FUNC' のデフォルト引数として使用されています。呼び出し側が実際のパスワードを渡さない場合、リスクが生じます。",
+  "python.hardcoded-tmp-path": "ハードコードされた一時ディレクトリのパスが検出されました。代わりに 'tempfile.TemporaryFile' を使用してください。",
+  "python.hardcoded-token": "ハードコードされた資格情報が検出されました。資格情報をソースコードに保存することは推奨されません——内部・外部を問わず、悪意のある人物が漏洩した秘密を悪用する恐れがあります。資格情報は環境変数で安全に注入するか、保管庫（vault）/HSM（ハードウェアセキュリティモジュール）から取得することを推奨します。",
+  "python.hashids-with-django-secret": "Django の secret key が HashIDs のソルトとして使用されています。HashIDs の仕組みは安全ではありません：十分な数の結果を観察するだけでソルト値を復元でき、攻撃者はこれを利用して Django の secret key を入手できてしまいます。",
+  "python.hashids-with-flask-secret": "Flask の secret key が HashIDs のソルトとして使用されています。HashIDs の仕組みは安全ではありません：十分な数の結果を観察するだけでソルト値を復元でき、攻撃者はこれを利用して Flask の secret key を入手できてしまいます。",
+  "python.host-header-injection-python": "`flask.request.host` が HTTP リクエストの構築に使用されており、Host ヘッダーインジェクションを引き起こす可能性があります。これに起因する典型的な脆弱性には、認証バイパス、パスワードリセットの不備、サーバーサイドリクエストフォージェリ（SSRF）などがあります。URL をリクエストライブラリに渡す前に検証するか、認証やパスワードリセットなどのビジネスロジックで慎重に扱ってください。",
+  "python.html-magic-method": "`__html__` メソッドは、その値を「安全に」レンダリングできることを Django テンプレートエンジンに伝え、通常の HTML エスケープはその戻り値に適用されなくなるため、アプリケーションが XSS の脆弱性にさらされます。本当に生の HTML をレンダリングする必要がある場合は、代わりに `mark_safe()` を使用することを推奨します——マジックメソッドよりも「生の HTML をレンダリングする」という意図を明示的に表せます。",
+  "python.html-safe": "`html_safe()` は指定したクラスに `__html__` マジックメソッドを追加し、その値を「安全に」レンダリングできることを Django テンプレートエンジンに伝えます。通常の HTML エスケープはその戻り値に適用されなくなり、アプリケーションが XSS の脆弱性にさらされます。本当に生の HTML をレンダリングする必要がある場合は、代わりに `mark_safe()` を使用することを推奨します——マジックメソッドよりも意図を明示的に表せます。",
+  "python.http-not-https-connection": "HTTPConnectionPool が検出されました。データは平文で送信されます。代わりに HTTPSConnectionPool を使用して通信を暗号化することを推奨します。",
+  "python.httpsconnection-detected": "HTTPSConnection API は Python のマイナーバージョン間で頻繁に変更されます。お使いの Python バージョンに応じて、この API を安全に使用していることを確認してください——例えば、3.4.3 より前の Python 3 はデフォルトで SSL 証明書を検証しません。詳細は https://docs.python.org/3/library/http.client.html#http.client.HTTPSConnection を参照してください。"
 }
