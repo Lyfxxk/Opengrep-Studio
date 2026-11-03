@@ -62,5 +62,21 @@
   "dockerfile.missing-user": "USER が指定されていないため、コンテナ内のプログラムが 'root' として実行される恐れがあります。これはセキュリティ上のリスクです。root として実行されているプロセスを攻撃者が制御できる場合、コンテナ全体を制御される恐れがあります。Dockerfile の最後の USER が 'root' でないことを確認してください。",
   "dockerfile.missing-user-entrypoint": "USER が指定されていないため、コンテナ内のプログラムが 'root' として実行される恐れがあります。これはセキュリティ上のリスクです。root として実行されているプロセスを攻撃者が制御できる場合、コンテナ全体を制御される恐れがあります。Dockerfile の最後の USER が 'root' でないことを確認してください。",
   "dockerfile.missing-yum-assume-yes-switch": "'yum install' に '-y' スイッチがありません。手動での対話が必要になり、ビルドが停止する恐れがあります。'-y' を追加してください。",
-  "dockerfile.missing-zypper-clean": "zypper コマンドが '&& zypper clean' で終わっていません。'zypper clean' を実行するとキャッシュを消去し、パッケージサイズを減らせます（インストールコマンドと同じ RUN ステップで実行する必要があります）。"
+  "dockerfile.missing-zypper-clean": "zypper コマンドが '&& zypper clean' で終わっていません。'zypper clean' を実行するとキャッシュを消去し、パッケージサイズを減らせます（インストールコマンドと同じ RUN ステップで実行する必要があります）。",
+  "dockerfile.no-sudo-in-dockerfile": "Dockerfile で sudo の使用は避けてください。プロセスを非 root ユーザーで実行すると、設定ミスやセキュリティ脆弱性の潜在的な影響を低減するのに役立ちます。",
+  "dockerfile.nonsensical-command": "`$CMD` などのコマンドはコンテナ内では意味を持たないため、使用しないでください。",
+  "dockerfile.prefer-apt-get": "無人インストールツールとしては 'apt-get' の方が安定しているため、'apt' の使用は推奨されません。",
+  "dockerfile.prefer-copy-over-add": "ADD コマンドは URL からのファイルを受け入れて取り込み、アーカイブを自動的に展開します。攻撃者が取得元のアーカイブを改ざんした場合、コンテナは中間者攻撃などのリスクにさらされる可能性があります。ADD にはこのような副作用やその他の予期しない副作用があるため、意味がより明確な COPY コマンドに置き換えることを推奨します。",
+  "dockerfile.prefer-json-notation": "CMD または ENTRYPOINT には JSON 配列形式を使用することを推奨します。そうすることで OS シグナルが正しく伝達されます。",
+  "dockerfile.remove-package-cache": "'apt-get update' の実行後にパッケージキャッシュを削除していないと、イメージサイズが増大します。apt-get コマンドチェーンの末尾に '&& apt-get clean' を追加してクリーンアップしてください。",
+  "dockerfile.remove-package-lists": "'apt-get update' の実行後にパッケージリストを削除していないと、イメージサイズが増大します。apt-get コマンドチェーンの末尾に '&& rm -rf /var/lib/apt/lists/*' を追加してクリーンアップしてください。",
+  "dockerfile.secret-in-build-arg": "Docker のビルド引数は機密情報の保存に適していません。引数の値がイメージとともに保存されるためです。イメージに対して `docker image history` を実行すると、ビルド情報（引数を含む）が表示されます。そこに平文の機密情報が含まれている場合、そのイメージにアクセスできる人なら誰でもそれを取得して悪用できてしまいます。",
+  "dockerfile.set-pipefail": "'pipefail' が設定されていない場合、RUN 命令はパイプの最後のコマンドの終了コードのみを取得します。パイプの中のどこか一つでも失敗したら全体を失敗させたい場合は、コマンドの前に 'SHELL [\"/bin/bash\", \"-o\", \"pipefail\", \"-c\"]' を追加してください。Alpine イメージに bash がない場合は、明示的に `SHELL [\"/bin/ash\"]` と記述してください。",
+  "dockerfile.use-either-wget-or-curl": "'wget' と 'curl' は機能が似ているため、どちらか一方だけをインストールすれば十分です。イメージサイズを抑えるため、両方はインストールしないでください。",
+  "dockerfile.use-shell-instruction": "'/bin/sh' を上書きするのではなく、SHELL 命令を使ってデフォルトの shell を設定してください。",
+  "dockerfile.use-workdir": "Docker 公式ドキュメントの推奨では、'RUN cd ...' より 'WORKDIR' を使用する方が明確で信頼性が高いとされています。また、'RUN cd ...' はコンテナ内では期待どおりに動作しない可能性があります。",
+  "go.avoid-bind-to-all-interfaces": "ネットワークリスナーが 0.0.0.0 または空文字列をリッスンしているのが検出されました。このため利用可能なすべてのネットワークインターフェースにバインドされ、サービスが意図せずインターネットに公開される可能性があります。0.0.0.0 でも空文字列でもない、別の IP アドレスを使用してください。",
+  "go.avoid-ssh-insecure-ignore-host-key": "ホストキーの検証の無効化が検出されました。これは中間者攻撃につながります。ホストキーの検証には 'golang.org/x/crypto/ssh/knownhosts' パッケージを使用してください。問題と修正の詳細は、https://skarlso.github.io/2019/02/17/go-ssh-with-host-key-verification/ を参照してください。",
+  "go.bad-tmp-file-creation": "共有 tmp ディレクトリ内にファイルを作成していますが、ioutil.Tempfile を使用していません。",
+  "go.channel-guarded-with-mutex": "ミューテックスで保護された channel が検出されました。channel には内部的にミューテックスが備わっているため、これを行う必要はありません。そのミューテックスを削除してください。詳細は https://hackmongo.com/page/golang-antipatterns/#guarded-channel を参照してください。"
 }
