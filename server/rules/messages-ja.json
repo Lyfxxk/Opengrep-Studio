@@ -766,5 +766,21 @@
   "python.unescaped-template-extension": "Flask は .html、.htm、.xml、.xhtml の拡張子を持つテンプレートに対してのみ自動エスケープを行います。その他の拡張子では XSS 攻撃につながる恐れがあります。テンプレートにはこれらの拡張子を使用してください。詳しくは https://flask.palletsprojects.com/en/1.1.x/templating/#jinja-setup を参照してください。",
   "python.unspecified-open-encoding": "'encoding' パラメータがありません。'open()' はデフォルトでデバイスのローカルエンコーディングを使用するため、特殊文字を含むファイルが壊れることがあります。プラットフォーム間で一貫した動作を保証するため、エンコーディングを明示的に指定してください（例：encoding=\"utf-8\"）。",
   "python.unvalidated-password": "'$MODEL' のパスワードが設定時に検証されていません。パスワードを設定する前に django.contrib.auth.password_validation.validate_password() を呼び出して検証してください。詳しくは https://docs.djangoproject.com/en/3.0/topics/auth/passwords/ を参照してください。",
-  "python.unverified-jwt-decode": "JWT が 'verify=False' でデコードされていることを検出しました。トークンの完全性検証がバイパスされ、トークンが悪意をもって改ざんされる恐れがあります。JWT が確実に検証されるようにしてください。"
+  "python.unverified-jwt-decode": "JWT が 'verify=False' でデコードされていることを検出しました。トークンの完全性検証がバイパスされ、トークンが悪意をもって改ざんされる恐れがあります。JWT が確実に検証されるようにしてください。",
+  "python.unverified-ssl-context": "未検証の SSL コンテキストが検出されました。SSL 証明書を検証せずに安全でない接続を確立することが許可されます。代わりに 'ssl.create_default_context' を使用してください。",
+  "python.use-click-secho": "代わりに `click.secho($X)` を使用してください。これは click.echo() と click.style() を組み合わせたものと等価です。",
+  "python.use-count-method": "レコード数を数える必要があるようです。Django が提供する count() メソッドは len() よりも効率的です。詳しくは https://docs.djangoproject.com/en/3.0/ref/models/querysets/ を参照してください。",
+  "python.use-defused-xml": "Python 公式ドキュメントでは、`xml` の代わりに `defusedxml` を使用することが推奨されています——標準の `xml` ライブラリは XML 外部エンティティ（XXE）攻撃を受けやすく、機密データが漏えいするおそれがあり、\"XML 爆弾\" によるサービス拒否も引き起こします。",
+  "python.use-defused-xml-parse": "標準の Python `xml` ライブラリは XML 外部エンティティ（XXE）攻撃を受けやすく、機密データが漏えいするおそれがあり、\"XML 爆弾\" によるサービス拒否も引き起こします。信頼できない入力の解析にこれを使用しないでください。公式ドキュメントでは、代わりに `defusedxml` を使用することが推奨されています。",
+  "python.use-defused-xmlrpc": "xmlrpc が検出されました。xmlrpc 自体、脆弱性がないわけではありません。代わりに defusedxml.xmlrpc を使用してください。",
+  "python.use-defusedcsv": "組み込みの `csv` モジュールで CSV ファイルを生成していることが検出されました。ユーザーデータがファイル内容の生成に使われている場合、CSV が表計算アプリにインポートされるときに攻撃者が数式を注入して攻撃スクリプトを実行できます——軽い場合は CSV をインポートしたユーザーのデータが窃取され、深刻な場合はそのユーザーのコンピューターにマルウェアがインストールされます。`defusedcsv` は API が同一のドロップイン代替であり、数式インジェクションの緩和を試みます。`csv` の代わりに `defusedcsv` を使用して、CSV を安全に生成してください。",
+  "python.use-django-environ": "Django アプリ内で環境変数を直接使用しています。`django-environ` への切り替えを推奨します。デプロイ管理の面でより優れています。",
+  "python.use-earliest-or-latest": "順序付き QuerySet の最初の要素のみを取得しているようです。代わりに `latest()` または `earliest()` を使用してください。詳しくは https://docs.djangoproject.com/en/3.0/ref/models/querysets/#django.db.models.query.QuerySet.latest を参照してください。",
+  "python.use-ftp-tls": "'FTP' クラスは情報を平文で送信します。代わりに 'FTP_TLS' クラスを使用してください。",
+  "python.use-json-response": "代わりに JsonResponse を使用してください。",
+  "python.use-jsonify": "flask.jsonify() は Flask のヘルパーメソッドであり、Flask ルートから JSON を返すために適切な設定を処理します。",
+  "python.use-none-for-password-default": "'$VAR' は空文字列をデフォルト値としており、'$MODEL' のパスワードを設定するために使用されています。使用不可のパスワードを設定することが本来の意図である場合は、デフォルト値を 'None' に変更するか、'set_unusable_password()' を呼び出してください。",
+  "python.use-onetoonefield": "unique=True の 'ForeignKey' の代わりに 'django.db.models.OneToOneField' を使用してください。'OneToOneField' は 1対1のリレーションを構築するために使用されます。",
+  "python.use-raise-for-status": "requests で HTTP リクエストを送信していますが、raise_for_status() ヘルパーメソッドが使用されていません。そのため、リクエストのエラーが黙って見過ごされ、コードの動作が予想に反するものになります——例えば、認可 API が 500 を返しているのに 401 しかチェックしていない場合などです。",
+  "python.use-timeout": "タイムアウトが設定されていない 'requests' 呼び出しが検出されました。'requests' は既定では接続が閉じられるまで待ち続けるため、タイムアウトなしの呼び出しは、レスポンスが返ってこない場合にプログラム全体をハングさせます。すべての 'requests' 呼び出しにタイムアウトを設定してください。"
 }
