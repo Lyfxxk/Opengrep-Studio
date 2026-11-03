@@ -670,5 +670,21 @@
   "python.no-set-ciphers": "'ssl' モジュールはデフォルトで安全でない暗号スイートを無効化しています。そのため、'set_ciphers()' は特別な必要がある場合にのみ呼び出すべきであり、それ以外の場合は SSL チャネルのセキュリティが低下する恐れがあります。",
   "python.non-literal-import": "`importlib.import_module()` 内の信頼できないユーザー入力により、攻撃者が任意のコードを読み込むことができます。`importlib.import_module()` で動的な値を使用しないようにするか、ホワイトリストによって信頼できないコードの実行を防いでください。",
   "python.open-never-closed": "ファイルオブジェクトが開かれたまま、対応するクローズ処理が行われていません。",
-  "python.open-redirect": "リクエストデータ（$DATA）が redirect() に渡されており、悪用可能なオープンリダイレクトとなっています。django.utils.http.is_safe_url() を使用して、安全な URL にのみリダイレクトするようにしてください。詳細は https://cwe.mitre.org/data/definitions/601.html を参照してください。"
+  "python.open-redirect": "リクエストデータ（$DATA）が redirect() に渡されており、悪用可能なオープンリダイレクトとなっています。django.utils.http.is_safe_url() を使用して、安全な URL にのみリダイレクトするようにしてください。詳細は https://cwe.mitre.org/data/definitions/601.html を参照してください。",
+  "python.os-system-injection": "os.system でユーザーデータが使用されていることを検出しました。コマンドインジェクションのリスクがあるため避けるべきです。どうしても実行が必要な場合は、代わりに 'subprocess' モジュールを使用し、引数をリスト形式で渡してください。",
+  "python.paramiko-exec-command": "未検証の SSL コンテキストが検出されました。このコンテキストでは、証明書を検証しない安全でない接続が許可されます。代わりに 'ssl.create_default_context()' を使用してください。",
+  "python.paramiko-implicit-trust-host-key": "サーバーのホストキーを暗黙的に信頼する paramiko の HostKey ポリシーが検出されました。悪意のあるサーバーに接続していないことを保証するには、ホストキーを検証する必要があります。代わりに RejectPolicy またはカスタムサブクラスを使用してください。",
+  "python.pass-body-fn": "関数 $X の関数本体は `pass` のみです。削除してください。TODO の場合は、NotImplementedError() を送出してください。",
+  "python.pass-body-range": "`for $X in $Y` のループ本体は `pass` のみです。削除してください。TODO の場合は、NotImplementedError() を送出してください。",
+  "python.password-empty-string": "'$VAR' は空文字列ですが、'$MODEL' のパスワードを設定するために使用されています。使用できないパスワードを設定したい場合は、None を設定するか 'set_unusable_password()' を呼び出してください。",
+  "python.path-traversal-file-name": "リクエストデータがファイル名 `$FILE` として使用されており、パストラバーサルの脆弱性となり、機密データの漏えいにつながる可能性があります。緩和策：os.path.abspath、os.path.realpath または pathlib ライブラリを使用してください。",
+  "python.path-traversal-join": "リクエストデータが os.path.join() と open() に渡されており、パストラバーサルの脆弱性となり、機密データの漏えいにつながる可能性があります。緩和策：os.path.abspath、os.path.realpath または pathlib ライブラリを使用してください。",
+  "python.path-traversal-open": "リクエストデータが 'open' 呼び出しに渡されていることを検出しました。リクエストデータを検証またはサニタイズしてください。そうしない場合、パストラバーサル攻撃につながり、機密データが漏えいするおそれがあります。緩和策：os.path.abspath、os.path.realpath または pathlib ライブラリを使用してください。",
+  "python.pg8000-sqli": "pg8000 の SQL 文で非リテラルの変数と文字列連結していることを検出しました。この変数がユーザーによって制御可能で、適切にサニタイズされていない場合、SQL インジェクションにつながります。代わりにパラメータ化クエリまたはプリペアドステートメントを使用してください。例：'conn.run(\"SELECT :value FROM table\", value=myvalue)'。'conn.prepare' でプリペアドステートメントを作成することもできます：'conn.prepare(\"SELECT (:v) FROM table\")'。",
+  "python.psycopg-sqli": "`event` オブジェクトによって汚染された SQL 文が検出されました。変数がユーザーによって制御可能で、適切にサニタイズされていない場合、SQL インジェクションにつながります。代わりにパラメータ化クエリまたはプリペアドステートメントを使用してください。例：`cursor.execute('SELECT * FROM projects WHERE status = %s', 'active')`。",
+  "python.pymssql-sqli": "`event` オブジェクトによって汚染された SQL 文が検出されました。変数がユーザーによって制御可能で、適切にサニタイズされていない場合、SQL インジェクションにつながります。代わりにパラメータ化クエリまたはプリペアドステートメントを使用してください。例：`cursor.execute('SELECT * FROM projects WHERE status = %s', 'active')`。",
+  "python.pymysql-sqli": "`event` オブジェクトによって汚染された SQL 文が検出されました。変数がユーザーによって制御可能で、適切にサニタイズされていない場合、SQL インジェクションにつながります。代わりにパラメータ化クエリまたはプリペアドステートメントを使用してください。例：`cursor.execute('SELECT * FROM projects WHERE status = %s', ('active'))`。",
+  "python.pyramid-authtkt-cookie-httponly-unsafe-default": "Pyramid の認証チケット Cookie で httponly オプションが正しく設定されていないことを検出しました。Cookie を安全に扱うには httponly=True を設定してください。このパラメータが正しくない場合、Cookie が適切に保護されず、攻撃者に盗み取られるリスクがあります。",
+  "python.pyramid-authtkt-cookie-httponly-unsafe-value": "Pyramid の認証チケット Cookie で httponly オプションが正しく設定されていないことを検出しました。Cookie を安全に扱うには httponly=True を設定してください。このパラメータが正しくない場合、Cookie が適切に保護されず、攻撃者に盗み取られるリスクがあります。",
+  "python.pyramid-authtkt-cookie-samesite": "Pyramid の認証チケットで samesite オプションが正しく設定されていないことを検出しました。Pyramid Cookie を安全に扱うには samesite='Lax' を設定してください。このパラメータが正しくない場合、Cookie が適切に保護されず、攻撃者に盗み取られるリスクがあります。"
 }
