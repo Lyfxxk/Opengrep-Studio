@@ -542,5 +542,21 @@
   "python.dangerous-interactive-code-run-tainted-env-args": "InteractiveConsole/InteractiveInterpreter のメソッド内にユーザー制御可能なデータが検出されました。外部データがこの呼び出しに到達できる場合、攻撃者に任意の Python コードを実行されるおそれがあり、非常に危険です。",
   "python.dangerous-os-exec": "プロセスの作成時にユーザー制御可能なコンテンツが検出されました。攻撃者に任意のコマンドを実行されるおそれがあり、非常に危険です。",
   "python.dangerous-os-exec-audit": "プロセスの作成時に動的なコンテンツが検出されました。外部データがこの呼び出しに到達できる場合、攻撃者に任意のコマンドを実行されるおそれがあります。外部データがここに到達していないことを確認してください。",
-  "python.dangerous-os-exec-tainted-env-args": "プロセスの作成時にユーザー制御可能なコンテンツが検出されました。攻撃者に任意のコマンドを実行されるおそれがあり、非常に危険です。"
+  "python.dangerous-os-exec-tainted-env-args": "プロセスの作成時にユーザー制御可能なコンテンツが検出されました。攻撃者に任意のコマンドを実行されるおそれがあり、非常に危険です。",
+  "python.dangerous-spawn-process": "`os` 系の関数の引数が `event` オブジェクトによって汚染されていることが検出されました。外部データがこの呼び出しに到達できる場合、攻撃者は任意のコマンドを実行できてしまいます。外部データがここに到達しないようにしてください。",
+  "python.dangerous-spawn-process-audit": "プロセスの作成時に動的コンテンツが見つかりました。外部データがこの呼び出しに到達できる場合、攻撃者は任意のコマンドを実行できてしまいます。外部データがここに到達しないようにしてください。",
+  "python.dangerous-spawn-process-tainted-env-args": "プロセスの作成時にユーザーが制御可能な内容が見つかりました。攻撃者はこれを悪用して任意のコマンドを実行できてしまい、非常に危険です。",
+  "python.dangerous-subinterpreters-run-string": "`run_string` にユーザーが制御可能な内容が見つかりました。攻撃者はこれを悪用して任意の Python コードを実行できてしまい、非常に危険です。",
+  "python.dangerous-subinterpreters-run-string-audit": "`run_string` に動的コンテンツが見つかりました。外部データがこの呼び出しに到達できる場合、攻撃者は任意の Python コードを実行できてしまいます。外部データがここに到達しないようにしてください。",
+  "python.dangerous-subinterpreters-run-string-tainted-env-args": "`run_string` にユーザーが制御可能な内容が見つかりました。攻撃者はこれを悪用して任意の Python コードを実行できてしまい、非常に危険です。",
+  "python.dangerous-subprocess-use": "サブプロセス関数の引数が `event` オブジェクトによって汚染されていることが検出されました。このデータを攻撃者が制御できる場合、コマンドインジェクションに該当します。`shell` 引数はデフォルトで False であり、デフォルトでは安全です。`shell=True` を削除するか明示的に False に設定し、コマンドと引数を文字列の配列に分割することをお勧めします（'shlex.split()' を使用できます）。",
+  "python.dangerous-subprocess-use-audit": "サブプロセス関数 '$FUNC' に静的ではない文字列が使用されていることが検出されました。このデータを攻撃者が制御できる場合、コマンドインジェクションに該当します。外部リソースによって制御されていないことを確認するため、この呼び出しを監査してください。'shlex.escape()' の使用を検討してください。",
+  "python.dangerous-subprocess-use-tainted-env-args": "サブプロセス関数 '$FUNC' にユーザーが制御可能なデータが使用されていることが検出されました。攻撃者はこれを悪用してコマンドインジェクションを実行できてしまいます。'shlex.quote()' の使用を検討してください。",
+  "python.dangerous-system-call": "`os` 系の関数の引数が `event` オブジェクトによって汚染されていることが検出されました。外部データがこの呼び出しに到達できる場合、攻撃者は任意のコマンドを実行できてしまいます。コマンドインジェクションを持ち込みにくい 'subprocess' モジュールに置き換えてください。",
+  "python.dangerous-system-call-audit": "システムコールに動的コンテンツが使用されています。外部データがこの呼び出しに到達できる場合、攻撃者は任意のコマンドを実行できてしまいます。コマンドインジェクションを持ち込みにくい 'subprocess' モジュールに置き換えてください。",
+  "python.dangerous-system-call-tainted-env-args": "システムコールにユーザーが制御可能なデータが使用されています。攻撃者はこれを悪用して任意のコマンドを実行できてしまいます。コマンドインジェクションを持ち込みにくい 'subprocess' モジュールに置き換えてください。",
+  "python.dangerous-template-string": "文字列のフォーマットによって作成されたテンプレートが見つかりました。サーバーサイドテンプレートインジェクション（SSTI）やクロスサイトスクリプティング攻撃を受けやすくなります。",
+  "python.dangerous-testcapi-run-in-subinterp": "`run_in_subinterp` にユーザーが制御可能な内容が見つかりました。攻撃者はこれを悪用して任意の Python コードを実行できてしまい、非常に危険です。",
+  "python.dangerous-testcapi-run-in-subinterp-audit": "`run_in_subinterp` に動的コンテンツが見つかりました。外部データがこの呼び出しに到達できる場合、攻撃者は任意の Python コードを実行できてしまいます。外部データがここに到達しないようにしてください。",
+  "python.dangerous-testcapi-run-in-subinterp-tainted-env-args": "`run_in_subinterp` にユーザーが制御可能な内容が見つかりました。攻撃者はこれを悪用して任意の Python コードを実行できてしまい、非常に危険です。"
 }
