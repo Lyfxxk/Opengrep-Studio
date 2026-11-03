@@ -270,5 +270,21 @@
   "js-ts.detect-angular-translateprovider-translations-method": "사용자 입력이 $translateProvider.translations 메서드에 들어가면 매우 위험합니다.",
   "js-ts.detect-angular-trust-as-css-method": "정화되지 않은 사용자 입력이 $sce.trustAsCss로 흘러들어가면 매우 위험합니다.",
   "js-ts.detect-angular-trust-as-html-method": "정화되지 않은 사용자 입력이 $sce.trustAsHtml로 흘러들어가면 매우 위험합니다.",
-  "js-ts.detect-angular-trust-as-js-method": "정화되지 않은 사용자 입력이 $sce.trustAsJs로 흘러들어가면 매우 위험합니다."
+  "js-ts.detect-angular-trust-as-js-method": "정화되지 않은 사용자 입력이 $sce.trustAsJs로 흘러들어가면 매우 위험합니다.",
+  "js-ts.detect-angular-trust-as-method": "정제되지 않은 사용자 입력이 $sce.trustAs로 흘러들어가면 매우 위험합니다.",
+  "js-ts.detect-angular-trust-as-resourceurl-method": "정제되지 않은 사용자 입력이 $sce.trustAsResourceUrl로 흘러들어가면 매우 위험합니다.",
+  "js-ts.detect-angular-trust-as-url-method": "정제되지 않은 사용자 입력이 $sce.trustAsUrl로 흘러들어갈 경우 해당 API의 사용은 위험할 수 있습니다.",
+  "js-ts.detect-buffer-noassert": "Buffer API가 noassert와 함께 사용되는 것이 감지되었습니다. 이는 오프셋이 버퍼 끝을 넘는 것을 허용하여 범위를 벗어난 읽기/쓰기를 일으킬 수 있습니다.",
+  "js-ts.detect-child-process": "임의 프로그램을 시작하거나 임의 인수로 셸 프로세스를 실행할 수 있도록 허용하며, 결국 명령 주입 취약점으로 이어질 수 있습니다. 명령 문자열에는 가급적 비리터럴 값을 포함하지 마십시오. 피할 수 없다면 임의 명령 실행을 허용하지 말고 입력에 허용 목록을 적용하십시오.",
+  "js-ts.detect-disable-mustache-escape": "마크업 이스케이프가 비활성화되어 있습니다. 일부 템플릿 엔진에서는 이로 인해 HTML 엔티티 이스케이프까지 함께 비활성화되어 XSS 공격을 유발할 수 있습니다.",
+  "js-ts.detect-eval-with-expression": "사용자 입력에서 비롯되었을 가능성이 있는 JavaScript가 동적으로 실행되는 것이 감지되었으며, 크로스 사이트 스크립팅(XSS)으로 이어질 수 있습니다. 입력을 동적으로 실행하는 함수에 사용자 입력이 포함되지 않도록 가급적 주의하십시오.",
+  "js-ts.detect-no-csrf-before-method-override": "express.csrf() 미들웨어가 express.methodOverride()보다 앞에 등록되어 있는 것이 감지되었습니다. 이 경우 CSRF 검증을 거치지 않는 GET 요청이 POST 요청으로 변조될 수 있습니다.",
+  "js-ts.detect-non-literal-fs-filename": "함수 매개변수 `$ARG`가 fs 모듈로 전달되는 것이 감지되었습니다. 공격자가 '../'을 이용해 디렉터리를 거슬러 올라가는 것을 포함해 파일 위치를 제어할 수 있습니다. 파일 경로의 사용자 제어 변수를 검증하십시오.",
+  "js-ts.detect-non-literal-regexp": "RegExp()의 인수는 함수 매개변수 `$ARG`에서 비롯됩니다. RegExp는 메인 스레드를 차단하며, 공격자는 이를 이용해 애플리케이션에서 정규 표현식 서비스 거부(ReDoS)를 일으킬 수 있습니다. 하드코딩된 정규 표현식을 사용하는 것이 좋습니다. 정규 표현식이 사용자 제어 입력에 대해 실행되어야 한다면 입력 검증을 수행하거나, recheck(https://www.npmjs.com/package/recheck ) 같은 검사/정제 라이브러리를 사용해 정규 표현식에 ReDoS 위험이 없는지 확인하십시오.",
+  "js-ts.detect-non-literal-require": "require(variable) 호출이 감지되었습니다. 비리터럴 인수로 require를 호출하면 공격자가 임의 코드를 로드해 실행하거나 임의 파일을 읽을 수 있습니다.",
+  "js-ts.detect-pseudoRandomBytes": "crypto.pseudoRandomBytes가 감지되었습니다. 이는 안전한 난수를 생성하지 않습니다.",
+  "js-ts.detect-redos": "정규 표현식 `$REDOS`가 감지되었으며, 정규 표현식 서비스 거부(ReDoS) 공격에 취약한 것으로 의심됩니다. 해당 정규 표현식을 검토하고 재앙적인 백트래킹이 없는지 확인한 다음, 기본적으로 ReDoS를 방지하는 라이브러리를 가급적 사용하십시오.",
+  "js-ts.detect-replaceall-sanitization": "`$STR` 문자열에 대한 HTML 이스케이프를 시도하는 `$FUNC()` 호출이 감지되었습니다. 수동으로 관리하는 목록으로 입력을 정제하는 방식은 많은 시나리오에서 우회될 수 있으므로, `sanitize-html` 또는 `DOMPurify` 같은 잘 알려진 정제 라이브러리를 사용하는 것이 좋습니다.",
+  "js-ts.direct-response-write": "사용자 정의 입력이 Response 객체에 직접 기록되는 것이 감지되었습니다. 이는 모든 HTML 이스케이프를 우회하며, 애플리케이션이 크로스 사이트 스크립팅(XSS) 취약점에 노출될 수 있습니다. 대신 'resp.render()'를 사용해 안전하게 이스케이프된 HTML을 렌더링하십시오.",
+  "js-ts.dom-based-xss": "잠재적인 DOM 기반 XSS가 감지되었습니다. 원인은 URL의 일부가 페이지에 직접 삽입되는 요소를 구성하는 데 사용되기 때문입니다. 예를 들어 공격자는 http://www.some.site/page.html?default=<script>alert(document.cookie)</script> 링크를 보내기만 하면 페이지에 스크립트를 주입할 수 있습니다. 값에 허용 목록을 적용하거나 URL에 의존하지 않는 구현으로 변경하는 것이 좋습니다."
 }
