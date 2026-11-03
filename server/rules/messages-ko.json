@@ -46,5 +46,21 @@
   "dockerfile.avoid-apk-upgrade": "기본 이미지의 패키지는 최신 상태로 유지하여 'apk upgrade'가 필요 없도록 해야 합니다. 패키지가 실제로 오래된 경우 기본 이미지 유지 관리자에게 문의하십시오.",
   "dockerfile.avoid-apt-get-upgrade": "기본 컨테이너의 패키지는 최신 상태로 유지하여 upgrade 또는 dist-upgrade가 필요 없도록 해야 합니다. 패키지가 실제로 오래된 경우 유지 관리자에게 문의하십시오.",
   "dockerfile.avoid-dnf-update": "기본 이미지의 패키지는 최신 상태로 유지하여 'dnf update'가 필요 없도록 해야 합니다. 패키지가 실제로 오래된 경우 기본 이미지 유지 관리자에게 문의하십시오.",
-  "dockerfile.avoid-latest-version": "이미지는 결정론적인 컨테이너 이미지를 얻기 위해 명시적인 버전 태그를 사용해야 합니다. 'latest' 태그는 예고 없이 기본 컨테이너를 변경할 수 있습니다."
+  "dockerfile.avoid-latest-version": "이미지는 결정론적인 컨테이너 이미지를 얻기 위해 명시적인 버전 태그를 사용해야 합니다. 'latest' 태그는 예고 없이 기본 컨테이너를 변경할 수 있습니다.",
+  "dockerfile.avoid-platform-with-from": "FROM을 '--platform'과 함께 사용하면 이미지 빌드가 단일 플랫폼으로 제한되며, 해당 플랫폼은 빌드 플랫폼과 일치해야 합니다. 본래 의도가 대상 플랫폼을 지정하는 것이었다면 'docker buildx --platform=' 도구를 대신 사용하십시오.",
+  "dockerfile.avoid-yum-update": "베이스 이미지의 패키지는 'yum update'가 필요하지 않도록 최신 상태를 유지해야 합니다. 패키지가 실제로 오래되었다면 베이스 이미지 유지 관리자에게 문의하십시오.",
+  "dockerfile.avoid-zypper-update": "베이스 이미지의 패키지는 'zypper update'가 필요하지 않도록 최신 상태를 유지해야 합니다. 패키지가 실제로 오래되었다면 베이스 이미지 유지 관리자에게 문의하십시오.",
+  "dockerfile.dockerfile-source-not-pinned": "빌드 재현성을 보장하기 위해 Dockerfile의 `FROM`을 구체적인 hash로 고정하십시오. 먼저 `docker pull $IMAGE`를 실행한 후 `$IMAGE:$VERSION@sha256:<hash>`로 작성하면 됩니다.",
+  "dockerfile.last-user-is-root": "컨테이너의 마지막 사용자가 'root'이며, 이는 보안 위험입니다. 공격자가 컨테이너를 장악하는 즉시 root 권한을 갖게 됩니다. root로 명령을 실행한 후에는 다른 사용자로 전환하십시오.",
+  "dockerfile.maintainer-is-deprecated": "MAINTAINER 지시어는 더 이상 사용되지 않습니다.",
+  "dockerfile.missing-apk-no-cache": "apk 명령에 '--no-cache'가 없습니다. 이 옵션을 추가하면 apk가 로컬 패키지 캐시 대신 패키지 인덱스를 사용하도록 강제되어 '--update' 단계와 '/var/cache/apk/*' 삭제 단계를 생략할 수 있습니다. apk 명령에 '--no-cache'를 추가하십시오.",
+  "dockerfile.missing-dnf-assume-yes-switch": "'dnf install'에 '-y' 스위치가 없어 수동 상호 작용이 필요할 경우 빌드가 멈출 수 있습니다. '-y'를 추가하십시오.",
+  "dockerfile.missing-dnf-clean-all": "dnf 명령이 '&& dnf clean all'로 끝나지 않습니다. 'dnf clean all'을 실행하면 캐시를 정리하고 패키지 용량을 줄일 수 있습니다(설치 명령과 동일한 RUN 단계에서 실행해야 합니다).",
+  "dockerfile.missing-image-version": "명시적인 버전이 없는 docker 이미지가 감지되었습니다. 이미지는 결정성을 위해 명시적인 버전 태그를 사용해야 합니다. `FROM <image>`를 사용할 때는 버전을 함께 지정하십시오.",
+  "dockerfile.missing-no-install-recommends": "'apt-get install'에 '--no-install-recommends'가 없습니다. 이 옵션은 불필요한 패키지 설치를 피하고 이미지 용량을 줄여 줍니다. '--no-install-recommends'를 추가하십시오.",
+  "dockerfile.missing-pip-no-cache-dir": "'$PIP install'에 '--no-cache-dir'가 없습니다. 이 옵션은 패키지 아카이브를 남기지 않고 이미지 용량을 줄여 줍니다. '--no-cache-dir'를 추가하십시오.",
+  "dockerfile.missing-user": "USER가 지정되지 않아 컨테이너의 프로그램이 'root'로 실행될 수 있으며, 이는 보안 위험입니다. 공격자가 root로 실행되는 프로세스를 장악하면 컨테이너 전체를 장악할 수 있습니다. Dockerfile의 마지막 USER가 'root'가 아니도록 하십시오.",
+  "dockerfile.missing-user-entrypoint": "USER가 지정되지 않아 컨테이너의 프로그램이 'root'로 실행될 수 있으며, 이는 보안 위험입니다. 공격자가 root로 실행되는 프로세스를 장악하면 컨테이너 전체를 장악할 수 있습니다. Dockerfile의 마지막 USER가 'root'가 아니도록 하십시오.",
+  "dockerfile.missing-yum-assume-yes-switch": "'yum install'에 '-y' 스위치가 없어 수동 상호 작용이 필요할 경우 빌드가 멈출 수 있습니다. '-y'를 추가하십시오.",
+  "dockerfile.missing-zypper-clean": "zypper 명령이 '&& zypper clean'으로 끝나지 않습니다. 'zypper clean'을 실행하면 캐시를 정리하고 패키지 용량을 줄일 수 있습니다(설치 명령과 동일한 RUN 단계에서 실행해야 합니다)."
 }
