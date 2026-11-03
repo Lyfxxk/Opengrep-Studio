@@ -558,5 +558,21 @@
   "python.dangerous-template-string": "문자열 포매팅으로 생성된 템플릿이 발견되었습니다. 서버 측 템플릿 삽입(SSTI)과 크로스 사이트 스크립팅 공격에 취약합니다.",
   "python.dangerous-testcapi-run-in-subinterp": "`run_in_subinterp`에서 사용자가 제어할 수 있는 콘텐츠가 발견되었습니다. 공격자가 이를 악용해 임의의 Python 코드를 실행할 수 있으므로 매우 위험합니다.",
   "python.dangerous-testcapi-run-in-subinterp-audit": "`run_in_subinterp`에서 동적 콘텐츠가 발견되었습니다. 외부 데이터가 이 호출에 도달할 수 있다면 공격자가 이를 악용해 임의의 Python 코드를 실행할 수 있습니다. 외부 데이터가 여기에 도달하지 않도록 보장하십시오.",
-  "python.dangerous-testcapi-run-in-subinterp-tainted-env-args": "`run_in_subinterp`에서 사용자가 제어할 수 있는 콘텐츠가 발견되었습니다. 공격자가 이를 악용해 임의의 Python 코드를 실행할 수 있으므로 매우 위험합니다."
+  "python.dangerous-testcapi-run-in-subinterp-tainted-env-args": "`run_in_subinterp`에서 사용자가 제어할 수 있는 콘텐츠가 발견되었습니다. 공격자가 이를 악용해 임의의 Python 코드를 실행할 수 있으므로 매우 위험합니다.",
+  "python.debug-enabled": "debug=True로 설정된 Flask 애플리케이션이 감지되었습니다. 이 스위치를 켠 채로 프로덕션 환경에 배포하지 마십시오. 민감한 정보가 유출됩니다. Flask 구성 변수를 사용하거나 시스템 환경 변수로 'debug'를 설정하십시오.",
+  "python.direct-use-of-httpresponse": "데이터가 'HttpResponse' 등의 객체를 통해 최종 사용자에게 직접 렌더링되는 것이 감지되었습니다. 이는 Django 내장 크로스 사이트 스크립팅(XSS) 방어를 우회하며, XSS 취약점이 발생할 수 있습니다. Django 템플릿 엔진으로 HTML을 안전하게 렌더링하십시오.",
+  "python.direct-use-of-jinja2": "jinja2를 직접 사용하는 것이 감지되었습니다. 잘못 다루면 HTML 이스케이프가 우회되어 애플리케이션이 크로스 사이트 스크립팅(XSS) 취약점에 노출될 수 있습니다. XSS를 방지하려면 Flask의 'render_template()' 메서드와 '.html' 확장자를 가진 템플릿을 사용하는 것이 좋습니다.",
+  "python.directly-returned-format-string": "Flask 라우트가 포맷 문자열을 직접 반환하는 것이 감지되었습니다. 사용자 입력이 해당 문자열에 도달할 수 있으면 크로스 사이트 스크립팅 취약점이 발생할 수 있습니다. 템플릿 엔진으로 바꿔 'render_template()'으로 페이지를 렌더링하십시오.",
+  "python.disabled-cert-validation": "SSL 인증서 검증이 명시적으로 비활성화되어 안전하지 않은 연결이 발생할 수 있습니다.",
+  "python.django-compat-2_0-assert-redirects-helper": "assertRedirects의 host 매개변수는 Django 2.0에서 제거되었습니다.",
+  "python.django-compat-2_0-assignment-tag": "assignment_tag 헬퍼 함수는 Django 2.0에서 제거되었습니다.",
+  "python.django-compat-2_0-check-aggregate-support": "django.db.backends.base.BaseDatabaseOperations.check_aggregate_support()은(는) Django 2.0에서 제거되었습니다.",
+  "python.django-compat-2_0-extra-forms": "django.forms.extras 패키지는 Django 2.0에서 제거되었습니다.",
+  "python.django-compat-2_0-signals-weak": "django.dispatch.signals.Signal.disconnect()의 weak 매개변수는 Django 2.0에서 제거되었습니다.",
+  "python.django-secure-set-cookie": "Django Cookie는 안전하게 처리해야 합니다. response.set_cookie(...)에 secure=True, httponly=True, samesite='Lax'를 설정하십시오. 실제 상황에서 다른 설정이 필요하다면 명시적으로 선언하십시오. HTTP를 통해 Cookie를 전송하려면 secure=False로, 클라이언트 JavaScript가 Cookie를 읽도록 허용하려면 httponly=False로, 외부 사이트로 보내는 요청에 Cookie를 포함하려면 samesite=None으로 설정하십시오.",
+  "python.django-using-request-post-after-is-valid": "form.is_valid()를 실행한 후에는 request.POST[] 대신 $FORM.cleaned_data[]를 사용하여 정제된 데이터에만 접근하도록 하십시오.",
+  "python.docker-arbitrary-container-run": "검증되지 않은 사용자 데이터가 `run` 또는 `create` 메서드에 도달하면 임의의 컨테이너가 실행될 수 있습니다.",
+  "python.duplicate-name-assignment": "이름 `$NAME`이(가) `$URL`과 `$OTHER_URL`에 동시에 사용되고 있어, URL 역방향 해석 시 예기치 않은 동작이 발생할 수 있습니다. 각 경로에 고유한 이름을 지정하십시오.",
+  "python.duplicate-path-assignment": "`$URL`의 path가 의미 없이 두 번 할당되었습니다.",
+  "python.duplicate-path-assignment-different-names": "`$URL`의 path가 서로 다른 이름으로 두 번 할당되었습니다."
 }
