@@ -638,5 +638,21 @@
   "python.insecure-urlretrieve-ftp": "'urllib.urlretrieve()'에서 'ftp://'를 사용하여 요청이 암호화되지 않는 것으로 탐지되었습니다. 대신 SFTP를 사용하십시오. urllib은 SFTP를 지원하지 않으므로 SFTP를 지원하는 라이브러리로 전환하는 것을 고려하십시오.",
   "python.insecure-uuid-version": "UUID 버전 1로 UUID를 생성하면 시스템 정보(MAC 주소, 타임스탬프 등)를 기반으로 예측 가능한 UUID가 생성되어 샌드위치 공격 등의 보안 위험이 초래될 수 있습니다. 더 나은 무작위성과 보안을 위해 `uuid.uuid4()`를 사용하십시오.",
   "python.insufficient-dsa-key-size": "DSA 키 길이가 부족한 것으로 탐지되었습니다. NIST는 2048비트 이상의 키 길이를 권장합니다.",
-  "python.insufficient-ec-key-size": "EC 타원곡선의 위수가 부족한 것으로 탐지되었습니다. NIST는 224비트 이상을 권장합니다. 예를 들어 'ec.SECP256R1'을 사용하십시오."
+  "python.insufficient-ec-key-size": "EC 타원곡선의 위수가 부족한 것으로 탐지되었습니다. NIST는 224비트 이상을 권장합니다. 예를 들어 'ec.SECP256R1'을 사용하십시오.",
+  "python.insufficient-rsa-key-size": "RSA 키 길이가 부족한 것이 감지되었습니다. NIST 권고에 따르면 RSA 키 길이는 2048비트 이상이어야 합니다.",
+  "python.is-function-without-parentheses": "\"$FUNC\"은(는) 함수입니까, 아니면 속성입니까? 함수라면 $X.$FUNC()을(를) 작성하려던 것일 수 있습니다. $X.$FUNC은(는) 항상 참이기 때문입니다.",
+  "python.jwt-python-exposed-credentials": "비밀번호가 JWT 페이로드를 통해 노출됩니다. JWT는 암호화하지 않으므로 비밀번호가 유출될 수 있습니다. JWT에 비밀번호를 저장하지 마십시오.",
+  "python.jwt-python-exposed-data": "이 객체는 jwt.encode(...)에 직접 전달됩니다. 민감한 정보가 JWT 페이로드를 통해 유출되지 않도록 하십시오.",
+  "python.jwt-python-hardcoded-secret": "하드코딩된 JWT secret 또는 개인 키를 사용했습니다. 이는 자격 증명 보호 부족 결함입니다( https://cwe.mitre.org/data/definitions/522.html 참조 ). 적절한 보안 메커니즘으로 자격 증명을 보호하는 것을 권장합니다(예: 환경 변수에 저장).",
+  "python.jwt-python-none-alg": "JWT가 'none' 알고리즘을 사용하는 것이 감지되었습니다. 이 알고리즘은 토큰 무결성이 이미 검증되었다고 가정하므로, 공격자가 위조한 JWT가 검증을 자동으로 통과하게 됩니다. 'none'을 명시적으로 사용하지 말고 'HS256' 같은 알고리즘으로 전환하십시오.",
+  "python.len-all-count": "len(QUERY.all()) 대신 QUERY.count()를 사용하십시오. SQLAlchemy의 count는 서버 측에서 실행되므로 클라이언트로 전송되는 데이터가 더 적습니다.",
+  "python.listen-eval": "로깅 설정의 일부 내용이 eval()을 거치며, 이 함수 사용은 보안 위험을 초래할 수 있습니다. localhost에만 socket을 바인딩하고 원격 연결은 받지 않지만, listen()을 호출하는 프로세스 계정으로 신뢰할 수 없는 코드가 실행되는 시나리오는 여전히 존재합니다. 식별되지 않은 설정을 차단하려면 `listen()`의 `verify()` 매개변수를 사용하십시오.",
+  "python.locals-as-template-context": "'locals()'를 'render(...)'의 컨텍스트로 사용하는 것은 극도로 위험합니다. 노출되어서는 안 되는 Python 함수까지 템플릿에 노출되며, 공격자는 이를 이용해 예상치 못한 코드를 실행하고 애플리케이션을 장악할 수 있습니다(서버 측 템플릿 인젝션 SSTI). 'locals()'를 사용하지 말고, '{\"var1\": \"hello\"}'처럼 딕셔너리나 'django.template.Context'에 변수를 하나씩 지정하십시오.",
+  "python.logging-error-without-handling": "오류는 처리될 때만 기록해야 합니다. 이 코드는 오류를 기록하면서도 예외를 계속 상위로 던지고 있으므로, 수준을 warning 또는 info로 낮추는 것을 권장합니다.",
+  "python.make-response-with-unknown-content": "`flask.make_response()`는 신중하게 사용하십시오. 이 응답이 웹 페이지에 렌더링되면 HTML이 자동으로 이스케이프되지 않아 크로스 사이트 스크립팅(XSS) 취약점이 발생할 수 있습니다. HTML을 렌더링하려면 HTML을 템플릿 파일에 작성하고 이스케이프를 자동으로 처리하는 `flask.render_template()`을 사용하십시오. API 데이터를 반환하려면 `flask.jsonify()`를 사용하십시오.",
+  "python.mako-templates-detected": "Mako 템플릿에는 전역 HTML 이스케이프 메커니즘이 없으므로 템플릿에서 모든 민감한 데이터를 수동으로 이스케이프해야 합니다: URL 이스케이프는 '| u'를, HTML 이스케이프는 '| h'를 사용하십시오. Mako로 웹 콘텐츠를 제공하는 경우 전역 이스케이프를 지원하는 Jinja2 등의 방식으로 전환하는 것을 권장합니다.",
+  "python.manual-counter-create": "카운터를 수동으로 구현했습니다. 대신 collections.Counter를 사용하십시오.",
+  "python.manual-defaultdict-dict-create": "defaultdict를 수동으로 구현했습니다. 대신 collections.defaultdict(dict)를 사용하십시오.",
+  "python.manual-defaultdict-list-create": "defaultdict를 수동으로 구현했습니다. 대신 collections.defaultdict(list)를 사용하십시오.",
+  "python.manual-defaultdict-set-create": "defaultdict를 수동으로 구현했습니다. 대신 collections.defaultdict(set)를 사용하십시오."
 }
