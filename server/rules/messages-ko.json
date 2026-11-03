@@ -286,5 +286,21 @@
   "js-ts.detect-redos": "정규 표현식 `$REDOS`가 감지되었으며, 정규 표현식 서비스 거부(ReDoS) 공격에 취약한 것으로 의심됩니다. 해당 정규 표현식을 검토하고 재앙적인 백트래킹이 없는지 확인한 다음, 기본적으로 ReDoS를 방지하는 라이브러리를 가급적 사용하십시오.",
   "js-ts.detect-replaceall-sanitization": "`$STR` 문자열에 대한 HTML 이스케이프를 시도하는 `$FUNC()` 호출이 감지되었습니다. 수동으로 관리하는 목록으로 입력을 정제하는 방식은 많은 시나리오에서 우회될 수 있으므로, `sanitize-html` 또는 `DOMPurify` 같은 잘 알려진 정제 라이브러리를 사용하는 것이 좋습니다.",
   "js-ts.direct-response-write": "사용자 정의 입력이 Response 객체에 직접 기록되는 것이 감지되었습니다. 이는 모든 HTML 이스케이프를 우회하며, 애플리케이션이 크로스 사이트 스크립팅(XSS) 취약점에 노출될 수 있습니다. 대신 'resp.render()'를 사용해 안전하게 이스케이프된 HTML을 렌더링하십시오.",
-  "js-ts.dom-based-xss": "잠재적인 DOM 기반 XSS가 감지되었습니다. 원인은 URL의 일부가 페이지에 직접 삽입되는 요소를 구성하는 데 사용되기 때문입니다. 예를 들어 공격자는 http://www.some.site/page.html?default=<script>alert(document.cookie)</script> 링크를 보내기만 하면 페이지에 스크립트를 주입할 수 있습니다. 값에 허용 목록을 적용하거나 URL에 의존하지 않는 구현으로 변경하는 것이 좋습니다."
+  "js-ts.dom-based-xss": "잠재적인 DOM 기반 XSS가 감지되었습니다. 원인은 URL의 일부가 페이지에 직접 삽입되는 요소를 구성하는 데 사용되기 때문입니다. 예를 들어 공격자는 http://www.some.site/page.html?default=<script>alert(document.cookie)</script> 링크를 보내기만 하면 페이지에 스크립트를 주입할 수 있습니다. 값에 허용 목록을 적용하거나 URL에 의존하지 않는 구현으로 변경하는 것이 좋습니다.",
+  "js-ts.dynamodb-request-object": "`$EVENT` 객체로 인해 테인트된 DynamoDB 쿼리 파라미터가 탐지되었습니다. 이 변수가 사용자가 제어할 수 있고 적절하게 정제되지 않은 경우 NoSQL 인젝션으로 이어집니다. `$EVENT` 데이터를 DynamoDB 클라이언트에 직접 전달하지 말고 쿼리 파라미터를 명시적으로 지정하십시오.",
+  "js-ts.escape-function-overwrite": "Mustache의 이스케이프 함수가 덮어써지면 렌더링 엔진에 내장된 HTML 이스케이프 보호가 우회되어 XSS 취약점이 발생합니다. 이스케이프되지 않은 HTML을 출력해야 하는 경우 템플릿에서 삼중 중괄호('{{{ ... }}}') 구문을 사용하십시오.",
+  "js-ts.eval-detected": "eval()이 탐지되었습니다. 동적 콘텐츠를 eval()로 평가하는 것은 위험합니다. 콘텐츠가 프로그램 외부에서 유래할 수 있다면 코드 인젝션 취약점이 됩니다. 평가되는 콘텐츠가 외부에서 정의될 수 없도록 보장하십시오.",
+  "js-ts.expat-xxe": "검증되지 않은 사용자 데이터가 XML 파서에 도달할 수 있는 경우 XML 외부/내부 엔티티(XXE) 처리 취약점이 발생합니다.",
+  "js-ts.express-check-csurf-middleware-usage": "express 애플리케이션에서 CSRF 미들웨어가 탐지되지 않았습니다. `csurf` 또는 `csrf`와 같은 미들웨어를 사용했는지 확인하거나(규칙 참조 문서 참고), 라우트에서 토큰/Cookie를 사용해 직접 CSRF 검증을 올바르게 수행하십시오.",
+  "js-ts.express-check-directory-listing": "디렉터리 목록/인덱스가 활성화되어 있어 민감한 디렉터리와 파일이 노출될 수 있습니다. 공개 리소스가 아닌 한 디렉터리 목록을 비활성화하는 것이 좋습니다. 반드시 활성화해야 하는 경우 해당 리소스를 조회할 때 민감한 파일에 접근할 수 없도록 보장하십시오.",
+  "js-ts.express-cookie-session-default-name": "기본 세션 Cookie 이름을 사용하지 마십시오. 기본 이름을 사용하면 애플리케이션이 공격에 노출됩니다. 이 위험은 X-Powered-By와 유사합니다: 공격자가 이를 근거로 서버의 지문을 식별하고 표적 공격을 수행할 수 있습니다.",
+  "js-ts.express-cookie-session-no-domain": "기본 세션 미들웨어에 `domain`이 설정되어 있지 않습니다. 이 옵션은 Cookie의 도메인을 선언하며 요청 URL의 서버 도메인과 비교합니다. 일치하는 경우 이후 path 속성을 검사합니다.",
+  "js-ts.express-cookie-session-no-expires": "기본 세션 미들웨어에 `expires`가 설정되어 있지 않습니다. 이 옵션은 영속 Cookie의 만료 시간을 설정하는 데 사용됩니다.",
+  "js-ts.express-cookie-session-no-httponly": "기본 세션 미들웨어에 `httpOnly`가 설정되어 있지 않습니다. 이 옵션은 Cookie가 HTTP(S)로만 전송되고 클라이언트 JavaScript가 읽을 수 없도록 보장하여 XSS 방어에 도움이 됩니다.",
+  "js-ts.express-cookie-session-no-path": "기본 세션 미들웨어에 `path`가 설정되어 있지 않습니다. 이 옵션은 Cookie의 경로를 선언하며 요청 경로와 비교하는 데 사용됩니다. 일치할 때만 요청과 함께 Cookie가 전송됩니다.",
+  "js-ts.express-cookie-session-no-secure": "기본 세션 미들웨어에 `secure`가 설정되어 있지 않습니다. 이 옵션은 브라우저가 HTTPS로만 Cookie를 전송하도록 보장합니다.",
+  "js-ts.express-data-exfiltration": "컨텍스트에 따라 `Object.assign`에 있는 사용자가 제어할 수 있는 데이터로 인해 Web 응답에 반환해서는 안 되는 데이터가 포함되거나 대량 할당(mass assignment) 취약점이 발생할 수 있습니다.",
+  "js-ts.express-detect-notevil-usage": "`notevil` 패키지가 탐지되었습니다. 이 프로젝트는 유지보수되지 않으며 취약점이 있습니다. 어떤 형태의 `eval()` 기능이든 위험합니다. 정말 필요한 경우 지속적으로 업데이트되는 `eval` 패키지로 대체하고 신뢰할 수 있는 입력만 `eval()` 함수에 도달하도록 보장하십시오.",
+  "js-ts.express-expat-xxe": "검증되지 않은 사용자 데이터가 XML 파서에 도달하지 못하도록 보장하십시오. 그러지 않으면 XML 외부/내부 엔티티(XXE) 인젝션 취약점이 발생합니다.",
+  "js-ts.express-insecure-template-usage": "`$REQ`에서 유래한 사용자 데이터가 템플릿으로 컴파일되어 서버 측 템플릿 인젝션(SSTI) 취약점이 발생할 수 있습니다."
 }
