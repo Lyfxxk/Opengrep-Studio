@@ -158,5 +158,21 @@
   "java.cookie-missing-httponly": "cookie に 'HttpOnly' フラグが設定されていないのが検出されました。このフラグは、クライアントサイドスクリプトが cookie を読み取れないようブラウザーに指示するものです。'cookie.setHttpOnly(true);' を呼び出して設定してください。",
   "java.cookie-missing-secure-flag": "cookie に 'secure' フラグが設定されていないのが検出されました。このフラグは、クライアントが HTTP などの安全でないチャネル経由で cookie を送信するのを防ぐものです。'$COOKIE.setSecure(true);' を呼び出して設定してください。",
   "java.cookie-setSecure": "デフォルトのセッションミドルウェア設定：`setSecure` が true に設定されていません。true に設定すると、cookie が HTTPS 経由でのみ送信されるようになり、クロスサイトスクリプティング攻撃を防げます。",
-  "java.crlf-injection-logs": "信頼できないソースからのデータがログに入り込み、正しく無害化されていない場合、攻撃者はログエントリを偽造したり、悪意のあるコンテンツを注入したりできます。"
+  "java.crlf-injection-logs": "信頼できないソースからのデータがログに入り込み、正しく無害化されていない場合、攻撃者はログエントリを偽造したり、悪意のあるコンテンツを注入したりできます。",
+  "java.dangerous-groovy-shell": "式は動的な値から構築されています。値の由来を確認し、フィルタリングされていない値がこの高リスクの評価ロジックに入り込まないようにしてください。",
+  "java.default-resteasy-provider-abuse": "RESTful サービスエンドポイントに @Consumes アノテーションが設定されていない場合、攻撃者は Content-Type が application/x-java-serialized-object のリクエストを送信して SerializableProvider を悪用できます：リクエストボディは SerializationProvider によって処理され、悪意のあるペイロードが含まれていると任意のコード実行につながります。関数またはクラスに @Consumes アノテーションを追加してください。",
+  "java.defaulthttpclient-is-deprecated": "DefaultHttpClient は非推奨であり、TLS1.2 接続をサポートしていません。使い続けるとセキュリティ上のリスクがあります。代わりに HttpClientBuilder を使用してください。",
+  "java.do-privileged-use": "コードを特権コードとしてマークすると、信頼されたコードが、呼び出し元から直接利用できる範囲を超えるリソースアクセスを一時的に得ることになります。特権構造の使用は慎重に行い、特権コードブロックは常に最小限に抑えてください。",
+  "java.documentbuilderfactory-disallow-doctype-decl-false": "$DBFACTORY は DOCTYPE 宣言を有効にしており、外部エンティティ宣言を禁止していない場合、XML 外部エンティティ（XXE）攻撃を受けやすくなります。機能 \"http://apache.org/xml/features/disallow-doctype-decl\" を true に設定して無効化してください。または、DOCTYPE を残したまま外部エンティティを禁止してください——機能 \"http://xml.org/sax/features/external-general-entities\" と \"http://xml.org/sax/features/external-parameter-entities\" を false に設定します。",
+  "java.documentbuilderfactory-disallow-doctype-decl-missing": "この DocumentBuilderFactory は DOCTYPE 宣言を有効にしており、XML 外部エンティティ（XXE）攻撃を受けやすくなります。機能 \"http://apache.org/xml/features/disallow-doctype-decl\" を true に設定して無効化してください。または、DOCTYPE を残したまま外部エンティティを禁止してください——機能 \"http://xml.org/sax/features/external-general-entities\" と \"http://xml.org/sax/features/external-parameter-entities\" を false に設定します。",
+  "java.documentbuilderfactory-external-general-entities-true": "$DBFACTORY は外部エンティティを許可しており、XML 外部エンティティ（XXE）攻撃を受けやすくなります。機能 \"http://xml.org/sax/features/external-general-entities\" を false に設定して無効化してください。",
+  "java.documentbuilderfactory-external-parameter-entities-true": "$DBFACTORY は外部エンティティを許可しており、XML 外部エンティティ（XXE）攻撃を受けやすくなります。機能 \"http://xml.org/sax/features/external-parameter-entities\" を false に設定して無効化してください。",
+  "java.ecb-cipher": "ECB モードの暗号化が検出されました。ECB は同じ入力に対して常に同じ出力を返すため、攻撃者はデータを傍受してリプレイでき、また ECB にはいかなる完全性検証も含まれていません。https://find-sec-bugs.github.io/bugs.htm#CIPHER_INTEGRITY を参照してください。",
+  "java.el-injection": "式は動的な値から構築されています。値の由来を確認し、フィルタリングされていない値がこの高リスクの評価ロジックに入り込まないようにしてください。",
+  "java.find-sql-string-concatenation": "$METHOD 内で、$X が文字列連結によって SQL クエリを構築しています。",
+  "java.formatted-sql-string": "SQL ステートメント内にフォーマット文字列が検出されました。ステートメント内の変数が適切にサニタイズされていない場合、SQL インジェクションを引き起こす恐れがあります。代わりにプリコンパイル済みステートメント（java.sql.PreparedStatement）を使用してください。これは 'connection.prepareStatement' で取得できます。",
+  "java.gcm-detection": "GCM が検出されました。IV/nonce が再利用されていないことを確認してください。IV は暗号化をランダム化するための nonce であり、複数の平文が同じであっても、生成される暗号文は異なるものであるべきです。鍵とは異なり、IV は通常秘密にする必要はありませんが、ランダムかつ一意でなければなりません。一部の暗号化方式では、IV は暗号文の一部として公開送信されます。同じ鍵で同じ IV を再利用して複数の平文ブロックを暗号化すると、攻撃者が暗号文を比較し、それを手がかりに暗号化されたデータの重要な情報を推測できてしまいます。",
+  "java.gcm-nonce-reuse": "GCM の IV/nonce が再利用されています：暗号化が完全に機能しなくなる恐れがあります。",
+  "java.hibernate-sqli": "SQL ステートメント内にフォーマット文字列が検出されました。ステートメント内の変数が適切にサニタイズされていない場合、SQL インジェクションを引き起こす恐れがあります。代わりにプリコンパイル済みステートメント（java.sql.PreparedStatement）を使用してください。これは 'connection.prepareStatement' で取得できます。",
+  "java.http-response-splitting": "古い Java アプリケーションサーバーには HTTP レスポンス分割のリスクがあります——HTTP リクエストに CRLF 文字を注入できる場合に発生します。この検出結果は完全性のための提示にすぎないため、ご自身でテストを行い、お使いの環境が影響を受けていないことを確認することを推奨します。"
 }
