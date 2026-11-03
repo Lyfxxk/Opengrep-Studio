@@ -14,5 +14,21 @@
   "c.insecure-use-strcat-fn": "strcat 또는 strncat 사용이 발견되었습니다. 이 함수들은 버퍼 오버플로 취약점을 일으킬 수 있으므로 strcat_s를 사용해 수정하십시오.",
   "c.insecure-use-string-copy-fn": "strcpy 또는 strncpy 사용이 발견되었습니다. strcpy는 대상 배열 크기를 확인하지 않고 strncpy도 NULL 종료 문자를 자동으로 추가하지 않으므로 둘 다 버퍼 오버플로를 일으켜 프로그램이 충돌하거나 심하면 코드가 주입될 수 있습니다. strcpy_s를 사용해 수정하십시오(참고: strcpy_s는 C11 표준의 선택적 부분이므로 항상 사용할 수 있는 것은 아닙니다).",
   "c.insecure-use-strtok-fn": "'strtok()' 사용을 피하십시오. 이 함수는 첫 번째 인수 버퍼를 직접 수정하여 구분자를 영구적으로 지웁니다. 대신 'strtok_r()'을 사용하십시오.",
-  "c.random-fd-exhaustion": "'read()' 호출이 오류를 검사하지 않아 파일 디스크립터 고갈의 영향을 받기 쉽습니다. 'getrandom()' 함수 사용을 고려하십시오."
+  "c.random-fd-exhaustion": "'read()' 호출이 오류를 검사하지 않아 파일 디스크립터 고갈의 영향을 받기 쉽습니다. 'getrandom()' 함수 사용을 고려하십시오.",
+  "c.use-after-free": "변수 '$VAR'이(가) 해제된 후 다시 사용되어 미정의 동작을 유발할 수 있습니다.",
+  "csharp.X509-subject-name-validation": "주체 이름(subject name)을 기반으로 인증서를 검증하는 것은 바람직하지 않은 관행입니다. 대신 X509Certificate2.Verify() 메서드를 사용하십시오.",
+  "csharp.csharp-sqli": "SQL 문장에서 형식 문자열이 탐지되었습니다. 문장 내 변수가 제대로 정제되지 않으면 SQL 인젝션이 발생할 수 있습니다. 'SqlCommand'와 'SqlParameter'를 통해 구현할 수 있는 미리 컴파일된 문장을 사용하십시오.",
+  "csharp.insecure-newtonsoft-deserialization": "TypeNameHandling $TYPEHANDLER은(는) 안전하지 않으며 프로세스 컨텍스트에서 임의 코드 실행으로 이어질 수 있습니다. TypeNameHandling.None 이외의 설정을 사용하는 경우에는 반드시 사용자 지정 SerializationBinder를 함께 사용해야 합니다.",
+  "csharp.jwt-tokenvalidationparameters-no-expiry-validation": "TokenValidationParameters.$LIFETIME이(가) $FALSE로 설정되면 JWT 수명을 검증하지 않게 되며, 토큰이 만료된 후에도 사용할 수 있어 보안상 위험합니다. JWT 수명을 검증하여 유효한 토큰만 사용하도록 하십시오.",
+  "csharp.ldap-injection": "LDAP 쿼리는 사용자가 제어할 수 있는 입력을 기반으로 동적으로 구성되며, 이 결함으로 인해 임의의 LDAP 쿼리가 실행될 수 있습니다.",
+  "csharp.mass-assignment": "코드에 존재하는 대량 할당(Autobinding) 취약점으로 인해 공격자는 과도 제출(over-posting) 공격을 수행할 수 있습니다. 즉, 바인딩되는 요청에 매개변수를 추가하고 애플리케이션의 기반 객체를 조작합니다.",
+  "csharp.misconfigured-lockout-option": "잘못 구성된 잠금 메커니즘은 공격자가 무차별 대입 공격을 수행할 수 있게 만듭니다. 이러한 공격을 방지하려면 계정 잠금을 올바르게 구성하고 활성화해야 합니다.",
+  "csharp.missing-hsts-header": "HSTS 응답 보안 헤더가 없어 상호 작용과 통신이 안전하지 않은 HTTP 프로토콜로 이루어질 수 있습니다.",
+  "csharp.missing-or-broken-authorization": "설계상 명시적으로 허용하지 않는 한 익명 접근을 허용해서는 안 됩니다. 여기에는 접근 제어 검사가 없고 우회될 수 있으므로 최소 권한/기본 거부 원칙에 위배됩니다. 접근은 특정 역할 또는 사용자 지정 정책/사용자 목록에 부합하는 경우에만 부여해야 합니다.",
+  "csharp.mvc-missing-antiforgery": "$METHOD은(는) 상태를 변경하는 MVC 메서드인데도 위조 방지 토큰을 검증하지 않고 엄격한 Content-Type 검사도 수행하지 않습니다. 상태를 변경하는 컨트롤러 메서드는 단순 HTTP 요청 유형이 CORS 프리플라이트 제어를 우회하지 않도록 위조 방지 토큰을 강제하거나 콘텐츠 형식을 엄격하게 검사해야 합니다.",
+  "csharp.open-directory-listing": "디렉터리 나열이 공개적으로 노출되어 공격자에게 민감한 정보가 유출될 수 있습니다.",
+  "csharp.open-redirect": "쿼리 문자열 매개변수에 URL 값이 포함될 수 있으며, 이로 인해 웹 애플리케이션이 요청을 공격자가 제어하는 악성 사이트로 리디렉션할 수 있습니다. 해당 매개변수를 충분히 정제하십시오.",
+  "csharp.os-command-injection": "소프트웨어가 업스트림 구성 요소에서 유래한 외부 영향 입력을 사용하여 OS 명령의 전부 또는 일부를 구성하지만, 명령의 의미를 변경할 수 있는 특수 요소를 무력화하지 못하거나 부정확하게 무력화합니다.",
+  "csharp.razor-template-injection": "사용자가 제어할 수 있는 문자열이 Razor.Parse에 전달되면 프로세스 컨텍스트에서 코드 실행으로 직접 이어집니다.",
+  "csharp.ssrf": "SSRF는 애플리케이션이 내부/외부 네트워크 또는 로컬 머신 자체와 상호 작용하는 것을 악용하는 공격 기법입니다."
 }
