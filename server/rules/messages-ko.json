@@ -702,5 +702,21 @@
   "python.pyramid-set-cookie-secure-unsafe-value": "Pyramid Cookie에 secure 옵션이 올바르게 설정되지 않은 것이 발견되었습니다. response.set_cookie(...)에 secure=True를 설정해야 합니다. 이 매개변수가 올바르지 않으면 Cookie가 제대로 보호되지 않아 공격자에게 탈취될 위험이 있습니다.",
   "python.pyramid-sqlalchemy-sql-injection": "SQLAlchemy의 Distinct, Having, Group_by, Order_by, Filter에 원시 SQL이 전달되면 SQL 삽입이 발생할 수 있습니다. 이 규칙은 개발자가 이들 절에 원시 SQL을 전달하고 \"bindparams\" 이외의 함수로 사용자 입력을 주입하는 경우를 다룹니다. bindparams를 사용해 사용자 입력을 SQL 문에 안전하게 바인딩하십시오.",
   "python.python-debugger-found": "Python 디버거가 임포트되었습니다. 의도적으로 남겨 둔 것입니까?",
-  "python.python-logger-credential-disclosure": "로그 호출이 하드코딩된 민감한 정보 $FORMAT_STRING을 출력할 수 있는 것이 감지되었습니다. 이로 인해 자격 증명이 유출될 수 있습니다. 로그에 민감한 정보가 기록되지 않도록 하십시오."
+  "python.python-logger-credential-disclosure": "로그 호출이 하드코딩된 민감한 정보 $FORMAT_STRING을 출력할 수 있는 것이 감지되었습니다. 이로 인해 자격 증명이 유출될 수 있습니다. 로그에 민감한 정보가 기록되지 않도록 하십시오.",
+  "python.python-reverse-shell": "Python 리버스 셸이 감지되었습니다: $BINPATH를 통해 $IP:$PORT에 연결합니다.",
+  "python.python.requests.best-practice.use-request-json-shortcut": "requests 라이브러리는 JSON 요청을 보내기 위한 편리한 매개변수를 제공하므로 요청 본문을 직접 직렬화할 필요가 없습니다. `body=json.dumps(...)`를 `json=...`으로 바꾸기만 하면 됩니다.",
+  "python.python.requests.best-practice.use-response-json-shortcut": "requests 라이브러리는 JSON 응답을 읽기 위한 편리한 메서드를 제공하므로 응답을 직접 역직렬화할 필요가 없습니다.",
+  "python.python36-compatibility-Popen1": "Popen의 `errors` 매개변수는 Python 3.6+에서만 사용할 수 있습니다.",
+  "python.python36-compatibility-Popen2": "Popen의 `encoding` 매개변수는 Python 3.6+에서만 사용할 수 있습니다.",
+  "python.python36-compatibility-ssl": "이 함수는 Python 3.6+에서만 사용할 수 있습니다.",
+  "python.python37-compatibility-httpconn": "HTTPConnection 호출에서 'blocksize' 매개변수가 사용되는 것이 발견되었습니다. 이 매개변수는 Python 3.7+에서만 사용할 수 있으며 하위 호환성이 없습니다. Python 3.6 이하와의 호환성을 위해 이 매개변수를 제거하십시오.",
+  "python.python37-compatibility-httpsconn": "HTTPSConnection 호출에서 'blocksize' 매개변수가 사용되는 것이 발견되었습니다. 이 매개변수는 Python 3.7+에서만 사용할 수 있으며 하위 호환성이 없습니다. Python 3.6 이하와의 호환성을 위해 이 매개변수를 제거하십시오.",
+  "python.python37-compatibility-importlib": "'source_hash'는 Python 3.7+에서만 사용할 수 있으며, 하위 버전에서는 사용할 수 없고 하위 호환성도 없습니다. 다른 해시 함수를 사용하십시오.",
+  "python.python37-compatibility-importlib2": "'importlib.resources'가 발견되었습니다. 이 모듈은 Python 3.7+에서만 사용할 수 있으며, 하위 버전에서는 사용할 수 없고 하위 호환성도 없습니다. 구버전 Python에서는 importlib_resources를 사용하십시오.",
+  "python.python37-compatibility-importlib3": "'importlib.abc.ResourceReader'가 발견되었습니다. 이 모듈은 Python 3.7+에서만 사용할 수 있으며 하위 호환성이 없습니다. 다른 loader를 사용하십시오.",
+  "python.python37-compatibility-ipv4network1": "IPv4Network.subnet_of는 Python 3.7+에서만 사용할 수 있으며 하위 호환성이 없습니다. 대신 서브넷이 'subnets'에 포함되어 있는지 확인하십시오.",
+  "python.python37-compatibility-ipv4network2": "IPv4Network.supernet_of는 Python 3.7+에서만 사용할 수 있으며 하위 호환성이 없습니다. 대신 슈퍼넷이 'supernet'에 포함되어 있는지 확인하십시오.",
+  "python.python37-compatibility-ipv6network1": "IPv6Network.subnet_of는 Python 3.7+에서만 사용할 수 있으며 하위 호환성이 없습니다. 대신 서브넷이 'subnets'에 포함되어 있는지 확인하십시오.",
+  "python.python37-compatibility-ipv6network2": "IPv6Network.supernet_of는 Python 3.7+에서만 사용할 수 있으며 하위 호환성이 없습니다. 대신 슈퍼넷이 'supernet'에 포함되어 있는지 확인하십시오.",
+  "python.python37-compatibility-locale1": "'locale.format_string' 호출에서 'monetary' 매개변수가 사용되는 것이 발견되었습니다. 이 매개변수는 Python 3.7+에서만 사용할 수 있으며 하위 호환성이 없습니다. 'monetary' 매개변수를 제거하십시오."
 }
