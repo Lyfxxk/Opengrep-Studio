@@ -510,5 +510,21 @@
   "python.avoid-sqlalchemy-text": "sqlalchemy.text は連結された SQL 文をほぼそのままデータベースに渡すため、通常の SQL インジェクション対策はここでは機能しません。ユーザー入力がここに到達できる場合、SQL インジェクションのリスクが生じます。SQL の構築には、SQLAlchemy の通常の演算子（or_、and_ など）を使用してください。",
   "python.avoid-unsafe-ruamel": "安全でない `ruamel.yaml.YAML()` の使用は避けてください。これは任意の Python オブジェクトを生成でき、攻撃者はこれを利用して任意のコードを実行できます。代わりに `YAML(typ='rt')` または `YAML(typ='safe')` を使用してください。",
   "python.avoid_app_run_with_bad_host": "host 0.0.0.0 で Flask アプリケーションを実行すると、サービスがインターネットに公開される可能性があります。",
-  "python.avoid_hardcoded_config_DEBUG": "ハードコードされた変数 `DEBUG` が検出されました。代わりに環境変数 FLASK_DEBUG で設定してください。"
+  "python.avoid_hardcoded_config_DEBUG": "ハードコードされた変数 `DEBUG` が検出されました。代わりに環境変数 FLASK_DEBUG で設定してください。",
+  "python.avoid_hardcoded_config_ENV": "ハードコードされた変数 `ENV` が検出されました。環境変数 FLASK_ENV で設定するようにしてください。",
+  "python.avoid_hardcoded_config_SECRET_KEY": "ハードコードされた `SECRET_KEY` 変数が検出されました。環境変数または設定ファイルを使用するようにしてください。",
+  "python.avoid_hardcoded_config_TESTING": "ハードコードされた変数 `TESTING` が検出されました。環境変数または設定ファイルを使用するようにしてください。",
+  "python.avoid_send_file_without_path_sanitization": "ユーザーが制御可能な `filename` が `flask.send_file()` に流れ込む可能性が検出されました。攻撃者はこれを悪用して、システム上の任意のファイルを読み取り、プライバシー情報を漏えいできます。filename を適切にサニタイズするか、`flask.send_from_directory` を使用するようにしてください。",
+  "python.avoid_using_app_run_directly": "トップレベルの app.run(...) は Flask に無視されます。app.run(...) はガードの後、たとえば関数内に配置することをお勧めします。",
+  "python.batch-import": "要素を 1 つずつ追加するよりも、一括で読み込む方がパフォーマンスが向上します。",
+  "python.bokeh-deprecated-apis": "これらの API は Bokeh で非推奨になりました。詳細は https://docs.bokeh.org/en/latest/docs/releases.html#api-deprecations を参照してください。",
+  "python.class-extends-safestring": "'SafeString'、'SafeText'、'SafeData' のいずれかを継承するクラスが検出されました。これらのクラスは Django の組み込みエスケープエンジンをバイパスするためのものなので、直接使用しないでください。誤って使用すると、アプリケーションがクロスサイトスクリプティング（XSS）の脆弱性にさらされます。この機能が本当に必要な場合は、'mark_safe' を使用し、ユーザーデータがそこに到達しないことを確認してください。",
+  "python.code-after-unconditional-return": "return の後のコードは実行されません。",
+  "python.command-injection-os-system": "os.system でリクエストデータが使用されており、コマンドインジェクションのリスクが生じるおそれがあるため、避ける必要があります。実行が必要な場合は、'subprocess' モジュールを使用し、引数をリスト形式で渡してください。詳細は https://owasp.org/www-community/attacks/Command_Injection を参照してください。",
+  "python.conflicting-path-assignment": "`$URL` の path が 1 回はビュー `$VIEW` を指し、もう 1 回は `$DIFFERENT_VIEW` を指すため、予期しない動作が発生します。意図した対象のビューを確認し、もう一方のルートを削除してください。",
+  "python.context-autoescape-off": "autoescape が無効化された Context が検出されました。Web ページのレンダリングに使用すると、アプリケーションがクロスサイトスクリプティング（XSS）の脆弱性にさらされます。'autoescape: False' を削除するか、'True' に設定してください。",
+  "python.crypto-mode-without-authentication": "暗号モードがメッセージ認証と組み合わされておらず、攻撃者が暗号文の内容を解読するおそれがあります。GCM などの AEAD 認証付き暗号モードを使用することをお勧めします。",
+  "python.csv-writer-injection": "ユーザー入力が組み込みの `csv` モジュールを通じて CSV ファイルに書き込まれていることが検出されました。攻撃者は数式を注入できます——CSV が表計算ソフトにインポートされると攻撃スクリプトが実行され、データの窃取、さらにはマルウェアのインストールにつながります。`defusedcsv` は API 互換の代替品であり、数式インジェクションを防御できます。安全に CSV を生成するにはこれに切り替えてください。",
+  "python.custom-expression-as-sql": "カスタム式 '$EXPRESSION' が 'as_sql(...)' を呼び出していることが検出されました。これにより SQL インジェクションが発生し、攻撃者に機密データを窃取されるおそれがあります。ユーザー入力がこの関数に入らないようにするか、ユーザー入力を適切にサニタイズしてください。",
+  "python.dangerous-annotations-usage": "`typing.get_type_hints` に渡されたアノテーションは、`globals` と `locals` の名前空間で評価されます。任意の値がアノテーションとして書き込まれ、`typing.get_type_hints` に渡されることがないようにしてください。"
 }
