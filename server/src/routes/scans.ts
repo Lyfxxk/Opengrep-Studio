@@ -384,9 +384,8 @@ scanRoutes.get('/api/scans/:scanId/report', asyncHandler(async (req, res) => {
   if (format === 'html') {
     const includeSnippets = req.query.detail !== 'summary';
     const lang = parseProductLang(req.query.lang);
-    const reportLang = lang === 'ko' ? 'zh' : lang;
-    const messages = reportLang === 'en' ? undefined : listRuleMessages(reportLang);
-    const html = renderReportHtml(data, issues, { includeSnippets }, reportLang, messages);
+    const messages = lang === 'en' ? undefined : listRuleMessages(lang);
+    const html = renderReportHtml(data, issues, { includeSnippets }, lang, messages);
     const prefix =
       lang === 'zh-Hant'
         ? '測試報告'
@@ -394,7 +393,9 @@ scanRoutes.get('/api/scans/:scanId/report', asyncHandler(async (req, res) => {
           ? 'test-report'
           : lang === 'ja'
             ? 'テストレポート'
-            : '测试报告';
+            : lang === 'ko'
+              ? '테스트 보고서'
+              : '测试报告';
     const fileName = `${prefix}-${project.name}-${scan.id}.html`;
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader(
