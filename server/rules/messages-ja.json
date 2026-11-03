@@ -270,5 +270,21 @@
   "js-ts.detect-angular-translateprovider-translations-method": "ユーザー入力が $translateProvider.translations メソッドに混入すると非常に危険です。",
   "js-ts.detect-angular-trust-as-css-method": "サニタイズされていないユーザー入力が $sce.trustAsCss を経由すると非常に危険です。",
   "js-ts.detect-angular-trust-as-html-method": "サニタイズされていないユーザー入力が $sce.trustAsHtml を経由すると非常に危険です。",
-  "js-ts.detect-angular-trust-as-js-method": "サニタイズされていないユーザー入力が $sce.trustAsJs を経由すると非常に危険です。"
+  "js-ts.detect-angular-trust-as-js-method": "サニタイズされていないユーザー入力が $sce.trustAsJs を経由すると非常に危険です。",
+  "js-ts.detect-angular-trust-as-method": "サニタイズされていないユーザー入力が $sce.trustAs を経由すると非常に危険です。",
+  "js-ts.detect-angular-trust-as-resourceurl-method": "サニタイズされていないユーザー入力が $sce.trustAsResourceUrl を経由すると非常に危険です。",
+  "js-ts.detect-angular-trust-as-url-method": "サニタイズされていないユーザー入力が $sce.trustAsUrl を経由すると、その API の使用が危険になる可能性があります。",
+  "js-ts.detect-buffer-noassert": "Buffer API での noassert の使用が検出されました。これによりオフセットがバッファの末尾を越えることが許可され、境界外の読み書きが発生する恐れがあります。",
+  "js-ts.detect-child-process": "任意のプログラムを起動したり、任意の引数で shell プロセスを実行したりすることが許可され、最終的にコマンドインジェクションの脆弱性につながる恐れがあります。コマンド文字列に非リテラルの値が含まれることはできる限り避けてください。避けられない場合でも、任意のコマンドの実行を許可してはならず、入力に対してホワイトリストを適用してください。",
+  "js-ts.detect-disable-mustache-escape": "マークアップのエスケープが無効になっています。テンプレートエンジンによっては、HTML エンティティのエスケープも同時に無効化され、XSS 攻撃を引き起こす恐れがあります。",
+  "js-ts.detect-eval-with-expression": "ユーザー入力に由来する可能性のある JavaScript が動的に実行されていることが検出されました。クロスサイトスクリプティング（XSS）につながる可能性があります。入力を動的に実行する関数にユーザー入力を含めることは、できる限り避けてください。",
+  "js-ts.detect-no-csrf-before-method-override": "express.csrf() ミドルウェアが express.methodOverride() より先にマウントされていることが検出されました。この場合、CSRF 検証を受けない GET リクエストが POST リクエストに書き換えられる恐れがあります。",
+  "js-ts.detect-non-literal-fs-filename": "関数の引数 `$ARG` が fs モジュールに入り込んでいることが検出されました。攻撃者は '../' を使ったディレクトリの遡りなどにより、ファイルの場所を制御できる可能性があります。ファイルパスに含まれるユーザー制御可能な変数を検証してください。",
+  "js-ts.detect-non-literal-regexp": "RegExp() の引数が関数の入力引数 `$ARG` に由来しています。RegExp はメインスレッドをブロックするため、攻撃者はこれを利用してアプリケーション内で正規表現サービス拒否（ReDoS）を引き起こす恐れがあります。ハードコードされた正規表現を使用することを推奨します。正規表現をユーザー制御可能な入力に対して実行する場合は、入力検証を行うか、recheck（https://www.npmjs.com/package/recheck ）などの検証/サニタイズライブラリを使用して、正規表現に ReDoS のリスクがないことを確認してください。",
+  "js-ts.detect-non-literal-require": "require(variable) が検出されました。非リテラルの引数で require を呼び出すと、攻撃者が任意のコードを読み込んで実行したり、任意のファイルを読み取ったりできる可能性があります。",
+  "js-ts.detect-pseudoRandomBytes": "crypto.pseudoRandomBytes の使用が検出されました。これは安全な乱数を生成しません。",
+  "js-ts.detect-redos": "正規表現 `$REDOS` が検出されました。正規表現サービス拒否（ReDoS）攻撃を受けやすい可能性があります。この正規表現を見直し、壊滅的なバックトラッキングが存在しないことを確認するとともに、既定で ReDoS を防止するライブラリを可能な限り使用してください。",
+  "js-ts.detect-replaceall-sanitization": "`$FUNC()` の呼び出しにより、文字列 `$STR` を HTML エスケープしようとしていることが検出されました。手作業で維持されたリストによる入力のサニタイズは多くのシナリオでバイパスされる恐れがあるため、`sanitize-html` や `DOMPurify` などの有名なサニタイズライブラリを使用することを推奨します。",
+  "js-ts.direct-response-write": "ユーザー定義の入力を Response オブジェクトに直接書き込んでいることが検出されました。これによりすべての HTML エスケープがバイパスされ、アプリケーションがクロスサイトスクリプティング（XSS）の脆弱性にさらされる恐れがあります。安全にエスケープされた HTML をレンダリングするには、代わりに 'resp.render()' を使用してください。",
+  "js-ts.dom-based-xss": "DOM ベース XSS の可能性が検出されました。原因は、URL の一部がページに直接挿入される要素の構築に使用されていることです。例えば、攻撃者が http://www.some.site/page.html?default=<script>alert(document.cookie)</script> というリンクを送るだけで、ページにスクリプトを注入できます。取得する値をホワイトリストで検証するか、URL に依存しない実装に変更することを推奨します。"
 }
