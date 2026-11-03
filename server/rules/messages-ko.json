@@ -30,5 +30,21 @@
   "csharp.open-redirect": "쿼리 문자열 매개변수에 URL 값이 포함될 수 있으며, 이로 인해 웹 애플리케이션이 요청을 공격자가 제어하는 악성 사이트로 리디렉션할 수 있습니다. 해당 매개변수를 충분히 정제하십시오.",
   "csharp.os-command-injection": "소프트웨어가 업스트림 구성 요소에서 유래한 외부 영향 입력을 사용하여 OS 명령의 전부 또는 일부를 구성하지만, 명령의 의미를 변경할 수 있는 특수 요소를 무력화하지 못하거나 부정확하게 무력화합니다.",
   "csharp.razor-template-injection": "사용자가 제어할 수 있는 문자열이 Razor.Parse에 전달되면 프로세스 컨텍스트에서 코드 실행으로 직접 이어집니다.",
-  "csharp.ssrf": "SSRF는 애플리케이션이 내부/외부 네트워크 또는 로컬 머신 자체와 상호 작용하는 것을 악용하는 공격 기법입니다."
+  "csharp.ssrf": "SSRF는 애플리케이션이 내부/외부 네트워크 또는 로컬 머신 자체와 상호 작용하는 것을 악용하는 공격 기법입니다.",
+  "csharp.stacktrace-disclosure": "Development 이외의 환경에서 스택 트레이스 정보를 표시합니다. 프로덕션 환경에서 민감한 스택 정보가 의도치 않게 유출되면 공격자의 정찰과 정보 수집에 편의를 제공합니다.",
+  "csharp.structured-logging": "로그 메시지의 문자열 보간은 변수와 메시지 텍스트의 경계를 모호하게 만듭니다. 구조화된 로깅으로 전환하십시오: 변수는 추가 매개변수로 전달하고 보간은 로그 라이브러리가 수행합니다. 이를 통해 로그 삽입 가능성이 낮아지고 로그 검색도 쉬워집니다.",
+  "csharp.unsafe-path-combine": "문자열 매개변수 $A는 Path.Combine을 거쳐 파일을 읽고 쓰는 데 사용되지만 Path.GetFileName으로 직접 정제되지 않습니다. 이 경로가 사용자 입력에서 비롯된 것이라면 경로 횡단이 발생합니다.",
+  "csharp.unsigned-security-token": "서명되지 않은 보안 토큰을 유효한 토큰으로 받아들이면 공격자가 서명을 제거하고 신원을 위조할 수 있습니다. 수정 방법: RequireSignedTokens를 true로 설정하십시오.",
+  "csharp.use_deprecated_cipher_algorithm": "더 이상 사용되지 않는 암호화 알고리즘이 감지되었습니다. Aes 또는 ChaCha20Poly1305로 전환하십시오.",
+  "csharp.use_ecb_mode": "안전하지 않은 ECB 모드가 감지되었습니다. AesGcm 또는 ChaCha20Poly1305 클래스로 구현되는 인증 암호화 모드로 전환하십시오.",
+  "csharp.use_weak_rng_for_keygeneration": "암호화 키를 생성하는 데 안전하지 않은 난수 생성기(RNG)를 사용하고 있습니다. System.Random은 암호화 용도로 절대 사용해서는 안 되며, System.Security.Cryptography.RandomNumberGenerator로 전환하십시오.",
+  "csharp.use_weak_rsa_encryption_padding": "RSA 키가 구식인 PKCS#1 v1.5 암호화 패딩을 사용합니다. OAEP 패딩으로 전환하십시오.",
+  "csharp.xmldocument-unsafe-parser-override": "XmlReaderSettings가 XmlReader에서 DtdProcessing.Parse로 public 메서드로부터 전달된 문자열 매개변수를 처리하는 것을 발견했습니다. DTD(문서 유형 정의) 파싱이 활성화된 상태에서 사용자가 제어할 수 있는 데이터가 전달되면 XML 외부 엔터티(XXE) 삽입이 발생합니다.",
+  "csharp.xmlreadersettings-unsafe-parser-override": "XmlReaderSettings가 XmlReader에서 DtdProcessing.Parse로 public 메서드로부터 전달된 문자열 매개변수를 처리하는 것을 발견했습니다. DTD 파싱이 활성화된 상태에서 사용자가 제어할 수 있는 데이터가 전달되면 XML 외부 엔터티(XXE) 삽입이 발생합니다.",
+  "csharp.xmltextreader-unsafe-defaults": "XmlReaderSettings가 XmlReader에서 DtdProcessing.Parse로 public 메서드로부터 전달된 문자열 매개변수를 처리하는 것을 발견했습니다. DTD 파싱이 활성화된 상태에서 사용자가 제어할 수 있는 데이터가 전달되면 XML 외부 엔터티(XXE) 삽입이 발생합니다.",
+  "csharp.xpath-injection": "XPath 쿼리가 사용자가 제어할 수 있는 입력을 기반으로 동적으로 구성되며, 이 결함은 XPath 삽입으로 악용될 수 있습니다.",
+  "dockerfile.avoid-apk-upgrade": "기본 이미지의 패키지는 최신 상태로 유지하여 'apk upgrade'가 필요 없도록 해야 합니다. 패키지가 실제로 오래된 경우 기본 이미지 유지 관리자에게 문의하십시오.",
+  "dockerfile.avoid-apt-get-upgrade": "기본 컨테이너의 패키지는 최신 상태로 유지하여 upgrade 또는 dist-upgrade가 필요 없도록 해야 합니다. 패키지가 실제로 오래된 경우 유지 관리자에게 문의하십시오.",
+  "dockerfile.avoid-dnf-update": "기본 이미지의 패키지는 최신 상태로 유지하여 'dnf update'가 필요 없도록 해야 합니다. 패키지가 실제로 오래된 경우 기본 이미지 유지 관리자에게 문의하십시오.",
+  "dockerfile.avoid-latest-version": "이미지는 결정론적인 컨테이너 이미지를 얻기 위해 명시적인 버전 태그를 사용해야 합니다. 'latest' 태그는 예고 없이 기본 컨테이너를 변경할 수 있습니다."
 }
