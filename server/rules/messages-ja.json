@@ -254,5 +254,21 @@
   "js-ts.angular-bypasssecuritytrust": "`$TRUST` の使用が検出されました。内容がユーザー入力に由来する場合、XSS 脆弱性が生じます。使用が必須である場合は、内容がユーザー入力に由来しないことを確認するか、コンテキストに応じて入力検証やサニタイズなどの適切な防御策を講じてください。",
   "js-ts.apollo-axios-ssrf": "ユーザー制御可能なパラメーター $DATAVAL が、内部処理関数 $INNERFUNC を経由して $METHOD の Axios リクエストに渡されています。これによりサーバーサイドリクエストフォージェリ（SSRF）が成立する可能性があります。ユーザーが制限付き API を呼び出したり、内部ヘッダー情報を権限のない第三者に漏えいしたりするおそれがあります。既知の URL ホワイトリストに照らしてユーザーパラメーターを検証するか、ユーザー制御可能なデータを排除するようにリファクタリングしてください。",
   "js-ts.assigned-undefined": "`undefined` は JavaScript の予約語ではありません。この書き方は「合法」ではありますが、非常に紛らわしく、bug を引き起こすおそれがあります。",
-  "js-ts.awscdk-bucket-encryption": "Bucket コンストラクター $X の属性に \"encryption: $Y.BucketEncryption.KMS_MANAGED\" または \"encryption: $Y.BucketEncryption.S3_MANAGED\" を追加してください。"
+  "js-ts.awscdk-bucket-encryption": "Bucket コンストラクター $X の属性に \"encryption: $Y.BucketEncryption.KMS_MANAGED\" または \"encryption: $Y.BucketEncryption.S3_MANAGED\" を追加してください。",
+  "js-ts.chrome-remote-interface-compilescript-injection": "未検証のユーザーデータが `compileScript` メソッドに到達すると、コードインジェクションが発生する可能性があります。",
+  "js-ts.code-string-concat": "Express または Next の Web リクエストからのデータが `eval` に流入していることが検出されました。このデータがユーザーによって制御可能な場合、アプリケーションプロセスのコンテキストで任意のシステムコマンドが実行される可能性があります。`eval` の使用はできる限り避けてください。",
+  "js-ts.cors-misconfiguration": "ユーザー入力に CORS パラメータを制御させると、オリジンの検証が無効になるリスクがあります。CORS の設定にはリテラル値を使用してください。",
+  "js-ts.create-de-cipher-no-iv": "非推奨の 'createCipher' と 'createDecipher' は、実行のたびに同じ初期化ベクトルを生成します。CTR・GCM・CCM などのカウンターモードでは鍵の再利用により機密性と完全性の両方が損なわれ、その他のモードでも強度が低下します。代わりに 'createCipheriv' または 'createDecipheriv' を使用してください。",
+  "js-ts.dangerous-spawn-shell": "$EXEC() に対する非リテラル呼び出しが検出されました。コマンドインジェクションの脆弱性につながる可能性があります。",
+  "js-ts.define-styled-components-on-module-level": "React コンポーネントの render メソッド内で styled コンポーネントを宣言すると、レンダリングのたびに新しいコンポーネントが動的に作成されます。そのため React は、両者の差分だけを計算するのではなく、以降のレンダリングのたびにこの DOM サブツリーを破棄して再計算することになり、パフォーマンスのボトルネックや予測できない動作につながります。",
+  "js-ts.deno-dangerous-run": "Deno.run() に対する非リテラル呼び出しが検出されました。コマンドインジェクションの脆弱性につながる可能性があります。",
+  "js-ts.detect-angular-element-methods": "ユーザー入力が `$SINK` 内の HTML 要素の一部として扱われると、angular.element を使用した場合に XSS が発生します。`$SINK` に挿入する前に、ユーザー入力に対してコンテキストに応じた出力エンコーディングを行うことを推奨します。HTML を保持する必要がある場合は、$sce.getTrustedHTML または $sanitize を使用してサニタイズしてください。",
+  "js-ts.detect-angular-element-taint": "ユーザー入力が `$SINK` 内の HTML 要素の一部として扱われると、angular.element を使用した場合に XSS が発生します。`$SINK` に挿入する前に、ユーザー入力に対してコンテキストに応じた出力エンコーディングを行うことを推奨します。HTML を保持する必要がある場合は、$sce.getTrustedHTML または $sanitize を使用してサニタイズしてください。",
+  "js-ts.detect-angular-open-redirect": "$window.location.href を使用する際、リダイレクト先がユーザー入力に由来していると、オープンリダイレクトが発生します。",
+  "js-ts.detect-angular-resource-loading": "$sceDelegateProvider のホワイトリストにワイルドカードを使用すると、セキュリティ上の問題が生じます。",
+  "js-ts.detect-angular-sce-disabled": "$sceProvider が false に設定されています。AngularJS アプリケーションで厳格コンテキストエスケープ（SCE）を無効化すると、XSS の脆弱性に対する攻撃面が広がります。",
+  "js-ts.detect-angular-translateprovider-translations-method": "ユーザー入力が $translateProvider.translations メソッドに混入すると非常に危険です。",
+  "js-ts.detect-angular-trust-as-css-method": "サニタイズされていないユーザー入力が $sce.trustAsCss を経由すると非常に危険です。",
+  "js-ts.detect-angular-trust-as-html-method": "サニタイズされていないユーザー入力が $sce.trustAsHtml を経由すると非常に危険です。",
+  "js-ts.detect-angular-trust-as-js-method": "サニタイズされていないユーザー入力が $sce.trustAsJs を経由すると非常に危険です。"
 }
