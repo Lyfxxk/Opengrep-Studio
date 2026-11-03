@@ -44,6 +44,7 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import LanguageMenu from '@/components/LanguageMenu';
+import SkinMenu from '@/components/SkinMenu';
 import { getCurrentUsername, isAuthenticated, logout } from '@/lib/auth';
 import avatarUrl from '@/assets/images/avatar.jpg';
 import logoUrl from '@/assets/images/logo.png';
@@ -230,6 +231,7 @@ export const Layout = () => {
               </DropdownMenuContent>
             </DropdownMenu>
             <LanguageMenu className={ICON_BUTTON_CLASS} />
+            <SkinMenu className={ICON_BUTTON_CLASS} />
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
