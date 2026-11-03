@@ -16,6 +16,14 @@
         if (lang === 'en' || lang === 'zh-Hant' || lang === 'zh' || lang === 'ja' || lang === 'ko') {
           document.documentElement.lang = lang === 'zh' ? 'zh-CN' : lang;
         }
+        var skin = localStorage.getItem('__global_opengrep_skin');
+        if (skin === 'default' || skin === 'graphite') {
+          if (skin === 'default') {
+            delete document.documentElement.dataset.skin;
+          } else {
+            document.documentElement.dataset.skin = skin;
+          }
+        }
       } catch (e) {
       }
     </script>
