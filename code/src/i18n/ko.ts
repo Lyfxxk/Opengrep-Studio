@@ -189,6 +189,39 @@ const ko = {
     totalCount: '총 {{count}}',
     unscanned: '스캔되지 않음',
   },
+  engine: {
+    title: '엔진 상태',
+    checkUpdate: '업데이트 확인',
+    ready: '엔진 준비 완료',
+    source: '출처: {{source}}',
+    pinnedVersion: '매니페스트 v{{version}}',
+    sourceUnknown: '알 수 없음',
+    selfManaged: '엔진은 OPENGREP_BIN 또는 시스템 PATH를 통해 사용자가 직접 관리하며 원클릭 업그레이드를 지원하지 않습니다.',
+    downloading: '다운로드 중',
+    verifying: '검증 중',
+    installing: '설치 중',
+    upgradeTarget: ' 대상 v{{version}}',
+    newVersion: '새 버전 v{{version}} 발견',
+    upgrade: '원클릭 업그레이드',
+    upgradeBlockedByScan: '스캔이 진행 중이므로 지금은 업그레이드할 수 없습니다',
+    upToDate: '최신 버전입니다',
+    checkFailed: '업데이트 확인에 실패했습니다: {{error}}',
+    unavailable: '엔진 사용 불가',
+    hintMacosQuarantine: 'macOS 안내: 브라우저에서 수동으로 다운로드한 바이너리는 Gatekeeper에 의해 차단됩니다(“개발자를 확인할 수 없음”/“손상됨”). xattr -d com.apple.quarantine <엔진 경로>를 실행하면 사용할 수 있습니다. npm run setup:engine으로 다운로드한 엔진은 영향을 받지 않습니다.',
+  },
+  engineSource: {
+    env: '환경 변수 OPENGREP_BIN으로 지정',
+    'bundled-dir': 'opengrep-tool 설치 위치(npm run setup:engine)',
+    path: '시스템 PATH 검색',
+    missing: '찾을 수 없음',
+  },
+  issues: {
+    noDescription: '(결과에 설명이 제공되지 않음)',
+    unknownPath: '(알 수 없는 경로)',
+  },
+  langStats: {
+    total: '합계 {{kb}} KB',
+  },
 };
 
 export default ko;
