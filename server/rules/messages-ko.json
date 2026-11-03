@@ -462,5 +462,21 @@
   "php.md5-loose-equality": "md5 값이 관련된 비교에서는 반드시 엄격한 비교(`==`가 아닌 `===`)를 사용하여 타입 저글링(type juggling) 문제를 피하십시오.",
   "php.md5-used-as-password": "MD5가 비밀번호 해시로 사용되는 것이 감지되었습니다. MD5는 더 이상 안전한 비밀번호 해시로 간주되지 않으며, 공격자가 짧은 시간 안에 깨뜨릴 수 있습니다. bcrypt 등 적절한 비밀번호 해시 함수를 사용하고 `password_hash($PASSWORD, PASSWORD_BCRYPT, $OPTIONS);`를 활용할 수 있습니다.",
   "php.openssl-cbc-static-iv": "AES CBC 모드에 정적 IV가 사용되었습니다. 정적 IV는 암호문을 선택 평문 공격에 노출시킵니다.",
-  "php.openssl-decrypt-validate": "`openssl_decrypt`는 성공 시 복호화된 문자열을 반환하고 실패 시 `false`를 반환합니다. 실패 분기를 처리하지 않으면 애플리케이션에 정의되지 않은 동작이 발생할 수 있습니다. `openssl_decrypt`가 `false`를 반환하는 경우를 처리하십시오."
+  "php.openssl-decrypt-validate": "`openssl_decrypt`는 성공 시 복호화된 문자열을 반환하고 실패 시 `false`를 반환합니다. 실패 분기를 처리하지 않으면 애플리케이션에 정의되지 않은 동작이 발생할 수 있습니다. `openssl_decrypt`가 `false`를 반환하는 경우를 처리하십시오.",
+  "php.php-permissive-cors": "Access-Control-Allow-Origin 응답 헤더가 \"*\"로 설정되어 CORS 동일 출처 정책 제한이 비활성화됩니다.",
+  "php.php-ssrf": "웹 서버가 업스트림 구성 요소로부터 URL 또는 이와 유사한 요청을 받아 그 내용을 가져오지만, 요청이 실제로 예상된 목적지로 전송되는지는 충분히 확인하지 않습니다. 위험한 함수: $FUNCS, 페이로드: $DATA.",
+  "php.phpinfo-use": "'phpinfo' 함수는 환경의 민감한 정보를 유출할 수 있습니다.",
+  "php.printed-request": "사용자 입력을 출력하면 크로스 사이트 스크립팅(XSS) 위험이 있습니다. 사용자에게 데이터를 표시할 때는 `htmlentities()`를 사용해야 합니다.",
+  "php.redirect-to-request-uri": "현재 요청 URL로 리다이렉트할 때 현재 경로가 이중 슬래시로 시작하면 다른 도메인으로 리다이렉트될 수 있습니다. 예를 들어 https://www.example.com//attacker.com에서는 REQUEST_URI가 //attacker.com이므로, 여기로 리다이렉트하면 공격자의 도메인으로 이동하게 됩니다.",
+  "php.symfony-csrf-protection-disabled": "이 설정은 CSRF 보호를 비활성화하여 보안 위험이 있습니다. 실제로 안전한지 확인하거나 `csrf_protection` 속성을 `true`로 설정하는 것을 고려하십시오.",
+  "php.symfony-non-literal-redirect": "`redirect()` 메서드는 대상 주소를 검사하지 않습니다. 최종 사용자가 제공한 URL로 리다이렉트하면 애플리케이션이 검증되지 않은 리다이렉트 취약점에 노출될 수 있습니다. 리터럴을 사용하거나 허용 목록으로 URL을 검증하십시오.",
+  "php.symfony-permissive-cors": "Access-Control-Allow-Origin 응답 헤더가 \"*\"로 설정되어 CORS 동일 출처 정책 제한이 비활성화됩니다.",
+  "php.tainted-callable": "사용자 입력을 기반으로 하는 콜러블(callable)은 원격 코드 실행 위험이 있습니다.",
+  "php.tainted-exec": "상수가 아닌 명령을 실행하면 명령 주입이 발생할 수 있습니다. 명령을 사용할 때는 `escapeshellarg()`를 함께 사용하십시오.",
+  "php.tainted-filename": "사용자 입력을 기반으로 하는 파일 이름은 서버 측 요청 위조(SSRF) 위험이 있습니다.",
+  "php.tainted-object-instantiation": "<- 여기서 새 객체가 생성되었으며 클래스 이름은 사용자 입력을 기반으로 합니다. 이를 통해 애플리케이션의 임의 클래스를 인스턴스화할 수 있어 원격 코드 실행으로 이어질 수 있습니다.",
+  "php.tainted-session": "사용자 입력을 기반으로 하는 세션 키는 세션 오염 위험이 있습니다: 사용자가 세션에 사용되는 키를 결정할 수 있어 임의의 세션 변수를 쓸 수 있습니다. 세션 변수는 일반적으로 애플리케이션만 설정하는 것으로 신뢰되므로, 세션을 조작하면 접근 제어 문제가 발생할 수 있습니다.",
+  "php.tainted-sql-string": "사용자 데이터가 수동으로 작성한 SQL 문자열로 흘러 들어갑니다. 사용자 데이터는 프리페어드 스테이트먼트 또는 ORM을 통해 SQL에 안전하게 삽입해야 합니다. SQL을 수동으로 조립하는 것은 SQL 인젝션의 의심 신호이며, 공격자는 이를 악용해 데이터베이스 데이터를 탈취하거나 변조할 수 있습니다. 프리페어드 스테이트먼트(`$mysqli->prepare(\"INSERT INTO test(id, label) VALUES (?, ?)\");`) 또는 안전한 라이브러리를 대신 사용하십시오.",
+  "php.tainted-url-host": "사용자 데이터가 수동으로 구성한 URL의 호스트 부분으로 흘러 들어갑니다. 공격자는 이를 악용해 데이터를 자신의 서버로 보내 요청과 함께 전송되는 cookie, 인증 정보 등 민감한 데이터를 유출할 수 있고, 이 코드가 실행되는 서버가 접근할 수 있는 내부 리소스를 탐색할 수도 있습니다(즉, 서버 측 요청 위조 SSRF). 임의의 호스트를 허용하지 마십시오. 승인된 호스트의 허용 목록을 만들거나 올바른 호스트를 하드코딩하십시오.",
+  "php.unlink-use": "`unlink()`로 파일을 삭제할 때 사용자 입력을 사용하는 것은 위험하며, 공격자는 이를 악용해 권한이 없는 파일을 수정하거나 접근할 수 있습니다."
 }
