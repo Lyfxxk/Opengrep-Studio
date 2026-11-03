@@ -30,5 +30,21 @@
   "csharp.open-redirect": "クエリ文字列パラメータに URL 値が含まれていると、Web アプリケーションがリクエストを攻撃者が制御する悪意のあるサイトへリダイレクトしてしまいます。このパラメータは十分にサニタイズしてください。",
   "csharp.os-command-injection": "ソフトウェアは、上流コンポーネントからの外部の影響を受ける入力を使用して OS コマンドの全部または一部を構築していますが、コマンドの意味を変え得る特殊要素を無効化できていません（または無効化に誤りがあります）。",
   "csharp.razor-template-injection": "ユーザーが制御できる文字列が Razor.Parse に渡されており、プロセスのコンテキストにおけるコード実行を直接引き起こします。",
-  "csharp.ssrf": "SSRF は、アプリケーションと内部／外部ネットワークまたはローカルマシン自身とのやり取りを悪用する攻撃手法です。"
+  "csharp.ssrf": "SSRF は、アプリケーションと内部／外部ネットワークまたはローカルマシン自身とのやり取りを悪用する攻撃手法です。",
+  "csharp.stacktrace-disclosure": "Development 環境以外でスタックトレース情報を表示しています。本番環境で機密性の高いスタックトレース情報が意図せず漏えいすると、攻撃者の偵察や情報収集を容易にします。",
+  "csharp.structured-logging": "ログメッセージ内の文字列補間は、変数とメッセージテキストの境界を曖昧にします。変数を追加パラメーターとして渡し、補間はログライブラリに行わせる構造化ログを使用してください。これによりログインジェクションの可能性が下がり、ログの検索も容易になります。",
+  "csharp.unsafe-path-combine": "文字列パラメーター $A は Path.Combine でファイルの読み書きに使用されていますが、Path.GetFileName で直接無害化されていません。このパスがユーザー入力に由来する場合、パストラバーサルにつながります。",
+  "csharp.unsigned-security-token": "未署名のセキュリティトークンを有効なトークンとして受け入れると、攻撃者が署名を除去してなりすましを行うことが可能になります。修正方法：RequireSignedTokens を true に設定します。",
+  "csharp.use_deprecated_cipher_algorithm": "非推奨の暗号アルゴリズムが検出されました。Aes または ChaCha20Poly1305 を使用してください。",
+  "csharp.use_ecb_mode": "安全でない ECB モードが検出されました。AesGcm または ChaCha20Poly1305 クラスによって実装される認証付き暗号モードを使用してください。",
+  "csharp.use_weak_rng_for_keygeneration": "安全でない乱数ジェネレーター（RNG）を使用して暗号キーを作成しています。System.Random は暗号用途に使用してはなりません。代わりに System.Security.Cryptography.RandomNumberGenerator を使用してください。",
+  "csharp.use_weak_rsa_encryption_padding": "RSA キーに古い PKCS#1 v1.5 暗号パディングが使用されています。代わりに OAEP パディングを使用してください。",
+  "csharp.xmldocument-unsafe-parser-override": "XmlReader 上で DtdProcessing.Parse により公開メソッドからの文字列パラメーターを処理する XmlReaderSettings が見つかりました。DTD（文書型定義）の解析を有効にしている場合、ユーザー制御可能なデータを渡すと、XML 外部エンティティ（XXE）インジェクションが発生します。",
+  "csharp.xmlreadersettings-unsafe-parser-override": "XmlReader 上で DtdProcessing.Parse により公開メソッドからの文字列パラメーターを処理する XmlReaderSettings が見つかりました。DTD の解析を有効にしている場合、ユーザー制御可能なデータを渡すと、XML 外部エンティティ（XXE）インジェクションが発生します。",
+  "csharp.xmltextreader-unsafe-defaults": "XmlReader 上で DtdProcessing.Parse により公開メソッドからの文字列パラメーターを処理する XmlReaderSettings が見つかりました。DTD の解析を有効にしている場合、ユーザー制御可能なデータを渡すと、XML 外部エンティティ（XXE）インジェクションが発生します。",
+  "csharp.xpath-injection": "XPath クエリがユーザー制御可能な入力に基づいて動的に構築されており、この欠陥は XPath インジェクションとして悪用されるおそれがあります。",
+  "dockerfile.avoid-apk-upgrade": "ベースイメージ内のパッケージを最新に保ち、'apk upgrade' を実行しなくて済むようにしてください。パッケージが本当に古い場合は、ベースイメージのメンテナーに連絡してください。",
+  "dockerfile.avoid-apt-get-upgrade": "ベースコンテナ内のパッケージを最新に保ち、upgrade や dist-upgrade を実行しなくて済むようにしてください。パッケージが本当に古い場合は、メンテナーに連絡してください。",
+  "dockerfile.avoid-dnf-update": "ベースイメージ内のパッケージを最新に保ち、'dnf update' を実行しなくて済むようにしてください。パッケージが本当に古い場合は、ベースイメージのメンテナーに連絡してください。",
+  "dockerfile.avoid-latest-version": "イメージには明示的なバージョンタグを使用し、決定論的なコンテナイメージを実現してください。'latest' タグは、予告なしにベースコンテナを置き換える可能性があります。"
 }
