@@ -142,5 +142,21 @@
   "go.use-of-sha1": "安全でないとされる SHA1 ハッシュアルゴリズムが検出されました。SHA1 には衝突耐性がなく、暗号学的署名には適していません。代わりに SHA256 または SHA3 を使用してください。",
   "go.use-of-unsafe-block": "Go で unsafe パッケージを使用すると、低レベルのメモリ管理や C 言語と同等の多くの能力が得られる一方で、Go の型安全性がバイパスされ、バッファオーバーフローや、攻撃者による任意コードの実行につながる恐れがあります。自分が何をしているのかを確実に理解している場合にのみ、このパッケージを使用してください。",
   "go.use-of-weak-rsa-key": "RSA 鍵の長さは 2048 ビット以上である必要があります。",
-  "go.use-tls": "TLS が有効化されていない HTTP サービスが検出されました。代わりに 'http.ListenAndServeTLS' を使用してください。詳細は https://golang.org/pkg/net/http/#ListenAndServeTLS を参照してください。"
+  "go.use-tls": "TLS が有効化されていない HTTP サービスが検出されました。代わりに 'http.ListenAndServeTLS' を使用してください。詳細は https://golang.org/pkg/net/http/#ListenAndServeTLS を参照してください。",
+  "go.useless-if-body": "if 文の if 分岐と else 分岐に完全に同じ文が含まれているのが検出されました。条件の真偽にかかわらず実行されるコードは同一です。当該の if 文を直接削除してください。",
+  "go.useless-if-conditional": "if ブロックの 2 つの分岐が同じ条件（`$X`）を検査しているのが検出されました。2 回目の条件検査は 1 回目と同じで実質的に無意味なため、コードから削除してください。",
+  "go.websocket-missing-origin-check": "HTTP WebSocket ハンドシェイクにおける Origin ヘッダーは、WebSocket が受け入れる接続が信頼できるオリジンのドメインからのものであることを保証するためのものです。検証を強制しないと、クロスサイトリクエストフォージェリ（CSRF）につながります。\"gorilla/websocket\" のドキュメントには「CheckOrigin 関数は、クロスサイトリクエストフォージェリを防ぐため、リクエストのオリジンを入念に検証する必要があります」と記載されています。",
+  "go.wip-xss-using-responsewriter-and-printf": "URL クエリパラメータから ResponseWriter に書き込まれるフォーマット済みの内容へデータが流れ込んでいることが見つかりました。これは XSS につながる恐れがあるため、行うべきではありません。本当に必要な場合は、データがサニタイズまたはエスケープされていることを確認してください。",
+  "java.anonymous-ldap-bind": "匿名 LDAP バインドが検出されました。匿名ユーザーが LDAP ステートメントを実行できるようになります。LDAP に認証を強制することを検討してください。詳細は https://docs.oracle.com/javase/tutorial/jndi/ldap/auth_mechs.html を参照してください。",
+  "java.avoid-implementing-custom-digests": "暗号アルゴリズムを正しく実装することは非常に困難です。メッセージダイジェストを独自に実装すると、お使いのプログラムにセキュリティリスクが生じます。既存の信頼できるダイジェストアルゴリズムをそのまま使用してください。例：MessageDigest sha256Digest = MessageDigest.getInstance(\"SHA256\");",
+  "java.bad-hexa-conversion": "バイト単位で読み取る際、'Integer.toHexString()' はバイトの先頭のゼロを取り除きます。この誤りはハッシュ値を弱め、衝突を増やします。代わりに 'String.format(\"%02X\", ...)' を使用してください。",
+  "java.blowfish-insufficient-key-size": "Blowfish の鍵は 128 ビット未満では安全とは見なされません。128 ビット以上を使用するか、AES に変更してください。",
+  "java.cbc-padding-oracle": "CBC + PKCS5Padding はパディングオラクル（padding oracle）攻撃を受けやすくなります：攻撃者はパディングが正当かどうかで平文を区別でき、また CBC にはいかなる完全性検証も含まれていません。代わりに 'AES/GCM/NoPadding' を使用してください。",
+  "java.command-injection-formatted-runtime-call": "フォーマット済みまたは連結された文字列が java.lang.Runtime 呼び出しに渡されているのが検出されました。変数がユーザー制御可能な場合、コマンドインジェクションを引き起こします。変数がユーザー制御可能でないこと、または十分にサニタイズされていることを確認してください。",
+  "java.command-injection-process-builder": "フォーマット済みまたは連結された文字列が ProcessBuilder 呼び出しに渡されているのが検出されました。変数がユーザー制御可能な場合、コマンドインジェクションを引き起こします。変数がユーザー制御可能でないこと、または十分にサニタイズされていることを確認してください。",
+  "java.cookie-issecure-false": "デフォルトのセッションミドルウェア設定：`setSecure` が true に設定されていません。true に設定すると、cookie が HTTPS 経由でのみ送信されるようになり、クロスサイトスクリプティング攻撃を防げます。",
+  "java.cookie-missing-httponly": "cookie に 'HttpOnly' フラグが設定されていないのが検出されました。このフラグは、クライアントサイドスクリプトが cookie を読み取れないようブラウザーに指示するものです。'cookie.setHttpOnly(true);' を呼び出して設定してください。",
+  "java.cookie-missing-secure-flag": "cookie に 'secure' フラグが設定されていないのが検出されました。このフラグは、クライアントが HTTP などの安全でないチャネル経由で cookie を送信するのを防ぐものです。'$COOKIE.setSecure(true);' を呼び出して設定してください。",
+  "java.cookie-setSecure": "デフォルトのセッションミドルウェア設定：`setSecure` が true に設定されていません。true に設定すると、cookie が HTTPS 経由でのみ送信されるようになり、クロスサイトスクリプティング攻撃を防げます。",
+  "java.crlf-injection-logs": "信頼できないソースからのデータがログに入り込み、正しく無害化されていない場合、攻撃者はログエントリを偽造したり、悪意のあるコンテンツを注入したりできます。"
 }
