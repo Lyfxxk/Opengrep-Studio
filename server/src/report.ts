@@ -89,7 +89,7 @@ const REVIEW_LABEL: Record<ReviewStatus, string> = {
   accepted: '已接受',
 };
 
-export type ReportLang = 'zh' | 'zh-Hant' | 'en';
+export type ReportLang = 'zh' | 'zh-Hant' | 'en' | 'ja';
 
 const HANT_SEVERITY: Record<Severity, string> = {
   critical: '嚴重',
@@ -396,12 +396,122 @@ const REPORT_TEXT_EN: typeof REPORT_TEXT_ZH = {
     ` Manual review: ${s.reviewed} reviewed (${s.confirmed} confirmed, ${s.falsePositives} false positive, ${s.accepted} accepted).`,
 };
 
+const JA_SEVERITY: Record<Severity, string> = {
+  critical: '重大',
+  high: '高',
+  medium: '中',
+  low: '低',
+};
+const JA_COMPARISON: Record<ComparisonStatus, string> = {
+  new: '新規',
+  fixed: '修正済み',
+  remaining: '残存',
+};
+const JA_REVIEW: Record<ReviewStatus, string> = {
+  pending: 'レビュー待ち',
+  confirmed: '確認済み',
+  false_positive: '誤検知',
+  accepted: '受諾済み',
+};
+
+const REPORT_TEXT_JA: typeof REPORT_TEXT_ZH = {
+  htmlLang: 'ja',
+  brand: 'Opengrep Studio · コード監査ワークベンチ',
+  docTitle: 'コード監査テストレポート',
+  severity: JA_SEVERITY,
+  comparison: JA_COMPARISON,
+  review: JA_REVIEW,
+  sections: {
+    actions: 'アクションリスト · ファイル別',
+    details: '問題の詳細',
+    method: '方法とエビデンス',
+    rulesAppendix: '付録 · ルール説明',
+  },
+  meta: {
+    engine: 'スキャンエンジン',
+    sourceHash: 'ソースコードハッシュ',
+    commandLine: 'エンジンコマンドライン',
+    generatedAt: 'レポート生成日時',
+    finishedAt: '完了日時',
+    rulesLabel: 'ルール',
+  },
+  metrics: { total: 'リスク総数', critical: '重大', high: '高', files: '関連ファイル' },
+  distTitle: 'リスク分布',
+  top5Title: '問題数の多い上位 5 件のファイル',
+  top5Hint: '件数順に並んでいます。リスクの優先度を表すものではありません。リスクの優先度は「アクションリスト」を参照してください。',
+  thFile: 'ファイル',
+  thCount: '合計',
+  thMaxSeverity: '最大深刻度',
+  scopeLabel: '検査範囲',
+  baselineLabel: 'ベースライン比較',
+  distLabel: '問題分布',
+  distSentence: (total: number, files: number, rules: number) =>
+    `${total} 件の問題が ${files} 件のファイル、${rules} 件のルールにわたっています`,
+  firstScanNoBaseline: '最初のスキャンのため、比較できるベースラインはありません',
+  baselineSentence: (id: string, added: number, remaining: number, fixed: number) =>
+    `ベースライン ${id} との比較：新規 ${added} · 残存 ${remaining} · 修正済み ${fixed}`,
+  actionsHint: (files: number) =>
+    `合計 ${files} 件のファイルです。並び順は「最大深刻度を優先し、同一レベルは問題数の降順」です。上から順に修正を進めることをお勧めします。`,
+  thFileMainIssue: 'ファイル / 主な問題',
+  groupCount: (count: number, files: number) => `${count} 件 · ${files} 件のファイル`,
+  groupHint: {
+    critical: 'リモートコード実行や認証情報の漏えいに直結する可能性があります。直ちに修正し、別途で説明を作成することをお勧めします。',
+    high: '一般的な攻撃パス上に位置します。今回のイテレーション内での修正をお勧めします。',
+    medium: '特定の前提条件が必要か、影響が限定的です。次のイテレーションの技術的負債リストに追加することをお勧めします。',
+    low: 'コーディング規約や保守性に関する問題です。日常の変更の際に随時修正すれば十分です。',
+  },
+  fixedHeading: (count: number) => `修正済み（ベースライン比較、${count} 件）`,
+  appendixHint: (rules: number) =>
+    `${rules} 件のルールをヒット回数順に並べています。同一ルールの完全な説明（修正提案を含む）は、ここに一度だけ表示されます。`,
+  ruleStat: (count: number, files: number) => `ヒット ${count}回 · ${files} 件のファイル`,
+  noMessage: '（説明はまだありません）',
+  noDescription: '（結果に説明がありません）',
+  unknownPath: '（不明なパス）',
+  methodSub: { packs: 'ルールセット', repro: 'エンジンと再現性', review: 'レビューとカバレッジ', exclusions: '除外項目', boundaries: 'カバレッジの境界' },
+  packThName: 'ルールパック',
+  packThId: 'ID',
+  noPacks: '記録されたルールパックはありません',
+  sarifImport: (tool?: string) => (tool ? `SARIF インポート（${tool}）` : 'SARIF インポート'),
+  filesChecked: 'スキャンしたファイル',
+  filesUnit: (n: number) => `${n} 件`,
+  issuesUnit: (n: number) => `${n} 件`,
+  durationSeconds: (s: number) => `${s} 秒`,
+  durationMinutes: (m: number, s: number) => `${m} 分 ${s} 秒`,
+  exclusions: 'プロジェクトの .gitignore に従い、node_modules と .git をスキップします',
+  notCovered: '本レポートは読み込み済みのルールのヒット結果のみを反映したものであり、他の欠陥が存在しないことを意味するものではありません',
+  reviewLabel: '手動レビュー',
+  reviewLine: (s: ReportReviewSummary) =>
+    `${s.reviewed} 件をレビュー済み：確認済み ${s.confirmed} · 誤検知 ${s.falsePositives} · 受諾済み ${s.accepted}。`,
+  reviewNone: '今回のスキャンでは手動レビューは行われておらず、すべての問題はエンジンの元の判定結果です。',
+  noIssues: '今回のスキャンではリスクとなる問題は検出されませんでした。',
+  snippetOverflow: (limit: number) =>
+    `コードスニペットが上限を超えたため、先頭の ${limit} 件のみ表示しています。残りはスキャン結果ページでご確認ください。`,
+  footer: (time: string) =>
+    `本レポートは Opengrep Studio コード監査ワークベンチにより自動生成されました · 生成日時 ${time} · ルールのヒット結果と深刻度は opengrep エンジンが自動的に算出します。ビジネスの文脈を踏まえて手動レビューを行ってください。`,
+  listSeparator: '、',
+  sentenceSeparator: '',
+  severityPhrase: (label: string, count: number) => `${label} ${count} 件`,
+  conclusionNoIssues: (files: string) =>
+    `今回のスキャンでは合計 ${files} 件のソースファイルを検査しましたが、有効なルールには一切ヒットせず、リスクとなる問題は検出されませんでした。`,
+  conclusionSummary: (files: string, total: number, sevText: string) =>
+    `今回のスキャンでは合計 ${files} 件のソースファイルを検査し、リスクとなる問題を ${total} 件検出しました（${sevText}）。`,
+  comparisonSentence: (baseline: string, added: number, remaining: number, fixed: number) =>
+    `ベースラインスキャン ${baseline} との比較では、新規 ${added} 件、残存 ${remaining} 件、修正済み ${fixed} 件です。`,
+  urgentHint: (urgent: number) =>
+    `重大・高の問題（合計 ${urgent} 件）を優先的に修正し、修正後は再スキャンで回帰確認を行ってください。`,
+  nonUrgentHint: () =>
+    '現在、重大/高の問題はないため、ビジネスの優先度に応じて中・低の問題の修正を進めてください。',
+  summaryReview: (s: ReportReviewSummary) =>
+    ` 手動レビューは ${s.reviewed} 件完了（確認済み ${s.confirmed}、誤検知 ${s.falsePositives}、条件付き受諾 ${s.accepted}）。`,
+};
+
 type ReportText = typeof REPORT_TEXT_ZH;
 
 const REPORT_TEXT: Record<ReportLang, ReportText> = {
   zh: REPORT_TEXT_ZH,
   'zh-Hant': REPORT_TEXT_HANT,
   en: REPORT_TEXT_EN,
+  ja: REPORT_TEXT_JA,
 };
 
 interface ConclusionInput {
@@ -736,6 +846,10 @@ const REPORT_CSS = `
   html:lang(zh-Hant) body {
     font-family: -apple-system, 'BlinkMacSystemFont', 'Helvetica Neue', Tahoma,
       'PingFang TC', 'PingFang SC', 'Microsoft JhengHei', 'Microsoft Yahei', 'Hiragino Sans GB', sans-serif;
+  }
+  html:lang(ja) body {
+    font-family: -apple-system, 'BlinkMacSystemFont', 'Helvetica Neue', Tahoma,
+      'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Yu Gothic', 'Meiryo', sans-serif;
   }
   .doc { max-width: 760px; margin: 0 auto; padding: 28px 32px 48px; }
   h1, h2, h3 { margin: 0; font-weight: 600; }
