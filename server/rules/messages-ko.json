@@ -510,5 +510,21 @@
   "python.avoid-sqlalchemy-text": "sqlalchemy.text는 연결된 SQL 문을 거의 그대로 데이터베이스에 전달하므로 일반적인 SQL 삽입 방지 기능이 여기서는 적용되지 않습니다. 사용자 입력이 여기에 도달할 수 있다면 SQL 삽입 위험이 있습니다. SQL을 구성할 때는 SQLAlchemy의 일반 연산자(`or_`, `and_` 등)를 사용하십시오.",
   "python.avoid-unsafe-ruamel": "안전하지 않은 `ruamel.yaml.YAML()`의 사용을 피하십시오. 이는 임의의 Python 객체를 생성할 수 있고, 공격자가 이를 악용해 임의의 코드를 실행할 수 있습니다. 대신 `YAML(typ='rt')` 또는 `YAML(typ='safe')`를 사용하십시오.",
   "python.avoid_app_run_with_bad_host": "host 0.0.0.0으로 Flask 애플리케이션을 실행하면 서비스가 공용 네트워크에 노출될 수 있습니다.",
-  "python.avoid_hardcoded_config_DEBUG": "하드코딩된 변수 `DEBUG`가 감지되었습니다. 대신 환경 변수 FLASK_DEBUG로 설정하십시오."
+  "python.avoid_hardcoded_config_DEBUG": "하드코딩된 변수 `DEBUG`가 감지되었습니다. 대신 환경 변수 FLASK_DEBUG로 설정하십시오.",
+  "python.avoid_hardcoded_config_ENV": "하드코딩된 변수 `ENV`가 감지되었습니다. 대신 환경 변수 FLASK_ENV로 설정하십시오.",
+  "python.avoid_hardcoded_config_SECRET_KEY": "하드코딩된 `SECRET_KEY` 변수가 감지되었습니다. 대신 환경 변수나 설정 파일을 사용하십시오.",
+  "python.avoid_hardcoded_config_TESTING": "하드코딩된 변수 `TESTING`이 감지되었습니다. 대신 환경 변수나 설정 파일을 사용하십시오.",
+  "python.avoid_send_file_without_path_sanitization": "사용자가 제어할 수 있는 `filename`이 `flask.send_file()`로 유입될 수 있는 것이 감지되었습니다. 공격자는 이를 악용해 시스템의 임의 파일을 읽거나 개인 정보를 유출할 수 있습니다. filename을 적절히 정제하거나 `flask.send_from_directory`를 사용하십시오.",
+  "python.avoid_using_app_run_directly": "최상위의 app.run(...)은 Flask에서 무시됩니다. app.run(...)을 가드 뒤에 배치하는 것이 좋습니다. 예를 들어 함수 안에 넣으십시오.",
+  "python.batch-import": "요소를 하나씩 추가하는 대신 일괄로 로드하여 성능을 향상시키십시오.",
+  "python.bokeh-deprecated-apis": "이러한 API는 Bokeh에서 더 이상 사용되지 않습니다. 자세한 내용은 https://docs.bokeh.org/en/latest/docs/releases.html#api-deprecations 에서 확인하십시오.",
+  "python.class-extends-safestring": "'SafeString', 'SafeText' 또는 'SafeData'를 상속하는 클래스가 발견되었습니다. 이 클래스들은 Django의 내장 이스케이프 엔진을 우회하기 위한 것으로 직접 사용해서는 안 됩니다. 잘못 사용하면 애플리케이션이 크로스 사이트 스크립팅(XSS) 취약점에 노출될 수 있습니다. 이 기능이 꼭 필요하다면 'mark_safe'를 대신 사용하고 사용자 데이터가 이에 도달할 수 없음을 확인하십시오.",
+  "python.code-after-unconditional-return": "return 이후의 코드는 실행되지 않습니다.",
+  "python.command-injection-os-system": "os.system에서 요청 데이터가 사용되는 것이 감지되었습니다. 명령 삽입 위험이 있을 수 있으므로 피해야 합니다. 부득이 실행해야 하는 경우 'subprocess' 모듈을 대신 사용하고 인수를 목록 형태로 전달하십시오. 자세한 내용은 https://owasp.org/www-community/attacks/Command_Injection 에서 확인하십시오.",
+  "python.conflicting-path-assignment": "`$URL`의 path가 한 번은 뷰 `$VIEW`를, 한 번은 `$DIFFERENT_VIEW`를 가리키므로 예기치 않은 동작이 발생합니다. 의도한 대상 뷰를 확인한 후 다른 라우트를 삭제하십시오.",
+  "python.context-autoescape-off": "autoescape가 비활성화된 Context가 감지되었습니다. 웹 페이지를 렌더링하는 데 사용하면 애플리케이션이 크로스 사이트 스크립팅(XSS) 취약점에 노출될 수 있습니다. 'autoescape: False'를 제거하거나 'True'로 설정하십시오.",
+  "python.crypto-mode-without-authentication": "암호화 모드가 메시지 인증 없이 사용되면 공격자가 이를 통해 암호문 내용을 복호화할 수 있습니다. GCM 등 AEAD 인증 암호화 모드로 전환하는 것이 좋습니다.",
+  "python.csv-writer-injection": "사용자 입력이 내장 `csv` 모듈을 통해 CSV 파일에 기록되는 것이 감지되었습니다. 공격자는 수식을 삽입할 수 있으며, CSV를 스프레드시트 소프트웨어로 가져올 때 공격 스크립트가 실행되어 데이터를 탈취하거나 심하면 악성 코드를 설치할 수 있습니다. `defusedcsv`는 API와 호환되는 대안으로 수식 삽입을 방어할 수 있으므로, 이를 대신 사용해 안전하게 CSV를 생성하십시오.",
+  "python.custom-expression-as-sql": "사용자 지정 표현식 '$EXPRESSION'이 'as_sql(...)'을 호출하는 것이 감지되었습니다. SQL 인젝션으로 공격자가 민감한 데이터를 탈취할 수 있습니다. 사용자 입력이 해당 함수로 들어가지 않도록 보장하거나 사용자 입력을 적절히 정제하십시오.",
+  "python.dangerous-annotations-usage": "`typing.get_type_hints`에 전달되는 어노테이션은 `globals`와 `locals` 네임스페이스에서 평가됩니다. 임의의 값이 어노테이션으로 작성되어 `typing.get_type_hints`에 전달되지 않도록 보장하십시오."
 }
