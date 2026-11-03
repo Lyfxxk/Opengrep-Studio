@@ -542,5 +542,21 @@
   "python.dangerous-interactive-code-run-tainted-env-args": "InteractiveConsole/InteractiveInterpreter 메서드 내에서 사용자가 제어할 수 있는 데이터가 발견되었습니다. 외부 데이터가 이 호출에 도달할 수 있다면 공격자가 이를 악용해 임의의 Python 코드를 실행할 수 있으므로 매우 위험합니다.",
   "python.dangerous-os-exec": "프로세스 생성 시 사용자가 제어할 수 있는 콘텐츠가 발견되었습니다. 공격자가 이를 악용해 임의의 명령을 실행할 수 있으므로 매우 위험합니다.",
   "python.dangerous-os-exec-audit": "프로세스 생성 시 동적 콘텐츠가 발견되었습니다. 외부 데이터가 이 호출에 도달할 수 있다면 공격자가 임의의 명령을 실행할 수 있습니다. 외부 데이터가 여기에 도달하지 않도록 보장하십시오.",
-  "python.dangerous-os-exec-tainted-env-args": "프로세스 생성 시 사용자가 제어할 수 있는 콘텐츠가 발견되었습니다. 공격자가 이를 악용해 임의의 명령을 실행할 수 있으므로 매우 위험합니다."
+  "python.dangerous-os-exec-tainted-env-args": "프로세스 생성 시 사용자가 제어할 수 있는 콘텐츠가 발견되었습니다. 공격자가 이를 악용해 임의의 명령을 실행할 수 있으므로 매우 위험합니다.",
+  "python.dangerous-spawn-process": "`os` 계열 함수의 매개변수가 `event` 객체로 오염된 것이 감지되었습니다. 외부 데이터가 이 호출에 도달할 수 있다면 공격자가 임의의 명령을 실행할 수 있습니다. 외부 데이터가 여기에 도달하지 않도록 보장하십시오.",
+  "python.dangerous-spawn-process-audit": "프로세스 생성 시 동적 콘텐츠가 발견되었습니다. 외부 데이터가 이 호출에 도달할 수 있다면 공격자가 임의의 명령을 실행할 수 있습니다. 외부 데이터가 여기에 도달하지 않도록 보장하십시오.",
+  "python.dangerous-spawn-process-tainted-env-args": "프로세스 생성 시 사용자가 제어할 수 있는 콘텐츠가 발견되었습니다. 공격자가 이를 악용해 임의의 명령을 실행할 수 있으므로 매우 위험합니다.",
+  "python.dangerous-subinterpreters-run-string": "`run_string`에서 사용자가 제어할 수 있는 콘텐츠가 발견되었습니다. 공격자가 이를 악용해 임의의 Python 코드를 실행할 수 있으므로 매우 위험합니다.",
+  "python.dangerous-subinterpreters-run-string-audit": "`run_string`에서 동적 콘텐츠가 발견되었습니다. 외부 데이터가 이 호출에 도달할 수 있다면 공격자가 이를 악용해 임의의 Python 코드를 실행할 수 있습니다. 외부 데이터가 여기에 도달하지 않도록 보장하십시오.",
+  "python.dangerous-subinterpreters-run-string-tainted-env-args": "`run_string`에서 사용자가 제어할 수 있는 콘텐츠가 발견되었습니다. 공격자가 이를 악용해 임의의 Python 코드를 실행할 수 있으므로 매우 위험합니다.",
+  "python.dangerous-subprocess-use": "하위 프로세스 함수의 매개변수가 `event` 객체로 오염된 것이 감지되었습니다. 해당 데이터를 공격자가 제어할 수 있다면 명령 주입에 해당합니다. `shell` 매개변수는 기본값이 False이며 기본적으로 안전합니다. `shell=True`를 제거하거나 명시적으로 False로 설정하고, 명령과 인수를 문자열 배열로 분할하는 것이 좋습니다('shlex.split()' 사용 가능).",
+  "python.dangerous-subprocess-use-audit": "하위 프로세스 함수 '$FUNC'에 비정적 문자열이 사용되는 것이 감지되었습니다. 해당 데이터를 공격자가 제어할 수 있다면 명령 주입에 해당합니다. 이 호출을 감사하여 외부 리소스에 의해 제어되지 않는지 확인하십시오. 'shlex.escape()' 사용을 고려하십시오.",
+  "python.dangerous-subprocess-use-tainted-env-args": "하위 프로세스 함수 '$FUNC'에 사용자가 제어할 수 있는 데이터가 사용되는 것이 감지되었습니다. 공격자가 이를 악용해 명령 주입을 수행할 수 있습니다. 'shlex.quote()' 사용을 고려하십시오.",
+  "python.dangerous-system-call": "`os` 계열 함수의 매개변수가 `event` 객체로 오염된 것이 감지되었습니다. 외부 데이터가 이 호출에 도달할 수 있다면 공격자가 임의의 명령을 실행할 수 있습니다. 명령 주입 위험이 더 낮은 'subprocess' 모듈을 대신 사용하십시오.",
+  "python.dangerous-system-call-audit": "시스템 호출에 동적 콘텐츠가 사용되고 있습니다. 외부 데이터가 이 호출에 도달할 수 있다면 공격자가 임의의 명령을 실행할 수 있습니다. 명령 주입 위험이 더 낮은 'subprocess' 모듈을 대신 사용하십시오.",
+  "python.dangerous-system-call-tainted-env-args": "시스템 호출에 사용자가 제어할 수 있는 데이터가 사용되고 있습니다. 공격자가 이를 악용해 임의의 명령을 실행할 수 있습니다. 명령 주입 위험이 더 낮은 'subprocess' 모듈을 대신 사용하십시오.",
+  "python.dangerous-template-string": "문자열 포매팅으로 생성된 템플릿이 발견되었습니다. 서버 측 템플릿 삽입(SSTI)과 크로스 사이트 스크립팅 공격에 취약합니다.",
+  "python.dangerous-testcapi-run-in-subinterp": "`run_in_subinterp`에서 사용자가 제어할 수 있는 콘텐츠가 발견되었습니다. 공격자가 이를 악용해 임의의 Python 코드를 실행할 수 있으므로 매우 위험합니다.",
+  "python.dangerous-testcapi-run-in-subinterp-audit": "`run_in_subinterp`에서 동적 콘텐츠가 발견되었습니다. 외부 데이터가 이 호출에 도달할 수 있다면 공격자가 이를 악용해 임의의 Python 코드를 실행할 수 있습니다. 외부 데이터가 여기에 도달하지 않도록 보장하십시오.",
+  "python.dangerous-testcapi-run-in-subinterp-tainted-env-args": "`run_in_subinterp`에서 사용자가 제어할 수 있는 콘텐츠가 발견되었습니다. 공격자가 이를 악용해 임의의 Python 코드를 실행할 수 있으므로 매우 위험합니다."
 }
