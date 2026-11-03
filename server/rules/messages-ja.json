@@ -222,5 +222,21 @@
   "java.tainted-sql-from-http-request": "HTTPServletRequest の入力が SQL の実行箇所またはステートメントに入り込んでいることが検出されました。SQL ステートメント内の変数が適切にサニタイズされていない場合、SQL インジェクションを引き起こします。パラメーター化クエリを使用するか、ユーザー入力を適切にサニタイズしてください。",
   "java.tainted-sql-string": "ユーザー入力が SQL 文字列の手動連結に使用されていることが検出されました。手動連結は意図せず SQL インジェクションを引き起こしやすく、攻撃者はこれを利用してデータベースの内容を窃取したり改ざんしたりできます。多くのデータベースエンジンがデフォルトでサポートしているパラメーター化クエリに切り替えるか、ORM フレームワークでクエリを保護してください。",
   "java.tainted-sqli": "`$EVENT` オブジェクトによって汚染された SQL ステートメントが検出されました。ステートメント内の変数が適切にサニタイズされていない場合、SQL インジェクションを引き起こします。パラメーター化クエリを使用するか、ユーザー入力を適切にサニタイズしてください。",
-  "java.tainted-system-command": "ユーザー入力がシステムコマンドを実行するメソッドに入り込んでいることが検出されました。これによりコマンドインジェクションの脆弱性が生じ、攻撃者はサーバー上で任意のコマンドを注入したり、マルウェアをダウンロードしたり、データを窃取したりする恐れがあります。ProcessBuilder に切り替え、コマンドを個別の引数に分割してください（例：`new ProcessBuilder(\"ls\", \"-al\", targetDirectory)`）。また、実際のコマンドはハードコードするかホワイトリストに登録し、攻撃者が任意のコマンドを実行できないようにしてください。"
+  "java.tainted-system-command": "ユーザー入力がシステムコマンドを実行するメソッドに入り込んでいることが検出されました。これによりコマンドインジェクションの脆弱性が生じ、攻撃者はサーバー上で任意のコマンドを注入したり、マルウェアをダウンロードしたり、データを窃取したりする恐れがあります。ProcessBuilder に切り替え、コマンドを個別の引数に分割してください（例：`new ProcessBuilder(\"ls\", \"-al\", targetDirectory)`）。また、実際のコマンドはハードコードするかホワイトリストに登録し、攻撃者が任意のコマンドを実行できないようにしてください。",
+  "java.tainted-url-host": "ユーザーデータが手動で組み立てた URL のホスト部分に流れ込んでいます。攻撃者はこれを利用してデータを自分のサーバーへ送信でき、リクエストと共に送られる cookie や認可情報などの機密データが漏えいするほか、このコードが存在するサーバーからアクセスできる内部リソースを探索されるおそれもあります（サーバーサイドリクエストフォージェリ：SSRF）。任意のホストを許可しないでください。承認済みホストのホワイトリストを作成する、正しいホストをハードコードする、またはユーザーデータがパスやパラメータ部分にしか影響しないようにしてください。",
+  "java.tainted-xpath-from-http-request": "HTTPServletRequest の入力が XPath の evaluate/compile コマンドに入り込んでいることが検出されました。渡された変数が適切にサニタイズされていないと XPath インジェクションにつながり、XML ドキュメント内の機密情報へ不正にアクセスされるおそれがあります。ユーザー入力を徹底的にサニタイズするか、可能な限りパラメータ化された XPath クエリを使用してください。",
+  "java.transformerfactory-dtds-not-disabled": "この TransformerFactory では DOCTYPE 宣言が有効になっており、XML 外部エンティティ（XXE）攻撃を受けやすい状態です。属性 \"accessExternalDTD\" と \"accessExternalStylesheet\" を \"\" に設定して無効化してください。",
+  "java.turbine-sqli": "SQL ステートメントにフォーマット文字列が含まれていることが検出されました。ステートメント内の変数が適切にサニタイズされていないと SQL インジェクションにつながります。プリペアドステートメント（java.sql.PreparedStatement）に切り替えてください。'connection.prepareStatement' から取得できます。",
+  "java.unencrypted-socket": "暗号化されていない Java socket が検出されました。トラフィックはネットワーク上の盗聴者に読み取られるおそれがあります。'SSLSocketFactory' または 'SSLServerSocketFactory' で作成した SSLSocket に置き換えてください。",
+  "java.unrestricted-request-mapping": "'RequestMapping' が付与されているものの HTTP メソッドを指定していないメソッドが検出されました。GET/HEAD/TRACE/OPTIONS は CSRF 保護の対象外であり、メソッドを明示的に指定しない場合は既定ですべての HTTP メソッドが許可されます。そのため、状態を変更するメソッドが CSRF 攻撃にさらされるおそれがあります。'method' フィールドを追加して HTTP メソッド（例：'RequestMethod.POST'）を指定してください。",
+  "java.unsafe-reflection": "攻撃者が、どのクラスをインスタンス化し、どのメソッドを呼び出すかを決める値を提供できる場合、開発者の想定していない制御フローの経路が構築され、認証やアクセス制御のチェックを回避されたり、アプリケーションが異常な動作を示したりするおそれがあります。",
+  "java.unvalidated-redirect": "アプリケーションが、ユーザーから提供された検証されていない URL パラメータへリダイレクトするため、ユーザーを悪意のある場所へ誘導するおそれがあります。ホワイトリストでリダイレクト先を検証してください。",
+  "java.url-rewriting": "URL リライトには明確なセキュリティリスクがあります。セッション ID が URL にそのまま現れるため、第三者に見られやすくなります。",
+  "java.use-of-aes-ecb": "ECB モードの AES が検出されました。ECB はメッセージの機密性を提供せず、意味論的に安全ではないため、使用すべきではありません。`Cipher.getInstance(\"AES/CBC/PKCS7PADDING\")` などの強力な暗号アルゴリズムに変更してください。詳しくは https://owasp.org/www-community/Using_the_Java_Cryptographic_Extensions を参照してください。",
+  "java.use-of-blowfish": "Blowfish が検出されました。64 ビットのブロック長により誕生日攻撃を受けやすく、非準拠と見なされています。`Cipher.getInstance(\"AES/CBC/PKCS7PADDING\")` などの強力な暗号アルゴリズムに変更してください。詳しくは https://owasp.org/www-community/Using_the_Java_Cryptographic_Extensions を参照してください。",
+  "java.use-of-default-aes": "何も設定されていない AES が検出されました。java.crypto.Cipher は既定で ECB モードを使用しますが、ECB はメッセージの機密性を提供せず、意味論的に安全ではないため、使用すべきではありません。java.crypto.Cipher.getInstance(\"AES/CBC/PKCS7PADDING\") などの強力な暗号アルゴリズムに変更してください。詳しくは https://owasp.org/www-community/Using_the_Java_Cryptographic_Extensions を参照してください。",
+  "java.use-of-md5": "安全でないと見なされている MD5 ハッシュアルゴリズムが検出されました。MD5 には衝突耐性がなく、暗号学的署名として適していません。HMAC に変更してください。",
+  "java.use-of-md5-digest-utils": "安全でないと見なされている MD5 ハッシュアルゴリズムが検出されました。MD5 には衝突耐性がなく、暗号学的署名として適していません。HMAC に変更してください。",
+  "java.use-of-rc2": "RC2 が検出されました。RC2 は関連鍵攻撃を受けやすく、非準拠と見なされています。`Cipher.getInstance(\"AES/CBC/PKCS7PADDING\")` などの強力な暗号アルゴリズムに変更してください。詳しくは https://owasp.org/www-community/Using_the_Java_Cryptographic_Extensions を参照してください。",
+  "java.use-of-rc4": "RC4 が検出されました。RC4 はストリーム暗号攻撃やビットフリッピング攻撃など、さまざまな攻撃を受けやすいため、`Cipher.getInstance(\"AES/CBC/PKCS7PADDING\")` などの強力な暗号アルゴリズムに変更してください。詳しくは https://owasp.org/www-community/Using_the_Java_Cryptographic_Extensions を参照してください。"
 }
