@@ -110,5 +110,21 @@
   "go.no-direct-write-to-responsewriter": "'http.ResponseWriter.write()' 内での直接書き込みが検出されました。これにより、XSS を防ぐ HTML エスケープがバイパスされます。代わりに 'html/template' パッケージを使用し、'template.Execute()' でデータをレンダリングしてください。",
   "go.no-fprintf-to-responsewriter": "'Fprintf' などが 'http.ResponseWriter' に直接書き込んでいることが検出されました。これにより、XSS を防ぐ HTML エスケープがバイパスされます。代わりに 'html/template' パッケージを使用してユーザーにデータをレンダリングしてください。",
   "go.no-io-writestring-to-responsewriter": "'io.WriteString()' が 'http.ResponseWriter' に直接書き込んでいることが検出されました。これにより、XSS を防ぐ HTML エスケープがバイパスされます。代わりに 'html/template' パッケージを使用してユーザーにデータをレンダリングしてください。",
-  "go.no-printf-in-responsewriter": "'printf' などが 'http.ResponseWriter.write()' に使用されていることが検出されました。これにより、XSS を防ぐ HTML エスケープがバイパスされます。代わりに 'html/template' パッケージを使用してユーザーにデータをレンダリングしてください。"
+  "go.no-printf-in-responsewriter": "'printf' などが 'http.ResponseWriter.write()' に使用されていることが検出されました。これにより、XSS を防ぐ HTML エスケープがバイパスされます。代わりに 'html/template' パッケージを使用してユーザーにデータをレンダリングしてください。",
+  "go.open-redirect": "HTTP リダイレクトのターゲットがユーザー入力 `$REQUEST` から構築されていることが検出されました。これによりオープンリダイレクトの脆弱性が生じ、攻撃者がこれを悪用してユーザーを悪意のあるサイトへリダイレクトできてしまいます。ユーザー入力からリダイレクト URL を構築することは、できる限り許可しないことを推奨します。どうしても必要な場合は、OWASP のベストプラクティスに従い、URL をホワイトリスト内のドメインに制限してください。",
+  "go.parsing-external-entities-enabled": "\"XMLParseNoEnt\" の有効化が検出されました：外部エンティティの解析が許可されており、ライブラリーがユーザー制御可能なデータを解析すると、XXE につながります。\"XMLParseNoEnt\" を有効にしないか、解析時にユーザー制御可能なデータが十分にサニタイズされていることを確認してください。",
+  "go.path-traversal-inside-zip-extraction": "zip アーカイブの展開時にパストラバーサルが発生します。",
+  "go.pg-orm-sqli": "go-pg ORM SQL ステートメント内に、非リテラルの変数との文字列連結が検出されました。変数がユーザー制御可能で適切にサニタイズされていない場合、SQL インジェクションを引き起こします。ユーザー制御可能な入力と連結された文字列は使用せず、代わりにパラメーター化ステートメントを使用して対策してください。",
+  "go.pg-sqli": "go-pg SQL ステートメント内に、非リテラルの変数との文字列連結が検出されました。変数がユーザー制御可能で適切にサニタイズされていない場合、SQL インジェクションを引き起こします。文字列連結の代わりにパラメーター化クエリを使用してください。例：'(SELECT ? FROM table, data1)'。",
+  "go.pgx-sqli": "pgx SQL ステートメント内に、非リテラルの変数との文字列連結が検出されました。変数がユーザー制御可能で適切にサニタイズされていない場合、SQL インジェクションを引き起こします。代わりにパラメーター化クエリを使用してください。例：(`SELECT $1 FROM table`, `data1)`。",
+  "go.potential-dos-via-decompression-bomb": "zip 爆弾によるサービス拒否の可能性が検出されました。最大読み取りバイト数を制限することでこの攻撃を緩和できます。サイズの指定には `io.CopyN()` を使用できます。",
+  "go.pprof-debug-exposure": "プロファイリング用の 'pprof' エンドポイントは /debug/pprof に自動的に公開され、サーバー情報が漏洩する恐れがあります。`import \"net/http/pprof\"` は慎重に使用してください。詳細と緩和策については https://www.farsightsecurity.com/blog/txt-record/go-remote-profiling-20161028/ を参照してください。",
+  "go.raw-html-format": "ユーザー入力が手動で構築された HTML 文字列に流れ込んでいることが検出されました。HTML を手動で組み立てると、安全なレンダリング方法がバイパスされ、クロスサイトスクリプティング（XSS）の脆弱性が生じ、攻撃者がユーザーの機密データを窃取できてしまいます。HTML を安全にレンダリングする `html/template` パッケージに置き換えるか、HTML のレンダリングが安全であることを確認してください。",
+  "go.reflect-makefunc": "'reflect.MakeFunc' が検出されました。これは Go の型システムが通常提供する保護をバイパスします。この呼び出しを監査し、ユーザー入力が MakeFunc によって生成されるコードに影響を与えないことを確認してください。そうでない場合、深刻なセキュリティ脆弱性につながります。",
+  "go.reverseproxy-director": "ReverseProxy は Director が追加したヘッダーを削除する恐れがあります。ReverseProxy.Director の代わりに ReverseProxy.Rewrite を使用することを検討してください。",
+  "go.session-cookie-missing-httponly": "セッション cookie に 'HttpOnly' フラグが設定されていないのが検出されました。このフラグは、クライアントサイドスクリプトが cookie を読み取れないようブラウザーに指示するものであり、XSS 攻撃を緩和できます。Options 構造体で 'HttpOnly' を 'true' に設定してください。",
+  "go.session-cookie-missing-secure": "セッション cookie に 'Secure' フラグが設定されていないのが検出されました。このフラグは、クライアントが HTTP などの安全でないチャネルを経由して cookie を送信することを防ぎます。Options 構造体で 'Secure' を 'true' に設定してください。",
+  "go.session-cookie-samesitenone": "Gorilla のセッションオプションに SameSiteNoneMode が設定されていることが検出されました。セキュリティを強化するため、SameSite を Lax、Strict、Default のいずれかに設定することを検討してください。",
+  "go.shared-url-struct-mutation": "共有された URL 構造体が意図せず変更される恐れがあります。これが意図したものであることを確認してください。",
+  "go.ssl-v3-is-insecure": "SSLv3 には既知の脆弱性があり、安全ではありません。SSLv3 のサポートは go1.14 で削除されました。代わりに 'tls.VersionTLS13' を使用してください。"
 }
