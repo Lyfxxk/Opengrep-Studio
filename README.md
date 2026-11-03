@@ -47,7 +47,7 @@ Opengrep Studio completes this pipeline: **drop in code → click scan → triag
 
 - **Security consultants / appsec engineers doing code audits** — client code can't go to third-party clouds (and shouldn't be pasted into online AI chat either); delivery means a reproducible audit report;
 - **Small teams without a commercial SAST budget** — commercial audit platforms cost a small fortune per year; this is free, open source (MIT), and runs entirely locally;
-- **Anyone learning application security** — 812 rules with fully Chinese messages + a Chinese CWE knowledge base with fix advice + taint-flow visualization, and a rule lab that validates rules on the spot;
+- **Anyone learning application security** — 812 rules with messages in five languages + a CWE knowledge base with fix advice + taint-flow visualization, and a rule lab that validates rules on the spot;
 - **Open-source authors** — scan for hardcoded secrets and dangerous calls before publishing; it takes minutes.
 
 ## Highlights
@@ -58,9 +58,9 @@ Drag in a whole folder, upload ZIP / 7Z / RAR / TAR.GZ archives, or paste a Git 
 
 <img src="docs/images/project.png" alt="Project detail: import area and scan history" width="880"/>
 
-### 📚 812 built-in rules, 12 languages, fully Chinese messages
+### 📚 812 built-in rules, 12 languages, fully translated messages
 
-Curated from [opengrep-rules](https://github.com/opengrep/opengrep-rules) (rules carrying CWE / OWASP metadata first, upstream provenance links kept on every rule), covering 108 CWEs; **100% of the 812 rule messages are translated into Chinese**, plus 108 CWE knowledge entries in Chinese with weakness notes and fix advice. Custom rule packs support online editing, import/export, and quality checks.
+Curated from [opengrep-rules](https://github.com/opengrep/opengrep-rules) (rules carrying CWE / OWASP metadata first, upstream provenance links kept on every rule), covering 108 CWEs; **all 812 rule messages are available in English, Simplified Chinese, Traditional Chinese, Japanese and Korean**, plus a CWE knowledge base (108 entries with weakness notes and fix advice) in Simplified Chinese, Traditional Chinese, Japanese and Korean. Custom rule packs support online editing, import/export, and quality checks.
 
 <img src="docs/images/rules.png" alt="Rules center: built-in and custom rule packs" width="880"/>
 
@@ -76,7 +76,7 @@ Set a baseline scan and every later scan automatically classifies findings as **
 
 ### 📄 Printable audit report + reproducibility manifest
 
-One click generates a paper-styled "Code Audit Test Report": overall verdict, risk distribution, top-hit rules, hot files, finding details, triage stats — print straight to PDF or download a single-file offline HTML; every report ships with a reproducibility manifest (source SHA-256, full engine command line, rule-file hashes).
+One click generates a paper-styled "Code Audit Test Report": overall verdict, risk distribution, top-hit rules, hot files, finding details, triage stats — print straight to PDF or download a single-file offline HTML; every report ships with a reproducibility manifest (source SHA-256, full engine command line, rule-file hashes). Report and manifest render in your interface language — English, Simplified Chinese, Traditional Chinese, Japanese or Korean.
 
 <img src="docs/images/report.png" alt="Online audit report" width="880"/>
 
@@ -179,7 +179,7 @@ Want to see it before touching your own code? `npm run seed` seeds three demo pr
 | Capability | `opengrep scan` straight | Opengrep Studio |
 | :--- | :--- | :--- |
 | Result form | terminal JSON / text | interactive triage: code highlights, taint chains, filtering & search |
-| Localization | English-only messages | all 812 rule messages in Chinese (simplified + traditional) + Chinese CWE knowledge base |
+| Localization | English-only messages | all 812 rule messages in English / Simplified Chinese / Traditional Chinese / Japanese / Korean + CWE knowledge base (Simplified / Traditional Chinese, Japanese, Korean) |
 | Baseline management | none | auto new / fixed / remaining classification; verdicts persist across scans |
 | Version diffing | none | dual-snapshot compare (issue level + file level, cross-project) |
 | Report delivery | hand-assembled | one-click paper-styled report (print / offline HTML) + reproducibility manifest |
@@ -244,13 +244,13 @@ Honest disclosure — please read:
 
 ## Roadmap
 
-- [x] Chinese localization of all 812 rule messages + CWE knowledge base
+- [x] Localization of all 812 rule messages (English / Simplified Chinese / Traditional Chinese / Japanese / Korean) + CWE knowledge base (Simplified / Traditional Chinese, Japanese, Korean)
 - [x] Baseline & two-snapshot diffing, review evidence chain
 - [x] SARIF 2.1.0 import/export, reproducibility manifest
 - [x] Rule Lab & portable rule packs with sample regression
 - [x] Docker image & one-click launch on 3 platforms
 - [x] Engine check-update & one-click upgrade (multi-channel download fallback)
-- [x] UI i18n (English / Simplified Chinese / Traditional Chinese)
+- [x] UI i18n (English / Simplified Chinese / Traditional Chinese / Japanese / Korean)
 - [x] Scan queue & parallel scheduling
 - [ ] Rule-pack import from URL & community index
 - [ ] GitHub Action workflow template (scan in CI, upload SARIF back)
