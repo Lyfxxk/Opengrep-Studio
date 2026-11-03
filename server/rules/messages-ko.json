@@ -782,5 +782,21 @@
   "python.use-none-for-password-default": "'$VAR'은 빈 문자열을 기본값으로 가지며, '$MODEL'의 비밀번호를 설정하는 데 사용됩니다. 본래 의도가 사용할 수 없는 비밀번호를 설정하는 것이라면 기본값을 'None'으로 변경하거나 'set_unusable_password()'를 호출하십시오.",
   "python.use-onetoonefield": "unique=True인 'ForeignKey' 대신 'django.db.models.OneToOneField'를 사용하십시오. 'OneToOneField'는 일대일 관계를 설정하는 데 사용됩니다.",
   "python.use-raise-for-status": "requests로 HTTP 요청을 보냈지만 raise_for_status() 헬퍼 메서드를 사용하지 않았습니다. 이로 인해 요청 오류가 조용히 무시되어 코드가 예상과 다르게 동작할 수 있습니다——예를 들어 권한 부여 API가 500을 반환했는데 401만 확인하는 경우입니다.",
-  "python.use-timeout": "타임아웃이 설정되지 않은 'requests' 호출이 감지되었습니다. 'requests'는 기본적으로 연결이 닫힐 때까지 계속 대기하며, 타임아웃이 없는 호출은 응답을 받지 못할 때 프로그램 전체를 정지시킵니다. 모든 'requests' 호출에 타임아웃을 설정하십시오."
+  "python.use-timeout": "타임아웃이 설정되지 않은 'requests' 호출이 감지되었습니다. 'requests'는 기본적으로 연결이 닫힐 때까지 계속 대기하며, 타임아웃이 없는 호출은 응답을 받지 못할 때 프로그램 전체를 정지시킵니다. 모든 'requests' 호출에 타임아웃을 설정하십시오.",
+  "python.useless-assignment-keyed": "`$X`의 키 `$Y`가 두 번 할당되어 첫 번째 할당은 효과가 없습니다.",
+  "python.useless-if-body": "무의미한 if문: 두 분기의 내용이 동일합니다.",
+  "python.useless-if-conditional": "if 블록의 두 분기가 동일한 조건(`$X`)을 검사합니다.",
+  "python.useless-inner-function": "함수 `$FF`가 함수 내부에 정의되어 있지만 한 번도 사용되지 않습니다.",
+  "python.useless-literal": "키 `$X`가 무의미하게 두 번 할당됩니다.",
+  "python.useless-literal-set": "`$X`가 집합 생성 과정에서 무의미하게 두 번 할당됩니다.",
+  "python.user-eval": "사용자 데이터가 'eval' 호출에 유입되는 것이 발견되었습니다. 이는 매우 위험하며, 공격자가 시스템에서 임의의 코드를 원격으로 실행할 수 있습니다. 'eval'을 제거하도록 코드를 리팩터링하고, 해당 기능을 충족하는 전용 보안 라이브러리를 사용하십시오.",
+  "python.user-eval-format-string": "사용자 데이터가 'eval' 호출에 유입되는 것이 발견되었습니다. 이는 매우 위험하며, 공격자가 이를 통해 원격으로 코드를 실행할 수 있습니다. 자세한 내용은 https://owasp.org/www-community/attacks/Code_Injection 을 참조하십시오.",
+  "python.user-exec": "사용자 데이터가 'exec' 호출에 유입되는 것이 발견되었습니다. 이는 매우 위험하며, 공격자가 시스템에서 임의의 코드를 원격으로 실행할 수 있습니다. 'exec'을 제거하도록 코드를 리팩터링하고, 해당 기능을 충족하는 전용 보안 라이브러리를 사용하십시오.",
+  "python.user-exec-format-string": "사용자 데이터가 'exec' 호출에 유입되는 것이 발견되었습니다. 이는 매우 위험하며, 공격자가 시스템에서 임의의 코드를 원격으로 실행할 수 있습니다. 'exec'을 제거하도록 코드를 리팩터링하고, 해당 기능을 충족하는 전용 보안 라이브러리를 사용하십시오.",
+  "python.weak-ssl-version": "안전하지 않은 SSL 버전이 감지되었습니다. TLS 1.0, 1.1 및 모든 SSL 버전은 약한 암호화로 간주되어 더 이상 사용되지 않습니다. 'ssl.PROTOCOL_TLSv1_2' 이상의 버전을 사용하십시오.",
+  "python.wildcard-cors": "CORS 정책이 모든 출처(와일드카드 '*')를 허용하는 것은 안전하지 않으므로 피해야 합니다.",
+  "python.xss-html-email-body": "요청 데이터가 HTML이 활성화된 EmailMessage에 유입되는 것이 발견되었습니다. HTML 메일은 XSS 공격에 취약합니다. 공격자가 이 HTML 메일에 데이터를 삽입하여 XSS를 유발할 수 있습니다.",
+  "python.xss-send-mail-html-message": "'html_message'를 사용하는 'send_mail(...)'에 요청 데이터가 포함되어 있는 것이 발견되었습니다. HTML 메일은 XSS 공격에 취약합니다. 공격자가 이 HTML 메일에 데이터를 삽입하여 XSS를 유발할 수 있습니다.",
+  "rust.args": "args는 보안 목적으로 사용해서는 안 됩니다. 공식 문서: \"첫 번째 요소는 관례상 실행 파일의 경로이지만, 임의의 텍스트로 설정될 수 있으며 실제로 존재하지 않을 수도 있습니다. 따라서 보안 목적으로 이 속성에 의존해서는 안 됩니다.\"",
+  "rust.args-os": "args_os는 보안 목적으로 사용해서는 안 됩니다. 공식 문서: \"첫 번째 요소는 관례상 실행 파일의 경로이지만, 임의의 텍스트로 설정될 수 있으며 실제로 존재하지 않을 수도 있습니다. 따라서 보안 목적으로 이 속성에 의존해서는 안 됩니다.\""
 }
