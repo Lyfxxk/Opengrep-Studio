@@ -190,5 +190,21 @@
   "java.jdbc-sql-formatted-string": "가능성이 있는 JDBC 인젝션이 감지되었습니다. queryForObject의 파라미터화된 쿼리 기능을 사용하고 문자열을 연결하거나 포매팅하지 마십시오: 'jdbc.queryForObject(\"select * from table where name = ?\", Integer.class, parameterName);'",
   "java.jdbc-sqli": "SQL 문장에서 형식 문자열이 탐지되었습니다. 문장 내 변수가 제대로 정제되지 않으면 SQL 인젝션이 발생할 수 있습니다. 'connection.prepareStatement'를 통해 구현할 수 있는 미리 컴파일된 문장(java.sql.PreparedStatement)을 사용하십시오.",
   "java.jdo-sqli": "SQL 문장에서 형식 문자열이 탐지되었습니다. 문장 내 변수가 제대로 정제되지 않으면 SQL 인젝션이 발생할 수 있습니다. 'connection.prepareStatement'를 통해 구현할 수 있는 미리 컴파일된 문장(java.sql.PreparedStatement)을 사용하십시오.",
-  "java.jjwt-none-alg": "JWT가 'none' 알고리즘을 사용하는 것이 감지되었습니다. 이 알고리즘은 토큰 무결성이 이미 검증되었다고 가정하므로, 공격자가 위조한 JWT가 검증을 자동으로 통과하게 됩니다. 'none'을 명시적으로 사용하지 말고 'HS256' 같은 알고리즘으로 전환하십시오."
+  "java.jjwt-none-alg": "JWT가 'none' 알고리즘을 사용하는 것이 감지되었습니다. 이 알고리즘은 토큰 무결성이 이미 검증되었다고 가정하므로, 공격자가 위조한 JWT가 검증을 자동으로 통과하게 됩니다. 'none'을 명시적으로 사용하지 말고 'HS256' 같은 알고리즘으로 전환하십시오.",
+  "java.jpa-sqli": "SQL 문장에 포맷 문자열이 포함된 것을 탐지했습니다. 문장 내 변수가 적절히 무해화되지 않으면 SQL 인젝션으로 이어집니다. 'connection.prepareStatement'로 얻을 수 있는 Prepared Statement(java.sql.PreparedStatement)를 대신 사용하십시오.",
+  "java.ldap-entry-poisoning": "객체를 반환하는 LDAP 쿼리는 공격자가 LDAP 응답을 제어할 수 있게 하여 원격 코드 실행으로 이어질 수 있습니다.",
+  "java.ldap-injection": "상수가 아닌 데이터가 LDAP 쿼리에 들어가는 것을 탐지했습니다. 이 데이터를 외부 사용자가 제어할 수 있다면 LDAP 인젝션에 해당합니다. LDAP 쿼리에 들어가는 데이터가 사용자의 제어를 받지 않도록 하거나 데이터를 적절히 무해화하십시오.",
+  "java.md5-used-as-password": "MD5가 비밀번호 해시로 사용되는 것을 탐지했습니다. MD5는 충돌 저항성이 부족해 공격자가 매우 짧은 시간 안에 해독할 수 있으므로 비밀번호 해시에 적합하지 않습니다. PBKDF2·bcrypt 등 전용 비밀번호 해시 함수를 대신 사용하십시오: `javax.crypto.SecretKeyFactory`의 `SecretKeyFactory.getInstance(\"PBKDF2WithHmacSHA1\")`를 사용할 수 있고, Spring 프로젝트는 `org.springframework.security.crypto.bcrypt`를 사용할 수 있습니다.",
+  "java.mongodb-nosqli": "상수가 아닌 데이터가 'where' 평가 연산자를 통해 NoSQL 쿼리에 들어가는 것을 탐지했습니다. 이 데이터를 외부 사용자가 제어할 수 있다면 NoSQL 인젝션에 해당합니다. 쿼리에 들어가는 데이터가 사용자의 제어를 받지 않거나 적절히 무해화되었는지 확인하십시오. 더 나은 방법은 'where'를 아예 사용하지 않고 com.mongodb.client.model.Filters가 제공하는 eq·ne·lt·gt 등 비교 연산자 헬퍼 메서드를 사용하는 것입니다.",
+  "java.no-direct-response-writer": "사용자 입력이 OutputStream 또는 Writer 객체에 직접 기록될 가능성을 탐지했습니다. 이는 뷰/템플릿 환경(HTML 이스케이프 포함)을 우회하므로 애플리케이션이 크로스 사이트 스크립팅(XSS) 취약점에 노출될 수 있습니다. HTML 뷰를 자동으로 이스케이프하는 JavaServer Faces(JSF) 등의 뷰 기술 사용을 권장합니다.",
+  "java.no-null-cipher": "NullCipher를 탐지했습니다. NullCipher는 암호화를 전혀 수행하지 않아 암호문이 평문과 동일합니다. 유효한 보안 암호화를 사용하십시오: Cipher.getInstance(\"AES/CBC/PKCS7PADDING\"). 자세한 내용은 https://owasp.org/www-community/Using_the_Java_Cryptographic_Extensions 을 참조하십시오.",
+  "java.no-static-initialization-vector": "블록 암호의 초기화 벡터(IV)는 사용할 때마다 무작위로 생성해야 합니다. 정적 IV는 동일한 평문이 매번 동일한 암호문으로 암호화된다는 의미이며, 암호화 강도를 약화시킵니다.",
+  "java.object-deserialization": "ObjectInputStream을 사용하는 객체 역직렬화가 발견되었습니다. 완전한 Java 객체를 역직렬화하는 것은 위험합니다. 공격자는 예상치 못한 결과를 초래하는 Java 객체 스트림을 구성할 수 있습니다. 역직렬화되는 객체가 사용자의 제어를 받지 않도록 하십시오. 반드시 그렇게 해야 한다면 변조를 방지하기 위해 HMAC으로 데이터 스트림에 서명하거나, 객체 필드만 전송하여 새 객체를 채우는 방식을 고려하십시오.",
+  "java.ognl-injection": "표현식은 동적 값으로 조합됩니다. 이 값들의 출처를 확인하고, 필터링되지 않은 값이 이 위험한 코드 평가에 들어가지 않도록 하십시오.",
+  "java.overly-permissive-file-permission": "지나치게 관대한 파일 권한(읽기·쓰기·실행)을 탐지했습니다. 모든 사용자에게 읽기+쓰기+실행과 같이 지나치게 넓은 권한을 설정하는 것은 대체로 나쁜 관행입니다: 구성 파일, 바이너리, 스크립트 또는 민감한 데이터가 영향을 받을 경우 권한 상승이나 정보 유출로 이어질 수 있습니다. 최소 권한 원칙을 따르고 사용자에게 필요한 권한만 부여하십시오.",
+  "java.permissive-cors": "지나치게 관대한 CORS 정책은 악성 애플리케이션이 피해 애플리케이션과 부적절하게 통신하는 것을 허용하여 위조, 데이터 탈취, 릴레이 등의 공격으로 이어질 수 있습니다. 자세한 내용은 https://find-sec-bugs.github.io/bugs.htm#PERMISSIVE_CORS 을 참조하십시오.",
+  "java.saxparserfactory-disallow-doctype-decl-missing": "이 SAXParserFactory는 DOCTYPE 선언이 활성화되어 있어 XML 외부 엔티티(XXE) 공격에 취약합니다. 기능 `http://apache.org/xml/features/disallow-doctype-decl`을 true로 설정하여 비활성화하십시오. 또는 DOCTYPE을 유지하되 외부 엔티티를 금지하려면 기능 `http://xml.org/sax/features/external-general-entities`와 `http://xml.org/sax/features/external-parameter-entities`를 false로 설정하십시오. 참고: 이는 설정 키의 리터럴이며 클릭할 수 있는 링크가 아닙니다. 추가 설명은 https://semgrep.dev/docs/cheat-sheets/java-xxe/#3a-documentbuilderfactory 을 참조하십시오.",
+  "java.script-engine-injection": "ScriptEngine을 통한 잠재적 코드 인젝션을 탐지했습니다. 사용자가 제어할 수 있는 데이터가 '.eval()'에 들어가지 못하도록 하십시오. 그렇지 않으면 코드 인젝션 취약점에 해당합니다.",
+  "java.seam-log-injection": "Seam 로그 API는 로그 메시지에 표현 언어를 사용할 수 있게 하며, 표현 언어는 예상치 못한 코드 실행의 원인이 되기도 합니다. 여기서 표현식은 동적 값으로 구성되므로 값의 출처를 확인하고, 필터링되지 않은 값이 이 고위험 평가 로직에 들어가지 않도록 하십시오.",
+  "java.server-dangerous-class-deserialization": "Java RMI에서 원시 타입이 아닌 클래스를 사용하면 안전하지 않은 역직렬화 취약점이 될 수 있습니다. 기반 구현에 따라 공격자가 이 객체를 조작하여 시스템에서 코드를 실행할 수 있습니다. 정수 ID로 객체를 찾는 방식으로 전환하거나, JSON 등 대체 직렬화 방식을 고려하십시오."
 }
