@@ -78,5 +78,21 @@
   "go.avoid-bind-to-all-interfaces": "0.0.0.0 또는 빈 문자열을 수신 대기하는 네트워크 리스너가 감지되었습니다. 이로 인해 사용 가능한 모든 네트워크 인터페이스에 바인딩되며 서비스가 의도치 않게 공용 네트워크에 노출될 수 있습니다. 0.0.0.0도 빈 문자열도 아닌 다른 IP 주소를 사용하십시오.",
   "go.avoid-ssh-insecure-ignore-host-key": "호스트 키 검증 비활성화가 감지되었습니다. 이로 인해 중간자 공격이 발생할 수 있습니다. 호스트 키 검증에는 'golang.org/x/crypto/ssh/knownhosts' 패키지를 사용하십시오. 문제와 수정 방법에 대한 자세한 내용은 https://skarlso.github.io/2019/02/17/go-ssh-with-host-key-verification/ 에서 확인하십시오.",
   "go.bad-tmp-file-creation": "공유 tmp 디렉터리에 파일을 생성하면서 ioutil.Tempfile을 사용하지 않았습니다.",
-  "go.channel-guarded-with-mutex": "뮤텍스로 보호되는 channel이 감지되었습니다. channel에는 자체 내부 뮤텍스가 있으므로 이렇게 할 필요가 없습니다. 해당 뮤텍스를 제거하십시오. 자세한 내용은 https://hackmongo.com/page/golang-antipatterns/#guarded-channel 에서 확인하십시오."
+  "go.channel-guarded-with-mutex": "뮤텍스로 보호되는 channel이 감지되었습니다. channel에는 자체 내부 뮤텍스가 있으므로 이렇게 할 필요가 없습니다. 해당 뮤텍스를 제거하십시오. 자세한 내용은 https://hackmongo.com/page/golang-antipatterns/#guarded-channel 에서 확인하십시오.",
+  "go.cookie-missing-httponly": "세션 cookie에 'HttpOnly' 플래그가 설정되지 않은 것이 감지되었습니다. 이 플래그는 클라이언트 스크립트가 cookie를 읽지 못하도록 브라우저에 지시하여 XSS 공격을 완화하는 데 도움이 됩니다. Cookie에서 'HttpOnly'를 'true'로 설정하십시오.",
+  "go.cookie-missing-secure": "세션 cookie에 'Secure' 플래그가 설정되지 않은 것이 감지되었습니다. 이 플래그는 클라이언트가 HTTP 등 안전하지 않은 채널을 통해 cookie를 전송하지 않도록 방지합니다. Options 구조체에서 'Secure'를 'true'로 설정하십시오.",
+  "go.dangerous-command-write": "Write에 비정적 명령이 감지되었습니다. '$CW.Write'의 입력을 감사하십시오: 검증되지 않은 사용자 데이터가 이 호출 지점에 도달할 수 있다면 코드 주입 취약점이 되며, 공격자가 악성 스크립트를 주입해 임의의 코드를 실행할 수 있습니다.",
+  "go.dangerous-exec-cmd": "exec.Cmd에 비정적 명령이 감지되었습니다. 'exec.Cmd'의 입력을 감사하십시오: 검증되지 않은 사용자 데이터가 이 호출 지점에 도달할 수 있다면 코드 주입 취약점이 되며, 공격자가 악성 스크립트를 주입해 임의의 코드를 실행할 수 있습니다.",
+  "go.dangerous-exec-command": "Command에 비정적 명령이 감지되었습니다. 'exec.Command'의 입력을 감사하십시오: 검증되지 않은 사용자 데이터가 이 호출 지점에 도달할 수 있다면 코드 주입 취약점이 되며, 공격자가 악성 스크립트를 주입해 임의의 코드를 실행할 수 있습니다.",
+  "go.dangerous-execution": "otto 가상 머신에 비정적 스크립트가 감지되었습니다. 'VM.Run'의 입력을 감사하십시오: 검증되지 않은 사용자 데이터가 이 호출 지점에 도달할 수 있다면 코드 주입 취약점이 되며, 공격자가 악성 스크립트를 주입해 임의의 코드를 실행할 수 있습니다.",
+  "go.dangerous-syscall-exec": "Exec에 비정적 명령이 감지되었습니다. 'syscall.Exec'의 입력을 감사하십시오: 검증되지 않은 사용자 데이터가 이 호출 지점에 도달할 수 있다면 코드 주입 취약점이 되며, 공격자가 악성 스크립트를 주입해 임의의 코드를 실행할 수 있습니다.",
+  "go.database-sqli": "`$EVENT` 객체로 오염된 SQL 문장이 감지되었습니다. 변수를 사용자가 제어할 수 있고 제대로 정제되지 않으면 SQL 인젝션이 발생합니다. 이를 방지하려면 매개변수화된 쿼리나 사전 컴파일된 문장('Prepare' 및 'PrepareContext' 호출로 사용 가능)으로 전환하십시오.",
+  "go.dynamic-httptrace-clienttrace": "동적일 수 있는 ClientTrace가 감지되었습니다: '$TRACE'의 정적 정의를 찾을 수 없습니다. 동적 ClientTrace는 함수 코드를 역직렬화하여 특정 Request 이벤트가 발생할 때 실행하므로 위험하며, 사용자가 인지하지 못하는 사이 코드가 실행될 수 있습니다. ClientTrace가 정적으로 정의되어 있는지 확인하십시오.",
+  "go.filepath-clean-misuse": "`Clean`의 설계 목표는 경로 횡단 공격 방어가 아니라 입력과 등가인 가장 짧은 경로명을 얻는 것입니다. `Clean`을 사용해 파일 읽기를 정제하면 애플리케이션이 경로 횡단 공격에 노출되어 공격자가 서버의 임의 파일에 접근할 수 있습니다. 간단한 수정 방법: `filepath.FromSlash(path.Clean(\"/\"+strings.Trim(req.URL.Path, \"/\")))`; 더 나은 방법은 `filepath-securejoin` 패키지의 `SecureJoin` 함수를 사용하는 것입니다. 자세한 내용은 https://pkg.go.dev/github.com/cyphar/filepath-securejoin#section-readme 에서 확인하십시오.",
+  "go.formatted-template-string": "포맷된 템플릿 문자열이 'template.HTML()'에 전달되는 것이 발견되었습니다. 'template.HTML()'은 이스케이프를 수행하지 않으므로, 템플릿에 사용자가 제어할 수 있는 데이터가 절대 없도록 반드시 확인하십시오. 사용자 데이터가 해당 템플릿에 도달할 수 있다면 XSS 취약점이 존재합니다.",
+  "go.fs-directory-listing": "'http.FileServer'가 핸들러로 사용되는 것이 감지되었습니다: 이는 디렉터리 나열을 활성화하여 공격자가 디렉터리를 탐색해 민감한 파일을 찾을 수 있습니다. 디렉터리 나열을 비활성화하거나 특정 디렉터리/파일에 대한 접근을 제한하십시오.",
+  "go.go-insecure-templates": "안전하지 않은 템플릿 타입이 사용되었습니다. 공식 문서에서 이를 보안 위험으로 지목했습니다. 자세한 내용은 https://golang.org/pkg/html/template/#HTML 에서 확인하십시오.",
+  "go.go-ssti": "서버 측 템플릿 삽입(SSTI)은 공격자가 템플릿 고유 문법을 이용해 악성 페이로드를 템플릿에 주입하고 서버 측에서 실행하는 것을 말합니다. \"html/template\"를 사용할 때는 사용자 입력이 템플릿에 들어가기 전에 검증 및 정제되었는지 반드시 확인하십시오.",
+  "go.gorm-dangerous-method-usage": "위험한 메서드 $METHOD의 사용이 감지되었습니다. 이 메서드는 입력을 이스케이프하지 않습니다(references의 링크 참조). 매개변수가 사용자가 제어할 수 있는 값이라면 SQL 인젝션이 발생할 수 있습니다. $METHOD를 사용할 때는 사용자가 제출한 데이터를 신뢰하지 말고 승인된 입력만 허용하십시오(화이트리스트 방식 사용).",
+  "go.gosql-sqli": "\"database/sql\"의 Go SQL 문장에서 리터럴이 아닌 변수와의 문자열 연결이 감지되었습니다. 변수를 사용자가 제어할 수 있고 제대로 정제되지 않으면 SQL 인젝션이 발생합니다. 이를 방지하려면 매개변수화된 쿼리나 사전 컴파일된 문장('Prepare' 및 'PrepareContext' 호출로 사용 가능)으로 전환하십시오."
 }
