@@ -718,5 +718,21 @@
   "python.python37-compatibility-ipv4network2": "IPv4Network.supernet_of は Python 3.7+ でのみ利用可能で、後方互換性がありません。代わりに、スーパーネットが 'supernet' に含まれているかどうかを確認してください。",
   "python.python37-compatibility-ipv6network1": "IPv6Network.subnet_of は Python 3.7+ でのみ利用可能で、後方互換性がありません。代わりに、サブネットが 'subnets' に含まれているかどうかを確認してください。",
   "python.python37-compatibility-ipv6network2": "IPv6Network.supernet_of は Python 3.7+ でのみ利用可能で、後方互換性がありません。代わりに、スーパーネットが 'supernet' に含まれているかどうかを確認してください。",
-  "python.python37-compatibility-locale1": "'locale.format_string' の呼び出しで 'monetary' パラメータが使用されていることが見つかりました。このパラメータは Python 3.7+ でのみ利用可能で、後方互換性がありません。'monetary' パラメータを削除してください。"
+  "python.python37-compatibility-locale1": "'locale.format_string' の呼び出しで 'monetary' パラメータが使用されていることが見つかりました。このパラメータは Python 3.7+ でのみ利用可能で、後方互換性がありません。'monetary' パラメータを削除してください。",
+  "python.python37-compatibility-math1": "math.remainder は Python 3.7+ でのみ利用可能で、後方互換性がありません。代わりに math.fmod() を使用するか、$X - n* $Y を自前で計算してください。",
+  "python.python37-compatibility-multiprocess1": "multiprocessing.Process.close() は Python 3.7+ でのみ利用可能で、後方互換性がありません。代わりに join() を使用してください。",
+  "python.python37-compatibility-multiprocess2": "multiprocessing.Process.kill() は Python 3.7+ でのみ利用可能で、後方互換性がありません。代わりに terminate() を使用してください。",
+  "python.python37-compatibility-os1": "os.preadv() は Python 3.7+ でのみ利用可能で、後方互換性がありません。代わりに os.readv() と os.pread() を組み合わせて実装してください。",
+  "python.python37-compatibility-os2-ok2": "os.pwritev() は Python 3.3+ でのみ利用可能で、後方互換性がありません。代わりに pwrite() と writev() を組み合わせて実装してください。",
+  "python.python37-compatibility-pdb": "header パラメータを付けた pdb.set_trace() は Python 3.7+ でのみ利用可能で、後方互換性がありません。代わりに header パラメータを付けない set_trace() を使用してください。",
+  "python.python37-compatibility-textiowrapper": "'importlib.abc.ResourceReader' が見つかりました。このモジュールは Python 3.7+ でのみ利用可能で、後方互換性がありません。他の loader に変更してください。",
+  "python.raw-html-format": "ユーザー入力が手作業で連結された HTML 文字列に流れ込んでいることを検出しました。手作業で HTML を連結すると、安全なレンダリング方法が意図せず回避されてクロスサイトスクリプティングの脆弱性が生じ、攻撃者がそれを悪用してユーザーの機密データを窃取するおそれがあります。HTML が安全にレンダリングされていることを確認してください。そうでない場合は、テンプレート（`django.shortcuts.render`）を使って安全にレンダリングしてください。",
+  "python.reflected-data-httpresponse": "ユーザー制御可能なリクエストデータが HttpResponse に渡されていることが見つかりました。XSS の脆弱性が存在する可能性があり、攻撃者がそれを悪用してユーザーの Cookie や保護された情報を窃取するおそれがあります。リクエストデータが適切にエスケープまたはサニタイズされていることを確認してください。",
+  "python.reflected-data-httpresponsebadrequest": "ユーザー制御可能なリクエストデータが HttpResponseBadRequest に渡されていることが見つかりました。XSS の脆弱性が存在する可能性があり、攻撃者がそれを悪用してユーザーの Cookie や保護された情報を窃取するおそれがあります。リクエストデータが適切にエスケープまたはサニタイズされていることを確認してください。",
+  "python.regex_dos": "re.compile で非効率な正規表現が使用されていることが検出されました。正規表現サービス拒否を引き起こし、サービスを利用できなくなる恐れがあります。すべての正規表現を見直すか、pyre2 などのより安全な代替手段を使用してください。",
+  "python.render-template-string": "文字列のフォーマットによって生成されたテンプレートが見つかりました。サーバーサイドテンプレートインジェクションやクロスサイトスクリプティング攻撃を受けやすくなります。",
+  "python.request-data-fileresponse": "ユーザー制御可能なリクエストデータがファイルを開くのに使用され、その後パラメータとして FileResponse に渡されています。これは危険です。攻撃者が任意のファイルを指定して読み取り、重要なデータを漏えいさせる恐れがあります。ユーザーが入力したファイル名を FileResponse に使用する前に、必ず検証またはサニタイズを行ってください。",
+  "python.request-data-write": "ユーザー制御可能なリクエストデータが '.write(...)' に渡されていることが見つかりました。悪意のある者が機密ファイルに書き込むデータを制御できると危険です。例えば、重要なログファイルを強制的にローテーションさせたり、ディスク容量を枯渇させてサービス拒否を引き起こしたりするおそれがあります。リクエストデータが適切にエスケープまたはサニタイズされていることを確認してください。",
+  "python.request-session-http-in-with-context": "'http://' を使用したリクエストが検出されました。内容は暗号化されません。代わりに 'https://' を使用してください。",
+  "python.request-session-with-http": "'http://' を使用したリクエストが検出されました。内容は暗号化されません。代わりに 'https://' を使用してください。"
 }
