@@ -382,5 +382,21 @@
   "js-ts.puppeteer-evaluate-code-injection": "검증되지 않은 사용자 데이터가 `evaluate` 메서드에 도달할 수 있는 경우 서버 측 요청 위조(SSRF) 취약점이 발생할 수 있습니다.",
   "js-ts.puppeteer-exposed-chrome-devtools": "원격 디버깅 프로토콜은 인증을 전혀 수행하지 않으며, 노출 범위가 지나치게 넓으면 보안 위험이 있습니다.",
   "js-ts.puppeteer-goto-injection": "검증되지 않은 사용자 데이터가 `goto` 메서드에 도달할 수 있는 경우 서버 측 요청 위조(SSRF) 취약점이 발생할 수 있습니다.",
-  "js-ts.puppeteer-setcontent-injection": "검증되지 않은 사용자 데이터가 `setContent` 메서드에 도달할 수 있는 경우 서버 측 요청 위조(SSRF) 취약점이 발생할 수 있습니다."
+  "js-ts.puppeteer-setcontent-injection": "검증되지 않은 사용자 데이터가 `setContent` 메서드에 도달할 수 있는 경우 서버 측 요청 위조(SSRF) 취약점이 발생할 수 있습니다.",
+  "js-ts.raw-html-concat": "HTML 문자열에 포함된 사용자가 제어할 수 있는 데이터로 인해 XSS가 발생할 수 있습니다.",
+  "js-ts.raw-html-format": "사용자 데이터가 수동으로 조합된 HTML의 본문 부분으로 유입됩니다. 이 데이터가 사용자 입력에서 비롯된 것이라면 크로스 사이트 스크립팅(XSS) 취약점이 생길 수 있습니다. DOMPurify 같은 정제 라이브러리로 HTML을 처리하는 것을 고려하십시오.",
+  "js-ts.raw-html-join": "HTML 문자열에 포함된 사용자가 제어할 수 있는 데이터로 인해 XSS가 발생할 수 있습니다.",
+  "js-ts.react-dangerouslysetinnerhtml": "상수가 아닌 정의에서 비롯된 dangerouslySetInnerHTML이 감지되었습니다. 내용이 사용자 입력에서 비롯된 것이라면 사용자가 의도치 않게 크로스 사이트 스크립팅(XSS) 공격에 노출될 수 있습니다. dangerouslySetInnerHTML을 사용해야 한다면 DOMPurify 같은 정제 라이브러리로 HTML을 처리하십시오.",
+  "js-ts.react-find-dom": "findDOMNode는 저수준 DOM 노드에 접근할 수 있는 '탈출구'입니다. 대부분의 경우 사용하지 않는 것이 좋습니다. 컴포넌트 추상화를 깨뜨리기 때문입니다.",
+  "js-ts.react-href-var": "앵커 태그의 'href' 속성에 변수가 사용되는 것이 감지되었습니다. 공격자가 'javascript:' URI를 주입해 크로스 사이트 스크립팅(XSS)을 일으킬 수 있습니다. 애플리케이션에서 'javascript:' URI를 비활성화하는 것이 좋습니다.",
+  "js-ts.react-insecure-request": "HTTP를 통한 암호화되지 않은 요청이 감지되었습니다.",
+  "js-ts.react-jwt-decoded-property": "이 속성은 검증되지 않은 JWT 토큰에서 디코딩된 것이므로 신뢰할 수 없습니다.",
+  "js-ts.react-jwt-in-localstorage": "JWT 토큰을 localStorage에 저장하는 것은 알려진 나쁜 관행이므로, 토큰을 localStorage에서 HTTP Cookie로 옮기는 것을 고려하십시오.",
+  "js-ts.react-legacy-component": "레거시 컴포넌트 생명 주기($METHOD)가 감지되었습니다.",
+  "js-ts.react-markdown-insecure-html": "`transformLinkUri` 또는 `transformImageUri`를 안전하지 않은 구현으로 재정의하거나, `allowDangerousHtml`을 활성화하거나, `escapeHtml`을 비활성화하면 코드가 XSS 공격 표면에 노출됩니다.",
+  "js-ts.react-props-in-state": "React에서 props를 state로 복사하는 것은 나쁜 관행입니다. 이후 props에 대한 모든 업데이트가 무시됩니다. props를 state로 복사하지 말고 컴포넌트에서 직접 읽으십시오.",
+  "js-ts.react-props-spreading": "모범 사례는 전개 연산자를 사용하는 대신 props를 HTML 컴포넌트에 명시적으로 전달하는 것입니다. 전개 연산자는 유효하지 않은 HTML props를 요소에 전달할 수 있는데, 경미한 경우 콘솔 경고를 유발하고, 심각한 경우 공격자에게 의도치 않은 속성을 주입할 경로를 제공합니다.",
+  "js-ts.react-unsanitized-method": "상수가 아닌 정의에서 비롯된 $HTML이(가) 감지되었습니다. 내용이 사용자 입력에서 비롯된 것이라면 사용자가 의도치 않게 크로스 사이트 스크립팅(XSS) 공격에 노출될 수 있습니다. $HTML을(를) 사용해야 한다면 DOMPurify 같은 정제 라이브러리로 HTML을 처리하십시오.",
+  "js-ts.react-unsanitized-property": "상수가 아닌 정의에서 비롯된 $HTML이(가) 감지되었습니다. 내용이 사용자 입력에서 비롯된 것이라면 사용자가 의도치 않게 크로스 사이트 스크립팅(XSS) 공격에 노출될 수 있습니다. $HTML을(를) 사용해야 한다면 DOMPurify 같은 정제 라이브러리로 HTML을 처리하십시오.",
+  "js-ts.remote-property-injection": "사용자 입력을 객체의 대괄호 키로 사용하는 코드가 존재하며, 공격자가 이를 악용해 객체의 모든 속성, 나아가 프로토타입에까지 접근할 수 있습니다. 객체 속성에는 리터럴을 사용하십시오."
 }
