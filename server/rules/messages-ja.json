@@ -334,5 +334,21 @@
   "js-ts.insecure-createnodesfrommarkup": "`createNodesFromMarkup` 内のユーザー制御可能なデータはアンチパターンであり、XSS の脆弱性につながる可能性があります。",
   "js-ts.insecure-document-method": "`innerHTML`、`outerHTML`、`document.write` などのメソッドにユーザー制御可能なデータが使用されています。これは、XSS の脆弱性につながる恐れのあるアンチパターンです。",
   "js-ts.insecure-innerhtml": "`$EL.innerHTML` にユーザー制御可能なデータが使用されています。これは、XSS の脆弱性につながる恐れのあるアンチパターンです。",
-  "js-ts.insecure-object-assign": "コンテキストによっては、`Object.assign` に含まれるユーザー制御可能なデータが原因で、Web レスポンスに返すべきでないデータが含まれたり、マスアサインメント（mass assignment）の脆弱性が生じたりする可能性があります。"
+  "js-ts.insecure-object-assign": "コンテキストによっては、`Object.assign` に含まれるユーザー制御可能なデータが原因で、Web レスポンスに返すべきでないデータが含まれたり、マスアサインメント（mass assignment）の脆弱性が生じたりする可能性があります。",
+  "js-ts.insufficient-postmessage-origin-validation": "addEventListener API はメッセージの送信元（origin）に対する検証を一切行っていません。この欠陥は悪用されると、クロスサイトスクリプティング（XSS）などのオリジン間攻撃に利用される恐れがあります。",
+  "js-ts.javascript-alert": "alert() の呼び出しが検出されました。このコードは本番環境に残しておくべきでしょうか？",
+  "js-ts.javascript-confirm": "confirm() の呼び出しが検出されました。このコードは本番環境に残しておくべきでしょうか？",
+  "js-ts.javascript-debugger": "debugger の呼び出しが検出されました。このコードは本番環境に残しておくべきでしょうか？",
+  "js-ts.javascript-prompt": "prompt() の呼び出しが検出されました。このコードは本番環境に残しておくべきでしょうか？",
+  "js-ts.jose-exposed-data": "このオブジェクトは jose.JWT.sign(...) に直接渡されています。機密情報が JWT のペイロード経由で漏洩しないことを確認してください。",
+  "js-ts.jquery-insecure-method": "jQuery の `.$METHOD(...)` 内のユーザー制御可能なデータはアンチパターンであり、XSS の脆弱性を引き起こす恐れがあります。",
+  "js-ts.jquery-insecure-selector": "ユーザー制御可能なデータが `$(...)` のセレクターに入り込むのはアンチパターンであり、XSS の脆弱性を引き起こす恐れがあります。",
+  "js-ts.js-open-redirect": "このアプリケーションは、ユーザーが制御している可能性のある入力 `$PROP` を受け付け、現在のウィンドウコンテキストの遷移先を制御できてしまいます。これにより、オープンリダイレクトと javascript: URI 型のクロスサイトスクリプティング（XSS）という 2 つの脆弱性が生じます。ユーザー入力に遷移先の制御を許可する前に、まず検証を行ってください。",
+  "js-ts.js-open-redirect-from-function": "このアプリケーションは、ユーザーが制御している可能性のある入力 `$PROP` を受け付け、現在のウィンドウコンテキストの遷移先を制御できてしまいます。これにより、オープンリダイレクトと javascript: URI 型のクロスサイトスクリプティング（XSS）という 2 つの脆弱性が生じます。ユーザー入力に遷移先の制御を許可する前に、まず検証を行ってください。",
+  "js-ts.jsx-label-not-i18n": "JSX コンポーネントのテキストが国際化されていません：'$MESSAGE'。",
+  "js-ts.jsx-not-internationalized": "JSX 要素が国際化されていません：'$MESSAGE'。Web サイトやアプリケーションは国際化によって多言語に対応すべきです。要素の国際化には `i18next` などのパッケージを使用してください。",
+  "js-ts.jwt-decode-without-verify": "JWT トークンを検証せずにデコードしていることが検出されました。JWT は使用前に検証しなければなりません。検証しないとトークンの完全性が不明のままになり、悪意のある人物が任意のクレームを含むトークンを偽造できてしまいます。トークンを使用する前に '.verify()' を呼び出してください。",
+  "js-ts.jwt-exposed-data": "このオブジェクトは jsonwebtoken.sign(...) に直接渡されています。機密情報が JWT のペイロード経由で漏洩しないことを確認してください。",
+  "js-ts.jwt-none-alg": "JWT で 'none' アルゴリズムが使用されていることが検出されました。このアルゴリズムはトークンの完全性が検証済みであることを前提とするため、攻撃者が偽造した JWT が検証を自動的に通過してしまいます。'none' を明示的に使用せず、'HS256' などのアルゴリズムを使用してください。",
+  "js-ts.jwt-simple-noverify": "JWT を検証せずにデコードしていることが検出されました。JWT は使用前に検証しなければなりません。検証しないとトークンの完全性が分からず、攻撃者が任意のクレームを偽造できてしまいます。使用前に 'verify' を `true` に設定してください。"
 }
