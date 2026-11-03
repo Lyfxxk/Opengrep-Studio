@@ -718,5 +718,21 @@
   "python.python37-compatibility-ipv4network2": "IPv4Network.supernet_of는 Python 3.7+에서만 사용할 수 있으며 하위 호환성이 없습니다. 대신 슈퍼넷이 'supernet'에 포함되어 있는지 확인하십시오.",
   "python.python37-compatibility-ipv6network1": "IPv6Network.subnet_of는 Python 3.7+에서만 사용할 수 있으며 하위 호환성이 없습니다. 대신 서브넷이 'subnets'에 포함되어 있는지 확인하십시오.",
   "python.python37-compatibility-ipv6network2": "IPv6Network.supernet_of는 Python 3.7+에서만 사용할 수 있으며 하위 호환성이 없습니다. 대신 슈퍼넷이 'supernet'에 포함되어 있는지 확인하십시오.",
-  "python.python37-compatibility-locale1": "'locale.format_string' 호출에서 'monetary' 매개변수가 사용되는 것이 발견되었습니다. 이 매개변수는 Python 3.7+에서만 사용할 수 있으며 하위 호환성이 없습니다. 'monetary' 매개변수를 제거하십시오."
+  "python.python37-compatibility-locale1": "'locale.format_string' 호출에서 'monetary' 매개변수가 사용되는 것이 발견되었습니다. 이 매개변수는 Python 3.7+에서만 사용할 수 있으며 하위 호환성이 없습니다. 'monetary' 매개변수를 제거하십시오.",
+  "python.python37-compatibility-math1": "math.remainder는 Python 3.7+에서만 사용할 수 있으며 하위 호환성이 없습니다. 대신 math.fmod()를 사용하거나 $X - n* $Y를 직접 계산하십시오.",
+  "python.python37-compatibility-multiprocess1": "multiprocessing.Process.close()는 Python 3.7+에서만 사용할 수 있으며 하위 호환성이 없습니다. 대신 join()을 사용하십시오.",
+  "python.python37-compatibility-multiprocess2": "multiprocessing.Process.kill()은 Python 3.7+에서만 사용할 수 있으며 하위 호환성이 없습니다. 대신 terminate()를 사용하십시오.",
+  "python.python37-compatibility-os1": "os.preadv()는 Python 3.7+에서만 사용할 수 있으며 하위 호환성이 없습니다. 대신 os.readv()와 os.pread()를 조합하여 구현하십시오.",
+  "python.python37-compatibility-os2-ok2": "os.pwritev()는 Python 3.3+에서만 사용할 수 있으며 하위 호환성이 없습니다. 대신 pwrite()와 writev()를 조합하여 구현하십시오.",
+  "python.python37-compatibility-pdb": "header 매개변수가 포함된 pdb.set_trace() 호출은 Python 3.7+에서만 사용할 수 있으며 하위 호환성이 없습니다. 대신 header 매개변수가 없는 set_trace() 호출을 사용하십시오.",
+  "python.python37-compatibility-textiowrapper": "'importlib.abc.ResourceReader'가 발견되었습니다. 이 모듈은 Python 3.7+에서만 사용할 수 있으며 하위 호환성이 없습니다. 다른 loader를 사용하십시오.",
+  "python.raw-html-format": "사용자 입력이 수동으로 조합된 HTML 문자열로 유입되는 것이 감지되었습니다. HTML을 수동으로 조합하면 안전한 렌더링 방식을 의도치 않게 우회하여 크로스 사이트 스크립팅 취약점이 생길 수 있으며, 공격자가 이를 악용해 사용자의 민감한 데이터를 탈취할 수 있습니다. HTML이 안전하게 렌더링되고 있는지 확인하고, 그렇지 않은 경우 템플릿(`django.shortcuts.render`)을 사용해 안전하게 렌더링하십시오.",
+  "python.reflected-data-httpresponse": "사용자가 제어할 수 있는 요청 데이터가 HttpResponse에 전달되는 것이 발견되었습니다. XSS 취약점이 존재할 수 있으며, 공격자가 이를 악용해 사용자의 쿠키와 보호된 정보를 탈취할 수 있습니다. 요청 데이터가 적절하게 이스케이프 또는 정제되었는지 확인하십시오.",
+  "python.reflected-data-httpresponsebadrequest": "사용자가 제어할 수 있는 요청 데이터가 HttpResponseBadRequest에 전달되는 것이 발견되었습니다. XSS 취약점이 존재할 수 있으며, 공격자가 이를 악용해 사용자의 쿠키와 보호된 정보를 탈취할 수 있습니다. 요청 데이터가 적절하게 이스케이프 또는 정제되었는지 확인하십시오.",
+  "python.regex_dos": "re.compile에서 비효율적인 정규 표현식이 사용되는 것이 감지되었습니다. 정규 표현식 서비스 거부가 발생해 서비스가 중단될 수 있습니다. 모든 정규 표현식을 검토하거나 pyre2 같은 더 안전한 대안을 사용하십시오.",
+  "python.render-template-string": "문자열 포매팅으로 생성된 템플릿이 발견되었습니다. 서버 측 템플릿 삽입과 크로스 사이트 스크립팅 공격에 취약합니다.",
+  "python.request-data-fileresponse": "사용자가 제어할 수 있는 요청 데이터가 파일을 여는 데 사용된 후 매개변수로 FileResponse에 전달되는 것이 발견되었습니다. 이는 위험하며, 공격자가 임의의 파일을 지정해 읽어 중요한 데이터가 유출될 수 있습니다. 사용자가 입력한 파일명을 FileResponse에 사용하기 전에 반드시 검증 또는 정제하십시오.",
+  "python.request-data-write": "사용자가 제어할 수 있는 요청 데이터가 '.write(...)'에 전달되는 것이 발견되었습니다. 악의적인 사용자가 민감한 파일에 기록되는 데이터를 제어할 수 있게 되면 위험합니다. 예를 들어 중요한 로그 파일을 강제로 로테이션하거나, 디스크 공간을 고갈시켜 서비스 거부를 일으킬 수 있습니다. 요청 데이터가 적절하게 이스케이프 또는 정제되었는지 확인하십시오.",
+  "python.request-session-http-in-with-context": "'http://'를 사용하는 요청이 감지되었습니다. 내용은 암호화되지 않습니다. 대신 'https://'를 사용하십시오.",
+  "python.request-session-with-http": "'http://'를 사용하는 요청이 감지되었습니다. 내용은 암호화되지 않습니다. 대신 'https://'를 사용하십시오."
 }
