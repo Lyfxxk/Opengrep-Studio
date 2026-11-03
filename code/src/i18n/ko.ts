@@ -118,6 +118,35 @@ const ko = {
     thLineChanges: '행 단위 변경',
     contentChanged: '내용 변경됨',
   },
+  comparison: {
+    new: '신규',
+    fixed: '해결됨',
+    remaining: '잔존',
+    summaryNew: '신규 문제',
+    summaryFixed: '해결됨',
+    summaryRemaining: '잔존 문제',
+  },
+  reviewStatus: {
+    pending: '검토 대기',
+    confirmed: '확인됨',
+    false_positive: '오탐',
+    accepted: '수락됨',
+  },
+  taintRole: {
+    source: '소스',
+    intermediate: '전파',
+    sink: '싱크',
+  },
+  entity: {
+    project_one: '프로젝트',
+    project_other: '프로젝트',
+    scan_one: '스캔',
+    scan_other: '스캔',
+    config_one: '스캔 설정',
+    config_other: '스캔 설정',
+    rulePack_one: '규칙 팩',
+    rulePack_other: '규칙 팩',
+  },
 };
 
 export default ko;
