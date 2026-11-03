@@ -118,6 +118,35 @@ const ja = {
     thLineChanges: '行単位の変更',
     contentChanged: '内容が変更されています',
   },
+  comparison: {
+    new: '新規',
+    fixed: '修正済み',
+    remaining: '残存',
+    summaryNew: '新規の問題',
+    summaryFixed: '修正済み',
+    summaryRemaining: '残存の問題',
+  },
+  reviewStatus: {
+    pending: 'レビュー待ち',
+    confirmed: '確認済み',
+    false_positive: '誤検知',
+    accepted: '受諾済み',
+  },
+  taintRole: {
+    source: 'ソース',
+    intermediate: '伝播',
+    sink: 'シンク',
+  },
+  entity: {
+    project_one: 'プロジェクト',
+    project_other: 'プロジェクト',
+    scan_one: 'スキャン',
+    scan_other: 'スキャン',
+    config_one: 'スキャン設定',
+    config_other: 'スキャン設定',
+    rulePack_one: 'ルールパック',
+    rulePack_other: 'ルールパック',
+  },
 };
 
 export default ja;
