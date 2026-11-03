@@ -46,5 +46,21 @@
   "dockerfile.avoid-apk-upgrade": "ベースイメージ内のパッケージを最新に保ち、'apk upgrade' を実行しなくて済むようにしてください。パッケージが本当に古い場合は、ベースイメージのメンテナーに連絡してください。",
   "dockerfile.avoid-apt-get-upgrade": "ベースコンテナ内のパッケージを最新に保ち、upgrade や dist-upgrade を実行しなくて済むようにしてください。パッケージが本当に古い場合は、メンテナーに連絡してください。",
   "dockerfile.avoid-dnf-update": "ベースイメージ内のパッケージを最新に保ち、'dnf update' を実行しなくて済むようにしてください。パッケージが本当に古い場合は、ベースイメージのメンテナーに連絡してください。",
-  "dockerfile.avoid-latest-version": "イメージには明示的なバージョンタグを使用し、決定論的なコンテナイメージを実現してください。'latest' タグは、予告なしにベースコンテナを置き換える可能性があります。"
+  "dockerfile.avoid-latest-version": "イメージには明示的なバージョンタグを使用し、決定論的なコンテナイメージを実現してください。'latest' タグは、予告なしにベースコンテナを置き換える可能性があります。",
+  "dockerfile.avoid-platform-with-from": "FROM に '--platform' を付けると、イメージのビルドが単一プラットフォームに制限され、かつそのプラットフォームはビルドプラットフォームと一致している必要があります。ターゲットプラットフォームの指定が本意である場合は、代わりにツール 'docker buildx --platform=' を使用してください。",
+  "dockerfile.avoid-yum-update": "ベースイメージ内のパッケージは最新の状態を保ち、'yum update' が不要になるようにすべきです。パッケージが本当に古い場合は、ベースイメージのメンテナーに連絡してください。",
+  "dockerfile.avoid-zypper-update": "ベースイメージ内のパッケージは最新の状態を保ち、'zypper update' が不要になるようにすべきです。パッケージが本当に古い場合は、ベースイメージのメンテナーに連絡してください。",
+  "dockerfile.dockerfile-source-not-pinned": "ビルドの再現性を確保するため、Dockerfile の `FROM` は具体的な hash に固定してください。先に `docker pull $IMAGE` を実行してから、`$IMAGE:$VERSION@sha256:<hash>` と記述してください。",
+  "dockerfile.last-user-is-root": "コンテナ内の最後のユーザーが 'root' です。これはセキュリティ上のリスクであり、攻撃者はコンテナを制御すると直ちに root 権限を持ちます。root でコマンドを実行し終えたら、他のユーザーに切り替えてください。",
+  "dockerfile.maintainer-is-deprecated": "MAINTAINER 命令は非推奨です。",
+  "dockerfile.missing-apk-no-cache": "apk コマンドに '--no-cache' がありません。これを付けると、ローカルのパッケージキャッシュではなくパッケージインデックスを使用するよう apk に強制でき、'--update' の実行と '/var/cache/apk/*' の削除のステップを省けます。apk コマンドに '--no-cache' を追加してください。",
+  "dockerfile.missing-dnf-assume-yes-switch": "'dnf install' に '-y' スイッチがありません。手動での対話が必要になり、ビルドが停止する恐れがあります。'-y' を追加してください。",
+  "dockerfile.missing-dnf-clean-all": "dnf コマンドが '&& dnf clean all' で終わっていません。'dnf clean all' を実行するとキャッシュを消去し、パッケージサイズを減らせます（インストールコマンドと同じ RUN ステップで実行する必要があります）。",
+  "dockerfile.missing-image-version": "明示的なバージョン番号を持たない docker イメージが検出されました。イメージには、ビルドを決定的なものにするために明示的なバージョンタグを使用すべきです。`FROM <image>` を使用する場合はバージョンを付けてください。",
+  "dockerfile.missing-no-install-recommends": "'apt-get install' に '--no-install-recommends' がありません。このパラメータにより、不要なパッケージのインストールを避け、イメージサイズを減らせます。'--no-install-recommends' を追加してください。",
+  "dockerfile.missing-pip-no-cache-dir": "'$PIP install' に '--no-cache-dir' がありません。このパラメータにより、パッケージアーカイブの保持を避け、イメージサイズを減らせます。'--no-cache-dir' を追加してください。",
+  "dockerfile.missing-user": "USER が指定されていないため、コンテナ内のプログラムが 'root' として実行される恐れがあります。これはセキュリティ上のリスクです。root として実行されているプロセスを攻撃者が制御できる場合、コンテナ全体を制御される恐れがあります。Dockerfile の最後の USER が 'root' でないことを確認してください。",
+  "dockerfile.missing-user-entrypoint": "USER が指定されていないため、コンテナ内のプログラムが 'root' として実行される恐れがあります。これはセキュリティ上のリスクです。root として実行されているプロセスを攻撃者が制御できる場合、コンテナ全体を制御される恐れがあります。Dockerfile の最後の USER が 'root' でないことを確認してください。",
+  "dockerfile.missing-yum-assume-yes-switch": "'yum install' に '-y' スイッチがありません。手動での対話が必要になり、ビルドが停止する恐れがあります。'-y' を追加してください。",
+  "dockerfile.missing-zypper-clean": "zypper コマンドが '&& zypper clean' で終わっていません。'zypper clean' を実行するとキャッシュを消去し、パッケージサイズを減らせます（インストールコマンドと同じ RUN ステップで実行する必要があります）。"
 }
