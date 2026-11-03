@@ -686,5 +686,21 @@
   "python.pymysql-sqli": "`event` 객체로 테인트된 SQL 문이 감지되었습니다. 해당 변수를 사용자가 제어할 수 있고 적절히 정제되지 않으면 SQL 인젝션으로 이어질 수 있습니다. 매개변수화된 쿼리나 prepared statement로 바꿔 사용하십시오(예: `cursor.execute('SELECT * FROM projects WHERE status = %s', ('active'))`).",
   "python.pyramid-authtkt-cookie-httponly-unsafe-default": "Pyramid 인증 티켓 Cookie에 httponly 옵션이 올바르게 설정되지 않은 것이 발견되었습니다. httponly=True로 설정하여 Cookie를 안전하게 처리해야 합니다. 이 매개변수가 올바르지 않으면 Cookie가 제대로 보호되지 않아 공격자에게 탈취될 위험이 있습니다.",
   "python.pyramid-authtkt-cookie-httponly-unsafe-value": "Pyramid 인증 티켓 Cookie에 httponly 옵션이 올바르게 설정되지 않은 것이 발견되었습니다. httponly=True로 설정하여 Cookie를 안전하게 처리해야 합니다. 이 매개변수가 올바르지 않으면 Cookie가 제대로 보호되지 않아 공격자에게 탈취될 위험이 있습니다.",
-  "python.pyramid-authtkt-cookie-samesite": "Pyramid 인증 티켓에 samesite 옵션이 올바르게 설정되지 않은 것이 발견되었습니다. samesite='Lax'로 설정하여 Pyramid Cookie를 안전하게 처리해야 합니다. 이 매개변수가 올바르지 않으면 Cookie가 제대로 보호되지 않아 공격자에게 탈취될 위험이 있습니다."
+  "python.pyramid-authtkt-cookie-samesite": "Pyramid 인증 티켓에 samesite 옵션이 올바르게 설정되지 않은 것이 발견되었습니다. samesite='Lax'로 설정하여 Pyramid Cookie를 안전하게 처리해야 합니다. 이 매개변수가 올바르지 않으면 Cookie가 제대로 보호되지 않아 공격자에게 탈취될 위험이 있습니다.",
+  "python.pyramid-authtkt-cookie-secure-unsafe-default": "Pyramid 인증 티켓 Cookie의 secure 옵션에 안전하지 않은 기본값이 사용된 것이 발견되었습니다. secure=True로 설정하여 Cookie를 안전하게 처리해야 합니다. 이 매개변수가 올바르지 않으면 Cookie가 제대로 보호되지 않아 공격자에게 탈취될 위험이 있습니다.",
+  "python.pyramid-authtkt-cookie-secure-unsafe-value": "Pyramid 인증 티켓 Cookie에 secure 옵션이 올바르게 설정되지 않은 것이 발견되었습니다. secure=True로 설정하여 Cookie를 안전하게 처리해야 합니다. 이 매개변수가 올바르지 않으면 Cookie가 제대로 보호되지 않아 공격자에게 탈취될 위험이 있습니다.",
+  "python.pyramid-csrf-check-disabled": "이 뷰는 CSRF 보호를 비활성화했으므로 보안 위험이 있습니다.",
+  "python.pyramid-csrf-check-disabled-globally": "크로스 사이트 요청 위조 토큰의 자동 검사가 명시적으로 전역에서 비활성화되어 일부 뷰가 보호를 잃을 수 있습니다. 'pyramid.config.Configurator.set_default_csrf_options(require_csrf=True)'를 사용하여 모든 안전하지 않은 메서드(RFC 2616 기준)에 대해 자동 검사를 활성화하십시오.",
+  "python.pyramid-csrf-origin-check-disabled": "이 뷰는 CSRF 토큰의 Origin 검증을 비활성화했습니다. CSRF 저장 정책의 안전성이 확실하지 않다면 이는 보안 위험이 됩니다.",
+  "python.pyramid-csrf-origin-check-disabled-globally": "CSRF 토큰 Referer의 자동 검사가 명시적으로 전역에서 비활성화되어 CSRF 저장 정책이 안전하지 않을 때 뷰가 보호를 잃을 수 있습니다. 'pyramid.config.Configurator.set_default_csrf_options(check_origin=True)'를 사용하여 모든 안전하지 않은 메서드(RFC 2616 기준)에 대해 자동 검사를 활성화하십시오.",
+  "python.pyramid-direct-use-of-response": "데이터가 'Response'를 통해 최종 사용자에게 직접 렌더링되는 것이 감지되었습니다. 이는 Pyramid 내장 크로스 사이트 스크립팅(XSS) 방어를 우회하며, XSS 취약점이 발생할 수 있습니다. Pyramid 템플릿 엔진으로 HTML을 안전하게 렌더링하십시오.",
+  "python.pyramid-set-cookie-httponly-unsafe-default": "Pyramid Cookie의 httponly 옵션에 안전하지 않은 기본값이 사용된 것이 발견되었습니다. response.set_cookie(...)에 httponly=True를 설정해야 합니다. 이 매개변수가 올바르지 않으면 Cookie가 제대로 보호되지 않아 공격자에게 탈취될 위험이 있습니다.",
+  "python.pyramid-set-cookie-httponly-unsafe-value": "Pyramid Cookie에 httponly 옵션이 올바르게 설정되지 않은 것이 발견되었습니다. response.set_cookie(...)에 httponly=True를 설정해야 합니다. 이 매개변수가 올바르지 않으면 Cookie가 제대로 보호되지 않아 공격자에게 탈취될 위험이 있습니다.",
+  "python.pyramid-set-cookie-samesite-unsafe-default": "Pyramid Cookie의 samesite 옵션에 안전하지 않은 값이 사용된 것이 발견되었습니다. response.set_cookie(...)에 samesite='Lax'를 설정해야 합니다. 이 매개변수가 올바르지 않으면 Cookie가 제대로 보호되지 않아 공격자에게 탈취될 위험이 있습니다.",
+  "python.pyramid-set-cookie-samesite-unsafe-value": "Pyramid Cookie에 samesite 옵션이 올바르게 설정되지 않은 것이 발견되었습니다. response.set_cookie(...)에 samesite='Lax'를 설정해야 합니다. 이 매개변수가 올바르지 않으면 Cookie가 제대로 보호되지 않아 공격자에게 탈취될 위험이 있습니다.",
+  "python.pyramid-set-cookie-secure-unsafe-default": "Pyramid Cookie의 secure 옵션에 안전하지 않은 기본값이 사용된 것이 발견되었습니다. response.set_cookie(...)에 secure=True를 설정해야 합니다. 이 매개변수가 올바르지 않으면 Cookie가 제대로 보호되지 않아 공격자에게 탈취될 위험이 있습니다.",
+  "python.pyramid-set-cookie-secure-unsafe-value": "Pyramid Cookie에 secure 옵션이 올바르게 설정되지 않은 것이 발견되었습니다. response.set_cookie(...)에 secure=True를 설정해야 합니다. 이 매개변수가 올바르지 않으면 Cookie가 제대로 보호되지 않아 공격자에게 탈취될 위험이 있습니다.",
+  "python.pyramid-sqlalchemy-sql-injection": "SQLAlchemy의 Distinct, Having, Group_by, Order_by, Filter에 원시 SQL이 전달되면 SQL 삽입이 발생할 수 있습니다. 이 규칙은 개발자가 이들 절에 원시 SQL을 전달하고 \"bindparams\" 이외의 함수로 사용자 입력을 주입하는 경우를 다룹니다. bindparams를 사용해 사용자 입력을 SQL 문에 안전하게 바인딩하십시오.",
+  "python.python-debugger-found": "Python 디버거가 임포트되었습니다. 의도적으로 남겨 둔 것입니까?",
+  "python.python-logger-credential-disclosure": "로그 호출이 하드코딩된 민감한 정보 $FORMAT_STRING을 출력할 수 있는 것이 감지되었습니다. 이로 인해 자격 증명이 유출될 수 있습니다. 로그에 민감한 정보가 기록되지 않도록 하십시오."
 }
