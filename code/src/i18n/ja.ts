@@ -1,4 +1,6 @@
-const ja = {
+import zh from './zh';
+
+const ja: typeof zh = {
   app: {
     tagline: 'コード監査ワークベンチ',
   },
@@ -28,6 +30,8 @@ const ja = {
     zh: '简体中文',
     zhHant: '繁體中文',
     en: 'English',
+    ja: '日本語',
+    ko: '韓国語',
   },
   theme: {
     light: 'ライト',

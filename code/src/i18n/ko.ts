@@ -1,4 +1,6 @@
-const ko = {
+import zh from './zh';
+
+const ko: typeof zh = {
   app: {
     tagline: '코드 감사 워크벤치',
   },
@@ -28,6 +30,8 @@ const ko = {
     zh: '简体中文',
     zhHant: '繁體中文',
     en: 'English',
+    ja: '일본어',
+    ko: '한국어',
   },
   theme: {
     light: '라이트',
