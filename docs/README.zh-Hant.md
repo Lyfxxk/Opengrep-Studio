@@ -3,7 +3,7 @@
 <h1>Opengrep Studio · 碼審工作台</h1>
 <p><strong>讓隱患，先於攻擊者現形。</strong></p>
 <p>本地優先的 <a href="https://github.com/opengrep/opengrep">Opengrep</a> 靜態程式碼稽核工作台——上傳原始碼、規則掃描、逐條審閱、基線對比、交付報告，<strong>程式碼不出本機</strong>。</p>
-<p><a href="../README.md">English</a> · <a href="./README.zh-Hans.md">简体中文</a> · <a href="#快速開始">快速開始</a> · <a href="#功能亮點">功能亮點</a> · <a href="#安全模型">安全模型</a> · <a href="#常見問題">常見問題</a></p>
+<p><a href="../README.md">English</a> · <a href="./README.zh-Hans.md">简体中文</a> · <a href="./README.ja.md">日本語</a> · <a href="./README.ko.md">한국어</a></p>
 <p>
 <a href="https://github.com/Lyfxxk/Opengrep-Studio/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/Lyfxxk/Opengrep-Studio/ci.yml?branch=main&label=CI&style=flat-square" alt="CI"/></a>
 <a href="#license"><img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="License: MIT"/></a>
