@@ -25,6 +25,7 @@ const ko: typeof zh = {
     avatarAlt: '관리자 아바타',
     language: '언어 전환',
     theme: '테마 전환',
+    skin: '스킨 전환',
   },
   lang: {
     zh: '简体中文',

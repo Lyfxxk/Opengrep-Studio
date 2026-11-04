@@ -1,6 +1,6 @@
 import type { AppLanguage } from '@/i18n';
 
-export const SKIN_STORAGE_KEY = '__global_opengrep_skin';
+const SKIN_STORAGE_KEY = '__global_opengrep_skin';
 
 export type SkinId = 'default' | 'graphite';
 
@@ -20,7 +20,7 @@ export const SKINS: SkinDefinition[] = [
   },
 ];
 
-export function isSkinId(value: string | null): value is SkinId {
+function isSkinId(value: string | null): value is SkinId {
   return value === 'default' || value === 'graphite';
 }
 
@@ -34,7 +34,7 @@ export function resolveInitialSkin(): SkinId {
   return 'default';
 }
 
-export function applySkin(id: SkinId): void {
+function applySkin(id: SkinId): void {
   if (id === 'default') {
     delete document.documentElement.dataset.skin;
   } else {

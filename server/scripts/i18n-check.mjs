@@ -59,6 +59,14 @@ const checkPair = (prefix, display) => {
     if (extra.length) {
       problems.push(`${prefix}-${lang} 多出 ${extra.length} 条：${extra.slice(0, 5).join('、')}`);
     }
+    for (const key of Object.keys(zh)) {
+      if (!(key in other)) continue;
+      const expectedVars = varsOfValue(zh[key]);
+      const actualVars = varsOfValue(other[key]);
+      if (expectedVars !== actualVars) {
+        problems.push(`${prefix}-${lang} 键 ${key} 的插值变量不一致：zh="${expectedVars}" ${lang}="${actualVars}"`);
+      }
+    }
     counts.push(`${lang}=${Object.keys(other).length}`);
   }
   console.log(`${display}：${counts.join(' / ')}`);
@@ -105,6 +113,14 @@ const varsOf = (text) =>
     .map((match) => match[1])
     .sort()
     .join(',');
+
+const varsOfValue = (value) =>
+  typeof value === 'string'
+    ? varsOf(value)
+    : Object.values(value ?? {})
+        .map((item) => varsOf(String(item ?? '')))
+        .sort()
+        .join(';');
 for (const [key, zhValue] of uiValues.zh) {
   const expected = varsOf(zhValue);
   for (const lang of langs) {
@@ -120,7 +136,7 @@ for (const [key, zhValue] of uiValues.zh) {
 
 const CJK = /[\u4e00-\u9fff]/;
 const hanChecks = [
-  ['en', new Set(['lang.zh', 'lang.zhHant'])],
+  ['en', new Set(['lang.zh', 'lang.zhHant', 'lang.ja', 'lang.ko'])],
   ['ko', new Set(['lang.zh', 'lang.zhHant', 'lang.ja'])],
 ];
 for (const [lang, cjkAllowed] of hanChecks) {

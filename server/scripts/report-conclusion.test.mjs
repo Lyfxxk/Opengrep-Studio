@@ -69,7 +69,7 @@ test('五语 HTML 报告都带「无严重/高危」那句，非简体不夹简�
     const { html } = render(issues, lang);
     assert.ok(html.includes(expected), `${lang} 缺少无严重/高危结论句`);
     if (lang !== 'zh') {
-      assert.ok(!html.includes('建议优先处理'), `${lang} 混入简体兜底文案`);
+      assert.ok(!html.includes('中低危问题的修复'), `${lang} 混入简体兜底文案`);
     }
   }
 });
