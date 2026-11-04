@@ -8,13 +8,15 @@
   --border:        hsl(220 13% 87%);
   --border-strong: hsl(220 12% 76%);
 
-  --accent:        hsl(211 100% 50%);
-  --accent-deep:   hsl(210 100% 42%);
+  --accent:        hsl(228 74% 50%);
+  --accent-deep:   hsl(228 70% 43%);
   --on-accent:     hsl(0 0% 100%);
   --accent-soft:   color-mix(in srgb, var(--accent) 16%, transparent);
 
-  --signal:        hsl(192 85% 34%);
+  --signal:        hsl(197 88% 37%);
   --signal-soft:   color-mix(in srgb, var(--signal) 12%, transparent);
+
+  --panel:         linear-gradient(180deg, hsl(228 45% 97%), hsl(227 32% 95%));
 
   --ok:            hsl(142 55% 32%);
   --ok-soft:       color-mix(in oklch, var(--ok) 13%, transparent);
@@ -57,11 +59,13 @@
   --border:        oklch(0.295 0.018 245);
   --border-strong: oklch(0.38 0.02 245);
 
-  --accent:        #3b82f6;
-  --accent-deep:   #2563eb;
+  --accent:        #6e8bf7;
+  --accent-deep:   #4c60e8;
   --on-accent:     #ffffff;
 
   --signal:        #00e5ff;
+
+  --panel:         color-mix(in oklch, var(--surface) 34%, var(--bg));
 
   --ok:            oklch(0.8 0.165 152);
   --warn:          oklch(0.82 0.13 85);
@@ -76,6 +80,7 @@
   --accent:        hsl(215 15% 30%);
   --accent-deep:   hsl(215 15% 22%);
   --signal:        hsl(215 15% 30%);
+  --panel:         hsl(215 16% 96%);
   --radius: 4px;
   --radius-lg: 5px;
 }
@@ -322,7 +327,7 @@
   justify-content: center;
   overflow-y: auto;
   padding: clamp(32px, 5vw, 64px) 40px;
-  background: color-mix(in oklch, var(--surface) 34%, var(--bg));
+  background: var(--panel, color-mix(in oklch, var(--surface) 34%, var(--bg)));
   border-left: 1px solid var(--border);
 }
 .login-shell .form-col { width: min(410px, 100%); }
