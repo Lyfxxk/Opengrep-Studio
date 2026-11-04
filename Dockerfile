@@ -1,18 +1,21 @@
 # syntax=docker/dockerfile:1
 
+# 引擎单独成 stage：缓存键只有清单与安装脚本，业务代码改动不会让 50MB 引擎重新下载。
+FROM node:22-bookworm-slim AS engine
+WORKDIR /build
+COPY server/scripts/engines.json server/scripts/setup-engine.mjs server/scripts/engine-install.mjs ./server/scripts/
+RUN node server/scripts/setup-engine.mjs
+
 FROM node:22-bookworm-slim AS build
 WORKDIR /build
 
 COPY code/package.json code/package-lock.json ./code/
-RUN npm ci --prefix code
+RUN --mount=type=cache,target=/root/.npm npm ci --prefix code
 COPY code/ ./code/
 RUN npm run build --prefix code
 
 COPY server/package.json server/package-lock.json ./server/
-RUN npm ci --prefix server
-
-COPY server/scripts/engines.json server/scripts/setup-engine.mjs server/scripts/engine-install.mjs ./server/scripts/
-RUN node server/scripts/setup-engine.mjs
+RUN --mount=type=cache,target=/root/.npm npm ci --prefix server
 
 FROM node:22-bookworm-slim
 LABEL org.opencontainers.image.title="Opengrep Studio" \
@@ -25,15 +28,16 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY --from=build /build/code/dist ./code/dist
-COPY --from=build /build/server/node_modules ./server/node_modules
-COPY server/package.json ./server/package.json
-COPY server/src ./server/src
-COPY server/rules ./server/rules
-COPY server/scripts/engines.json server/scripts/engine-install.mjs ./server/scripts/
-COPY --from=build /build/opengrep-tool ./opengrep-tool
+COPY --chown=node:node --from=build /build/code/dist ./code/dist
+COPY --chown=node:node --from=build /build/server/node_modules ./server/node_modules
+COPY --chown=node:node server/package.json ./server/package.json
+COPY --chown=node:node server/src ./server/src
+COPY --chown=node:node server/rules ./server/rules
+COPY --chown=node:node server/scripts/engines.json server/scripts/engine-install.mjs ./server/scripts/
+COPY --chown=node:node --from=engine /build/opengrep-tool ./opengrep-tool
 
-RUN mkdir -p /data/rules-custom && chown -R node:node /app /data
+# 只对数据目录递归 chown：/app 已由上面的 COPY --chown 归位，整目录再 chown 一遍是纯开销。
+RUN mkdir -p /data/rules-custom && chown -R node:node /data
 ENV NODE_ENV=production \
     HOST=0.0.0.0 \
     PORT=8787 \
