@@ -42,8 +42,8 @@ import {
 import LanguageMenu from '@/components/LanguageMenu';
 import SkinMenu from '@/components/SkinMenu';
 import ThemeMenu from '@/components/ThemeMenu';
-import { getCurrentUser, logout, restoreSession } from '@/lib/auth';
-import { USE_MOCK, type SessionUser } from '@/lib/api';
+import { getCurrentUser, hasRole, logout, restoreSession } from '@/lib/auth';
+import { USE_MOCK, type SessionUser, type UserRole } from '@/lib/api';
 import avatarUrl from '@/assets/images/avatar.jpg';
 import logoUrl from '@/assets/images/logo.png';
 
@@ -60,13 +60,13 @@ type NavKey =
   | 'nav.rules'
   | 'nav.configs';
 
-const NAV_ITEMS: Array<{ path: string; label: NavKey; icon: typeof LayoutDashboard }> = [
+const NAV_ITEMS: Array<{ path: string; label: NavKey; icon: typeof LayoutDashboard; minRole?: UserRole }> = [
   { path: '/dashboard', label: 'nav.dashboard', icon: LayoutDashboard },
   { path: '/projects', label: 'nav.projects', icon: FolderOpen },
   { path: '/scans', label: 'nav.scans', icon: Radar },
   { path: '/reports', label: 'nav.reports', icon: FileText },
-  { path: '/rules', label: 'nav.rules', icon: Puzzle },
-  { path: '/configs', label: 'nav.configs', icon: SlidersHorizontal },
+  { path: '/rules', label: 'nav.rules', icon: Puzzle, minRole: 'auditor' },
+  { path: '/configs', label: 'nav.configs', icon: SlidersHorizontal, minRole: 'auditor' },
 ];
 
 const ICON_BUTTON_CLASS =
@@ -90,7 +90,7 @@ function AppSidebar() {
       <SidebarContent>
         <SidebarGroup className="p-2.5">
           <SidebarMenu className="gap-1.5">
-            {NAV_ITEMS.map((item) => {
+            {NAV_ITEMS.filter((item) => !item.minRole || hasRole(item.minRole)).map((item) => {
               const Icon = item.icon;
               const isActive =
                 pathname === item.path || pathname.startsWith(`${item.path}/`);

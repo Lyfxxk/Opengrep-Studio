@@ -11,6 +11,9 @@ import ScansCenterPage from "@/pages/Scans/ScansCenterPage";
 import ReportsCenterPage from "@/pages/Reports/ReportsCenterPage";
 import RulesCenterPage from "@/pages/Rules/RulesCenterPage";
 import ScanConfigTab from "@/pages/Configs/ScanConfigTab";
+import UsersPage from "@/pages/Users/UsersPage";
+import { getCurrentUser } from "@/lib/auth";
+import { USE_MOCK } from "@/lib/api";
 
 function NotFoundPage() {
   const { t } = useTranslation();
@@ -21,6 +24,14 @@ function NotFoundPage() {
       <Link to="/projects" className="text-primary hover:underline">{t('common.backToProjects')}</Link>
     </div>
   );
+}
+
+function RequireAdmin() {
+  const user = getCurrentUser();
+  if (USE_MOCK || !user || user.role !== 'admin') {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return <UsersPage />;
 }
 
 export default function App() {
@@ -38,6 +49,7 @@ export default function App() {
         <Route path="rules" element={<RulesCenterPage />} />
         <Route path="lab" element={<Navigate to="/rules?tab=lab" replace />} />
         <Route path="configs" element={<ScanConfigTab />} />
+        <Route path="users" element={<RequireAdmin />} />
       </Route>
       <Route path="login" element={<LoginPage />} />
       <Route path="*" element={<NotFoundPage />} />

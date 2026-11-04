@@ -38,11 +38,15 @@ import {
 } from '@/components/ui/table';
 import type { IProject } from '@/data/projects';
 import { api } from '@/lib/api';
+import { hasRole } from '@/lib/auth';
 import { Skeleton } from '@/components/ui/skeleton';
 import NewProjectDialog from './NewProjectDialog';
 
 export default function ProjectsPage() {
   const { t } = useTranslation();
+  const canEdit = hasRole('auditor');
+  const canDelete = hasRole('admin');
+  const showActions = canEdit || canDelete;
   const [projects, setProjects] = useState<IProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
@@ -142,10 +146,12 @@ export default function ProjectsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-xl font-semibold">{t('nav.projects')}</h1>
-        <Button className="gap-1" onClick={() => setCreateOpen(true)}>
-          <Plus className="size-4" />
-          {t('projects.newProject')}
-        </Button>
+        {canEdit && (
+          <Button className="gap-1" onClick={() => setCreateOpen(true)}>
+            <Plus className="size-4" />
+            {t('projects.newProject')}
+          </Button>
+        )}
       </div>
 
       {(projects.length > 0) && (
@@ -162,13 +168,15 @@ export default function ProjectsPage() {
         </div>
       )}
 
-      <BatchDeleteBar
-        count={selection.count}
-        entity="project"
-        deleting={batchDeleting}
-        onDelete={() => setBatchConfirmOpen(true)}
-        onClear={selection.clear}
-      />
+      {canDelete && (
+        <BatchDeleteBar
+          count={selection.count}
+          entity="project"
+          deleting={batchDeleting}
+          onDelete={() => setBatchConfirmOpen(true)}
+          onClear={selection.clear}
+        />
+      )}
 
       <Card className="overflow-hidden">
         <CardContent className="p-0">
@@ -190,29 +198,35 @@ export default function ProjectsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-10">
-                      <Checkbox
-                        checked={selection.allSelected ? true : selection.someSelected ? 'indeterminate' : false}
-                        onCheckedChange={() => selection.toggleAll()}
-                        aria-label={t('projects.selectAllAria')}
-                      />
-                    </TableHead>
+                    {canDelete && (
+                      <TableHead className="w-10">
+                        <Checkbox
+                          checked={selection.allSelected ? true : selection.someSelected ? 'indeterminate' : false}
+                          onCheckedChange={() => selection.toggleAll()}
+                          aria-label={t('projects.selectAllAria')}
+                        />
+                      </TableHead>
+                    )}
                     <TableHead className="whitespace-nowrap">{t('projects.colName')}</TableHead>
                     <TableHead className="whitespace-nowrap">{t('projects.colDescription')}</TableHead>
                     <TableHead className="whitespace-nowrap">{t('projects.colCreatedAt')}</TableHead>
-                    <TableHead className="whitespace-nowrap text-right">{t('common.actions')}</TableHead>
+                    {showActions && (
+                      <TableHead className="whitespace-nowrap text-right">{t('common.actions')}</TableHead>
+                    )}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {pagedProjects.map((project) => (
                     <TableRow key={project.id}>
-                      <TableCell className="w-10">
-                        <Checkbox
-                          checked={selection.selected.has(project.id)}
-                          onCheckedChange={() => selection.toggle(project.id)}
-                          aria-label={t('projects.rowSelectAria', { name: project.name })}
-                        />
-                      </TableCell>
+                      {canDelete && (
+                        <TableCell className="w-10">
+                          <Checkbox
+                            checked={selection.selected.has(project.id)}
+                            onCheckedChange={() => selection.toggle(project.id)}
+                            aria-label={t('projects.rowSelectAria', { name: project.name })}
+                          />
+                        </TableCell>
+                      )}
                       <TableCell>
                         <Link
                           to={`/projects/${project.id}`}
@@ -229,28 +243,34 @@ export default function ProjectsPage() {
                       <TableCell className="whitespace-nowrap tabular-nums text-muted-foreground">
                         {formatDateTime(project.createdAt)}
                       </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="size-8">
-                              <MoreHorizontal className="size-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onSelect={() => handleOpenEdit(project)}>
-                              <Pencil className="size-4" />
-                              {t('common.edit')}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="text-destructive focus:text-destructive"
-                              onSelect={() => setDeleteTarget(project)}
-                            >
-                              <Trash2 className="size-4" />
-                              {t('common.delete')}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
+                      {showActions && (
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="size-8">
+                                <MoreHorizontal className="size-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              {canEdit && (
+                                <DropdownMenuItem onSelect={() => handleOpenEdit(project)}>
+                                  <Pencil className="size-4" />
+                                  {t('common.edit')}
+                                </DropdownMenuItem>
+                              )}
+                              {canDelete && (
+                                <DropdownMenuItem
+                                  className="text-destructive focus:text-destructive"
+                                  onSelect={() => setDeleteTarget(project)}
+                                >
+                                  <Trash2 className="size-4" />
+                                  {t('common.delete')}
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>

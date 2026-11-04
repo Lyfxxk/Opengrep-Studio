@@ -30,6 +30,13 @@ export function getCurrentUsername(): string {
   return getCurrentUser()?.username ?? '';
 }
 
+const ROLE_RANK: Record<UserRole, number> = { viewer: 1, auditor: 2, admin: 3 };
+
+export function hasRole(minimum: UserRole): boolean {
+  const role = getCurrentUser()?.role;
+  return role !== undefined && ROLE_RANK[role] >= ROLE_RANK[minimum];
+}
+
 function storeUser(user: SessionUser): void {
   try {
     store.setItem(AUTH_KEY, JSON.stringify(user));

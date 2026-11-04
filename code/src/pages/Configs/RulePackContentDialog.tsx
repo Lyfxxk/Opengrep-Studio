@@ -14,6 +14,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import type { IRulePack } from '@/data/rulepacks';
 import { api } from '@/lib/api';
+import { hasRole } from '@/lib/auth';
 
 interface RulePackContentDialogProps {
   open: boolean;
@@ -72,14 +73,15 @@ export default function RulePackContentDialog({
     }
   };
 
-  const readOnly = pack?.builtin ?? false;
+  const isBuiltin = pack?.builtin ?? false;
+  const canEdit = !isBuiltin && hasRole('admin');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            {readOnly ? t('rulePacks.builtinReadOnlyTitle') : t('rulePacks.contentTitle')}
+            {isBuiltin ? t('rulePacks.builtinReadOnlyTitle') : t('rulePacks.contentTitle')}
             {pack && <Badge variant="secondary" className="font-normal">{pack.language}</Badge>}
             {pack && (
               <span className="font-mono text-xs font-normal text-muted-foreground">
@@ -109,7 +111,7 @@ export default function RulePackContentDialog({
         )}
 
         <DialogFooter className="items-center">
-          {readOnly && (
+          {isBuiltin && (
             <span className="mr-auto text-xs text-muted-foreground">
               {t('rulePacks.builtinContentHint')}
             </span>
@@ -129,7 +131,7 @@ export default function RulePackContentDialog({
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 {t('common.close')}
               </Button>
-              {!readOnly && (
+              {canEdit && (
                 <Button className="gap-1" onClick={() => setEditing(true)}>
                   <Pencil className="size-4" />
                   {t('common.edit')}

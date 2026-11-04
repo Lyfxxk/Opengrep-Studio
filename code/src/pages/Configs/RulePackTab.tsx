@@ -62,6 +62,7 @@ import { usePackDisplayName } from '@/lib/displayNames';
 import Pagination from '@/components/Pagination';
 import { LIST_PAGE_SIZE, PACK_LANGUAGES } from '@/data/constants';
 import { api, translateApiError } from '@/lib/api';
+import { hasRole } from '@/lib/auth';
 import RulePackContentDialog from './RulePackContentDialog';
 import RulePackCreateDialog from './RulePackCreateDialog';
 
@@ -89,6 +90,8 @@ function verdictLabel(
 export default function RulePackTab() {
   const { t, i18n } = useTranslation();
   const packDisplayName = usePackDisplayName();
+  const canCheck = hasRole('auditor');
+  const isAdmin = hasRole('admin');
   const [rulePacks, setRulePacks] = useState<IRulePack[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState<IRulePack | null>(null);
@@ -333,13 +336,15 @@ export default function RulePackTab() {
   const renderTableHeader = (
     <TableHeader>
       <TableRow>
-        <TableHead className="w-10">
-          <Checkbox
-            checked={selection.allSelected ? true : selection.someSelected ? 'indeterminate' : false}
-            onCheckedChange={() => selection.toggleAll()}
-            aria-label={t('rulePacks.selectAllAria')}
-          />
-        </TableHead>
+        {isAdmin && (
+          <TableHead className="w-10">
+            <Checkbox
+              checked={selection.allSelected ? true : selection.someSelected ? 'indeterminate' : false}
+              onCheckedChange={() => selection.toggleAll()}
+              aria-label={t('rulePacks.selectAllAria')}
+            />
+          </TableHead>
+        )}
         <TableHead className="whitespace-nowrap">{t('rulePacks.colName')}</TableHead>
         <TableHead className="whitespace-nowrap">{t('rulePacks.colLanguage')}</TableHead>
         <TableHead className="whitespace-nowrap">{t('rulePacks.colRuleCount')}</TableHead>
@@ -351,13 +356,15 @@ export default function RulePackTab() {
 
   const renderPackRow = (pack: IRulePack) => (
     <TableRow key={pack.id}>
-      <TableCell className="w-10">
-        <Checkbox
-          checked={selection.selected.has(pack.id)}
-          onCheckedChange={() => selection.toggle(pack.id)}
-          aria-label={t('rulePacks.rowSelectAria', { name: packDisplayName(pack.name, pack.id) })}
-        />
-      </TableCell>
+      {isAdmin && (
+        <TableCell className="w-10">
+          <Checkbox
+            checked={selection.selected.has(pack.id)}
+            onCheckedChange={() => selection.toggle(pack.id)}
+            aria-label={t('rulePacks.rowSelectAria', { name: packDisplayName(pack.name, pack.id) })}
+          />
+        </TableCell>
+      )}
       <TableCell className="font-medium">
         <div className="flex flex-wrap items-center gap-1.5">
           <span>{packDisplayName(pack.name, pack.id)}</span>
@@ -404,22 +411,25 @@ export default function RulePackTab() {
       <TableCell>
         <Switch
           checked={pack.enabled}
+          disabled={!isAdmin}
           onCheckedChange={(checked) => void handleToggle(pack, checked)}
           aria-label={t('rulePacks.enableAria', { name: packDisplayName(pack.name, pack.id) })}
         />
       </TableCell>
       <TableCell className="text-right">
         <div className="flex items-center justify-end gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-8"
-            title={pack.isDir ? t('rulePacks.checkDirTitle') : t('rulePacks.checkSingleTitle')}
-            disabled={!pack.isDir}
-            onClick={() => void handleCheck(pack)}
-          >
-            <FlaskConical className="size-4" />
-          </Button>
+          {canCheck && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8"
+              title={pack.isDir ? t('rulePacks.checkDirTitle') : t('rulePacks.checkSingleTitle')}
+              disabled={!pack.isDir}
+              onClick={() => void handleCheck(pack)}
+            >
+              <FlaskConical className="size-4" />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
@@ -439,15 +449,17 @@ export default function RulePackTab() {
           >
             <Eye className="size-4" />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-8 text-destructive hover:text-destructive"
-            title={t('rulePacks.deleteActionTitle')}
-            onClick={() => void handleOpenDelete(pack)}
-          >
-            <Trash2 className="size-4" />
-          </Button>
+          {isAdmin && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8 text-destructive hover:text-destructive"
+              title={t('rulePacks.deleteActionTitle')}
+              onClick={() => void handleOpenDelete(pack)}
+            >
+              <Trash2 className="size-4" />
+            </Button>
+          )}
         </div>
       </TableCell>
     </TableRow>
@@ -455,48 +467,58 @@ export default function RulePackTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <div className="flex shrink-0 items-center gap-2">
-          <Button className="gap-1" onClick={() => setCreateOpen(true)}>
-            {t('rulePacks.createBtn')}
-          </Button>
-          <Button variant="outline" className="gap-1" onClick={() => fileInputRef.current?.click()}>
-            <Upload className="size-4" />
-            {t('rulePacks.uploadYamlBtn')}
-          </Button>
-          <Button
-            variant="outline"
-            className="gap-1"
-            disabled={submitting}
-            onClick={() => importInputRef.current?.click()}
-          >
-            <Download className="size-4" />
-            {submitting ? t('rulePacks.importing') : t('rulePacks.importBtn')}
-          </Button>
+      {(canCheck || isAdmin) && (
+        <div className="flex justify-end">
+          <div className="flex shrink-0 items-center gap-2">
+            {canCheck && (
+              <>
+                <Button className="gap-1" onClick={() => setCreateOpen(true)}>
+                  {t('rulePacks.createBtn')}
+                </Button>
+                <Button variant="outline" className="gap-1" onClick={() => fileInputRef.current?.click()}>
+                  <Upload className="size-4" />
+                  {t('rulePacks.uploadYamlBtn')}
+                </Button>
+              </>
+            )}
+            {isAdmin && (
+              <Button
+                variant="outline"
+                className="gap-1"
+                disabled={submitting}
+                onClick={() => importInputRef.current?.click()}
+              >
+                <Download className="size-4" />
+                {submitting ? t('rulePacks.importing') : t('rulePacks.importBtn')}
+              </Button>
+            )}
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".yaml,.yml"
+            className="hidden"
+            onChange={(event) => handleFileChange(event.target.files?.[0])}
+          />
+          <input
+            ref={importInputRef}
+            type="file"
+            accept=".zip"
+            className="hidden"
+            onChange={(event) => handleImportZip(event.target.files?.[0])}
+          />
         </div>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".yaml,.yml"
-          className="hidden"
-          onChange={(event) => handleFileChange(event.target.files?.[0])}
-        />
-        <input
-          ref={importInputRef}
-          type="file"
-          accept=".zip"
-          className="hidden"
-          onChange={(event) => handleImportZip(event.target.files?.[0])}
-        />
-      </div>
+      )}
 
-      <BatchDeleteBar
-        count={selection.count}
-        entity="rulePack"
-        deleting={batchDeleting}
-        onDelete={() => setBatchConfirmOpen(true)}
-        onClear={selection.clear}
-      />
+      {isAdmin && (
+        <BatchDeleteBar
+          count={selection.count}
+          entity="rulePack"
+          deleting={batchDeleting}
+          onDelete={() => setBatchConfirmOpen(true)}
+          onClear={selection.clear}
+        />
+      )}
 
       {loading ? (
         <Card className="overflow-hidden">
@@ -599,6 +621,7 @@ export default function RulePackTab() {
                       </div>
                       <Switch
                         checked={pack.enabled}
+                        disabled={!isAdmin}
                         onCheckedChange={(checked) => void handleToggle(pack, checked)}
                         aria-label={t('rulePacks.enableAria', { name: packDisplayName(pack.name, pack.id) })}
                       />

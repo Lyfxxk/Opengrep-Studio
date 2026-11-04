@@ -18,6 +18,7 @@ import { formatDateTime } from '@/lib/format';
 interface ScanHistoryTableProps {
   scans: IScanResult[];
   baselineScanId?: string;
+  canSetBaseline: boolean;
   onSetBaseline: (scanId: string) => void;
   onUnsetBaseline: () => void;
   onView: (scanId: string) => void;
@@ -26,6 +27,7 @@ interface ScanHistoryTableProps {
 export default function ScanHistoryTable({
   scans,
   baselineScanId,
+  canSetBaseline,
   onSetBaseline,
   onUnsetBaseline,
   onView,
@@ -102,29 +104,30 @@ export default function ScanHistoryTable({
                       <Eye className="size-3.5" />
                       {t('projectDetail.actionView')}
                     </Button>
-                    {isBaseline ? (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="gap-1 text-muted-foreground"
-                        title={t('projectDetail.unsetBaselineTitle')}
-                        onClick={onUnsetBaseline}
-                      >
-                        <FlagOff className="size-3.5" />
-                        {t('projectDetail.unsetBaseline')}
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-1"
-                        disabled={scan.status !== 'completed'}
-                        onClick={() => onSetBaseline(scan.id)}
-                      >
-                        <Flag className="size-3.5" />
-                        {t('projectDetail.setBaseline')}
-                      </Button>
-                    )}
+                    {canSetBaseline &&
+                      (isBaseline ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="gap-1 text-muted-foreground"
+                          title={t('projectDetail.unsetBaselineTitle')}
+                          onClick={onUnsetBaseline}
+                        >
+                          <FlagOff className="size-3.5" />
+                          {t('projectDetail.unsetBaseline')}
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1"
+                          disabled={scan.status !== 'completed'}
+                          onClick={() => onSetBaseline(scan.id)}
+                        >
+                          <Flag className="size-3.5" />
+                          {t('projectDetail.setBaseline')}
+                        </Button>
+                      ))}
                   </div>
                 </TableCell>
               </TableRow>
