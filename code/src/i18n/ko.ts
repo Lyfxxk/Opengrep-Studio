@@ -22,6 +22,7 @@ const ko: typeof zh = {
   },
   header: {
     logout: '로그아웃',
+    userManagement: '사용자 관리',
     avatarAlt: '관리자 아바타',
     language: '언어 전환',
     theme: '테마 전환',
@@ -1019,6 +1020,7 @@ const ko: typeof zh = {
     errorUsername: '아이디를 입력하십시오',
     errorPassword: '비밀번호를 입력하십시오',
     errorInvalid: '아이디 또는 비밀번호가 올바르지 않습니다',
+    errorLoginFailed: '로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.',
     submit: '로그인',
     submitting: '로그인 중…',
     successTitle: '신원 확인 완료',

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { translateApiError, USE_MOCK } from '@/lib/api';
 import { login, validateCredentials } from '@/lib/auth';
 import LanguageMenu from '@/components/LanguageMenu';
 import SkinMenu from '@/components/SkinMenu';
@@ -46,7 +47,7 @@ export default function LoginPage() {
     setErrorField(null);
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (submitting || success) return;
     const trimmedName = username.trim();
@@ -58,21 +59,42 @@ export default function LoginPage() {
       showError(t('login.errorPassword'), 'password');
       return;
     }
-    if (!validateCredentials(trimmedName, password)) {
+    if (USE_MOCK && !validateCredentials(trimmedName, password)) {
       showError(t('login.errorInvalid'), 'password');
       return;
     }
 
     clearError();
     setSubmitting(true);
-    timerRef.current.push(
-      window.setTimeout(() => {
-        login(trimmedName);
-        setSubmitting(false);
-        setSuccess(true);
-        timerRef.current.push(window.setTimeout(() => navigate('/dashboard'), 900));
-      }, 800),
-    );
+
+    const enterWorkspace = () => {
+      setSubmitting(false);
+      setSuccess(true);
+      timerRef.current.push(window.setTimeout(() => navigate('/dashboard'), 900));
+    };
+
+    if (USE_MOCK) {
+      timerRef.current.push(
+        window.setTimeout(() => {
+          login(trimmedName, password);
+          enterWorkspace();
+        }, 800),
+      );
+      return;
+    }
+
+    try {
+      await login(trimmedName, password);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '';
+      setSubmitting(false);
+      showError(
+        translateApiError(undefined, undefined, message || t('login.errorLoginFailed')),
+        'password',
+      );
+      return;
+    }
+    enterWorkspace();
   };
 
   const togglePassword = () => {

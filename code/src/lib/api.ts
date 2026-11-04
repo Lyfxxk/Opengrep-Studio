@@ -1,4 +1,5 @@
 import type { IIssue } from '@/data/issues';
+import { clearCurrentUser } from '@/lib/auth';
 import { MOCK_ISSUES, mockIssuesForScan, mockIssueFingerprint } from '@/data/issues';
 import { MOCK_CONFIGS, type IConfig } from '@/data/configs';
 import { MOCK_PROJECTS, type IProject } from '@/data/projects';
@@ -122,6 +123,13 @@ export function translateApiError(
   return t(`apiErrors.${code}`, { ...resolved, defaultValue: fallback });
 }
 
+const AUTH_REDIRECT_EXEMPT_PATHS = new Set(['/api/auth/login', '/api/auth/me']);
+
+function redirectToLogin(): void {
+  clearCurrentUser();
+  window.location.assign('/login');
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const isFormData = typeof FormData !== 'undefined' && init?.body instanceof FormData;
   const res = await fetch(path, {
@@ -132,6 +140,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
         : init?.headers,
   });
   if (!res.ok) {
+    if (res.status === 401 && !AUTH_REDIRECT_EXEMPT_PATHS.has(path)) {
+      redirectToLogin();
+    }
     let message = i18n.t('api.requestFailed', { status: res.status });
     let code: string | undefined;
     let params: Record<string, unknown> | undefined;
@@ -172,6 +183,9 @@ function uploadWithProgress(
         }
         return;
       }
+      if (xhr.status === 401) {
+        redirectToLogin();
+      }
       let message = i18n.t('api.uploadFailed', { status: xhr.status });
       let code: string | undefined;
       let params: Record<string, unknown> | undefined;
@@ -193,6 +207,30 @@ function uploadWithProgress(
 type ProjectInput = {
   name: string;
   description: string;
+};
+
+export type UserRole = 'admin' | 'auditor' | 'viewer';
+
+export interface SessionUser {
+  username: string;
+  role: UserRole;
+}
+
+export const authApi = {
+  login(username: string, password: string): Promise<SessionUser> {
+    return request<SessionUser>('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ username, password }),
+    });
+  },
+
+  logout(): Promise<void> {
+    return request<void>('/api/auth/logout', { method: 'POST' });
+  },
+
+  me(): Promise<SessionUser> {
+    return request<SessionUser>('/api/auth/me');
+  },
 };
 
 export interface UploadItem {

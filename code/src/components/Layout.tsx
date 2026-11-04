@@ -1,4 +1,4 @@
-import { Fragment } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -9,6 +9,7 @@ import {
   Puzzle,
   Radar,
   SlidersHorizontal,
+  Users,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -41,7 +42,8 @@ import {
 import LanguageMenu from '@/components/LanguageMenu';
 import SkinMenu from '@/components/SkinMenu';
 import ThemeMenu from '@/components/ThemeMenu';
-import { getCurrentUsername, isAuthenticated, logout } from '@/lib/auth';
+import { getCurrentUser, logout, restoreSession } from '@/lib/auth';
+import { USE_MOCK, type SessionUser } from '@/lib/api';
 import avatarUrl from '@/assets/images/avatar.jpg';
 import logoUrl from '@/assets/images/logo.png';
 
@@ -131,6 +133,20 @@ export const Layout = () => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const { t } = useTranslation();
+  const [session, setSession] = useState<SessionUser | null | 'pending'>(
+    () => getCurrentUser() ?? 'pending',
+  );
+
+  useEffect(() => {
+    if (session !== 'pending') return;
+    let cancelled = false;
+    restoreSession().then((user) => {
+      if (!cancelled) setSession(user);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [session]);
 
   const segments = pathname.split('/').filter(Boolean);
   const navLabel = NAV_ITEMS.find((item) => item.path === `/${segments[0]}`)?.label;
@@ -157,12 +173,16 @@ export const Layout = () => {
     }
   }
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/login');
   };
 
-  if (!isAuthenticated()) {
+  if (session === 'pending') {
+    return null;
+  }
+
+  if (!session) {
     return <Navigate to="/login" replace />;
   }
 
@@ -211,11 +231,17 @@ export const Layout = () => {
                     <AvatarFallback>🐹</AvatarFallback>
                   </Avatar>
                   <span className="hidden text-sm sm:inline">
-                    {getCurrentUsername()}
+                    {session.username}
                   </span>
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-40">
+                {session.role === 'admin' && !USE_MOCK && (
+                  <DropdownMenuItem onSelect={() => navigate('/users')}>
+                    <Users className="size-4" />
+                    {t('header.userManagement')}
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onSelect={handleLogout}>
                   <LogOut className="size-4" />
                   {t('header.logout')}
