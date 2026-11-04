@@ -3,6 +3,7 @@ import net from 'node:net';
 import path from 'node:path';
 import express, { type NextFunction, type Request, type Response } from 'express';
 import multer from 'multer';
+import { ensureInitialAdmin, getSessionUser } from './auth.js';
 import { config, engineSource } from './config.js';
 import { HttpError } from './errors.js';
 import { engineInstallHint, terminateTrackedChildren } from './engine.js';
@@ -11,6 +12,7 @@ import { ensureFallbackScanConfig } from './fallback-config.js';
 import { markStaleScansFailed } from './scan-runner.js';
 import { cleanupRuleLabScratch } from './rule-lab.js';
 import { reportCustomPackDrift } from './rulepacks.js';
+import { authRoutes } from './routes/auth.js';
 import { miscRoutes } from './routes/misc.js';
 import {
   ensureBuiltinRulePacks,
@@ -28,6 +30,23 @@ function isLocalHost(hostname: string): boolean {
   return name === 'localhost' || net.isIP(name) !== 0;
 }
 
+const LOOPBACK_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1']);
+
+function hostKey(url: URL): string {
+  const hostname = url.hostname.replace(/^\[|\]$/g, '').toLowerCase();
+  const port = url.port || (url.protocol === 'https:' ? '443' : '80');
+  return `${LOOPBACK_HOSTNAMES.has(hostname) ? 'loopback' : hostname}:${port}`;
+}
+
+function isSameOrigin(origin: string, hostHeader: string | undefined): boolean {
+  if (typeof hostHeader !== 'string') return false;
+  try {
+    return hostKey(new URL(origin)) === hostKey(new URL(`http://${hostHeader.trim()}`));
+  } catch {
+    return false;
+  }
+}
+
 app.use((req, _res, next) => {
   let hostOk = false;
   if (typeof req.headers.host === 'string') {
@@ -42,19 +61,23 @@ app.use((req, _res, next) => {
     return;
   }
   const origin = req.headers.origin;
-  if (req.method !== 'GET' && req.method !== 'HEAD' && typeof origin === 'string') {
-    let originOk = false;
-    if (origin !== 'null') {
-      try {
-        originOk = isLocalHost(new URL(origin).hostname);
-      } catch {
-        originOk = false;
-      }
-    }
-    if (!originOk) {
-      next(new HttpError(403, '拒绝跨站请求：Origin 不是本机地址', { code: 'srv.originNotAllowed' }));
+  if (req.method !== 'GET' && req.method !== 'HEAD' && typeof origin === 'string' && origin !== 'null') {
+    if (!isSameOrigin(origin, req.headers.host)) {
+      next(new HttpError(403, '拒绝跨站请求：Origin 与 Host 不同源', { code: 'srv.originNotAllowed' }));
       return;
     }
+  }
+  next();
+});
+
+app.use(authRoutes);
+
+app.use((req, _res, next) => {
+  if (!req.path.startsWith('/api/')) { next(); return; }
+  if (req.method === 'GET' && req.path === '/api/health') { next(); return; }
+  if (!getSessionUser(req)) {
+    next(new HttpError(401, '请先登录后再访问接口', { code: 'srv.authRequired' }));
+    return;
   }
   next();
 });
@@ -121,6 +144,7 @@ app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
 });
 
 const server = app.listen(config.port, config.host, () => {
+  ensureInitialAdmin();
   ensureBuiltinRulePacks();
   pruneStaleBuiltinPacks();
   ensureFallbackScanConfig();

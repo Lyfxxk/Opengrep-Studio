@@ -133,6 +133,16 @@ export interface Review {
   updatedAt: string;
 }
 
+export type Role = 'admin' | 'auditor' | 'viewer';
+
+export interface User {
+  id: string;
+  username: string;
+  passwordHash: string;
+  role: Role;
+  createdAt: string;
+}
+
 fs.mkdirSync(path.dirname(dbPath), { recursive: true });
 export const db = new DatabaseSync(dbPath);
 
@@ -227,6 +237,14 @@ CREATE TABLE IF NOT EXISTS rulepacks (
   builtin INTEGER NOT NULL DEFAULT 0,
   enabled INTEGER NOT NULL DEFAULT 1,
   rule_count INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS users (
+  id TEXT PRIMARY KEY,
+  username TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  role TEXT NOT NULL,
   created_at TEXT NOT NULL
 );
 `);
@@ -954,4 +972,47 @@ export function getRiskSummary(): RiskSummary {
     )
     .slice(0, RISK_TOP_RULES_LIMIT);
   return { projects, severityCounts, topRules, pendingReview, total };
+}
+
+function rowToUser(row: SqlRow): User {
+  return {
+    id: String(row.id),
+    username: String(row.username),
+    passwordHash: String(row.password_hash),
+    role: String(row.role) as Role,
+    createdAt: String(row.created_at),
+  };
+}
+
+export function listUsers(): User[] {
+  const rows = db.prepare('SELECT * FROM users ORDER BY created_at ASC, id ASC').all() as SqlRow[];
+  return rows.map(rowToUser);
+}
+
+export function getUserById(id: string): User | undefined {
+  const row = db.prepare('SELECT * FROM users WHERE id = ?').get(id) as SqlRow | undefined;
+  return row ? rowToUser(row) : undefined;
+}
+
+export function getUserByUsername(username: string): User | undefined {
+  const row = db.prepare('SELECT * FROM users WHERE username = ?').get(username) as SqlRow | undefined;
+  return row ? rowToUser(row) : undefined;
+}
+
+export function insertUser(user: User): void {
+  db.prepare(
+    'INSERT INTO users (id, username, password_hash, role, created_at) VALUES (?, ?, ?, ?, ?)',
+  ).run(user.id, user.username, user.passwordHash, user.role, user.createdAt);
+}
+
+export function updateUserPassword(id: string, passwordHash: string): void {
+  db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(passwordHash, id);
+}
+
+export function updateUserRole(id: string, role: Role): void {
+  db.prepare('UPDATE users SET role = ? WHERE id = ?').run(role, id);
+}
+
+export function deleteUser(id: string): void {
+  db.prepare('DELETE FROM users WHERE id = ?').run(id);
 }
