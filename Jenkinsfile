@@ -209,7 +209,7 @@ pipeline {
           docker build -t "$IMAGE" .
 
           docker rm -f "$STAGING" > /dev/null 2>&1 || true
-          docker run -d --name "$STAGING" -p 127.0.0.1:8787:8787 -v ogstudio-data:/data "$IMAGE" > /dev/null
+          docker run -d --name "$STAGING" -v ogstudio-data:/data "$IMAGE" > /dev/null
 
           ready=0
           for _ in $(seq 1 30); do
@@ -231,8 +231,24 @@ pipeline {
           fi
 
           docker rm -f opengrep-studio > /dev/null 2>&1 || true
-          docker rename "$STAGING" opengrep-studio
-          docker update --restart unless-stopped opengrep-studio
+          docker rm -f "$STAGING" > /dev/null 2>&1 || true
+          docker run -d --name opengrep-studio --restart unless-stopped -p 127.0.0.1:8787:8787 -v ogstudio-data:/data "$IMAGE" > /dev/null
+
+          final=0
+          for _ in $(seq 1 30); do
+            if docker exec opengrep-studio node -e "fetch('http://127.0.0.1:8787/api/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))" > /dev/null 2>&1; then
+              final=1
+              break
+            fi
+            sleep 3
+          done
+
+          if [ "$final" -ne 1 ]; then
+            echo "[jenkins] 正式容器启动后自检失败，容器日志："
+            docker logs --tail 80 opengrep-studio || true
+            exit 1
+          fi
+
           echo "[jenkins] 部署完成：http://localhost:8787"
         '''
       }
