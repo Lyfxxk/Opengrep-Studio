@@ -209,7 +209,7 @@ pipeline {
           docker build -t "$IMAGE" .
 
           docker rm -f "$STAGING" > /dev/null 2>&1 || true
-          docker run -d --name "$STAGING" -p 8787:8787 "$IMAGE" > /dev/null
+          docker run -d --name "$STAGING" -p 127.0.0.1:8787:8787 -v ogstudio-data:/data "$IMAGE" > /dev/null
 
           ready=0
           for _ in $(seq 1 30); do
