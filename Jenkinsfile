@@ -10,6 +10,7 @@ pipeline {
   parameters {
     booleanParam(name: 'RUN_E2E', defaultValue: true, description: '运行真实引擎端到端回归；首次执行需联网下载约 50MB 引擎并做 SHA256 校验')
     booleanParam(name: 'BUILD_DOCKER', defaultValue: false, description: '构建镜像并做容器冒烟；节点需安装 docker，否则请保持关闭')
+    booleanParam(name: 'DEPLOY', defaultValue: true, description: '测试通过后自动构建镜像并替换本地运行的 opengrep-studio 容器（http://localhost:8787）；节点需可访问 docker')
   }
 
   environment {
@@ -191,6 +192,47 @@ pipeline {
           fi
 
           echo "[jenkins] 容器冒烟通过：http://127.0.0.1:${PORT}/api/health"
+        '''
+      }
+    }
+
+    stage('部署上线') {
+      when { expression { params.DEPLOY != false } }
+      steps {
+        sh '''
+          set -euo pipefail
+
+          IMAGE="opengrep-studio:latest"
+          STAGING="opengrep-studio-staging"
+
+          docker build -t "$IMAGE" .
+
+          docker rm -f "$STAGING" > /dev/null 2>&1 || true
+          docker run -d --name "$STAGING" -p 8787:8787 "$IMAGE" > /dev/null
+
+          ready=0
+          for _ in $(seq 1 30); do
+            if curl -fsS http://host.docker.internal:8787/api/health > /dev/null 2>&1; then
+              ready=1
+              break
+            fi
+            if [ "$(docker inspect -f '{{.State.Running}}' "$STAGING" 2> /dev/null || echo false)" != "true" ]; then
+              break
+            fi
+            sleep 3
+          done
+
+          if [ "$ready" -ne 1 ]; then
+            echo "[jenkins] 新容器健康检查未通过，保留旧容器，部署中止。容器日志："
+            docker logs --tail 80 "$STAGING" || true
+            docker rm -f "$STAGING" > /dev/null 2>&1 || true
+            exit 1
+          fi
+
+          docker rm -f opengrep-studio > /dev/null 2>&1 || true
+          docker rename "$STAGING" opengrep-studio
+          docker update --restart unless-stopped opengrep-studio
+          echo "[jenkins] 部署完成：http://localhost:8787"
         '''
       }
     }
