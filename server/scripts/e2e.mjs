@@ -19,6 +19,26 @@ try {
   process.exit(1);
 }
 
+let sessionCookie = '';
+{
+  const loginRes = await fetch(`${BASE}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: 'admin', password: '123456' }),
+  });
+  if (!loginRes.ok) {
+    console.error(`[e2e] admin 登录失败: HTTP ${loginRes.status}（初始账号 admin/123456 由后端启动时自动播种）`);
+    process.exit(1);
+  }
+  sessionCookie = (loginRes.headers.get('set-cookie') ?? '').split(';')[0];
+  if (!sessionCookie.startsWith('og_session=')) {
+    console.error('[e2e] 登录成功但未返回会话 cookie');
+    process.exit(1);
+  }
+}
+
+const authHeaders = () => ({ Cookie: sessionCookie });
+
 function assert(cond, label, extra = '') {
   if (cond) { console.log(`  PASS ${label}`); }
   else { failures += 1; failedLabels.push(label); console.log(`  FAIL ${label} ${extra}`); }
@@ -27,9 +47,10 @@ function assert(cond, label, extra = '') {
 async function api(method, path, body) {
   const res = await fetchRetry(BASE + path, {
     method,
-    headers: body !== undefined && !(body instanceof FormData)
-      ? { 'Content-Type': 'application/json' }
-      : undefined,
+    headers: {
+      ...authHeaders(),
+      ...(body !== undefined && !(body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}),
+    },
     body: body instanceof FormData ? body : body !== undefined ? JSON.stringify(body) : undefined,
   });
   const text = await res.text();
@@ -44,7 +65,11 @@ async function fetchRetry(url, init, tries = 3) {
   let lastError;
   for (let attempt = 0; attempt < tries; attempt += 1) {
     try {
-      return await fetch(url, { ...init, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
+      return await fetch(url, {
+        ...init,
+        headers: { ...(init?.headers ?? {}), ...authHeaders() },
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      });
     } catch (error) {
       lastError = error;
       await new Promise((r) => setTimeout(r, 400));
@@ -286,6 +311,42 @@ const crossOrigin = await fetchRetry(`${BASE}/api/projects`, {
   body: JSON.stringify({ name: 'E2E-跨站' }),
 });
 assert(crossOrigin.status === 403, '跨站 Origin 的变更请求被拒绝');
+
+console.log('== 1d. 会话鉴权（用户表 + 会话 cookie） ==');
+const anon = await fetch(`${BASE}/api/projects`);
+const anonJson = await anon.json();
+assert(
+  anon.status === 401 && anonJson?.error?.code === 'srv.authRequired',
+  '未登录访问受保护接口 → 401 srv.authRequired', JSON.stringify(anonJson),
+);
+const badLoginRes = await fetch(`${BASE}/api/auth/login`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ username: 'admin', password: 'definitely-wrong' }),
+});
+const badLoginJson = await badLoginRes.json();
+assert(
+  badLoginRes.status === 401 && badLoginJson?.error?.code === 'srv.authInvalid',
+  '错误密码登录 → 401 srv.authInvalid', JSON.stringify(badLoginJson),
+);
+const meRes = await api('GET', '/api/auth/me');
+assert(
+  meRes.status === 200 && meRes.json?.username === 'admin' && meRes.json?.role === 'admin',
+  '/api/auth/me 返回当前会话用户', JSON.stringify(meRes.json),
+);
+const tmpLogin = await fetch(`${BASE}/api/auth/login`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ username: 'admin', password: '123456' }),
+});
+const tmpCookie = (tmpLogin.headers.get('set-cookie') ?? '').split(';')[0];
+const logoutRes = await fetch(`${BASE}/api/auth/logout`, { method: 'POST', headers: { Cookie: tmpCookie } });
+const logoutSetCookie = logoutRes.headers.get('set-cookie') ?? '';
+assert(logoutRes.status === 204 && logoutSetCookie.includes('Max-Age=0'), '登出返回 204 并清空会话 cookie');
+const tampered = await fetch(`${BASE}/api/projects`, { headers: { Cookie: `${sessionCookie}x` } });
+assert(tampered.status === 401, '被篡改的会话 cookie 被拒绝');
+const foreignCookie = await fetch(`${BASE}/api/projects`, { headers: { Cookie: 'og_session=garbage.payload' } });
+assert(foreignCookie.status === 401, '伪造会话 cookie 被拒绝');
 
 console.log('== 2. 清理上一轮 E2E 残留（只动 E2E 前缀资源，绝不碰用户已有数据） ==');
 const isE2eName = (name) => typeof name === 'string' && name.startsWith('E2E');

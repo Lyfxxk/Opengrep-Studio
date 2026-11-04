@@ -3,9 +3,15 @@ import { isBackendUnreachable } from './script-utils.mjs';
 const BASE = process.env.BASE_URL ?? 'http://127.0.0.1:8787';
 const results = [];
 let passed = 0, failed = 0;
+let sessionCookie = '';
+
+const authHeaders = () => (sessionCookie ? { Cookie: sessionCookie } : {});
 
 async function call(pathname, init) {
-  const res = await fetch(BASE + pathname, init);
+  const res = await fetch(BASE + pathname, {
+    ...init,
+    headers: { ...authHeaders(), ...(init?.headers ?? {}) },
+  });
   const text = await res.text();
   let body;
   try { body = JSON.parse(text); } catch { body = text; }
@@ -39,13 +45,24 @@ const expect2xx = (label, res) =>
   record(label, res.status >= 200 && res.status < 300, `status=${res.status} body=${JSON.stringify(res.body).slice(0, 120)}`);
 
 async function fdPost(pathname, fd) {
-  const res = await fetch(BASE + pathname, { method: 'POST', body: fd });
+  const res = await fetch(BASE + pathname, { method: 'POST', headers: authHeaders(), body: fd });
   const text = await res.text();
   let body; try { body = JSON.parse(text); } catch { body = text; }
   return { status: res.status, body };
 }
 
 async function main() {
+  const loginRes = await fetch(`${BASE}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: 'admin', password: '123456' }),
+  });
+  if (!loginRes.ok) {
+    console.error(`脏测试 admin 登录失败: HTTP ${loginRes.status}（初始账号 admin/123456 由后端启动时自动播种）`);
+    process.exit(1);
+  }
+  sessionCookie = (loginRes.headers.get('set-cookie') ?? '').split(';')[0];
+
   console.log('===== 一、项目 Projects =====');
   const weirdNames = ['测试项目🎯emoji+中文', 'B'.repeat(50)];
   const weirdProjects = [];
@@ -170,7 +187,7 @@ async function main() {
   expect4xx('在线编辑内置包 → 403', res);
   res = await call(`/api/rulepacks/${builtin.id}`, { method: 'DELETE' });
   expect4xx('删除内置包 → 403', res);
-  res = await fetch(`${BASE}/api/rulepacks/${builtin.id}/export`);
+  res = await fetch(`${BASE}/api/rulepacks/${builtin.id}/export`, { headers: authHeaders() });
   record('导出内置包 → 403', res.status === 403, `status=${res.status}`);
   res = await call(`/api/rulepacks/${builtin.id}`, { method: 'PATCH', ...json({ enabled: 'yes' }) });
   expect4xx('PATCH enabled 非布尔 → 400', res);
@@ -268,17 +285,17 @@ async function main() {
     completed.find((s) => scans.filter((x) => x.projectId === s.projectId).length >= 2)
     ?? completed[0];
   if (!seedScan) throw new Error('库中没有任何已完成扫描：请先跑一次 npm run e2e 或导入 SARIF 再执行脏测试');
-  let r = await fetch(`${BASE}/api/scans/${seedScan.id}/sarif`);
+  let r = await fetch(`${BASE}/api/scans/${seedScan.id}/sarif`, { headers: authHeaders() });
   record('SARIF 导出 → 200', r.status === 200, `status=${r.status}`);
   const sarifDoc = await r.json();
   record('  导出为 SARIF 2.1.0', sarifDoc.version === '2.1.0', `version=${sarifDoc.version}`);
-  r = await fetch(`${BASE}/api/scans/${seedScan.id}/manifest`);
+  r = await fetch(`${BASE}/api/scans/${seedScan.id}/manifest`, { headers: authHeaders() });
   record('manifest 导出 → 200', r.status === 200, `status=${r.status}`);
-  r = await fetch(`${BASE}/api/scans/${seedScan.id}/report?format=html`);
+  r = await fetch(`${BASE}/api/scans/${seedScan.id}/report?format=html`, { headers: authHeaders() });
   record('离线 HTML 报告 → 200', r.status === 200, `status=${r.status}`);
-  r = await fetch(`${BASE}/api/scans/scan-not-exist/sarif`);
+  r = await fetch(`${BASE}/api/scans/scan-not-exist/sarif`, { headers: authHeaders() });
   record('导出不存在扫描 → 404', r.status === 404, `status=${r.status}`);
-  r = await fetch(`${BASE}/api/scans/scan-not-exist/manifest`);
+  r = await fetch(`${BASE}/api/scans/scan-not-exist/manifest`, { headers: authHeaders() });
   record('manifest 不存在扫描 → 404', r.status === 404, `status=${r.status}`);
   res = await call(`/api/scans/${seedScan.id}/diff?against=${seedScan.id}`);
   expect4xx('diff 对比自己（同扫描）→ 400 拒绝', res);
@@ -308,7 +325,7 @@ async function main() {
   }
 
   console.log('===== 十一、其他 =====');
-  r = await fetch(`${BASE}/api/no-such-endpoint`);
+  r = await fetch(`${BASE}/api/no-such-endpoint`, { headers: authHeaders() });
   record('未知端点 → 404（有 JSON 错误体）', r.status === 404, `status=${r.status}`);
   res = await call('/api/health');
   expect2xx('健康检查 → 200', res);
