@@ -171,7 +171,7 @@ async function fetchJson(url, timeoutMs) {
     redirect: 'follow',
     signal: AbortSignal.timeout(timeoutMs),
   });
-  if (!res.ok) throw new Error(describeHttpError(res.status));
+  if (!res.ok) throw withInfo(new Error(describeHttpError(res.status)), describeHttpErrorInfo(res.status));
   return res.json();
 }
 
@@ -180,6 +180,23 @@ function describeHttpError(status) {
   if (status === 404) return `上游发布不存在（HTTP 404），请确认版本号是否正确`;
   if (status >= 500) return `GitHub 服务暂不可用（HTTP ${status}），请稍后重试`;
   return `GitHub API 返回 HTTP ${status}`;
+}
+
+export function describeHttpErrorInfo(status) {
+  if (status === 403 || status === 429) return { code: 'engine.rateLimited', params: { status } };
+  if (status === 404) return { code: 'engine.upstreamNotFound' };
+  if (status >= 500) return { code: 'engine.upstreamUnavailable', params: { status } };
+  return { code: 'engine.upstreamHttpError', params: { status } };
+}
+
+export function withInfo(error, info) {
+  error.info = info;
+  return error;
+}
+
+export function errorInfo(error) {
+  const info = error?.info;
+  return info && typeof info.code === 'string' ? info : undefined;
 }
 
 export function fetchReleaseByTag(tag, timeoutMs = 20000) {
@@ -209,7 +226,8 @@ async function downloadTo(url, target, { headers, onProgress, timeoutMs }) {
     signal: AbortSignal.timeout(timeoutMs),
   });
   if (!res.ok || !res.body) {
-    throw new Error(`${describeHttpError(res.status)}${res.status === 404 ? '（可能是该版本没有此平台的资产）' : ''}`);
+    const suffix = res.status === 404 ? '（可能是该版本没有此平台的资产）' : '';
+    throw withInfo(new Error(`${describeHttpError(res.status)}${suffix}`), describeHttpErrorInfo(res.status));
   }
   const total = Number(res.headers.get('content-length') ?? 0);
   let received = 0;
@@ -257,7 +275,12 @@ export async function downloadAsset({
       if (assetUrl) return assetUrl;
       const release = await fetchReleaseByTag(tag);
       const asset = findAsset(release, assetFile);
-      if (!asset?.url) throw new Error(`发布 ${tag} 中找不到资产 ${assetFile}`);
+      if (!asset?.url) {
+        throw withInfo(new Error(`发布 ${tag} 中找不到资产 ${assetFile}`), {
+          code: 'engine.assetMissing',
+          params: { tag, asset: assetFile },
+        });
+      }
       return asset.url;
     },
   });
@@ -272,7 +295,10 @@ export async function downloadAsset({
       if (expectedSha256) {
         const hash = sha256File(target);
         if (hash !== expectedSha256) {
-          throw new Error(`SHA-256 不符（期望 ${expectedSha256.slice(0, 12)}…，实际 ${hash.slice(0, 12)}…）`);
+          throw withInfo(
+            new Error(`SHA-256 不符（期望 ${expectedSha256.slice(0, 12)}…，实际 ${hash.slice(0, 12)}…）`),
+            { code: 'engine.shaMismatch', params: { expected: expectedSha256.slice(0, 12), actual: hash.slice(0, 12) } },
+          );
         }
       }
       return { channel: channel.code, bytes: statSync(target).size };
@@ -283,7 +309,10 @@ export async function downloadAsset({
       log?.(`${channel.name} 失败：${message}`);
     }
   }
-  throw new Error(`所有下载通道均失败：\n  ${failures.join('\n  ')}`);
+  throw withInfo(new Error(`所有下载通道均失败：\n  ${failures.join('\n  ')}`), {
+    code: 'engine.downloadAllFailed',
+    params: { channels: channels.map((channel) => channel.name).join(', ') },
+  });
 }
 
 export async function installEngineAsset({
@@ -298,7 +327,10 @@ export async function installEngineAsset({
 }) {
   const expected = String(sha256 ?? '').trim().toLowerCase();
   if (!/^[0-9a-f]{64}$/.test(expected)) {
-    throw new Error('缺少可用的 SHA-256 摘要，无法校验下载文件，已放弃安装');
+    throw withInfo(new Error('缺少可用的 SHA-256 摘要，无法校验下载文件，已放弃安装'), {
+      code: 'engine.digestMissing',
+      params: { tag },
+    });
   }
 
   mkdirSync(toolDir, { recursive: true });
@@ -321,7 +353,10 @@ export async function installEngineAsset({
   const actual = sha256File(stagingPath);
   if (actual !== expected) {
     rmSync(stagingPath, { force: true });
-    throw new Error(`SHA-256 校验失败，已删除下载文件\n  期望：${expected}\n  实际：${actual}`);
+    throw withInfo(new Error(`SHA-256 校验失败，已删除下载文件\n  期望：${expected}\n  实际：${actual}`), {
+      code: 'engine.shaMismatch',
+      params: { expected: expected.slice(0, 12), actual: actual.slice(0, 12) },
+    });
   }
 
   onProgress?.({ phase: 'verifying' });
@@ -329,11 +364,16 @@ export async function installEngineAsset({
   const version = await probeVersion(stagingPath);
   if (!version) {
     rmSync(stagingPath, { force: true });
-    throw new Error('下载的引擎无法运行（--version 无输出），已放弃安装');
+    throw withInfo(new Error('下载的引擎无法运行（--version 无输出），已放弃安装'), {
+      code: 'engine.probeNoOutput',
+    });
   }
   if (compareVersions(version, tag) !== 0) {
     rmSync(stagingPath, { force: true });
-    throw new Error(`下载的引擎版本 ${version} 与目标 ${tag} 不一致，已放弃安装`);
+    throw withInfo(new Error(`下载的引擎版本 ${version} 与目标 ${tag} 不一致，已放弃安装`), {
+      code: 'engine.versionMismatch',
+      params: { version, tag },
+    });
   }
 
   onProgress?.({ phase: 'installing' });
@@ -352,10 +392,16 @@ export async function installEngineAsset({
       }
     }
     rmSync(stagingPath, { force: true });
-    throw new Error(
-      `替换引擎文件失败（可能有扫描或规则实验正在占用它）：${
-        error instanceof Error ? error.message : String(error)
-      }`,
+    throw withInfo(
+      new Error(
+        `替换引擎文件失败（可能有扫描或规则实验正在占用它）：${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      ),
+      {
+        code: 'engine.replaceFailed',
+        params: { detail: error instanceof Error ? error.message : String(error) },
+      },
     );
   }
   writeInstalledManifest(toolDir, {
