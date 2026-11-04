@@ -25,6 +25,7 @@ import { COMPARISON_VISUALS } from '@/data/constants';
 import type { IProject } from '@/data/projects';
 import type { IScanResult } from '@/data/scanresults';
 import { api, translateApiError } from '@/lib/api';
+import { hasRole } from '@/lib/auth';
 import CodeSnippetViewer from './CodeSnippetViewer';
 import IssueFilterList from './IssueFilterList';
 import ReviewDialog from './ReviewDialog';
@@ -83,6 +84,7 @@ function ComparisonSummary({ issues }: { issues: IIssue[] }) {
 export default function ScanResultPage() {
   const { t } = useTranslation();
   const { id, scanId } = useParams();
+  const canReview = hasRole('auditor');
   const [project, setProject] = useState<IProject | null>(null);
   const [scan, setScan] = useState<IScanResult | null>(null);
   const [baselineScan, setBaselineScan] = useState<IScanResult | null>(null);
@@ -349,16 +351,18 @@ export default function ScanResultPage() {
                 ) : null}
               </>
             )}
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5"
-              disabled={cancelling}
-              onClick={() => void handleCancel()}
-            >
-              <XCircle className="size-4" />
-              {t('scanResult.cancelBtn')}
-            </Button>
+            {canReview && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                disabled={cancelling}
+                onClick={() => void handleCancel()}
+              >
+                <XCircle className="size-4" />
+                {t('scanResult.cancelBtn')}
+              </Button>
+            )}
           </CardContent>
         </Card>
       ) : issues.length === 0 ? (
@@ -479,6 +483,7 @@ export default function ScanResultPage() {
                 projectId={project.id}
                 issues={issues}
                 selectedIssueId={selectedIssue?.id ?? null}
+                canReview={canReview}
                 onSelect={setSelectedIssueId}
                 onOpenKnowledge={setKnowledgeRuleId}
                 onReviewed={() => void load()}
@@ -488,7 +493,7 @@ export default function ScanResultPage() {
               <CodeSnippetViewer
                 scanId={scan.id}
                 issue={selectedIssue}
-                onOpenReview={(target) => setReviewTarget(target)}
+                onOpenReview={canReview ? (target) => setReviewTarget(target) : undefined}
                 onOpenKnowledge={setKnowledgeRuleId}
               />
             </div>

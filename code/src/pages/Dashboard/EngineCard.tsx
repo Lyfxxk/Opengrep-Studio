@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { api, translateApiError, type HealthInfo, type IEngineUpgradeState, type IEngineUpdateInfo } from '@/lib/api';
+import { hasRole } from '@/lib/auth';
 
 interface EngineCardProps {
   health: HealthInfo | null;
@@ -16,6 +17,7 @@ interface EngineCardProps {
 
 export default function EngineCard({ health, scanRunning, onUpgraded }: EngineCardProps) {
   const { t } = useTranslation();
+  const canUpgrade = hasRole('admin');
   const ready = health?.engineReady === true && Boolean(health.engineVersion);
   const managed = health?.engineManaged === true;
   const [update, setUpdate] = useState<IEngineUpdateInfo | null>(null);
@@ -166,17 +168,21 @@ export default function EngineCard({ health, scanRunning, onUpgraded }: EngineCa
                   <span className="text-xs font-medium text-warning">
                     {t('engine.newVersion', { version: update.latest })}
                   </span>
-                  <Button
-                    size="sm"
-                    className="h-7 gap-1 px-2 text-xs"
-                    disabled={!update.canUpgrade || scanRunning || running}
-                    onClick={() => void startUpgrade()}
-                  >
-                    <DownloadCloud className="size-3.5" />
-                    {t('engine.upgrade')}
-                  </Button>
-                  {scanRunning && update.canUpgrade && (
-                    <span className="text-xs text-muted-foreground">{t('engine.upgradeBlockedByScan')}</span>
+                  {canUpgrade && (
+                    <>
+                      <Button
+                        size="sm"
+                        className="h-7 gap-1 px-2 text-xs"
+                        disabled={!update.canUpgrade || scanRunning || running}
+                        onClick={() => void startUpgrade()}
+                      >
+                        <DownloadCloud className="size-3.5" />
+                        {t('engine.upgrade')}
+                      </Button>
+                      {scanRunning && update.canUpgrade && (
+                        <span className="text-xs text-muted-foreground">{t('engine.upgradeBlockedByScan')}</span>
+                      )}
+                    </>
                   )}
                   {!update.canUpgrade && updateReason && (
                     <span className="text-xs text-muted-foreground">{updateReason}</span>

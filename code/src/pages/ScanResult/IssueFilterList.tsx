@@ -43,6 +43,7 @@ interface IssueFilterListProps {
   projectId: string;
   issues: IIssue[];
   selectedIssueId: string | null;
+  canReview: boolean;
   onSelect: (issueId: string) => void;
   onOpenKnowledge?: (ruleId: string) => void;
   onReviewed?: () => void;
@@ -52,6 +53,7 @@ export default function IssueFilterList({
   projectId,
   issues,
   selectedIssueId,
+  canReview,
   onSelect,
   onOpenKnowledge,
   onReviewed,
@@ -196,7 +198,7 @@ export default function IssueFilterList({
         </div>
       </div>
       <div className="text-xs text-muted-foreground">{t('issueFilter.count', { count: filtered.length })}</div>
-      {selection.count >= 2 && (
+      {canReview && selection.count >= 2 && (
         <div className="flex shrink-0 items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs">
           <span className="font-medium">{t('issueFilter.batchSelected', { count: selection.count })}</span>
           <Button
@@ -251,13 +253,15 @@ export default function IssueFilterList({
         ) : (
           paged.map((issue) => (
             <div key={issue.id} className="flex items-start gap-1.5">
-              <div className="flex h-full items-center pt-3.5">
-                <Checkbox
-                  checked={selection.selected.has(issue.id)}
-                  onCheckedChange={() => selection.toggle(issue.id)}
-                  aria-label={t('issueFilter.batchSelectAria', { id: issue.id })}
-                />
-              </div>
+              {canReview && (
+                <div className="flex h-full items-center pt-3.5">
+                  <Checkbox
+                    checked={selection.selected.has(issue.id)}
+                    onCheckedChange={() => selection.toggle(issue.id)}
+                    aria-label={t('issueFilter.batchSelectAria', { id: issue.id })}
+                  />
+                </div>
+              )}
               <button
                 data-issue-id={issue.id}
                 type="button"

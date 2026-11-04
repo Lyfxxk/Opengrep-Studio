@@ -29,10 +29,12 @@ import {
 } from '@/lib/usePagedList';
 import { formatDateTime } from '@/lib/format';
 import { api } from '@/lib/api';
+import { hasRole } from '@/lib/auth';
 
 export default function ScansCenterPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const canDelete = hasRole('admin');
   const { scans, projects, loadFailed, reload: load } = useScanRows();
   const [filterProjectId, setFilterProjectId] = useState('all');
   const [keyword, setKeyword] = useState('');
@@ -87,13 +89,15 @@ export default function ScansCenterPage() {
         <h1 className="text-xl font-semibold">{t('nav.scans')}</h1>
       </div>
 
-      <BatchDeleteBar
-        count={selection.count}
-        entity="scan"
-        deleting={batchDeleting}
-        onDelete={() => setBatchConfirmOpen(true)}
-        onClear={selection.clear}
-      />
+      {canDelete && (
+        <BatchDeleteBar
+          count={selection.count}
+          entity="scan"
+          deleting={batchDeleting}
+          onDelete={() => setBatchConfirmOpen(true)}
+          onClear={selection.clear}
+        />
+      )}
 
       <ListFilterBar
         total={scans?.length ?? 0}
@@ -142,13 +146,15 @@ export default function ScansCenterPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-10">
-                  <Checkbox
-                    checked={selection.allSelected ? true : selection.someSelected ? 'indeterminate' : false}
-                    onCheckedChange={() => selection.toggleAll()}
-                    aria-label={t('scans.selectAllAria')}
-                  />
-                </TableHead>
+                {canDelete && (
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={selection.allSelected ? true : selection.someSelected ? 'indeterminate' : false}
+                      onCheckedChange={() => selection.toggleAll()}
+                      aria-label={t('scans.selectAllAria')}
+                    />
+                  </TableHead>
+                )}
                 <TableHead className="whitespace-nowrap">{t('scans.colProject')}</TableHead>
                 <TableHead className="whitespace-nowrap">{t('scans.colScanId')}</TableHead>
                 <TableHead className="whitespace-nowrap">{t('scans.colStatus')}</TableHead>
@@ -170,14 +176,16 @@ export default function ScansCenterPage() {
                       if (viewable) viewScan(scan);
                     }}
                   >
-                    <TableCell className="w-10" onClick={(e) => e.stopPropagation()}>
-                      <Checkbox
-                        checked={selection.selected.has(scan.id)}
-                        onCheckedChange={() => selection.toggle(scan.id)}
-                        disabled={scan.status === 'scanning'}
-                        aria-label={t('scans.rowSelectAria', { id: scan.id })}
-                      />
-                    </TableCell>
+                    {canDelete && (
+                      <TableCell className="w-10" onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={selection.selected.has(scan.id)}
+                          onCheckedChange={() => selection.toggle(scan.id)}
+                          disabled={scan.status === 'scanning'}
+                          aria-label={t('scans.rowSelectAria', { id: scan.id })}
+                        />
+                      </TableCell>
+                    )}
                     <TableCell className="max-w-[180px]">
                       <span className="block truncate" title={scan.projectName}>
                         {scan.projectName}

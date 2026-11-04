@@ -47,6 +47,7 @@ import {
   api,
   type ConfigFormValues,
 } from '@/lib/api';
+import { hasRole } from '@/lib/auth';
 import ConfigFormDialog, { type ConfigDialogTarget } from './ConfigFormDialog';
 
 function toFormValues(config: IConfig, name?: string): ConfigFormValues {
@@ -66,6 +67,7 @@ export default function ScanConfigTab() {
   const { t } = useTranslation();
   const configDisplay = useConfigDisplayName();
   const packDisplayName = usePackDisplayName();
+  const isAdmin = hasRole('admin');
   const [configs, setConfigs] = useState<IConfig[]>([]);
   const [projects, setProjects] = useState<IProject[]>([]);
   const [rulePacks, setRulePacks] = useState<IRulePack[]>([]);
@@ -195,20 +197,24 @@ export default function ScanConfigTab() {
   return (
     <div className="space-y-4">
       <h1 className="mb-6 text-xl font-semibold">{t('configs.pageTitle')}</h1>
-      <div className="flex justify-end">
-        <Button className="gap-1" onClick={handleCreate}>
-          <Plus className="size-4" />
-          {t('configs.newConfig')}
-        </Button>
-      </div>
+      {isAdmin && (
+        <div className="flex justify-end">
+          <Button className="gap-1" onClick={handleCreate}>
+            <Plus className="size-4" />
+            {t('configs.newConfig')}
+          </Button>
+        </div>
+      )}
 
-      <BatchDeleteBar
-        count={selection.count}
-        entity="config"
-        deleting={batchDeleting}
-        onDelete={() => setBatchConfirmOpen(true)}
-        onClear={selection.clear}
-      />
+      {isAdmin && (
+        <BatchDeleteBar
+          count={selection.count}
+          entity="config"
+          deleting={batchDeleting}
+          onDelete={() => setBatchConfirmOpen(true)}
+          onClear={selection.clear}
+        />
+      )}
 
       <Card className="overflow-hidden">
         <CardContent className="p-0">
@@ -222,43 +228,51 @@ export default function ScanConfigTab() {
             <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">
               <SlidersHorizontal className="size-8 text-muted-foreground" />
               <p className="text-sm text-muted-foreground">{t('configs.empty')}</p>
-              <Button className="gap-1" onClick={handleCreate}>
-                <Plus className="size-4" />
-                {t('configs.newConfig')}
-              </Button>
+              {isAdmin && (
+                <Button className="gap-1" onClick={handleCreate}>
+                  <Plus className="size-4" />
+                  {t('configs.newConfig')}
+                </Button>
+              )}
             </div>
           ) : (
             <div className="w-full overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-10">
-                      <Checkbox
-                        checked={selection.allSelected ? true : selection.someSelected ? 'indeterminate' : false}
-                        onCheckedChange={() => selection.toggleAll()}
-                        aria-label={t('configs.selectAllAria')}
-                      />
-                    </TableHead>
+                    {isAdmin && (
+                      <TableHead className="w-10">
+                        <Checkbox
+                          checked={selection.allSelected ? true : selection.someSelected ? 'indeterminate' : false}
+                          onCheckedChange={() => selection.toggleAll()}
+                          aria-label={t('configs.selectAllAria')}
+                        />
+                      </TableHead>
+                    )}
                     <TableHead className="whitespace-nowrap">{t('configs.colName')}</TableHead>
                     <TableHead className="whitespace-nowrap">{t('configs.colRulePacks')}</TableHead>
                     <TableHead className="whitespace-nowrap">{t('configs.colExcludes')}</TableHead>
                     <TableHead className="whitespace-nowrap">{t('configs.colParams')}</TableHead>
                     <TableHead className="whitespace-nowrap">{t('configs.colBoundProjects')}</TableHead>
                     <TableHead className="whitespace-nowrap">{t('configs.colCreatedAt')}</TableHead>
-                    <TableHead className="whitespace-nowrap text-right">{t('common.actions')}</TableHead>
+                    {isAdmin && (
+                      <TableHead className="whitespace-nowrap text-right">{t('common.actions')}</TableHead>
+                    )}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {configs.map((config) => (
                     <TableRow key={config.id}>
-                      <TableCell className="w-10">
-                        <Checkbox
-                          checked={selection.selected.has(config.id)}
-                          onCheckedChange={() => selection.toggle(config.id)}
-                          disabled={config.isProtected}
-                          aria-label={t('configs.rowSelectAria', { name: configDisplay(config).name })}
-                        />
-                      </TableCell>
+                      {isAdmin && (
+                        <TableCell className="w-10">
+                          <Checkbox
+                            checked={selection.selected.has(config.id)}
+                            onCheckedChange={() => selection.toggle(config.id)}
+                            disabled={config.isProtected}
+                            aria-label={t('configs.rowSelectAria', { name: configDisplay(config).name })}
+                          />
+                        </TableCell>
+                      )}
                       <TableCell>
                         <span className="flex items-center gap-1.5 font-medium">
                           {configDisplay(config).name}
@@ -338,34 +352,36 @@ export default function ScanConfigTab() {
                       <TableCell className="whitespace-nowrap tabular-nums text-muted-foreground">
                         {formatDateTime(config.createdAt)}
                       </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="size-8">
-                              <MoreHorizontal className="size-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onSelect={() => handleEdit(config)}>
-                              <Pencil className="size-4" />
-                              {t('common.edit')}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onSelect={() => handleCopy(config)}>
-                              <Plus className="size-4" />
-                              {t('configs.copy')}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="text-destructive focus:text-destructive"
-                              disabled={config.isProtected}
-                              title={config.isProtected ? t('configs.fallbackHint') : undefined}
-                              onSelect={() => setDeleteTarget(config)}
-                            >
-                              <Trash2 className="size-4" />
-                              {t('common.delete')}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
+                      {isAdmin && (
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="size-8">
+                                <MoreHorizontal className="size-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onSelect={() => handleEdit(config)}>
+                                <Pencil className="size-4" />
+                                {t('common.edit')}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onSelect={() => handleCopy(config)}>
+                                <Plus className="size-4" />
+                                {t('configs.copy')}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="text-destructive focus:text-destructive"
+                                disabled={config.isProtected}
+                                title={config.isProtected ? t('configs.fallbackHint') : undefined}
+                                onSelect={() => setDeleteTarget(config)}
+                              >
+                                <Trash2 className="size-4" />
+                                {t('common.delete')}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>

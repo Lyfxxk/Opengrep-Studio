@@ -19,6 +19,7 @@ import type { IProject } from '@/data/projects';
 import type { IRulePack } from '@/data/rulepacks';
 import type { IScanResult } from '@/data/scanresults';
 import { api, translateApiError, type UploadItem } from '@/lib/api';
+import { hasRole } from '@/lib/auth';
 import { useConfigDisplayName } from '@/lib/displayNames';
 import ScanHistoryTable from './ScanHistoryTable';
 import UploadZone, { type UploadZoneState } from './UploadZone';
@@ -30,6 +31,7 @@ export default function ProjectDetailPage() {
   const configDisplay = useConfigDisplayName();
   const { id } = useParams();
   const navigate = useNavigate();
+  const canWrite = hasRole('auditor');
   const [project, setProject] = useState<IProject | null>(null);
   const [projectsLoaded, setProjectsLoaded] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -344,6 +346,7 @@ export default function ProjectDetailPage() {
               <span className="text-sm text-muted-foreground">{t('projectDetail.configLabel')}</span>
               <Select
                 value={project.configId ?? ''}
+                disabled={!canWrite}
                 onValueChange={(value) => void handleConfigChange(value)}
               >
                 <SelectTrigger className="h-8 w-52">
@@ -389,40 +392,44 @@ export default function ProjectDetailPage() {
             </p>
           )}
         </div>
-        <Button
-          className="gap-1"
-          disabled={!canStartScan}
-          onClick={() => void handleStartScan()}
-        >
-          {isScanning || startingScan ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            <Play className="size-4" />
-          )}
-          {isScanning || startingScan
-            ? t('projectDetail.scanningBtn')
-            : project.configId
-              ? t('projectDetail.startScanBtn')
-              : t('projectDetail.startScanAllPacks')}
-        </Button>
+        {canWrite && (
+          <Button
+            className="gap-1"
+            disabled={!canStartScan}
+            onClick={() => void handleStartScan()}
+          >
+            {isScanning || startingScan ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Play className="size-4" />
+            )}
+            {isScanning || startingScan
+              ? t('projectDetail.scanningBtn')
+              : project.configId
+                ? t('projectDetail.startScanBtn')
+                : t('projectDetail.startScanAllPacks')}
+          </Button>
+        )}
       </div>
 
-      <Card>
-        <CardContent className="pt-6">
-          <UploadZone
-            state={upload}
-            languageStats={project.languageStats}
-            onSelectItems={(items, options) => void handleUploadItems(items, options)}
-            onClone={(url, ref) => void handleCloneSource(url, ref)}
-            onReset={() => setUpload({ status: 'idle' })}
-          />
-        </CardContent>
-      </Card>
+      {canWrite && (
+        <Card>
+          <CardContent className="pt-6">
+            <UploadZone
+              state={upload}
+              languageStats={project.languageStats}
+              onSelectItems={(items, options) => void handleUploadItems(items, options)}
+              onClone={(url, ref) => void handleCloneSource(url, ref)}
+              onReset={() => setUpload({ status: 'idle' })}
+            />
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="overflow-hidden">
         <CardHeader className="flex-row items-center justify-between space-y-0">
           <CardTitle className="text-base">{t('projectDetail.scanHistoryTitle')}</CardTitle>
-          {!api.isMockMode && (
+          {!api.isMockMode && canWrite && (
             <div className="flex items-center gap-2">
               <span className="hidden text-xs text-muted-foreground sm:inline">
                 {t('projectDetail.sarifHint')}
@@ -458,6 +465,7 @@ export default function ProjectDetailPage() {
           <ScanHistoryTable
             scans={recentScans}
             baselineScanId={project.baselineScanId}
+            canSetBaseline={canWrite}
             onSetBaseline={(scanId) => void handleSetBaseline(scanId)}
             onUnsetBaseline={() => void handleUnsetBaseline()}
             onView={(scanId) => navigate(`/projects/${project.id}/scans/${scanId}`)}

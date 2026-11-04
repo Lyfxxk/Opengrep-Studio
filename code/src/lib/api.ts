@@ -233,6 +233,44 @@ export const authApi = {
   },
 };
 
+export interface IUserRecord {
+  id: string;
+  username: string;
+  role: UserRole;
+  createdAt: string;
+}
+
+export const usersApi = {
+  list(): Promise<IUserRecord[]> {
+    return request<IUserRecord[]>('/api/users');
+  },
+
+  create(input: { username: string; password: string; role: UserRole }): Promise<IUserRecord> {
+    return request<IUserRecord>('/api/users', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  },
+
+  updateRole(id: string, role: UserRole): Promise<IUserRecord> {
+    return request<IUserRecord>(`/api/users/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ role }),
+    });
+  },
+
+  resetPassword(id: string, password: string): Promise<IUserRecord> {
+    return request<IUserRecord>(`/api/users/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ password }),
+    });
+  },
+
+  async remove(id: string): Promise<void> {
+    await request<void>(`/api/users/${id}`, { method: 'DELETE' });
+  },
+};
+
 export interface UploadItem {
   file: File;
   relativePath?: string;
