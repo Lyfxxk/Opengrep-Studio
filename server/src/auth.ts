@@ -1,9 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHash, createHmac, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
-import type { Request, Response } from 'express';
+import type { NextFunction, Request, RequestHandler, Response } from 'express';
 import { config } from './config.js';
 import { getUserById, insertUser, listUsers, type Role, type User } from './db.js';
+import { HttpError } from './errors.js';
 import { newId } from './routes/shared.js';
 
 const SESSION_COOKIE = 'og_session';
@@ -15,6 +16,23 @@ export interface SessionUser {
   uid: string;
   username: string;
   role: Role;
+}
+
+const ROLE_LEVEL: Record<Role, number> = { viewer: 0, auditor: 1, admin: 2 };
+
+export function requireRole(minimum: Role): RequestHandler {
+  return (req: Request, _res: Response, next: NextFunction) => {
+    const user = getSessionUser(req);
+    if (!user) {
+      next(new HttpError(401, '请先登录后再访问接口', { code: 'srv.authRequired' }));
+      return;
+    }
+    if (ROLE_LEVEL[user.role] < ROLE_LEVEL[minimum]) {
+      next(new HttpError(403, '当前角色无权执行此操作', { code: 'srv.authForbidden' }));
+      return;
+    }
+    next();
+  };
 }
 
 interface SessionPayload {

@@ -10,8 +10,13 @@ const SEED_DIR = path.join(HERE, 'seed-src');
 const SKIP_CLONE = process.argv.includes('--skip-clone');
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+let sessionCookie = '';
+
 async function j(pathname, init) {
-  const res = await fetch(BASE + pathname, init);
+  const res = await fetch(BASE + pathname, {
+    ...init,
+    headers: { ...(sessionCookie ? { Cookie: sessionCookie } : {}), ...(init?.headers ?? {}) },
+  });
   const text = await res.text();
   let body;
   try {
@@ -176,6 +181,16 @@ async function main() {
     );
   }
   log(`引擎就绪：v${health.engineVersion}（${health.engineSource}）`);
+  const loginRes = await fetch(`${BASE}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: 'admin', password: '123456' }),
+  });
+  if (!loginRes.ok) {
+    throw new Error(`admin 登录失败: HTTP ${loginRes.status}（初始账号 admin/123456 由后端启动时自动播种）`);
+  }
+  sessionCookie = (loginRes.headers.get('set-cookie') ?? '').split(';')[0];
+  log('已登录 admin 会话');
 
   log('\n== 创建自定义规则包 ==');
   const existingPacks = await j('/api/rulepacks');

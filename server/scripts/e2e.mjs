@@ -348,6 +348,161 @@ assert(tampered.status === 401, '被篡改的会话 cookie 被拒绝');
 const foreignCookie = await fetch(`${BASE}/api/projects`, { headers: { Cookie: 'og_session=garbage.payload' } });
 assert(foreignCookie.status === 401, '伪造会话 cookie 被拒绝');
 
+console.log('== 1e. RBAC 与用户管理 ==');
+const withSession = async (cookie, run) => {
+  const prev = sessionCookie;
+  sessionCookie = cookie;
+  try { return await run(); } finally { sessionCookie = prev; }
+};
+async function loginAs(username, password) {
+  const res = await fetch(`${BASE}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password }),
+  });
+  assert(res.status === 200, `登录 ${username}`, `HTTP ${res.status}`);
+  return (res.headers.get('set-cookie') ?? '').split(';')[0];
+}
+async function ensureUser(username, password, role) {
+  const found = ((await api('GET', '/api/users')).json ?? []).find((u) => u.username === username);
+  if (found) {
+    await api('PATCH', `/api/users/${found.id}`, { password });
+    return found;
+  }
+  const created = await api('POST', '/api/users', { username, password, role });
+  assert(created.status === 201, `创建用户 ${username}（${role}）`, JSON.stringify(created.json));
+  return created.json;
+}
+
+const initialList = ((await api('GET', '/api/users')).json ?? []);
+const adminSelf = initialList.find((u) => u.username === 'admin');
+assert(Boolean(adminSelf?.id), 'admin 可列出用户', JSON.stringify(initialList));
+assert(initialList.every((u) => u.passwordHash === undefined), '用户列表不泄露密码哈希');
+const auditorUser = await ensureUser('E2E-auditor', 'e2e-audit-pass', 'auditor');
+const viewerUser = await ensureUser('E2E-viewer', 'e2e-view-pass', 'viewer');
+const admin2User = await ensureUser('E2E-admin2', 'e2e-admin2-pass', 'admin');
+
+const badCreations = [
+  ['空用户名', { username: '', password: '123456', role: 'viewer' }, 'srv.usernameInvalid'],
+  ['51 字符用户名', { username: 'A'.repeat(51), password: '123456', role: 'viewer' }, 'srv.usernameInvalid'],
+  ['非法字符用户名', { username: 'bad name!', password: '123456', role: 'viewer' }, 'srv.usernameInvalid'],
+  ['5 字符密码', { username: 'E2E-shortpw', password: '1'.repeat(5), role: 'viewer' }, 'srv.passwordInvalid'],
+  ['101 字符密码', { username: 'E2E-longpw', password: 'p'.repeat(101), role: 'viewer' }, 'srv.passwordInvalid'],
+  ['非法角色', { username: 'E2E-badrole', password: '123456', role: 'root' }, 'srv.roleInvalid'],
+];
+for (const [label, payload, code] of badCreations) {
+  const res = await api('POST', '/api/users', payload);
+  assert(res.status === 400 && res.json?.error?.code === code, `创建用户[${label}] → 400 ${code}`, JSON.stringify(res.json));
+}
+const dupUser = await api('POST', '/api/users', { username: 'E2E-auditor', password: '123456', role: 'viewer' });
+assert(dupUser.status === 409 && dupUser.json?.error?.code === 'srv.userExists', '重名用户 → 409 srv.userExists', JSON.stringify(dupUser.json));
+const patchUnknown = await api('PATCH', '/api/users/user-rbac-none', { role: 'viewer' });
+assert(patchUnknown.status === 404 && patchUnknown.json?.error?.code === 'srv.userNotFound', 'PATCH 不存在的用户 → 404 srv.userNotFound', JSON.stringify(patchUnknown.json));
+
+const auditorCookie = await loginAs('E2E-auditor', 'e2e-audit-pass');
+const rbacProject = await withSession(auditorCookie, async () => {
+  const created = await api('POST', '/api/projects', { name: 'E2E-RBAC项目', language: 'TypeScript' });
+  assert(created.status === 201, 'auditor 创建项目放行', JSON.stringify(created.json));
+  const renamed = await api('PATCH', `/api/projects/${created.json.id}`, { name: 'E2E-RBAC项目-改' });
+  assert(renamed.status === 200, 'auditor 编辑项目放行', JSON.stringify(renamed.json));
+  const review = await api('PUT', `/api/projects/${created.json.id}/reviews`, { fingerprint: 'rbac-fingerprint', status: 'confirmed' });
+  assert(review.status === 200, 'auditor 写入复核放行', JSON.stringify(review.json));
+  const scan = await api('POST', `/api/projects/${created.json.id}/scans`, {});
+  assert(scan.status === 400 && scan.json?.error?.code === 'srv.noSourceToScan', 'auditor 发起扫描过 RBAC（无源码按业务拒绝）', JSON.stringify(scan.json));
+  const pack = await api('POST', '/api/rulepacks', {
+    name: 'E2E-RBAC规则包',
+    language: 'JavaScript',
+    content: 'rules:\n  - id: rbac-dummy\n    message: m\n    severity: ERROR\n    languages: [javascript]\n    pattern: eval(...)\n',
+  });
+  assert(pack.status === 201, 'auditor 创建规则包放行', JSON.stringify(pack.json));
+  return { id: created.json.id, packId: pack.json.id };
+});
+await withSession(auditorCookie, async () => {
+  const forbidden = [
+    ['删除项目', () => api('DELETE', `/api/projects/${rbacProject.id}`)],
+    ['创建配置', () => api('POST', '/api/configs', { name: 'E2E-RBAC配置' })],
+    ['规则包启停', () => api('PATCH', '/api/rulepacks/rp-rbac-none', { enabled: true })],
+    ['编辑规则包内容', () => api('PUT', '/api/rulepacks/rp-rbac-none/content', { content: 'rules: []' })],
+    ['导入规则包', () => api('POST', '/api/rulepacks/import', {})],
+    ['删除扫描', () => api('DELETE', '/api/scans/scan-rbac-none')],
+    ['引擎升级', () => api('POST', '/api/engine/upgrade', {})],
+    ['读用户列表', () => api('GET', '/api/users')],
+    ['创建用户', () => api('POST', '/api/users', { username: 'E2E-nope', password: '123456', role: 'viewer' })],
+    ['删除用户', () => api('DELETE', `/api/users/${viewerUser.id}`)],
+  ];
+  for (const [label, run] of forbidden) {
+    const res = await run();
+    assert(res.status === 403 && res.json?.error?.code === 'srv.authForbidden', `auditor ${label} → 403 srv.authForbidden`, JSON.stringify(res.json).slice(0, 120));
+  }
+});
+
+const viewerCookie = await loginAs('E2E-viewer', 'e2e-view-pass');
+await withSession(viewerCookie, async () => {
+  const reads = [
+    ['项目列表', () => api('GET', '/api/projects')],
+    ['配置列表', () => api('GET', '/api/configs')],
+    ['扫描列表', () => api('GET', '/api/scans')],
+    ['规则包列表', () => api('GET', '/api/rulepacks')],
+    ['知识卡', () => api('GET', '/api/rules/knowledge/js-hardcoded-secret')],
+    ['仪表盘', () => api('GET', '/api/dashboard/risk-summary')],
+  ];
+  for (const [label, run] of reads) {
+    const res = await run();
+    assert(res.status === 200, `viewer ${label} 读放行`, `HTTP ${res.status}`);
+  }
+  const forbidden = [
+    ['创建项目', () => api('POST', '/api/projects', { name: 'E2E-RBAC-viewer' })],
+    ['编辑项目', () => api('PATCH', `/api/projects/${rbacProject.id}`, { name: 'x' })],
+    ['删除项目', () => api('DELETE', `/api/projects/${rbacProject.id}`)],
+    ['发起扫描', () => api('POST', `/api/projects/${rbacProject.id}/scans`, {})],
+    ['取消扫描', () => api('POST', '/api/scans/scan-rbac-none/cancel', {})],
+    ['写复核', () => api('PUT', `/api/projects/${rbacProject.id}/reviews`, { fingerprint: 'fp', status: 'confirmed' })],
+    ['规则实验室', () => api('POST', '/api/rulelab/run', { yaml: 'rules: []' })],
+    ['创建配置', () => api('POST', '/api/configs', { name: 'E2E-RBAC-viewer' })],
+    ['创建规则包', () => api('POST', '/api/rulepacks', { name: 'E2E-RBAC-viewer' })],
+    ['规则包启停', () => api('PATCH', '/api/rulepacks/rp-rbac-none', { enabled: true })],
+    ['引擎升级', () => api('POST', '/api/engine/upgrade', {})],
+    ['读用户列表', () => api('GET', '/api/users')],
+    ['删除用户', () => api('DELETE', '/api/users/user-rbac-none')],
+  ];
+  for (const [label, run] of forbidden) {
+    const res = await run();
+    assert(res.status === 403 && res.json?.error?.code === 'srv.authForbidden', `viewer ${label} → 403 srv.authForbidden`, JSON.stringify(res.json).slice(0, 120));
+  }
+});
+
+const viewerReset = await api('PATCH', `/api/users/${viewerUser.id}`, { password: 'e2e-view-pass' });
+assert(viewerReset.status === 200 && viewerReset.json?.role === 'viewer', 'admin 重置用户密码', JSON.stringify(viewerReset.json));
+const staleViewer = await fetch(`${BASE}/api/projects`, { headers: { Cookie: viewerCookie } });
+assert(staleViewer.status === 401, '重置密码后旧会话立即失效');
+const viewerCookie2 = await loginAs('E2E-viewer', 'e2e-view-pass');
+assert(Boolean(viewerCookie2), '重置后同密码可重新登录');
+
+const admin2Cookie = await loginAs('E2E-admin2', 'e2e-admin2-pass');
+await withSession(admin2Cookie, async () => {
+  const delInitial = await api('DELETE', `/api/users/${adminSelf.id}`);
+  assert(delInitial.status === 409 && delInitial.json?.error?.code === 'srv.adminProtected', '另一个 admin 删除初始 admin → 409 srv.adminProtected', JSON.stringify(delInitial.json));
+  const patchInitialRole = await api('PATCH', `/api/users/${adminSelf.id}`, { role: 'viewer' });
+  assert(patchInitialRole.status === 409 && patchInitialRole.json?.error?.code === 'srv.adminProtected', '另一个 admin 改初始 admin 角色 → 409 srv.adminProtected', JSON.stringify(patchInitialRole.json));
+});
+const patchSelfRole = await api('PATCH', `/api/users/${adminSelf.id}`, { role: 'viewer' });
+assert(patchSelfRole.status === 409 && patchSelfRole.json?.error?.code === 'srv.selfProtected', 'admin 改自己角色 → 409 srv.selfProtected', JSON.stringify(patchSelfRole.json));
+const deleteSelf = await api('DELETE', `/api/users/${adminSelf.id}`);
+assert(deleteSelf.status === 409 && deleteSelf.json?.error?.code === 'srv.selfProtected', 'admin 删自己 → 409 srv.selfProtected', JSON.stringify(deleteSelf.json));
+
+const cleanupUsers = [auditorUser.id, viewerUser.id, admin2User.id].map((id) => api('DELETE', `/api/users/${id}`));
+const cleanupResults = await Promise.all(cleanupUsers);
+assert(cleanupResults.every((r) => r.status === 204), '清理本组创建的用户（保留初始 admin）', JSON.stringify(cleanupResults.map((r) => r.status)));
+const deleteRbacProject = await api('DELETE', `/api/projects/${rbacProject.id}`);
+assert(deleteRbacProject.status === 204, '清理 RBAC 项目');
+const deleteRbacPack = await api('DELETE', `/api/rulepacks/${rbacProject.packId}`);
+assert(deleteRbacPack.status === 204, '清理 RBAC 规则包');
+const remainingNames = ((await api('GET', '/api/users')).json ?? []).map((u) => u.username);
+assert(
+  !remainingNames.includes('E2E-auditor') && !remainingNames.includes('E2E-viewer') && !remainingNames.includes('E2E-admin2'),
+  '用户清理后仅剩既有用户', JSON.stringify(remainingNames),
+);
+
 console.log('== 2. 清理上一轮 E2E 残留（只动 E2E 前缀资源，绝不碰用户已有数据） ==');
 const isE2eName = (name) => typeof name === 'string' && name.startsWith('E2E');
 for (const p of (await api('GET', '/api/projects')).json ?? []) {
