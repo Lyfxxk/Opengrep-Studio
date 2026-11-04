@@ -567,6 +567,18 @@ assert(
   reportEnRes.ok && reportEn.includes('Code Audit Test Report') && reportEn.includes('Risk distribution')
     && reportEn.includes('Issue details') && reportEn.includes('Method & evidence') && reportEn.includes('Fixed'),
   'HTML 报告 en 章节随 ?lang= 渲染');
+const reportJaRes = await fetchRetry(`${BASE}/api/scans/${s2.id}/report?format=html&lang=ja`);
+const reportJa = await reportJaRes.text();
+assert(
+  reportJaRes.ok && reportJa.includes('コード監査テストレポート') && reportJa.includes('リスク分布')
+    && reportJa.includes('問題の詳細') && reportJa.includes('方法とエビデンス') && reportJa.includes('修正済み'),
+  'HTML 报告 ja 章节随 ?lang= 渲染');
+const reportKoRes = await fetchRetry(`${BASE}/api/scans/${s2.id}/report?format=html&lang=ko`);
+const reportKo = await reportKoRes.text();
+assert(
+  reportKoRes.ok && reportKo.includes('코드 감사 테스트 보고서') && reportKo.includes('위험 분포')
+    && reportKo.includes('문제 상세') && reportKo.includes('방법 및 근거') && reportKo.includes('수정 완료'),
+  'HTML 报告 ko 章节随 ?lang= 渲染');
 const reportSummaryRes = await fetchRetry(`${BASE}/api/scans/${s2.id}/report?format=html&detail=summary`);
 const reportSummary = await reportSummaryRes.text();
 assert(
@@ -1138,6 +1150,22 @@ assert(
   '英文 CWE 名回落简体词典', JSON.stringify(kbEn.json?.cwe));
 const kbBadLang = await api('GET', '/api/rules/knowledge/aead-no-final?lang=fr');
 assert(kbBadLang.json?.message === kbUpstream.json?.message, '非法 lang 回落简体', kbBadLang.json?.message);
+
+const kbJa = await api('GET', '/api/rules/knowledge/aead-no-final?lang=ja');
+assert(
+  kbJa.status === 200 && kbJa.json?.found === true && (kbJa.json?.message ?? '').length > 0,
+  '日语知识说明可取', kbJa.json?.message);
+const kbKo = await api('GET', '/api/rules/knowledge/aead-no-final?lang=ko');
+assert(
+  kbKo.status === 200 && kbKo.json?.found === true && (kbKo.json?.message ?? '').length > 0
+    && !/[\u4e00-\u9fff]/.test(kbKo.json.message),
+  '韩语知识说明可取且不含汉字', kbKo.json?.message);
+for (const lang of ['ja', 'ko']) {
+  const pack = await api('GET', `/api/messages-${lang}`);
+  assert(
+    pack.status === 200 && Object.keys(pack.json ?? {}).length === 812,
+    `规则说明 ${lang} 词典可取（812 条）`, pack.status);
+}
 
 const labTaintFlow = await api('POST', '/api/rulelab/run', {
   yaml: `rules:
