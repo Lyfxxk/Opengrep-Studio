@@ -12,7 +12,7 @@ export interface SkinDefinition {
 export const SKINS: SkinDefinition[] = [
   {
     id: 'default',
-    labels: { zh: '默认', 'zh-Hant': '預設', en: 'Default', ja: 'デフォルト', ko: '기본' },
+    labels: { zh: '群青', 'zh-Hant': '群青', en: 'Ultramarine', ja: '群青', ko: '군청' },
   },
   {
     id: 'graphite',
