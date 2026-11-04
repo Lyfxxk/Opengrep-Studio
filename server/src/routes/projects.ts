@@ -27,6 +27,7 @@ import {
   type Review,
 } from '../db.js';
 import { cloneRepo } from '../git-clone.js';
+import { requireRole } from '../auth.js';
 import { asyncHandler, decodeUploadFileName, newId, requireProject, requireValidBaseline } from './shared.js';
 
 export const projectRoutes = Router();
@@ -53,7 +54,7 @@ projectRoutes.get('/api/projects', (_req, res) => {
   );
 });
 
-projectRoutes.post('/api/projects', asyncHandler(async (req, res) => {
+projectRoutes.post('/api/projects', requireRole('auditor'), asyncHandler(async (req, res) => {
   const name = String(req.body?.name ?? '').trim();
   if (!name) throw new HttpError(400, '项目名称不能为空', { code: 'srv.projectNameRequired' });
   if (name.length > 50) {
@@ -70,7 +71,7 @@ projectRoutes.post('/api/projects', asyncHandler(async (req, res) => {
   res.status(201).json(project);
 }));
 
-projectRoutes.patch('/api/projects/:id', asyncHandler(async (req, res) => {
+projectRoutes.patch('/api/projects/:id', requireRole('auditor'), asyncHandler(async (req, res) => {
   const project = requireProject(req.params.id);
   const patch: Parameters<typeof updateProject>[1] = {};
   if (req.body?.name !== undefined) {
@@ -109,7 +110,7 @@ projectRoutes.patch('/api/projects/:id', asyncHandler(async (req, res) => {
   res.json(getProject(project.id));
 }));
 
-projectRoutes.delete('/api/projects/:id', asyncHandler(async (req, res) => {
+projectRoutes.delete('/api/projects/:id', requireRole('admin'), asyncHandler(async (req, res) => {
   const project = requireProject(req.params.id);
   if (isProjectImporting(project.id)) {
     throw new HttpError(409, '该项目正在导入源码（上传/克隆）中，请等待完成后再删除', {
@@ -253,6 +254,7 @@ const upload = multer({
 
 projectRoutes.post(
   '/api/projects/:id/source',
+  requireRole('auditor'),
   upload.fields([
     { name: 'file', maxCount: 1 },
     { name: 'files', maxCount: config.maxImportEntries },
@@ -346,7 +348,7 @@ projectRoutes.post(
   }),
 );
 
-projectRoutes.post('/api/projects/:id/clone', asyncHandler(async (req, res) => {
+projectRoutes.post('/api/projects/:id/clone', requireRole('auditor'), asyncHandler(async (req, res) => {
   const project = requireProject(req.params.id);
   const url = String(req.body?.url ?? '').trim();
   if (!url) throw new HttpError(400, '请提供 Git 仓库地址', { code: 'srv.gitUrlRequired' });
@@ -376,7 +378,7 @@ projectRoutes.post('/api/projects/:id/clone', asyncHandler(async (req, res) => {
 
 const REVIEW_STATUSES = ['confirmed', 'false_positive', 'accepted'] as const;
 
-projectRoutes.put('/api/projects/:id/reviews', asyncHandler(async (req, res) => {
+projectRoutes.put('/api/projects/:id/reviews', requireRole('auditor'), asyncHandler(async (req, res) => {
   const project = requireProject(req.params.id);
   const fingerprint = String(req.body?.fingerprint ?? '').trim();
   if (!fingerprint || fingerprint.length > 512) {
@@ -412,7 +414,7 @@ projectRoutes.put('/api/projects/:id/reviews', asyncHandler(async (req, res) => 
   res.json(review);
 }));
 
-projectRoutes.delete('/api/projects/:id/reviews/:fingerprint', asyncHandler(async (req, res) => {
+projectRoutes.delete('/api/projects/:id/reviews/:fingerprint', requireRole('auditor'), asyncHandler(async (req, res) => {
   requireProject(req.params.id);
   deleteReview(req.params.id, req.params.fingerprint);
   res.status(204).end();

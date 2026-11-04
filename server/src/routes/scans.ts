@@ -34,6 +34,7 @@ import { packRuleFiles } from '../rulepacks.js';
 import { buildSarifReport, parseSarifImport } from '../sarif.js';
 import { buildReportData, renderReportHtml, sanitizeCommand } from '../report.js';
 import { applyBaselineComparison, enqueueScan, requestScanCancel, type ScanPlan } from '../scan-runner.js';
+import { requireRole } from '../auth.js';
 import {
   asyncHandler,
   decodeUploadFileName,
@@ -140,7 +141,7 @@ async function resolveScanEngineVersion(scan: ScanRecord): Promise<string | unde
   return getEngineVersion();
 }
 
-scanRoutes.post('/api/projects/:id/scans', asyncHandler(async (req, res) => {
+scanRoutes.post('/api/projects/:id/scans', requireRole('auditor'), asyncHandler(async (req, res) => {
   if (engineUpgradeRunning()) {
     throw new HttpError(409, '引擎升级进行中，请升级完成后再发起扫描', {
       code: 'srv.scanUpgradeBusy',
@@ -221,7 +222,7 @@ scanRoutes.get('/api/scans/:scanId', asyncHandler(async (req, res) => {
   res.json(requireScan(req.params.scanId));
 }));
 
-scanRoutes.delete('/api/scans/:scanId', asyncHandler(async (req, res) => {
+scanRoutes.delete('/api/scans/:scanId', requireRole('admin'), asyncHandler(async (req, res) => {
   const scan = requireScan(req.params.scanId);
   if (scan.status === 'scanning') {
     throw new HttpError(409, '扫描进行中，请等扫描完成或失败后再删除', { code: 'srv.scanBusy' });
@@ -238,7 +239,7 @@ scanRoutes.delete('/api/scans/:scanId', asyncHandler(async (req, res) => {
   res.status(204).end();
 }));
 
-scanRoutes.post('/api/scans/:scanId/cancel', asyncHandler(async (req, res) => {
+scanRoutes.post('/api/scans/:scanId/cancel', requireRole('auditor'), asyncHandler(async (req, res) => {
   const scan = requireScan(req.params.scanId);
   if (scan.status !== 'scanning') {
     throw new HttpError(409, '扫描已结束，无需取消', { code: 'srv.scanNotRunning' });
@@ -431,6 +432,7 @@ const importSarifUpload = memoryFileUpload(MAX_SARIF_BYTES, {
 
 scanRoutes.post(
   '/api/projects/:id/sarif',
+  requireRole('auditor'),
   limit400(importSarifUpload.single('file'), MAX_SARIF_BYTES),
   asyncHandler(async (req, res) => {
     const project = requireProject(req.params.id);

@@ -24,6 +24,7 @@ import {
   packFilePath,
 } from '../rulepacks.js';
 import { asRuleFileHttpError, LANG_EXT, parseRuleYaml, runPackCheck, RuleYamlError } from '../rule-lab.js';
+import { requireRole } from '../auth.js';
 import {
   buildLegacyManifestYaml,
   buildPackReadme,
@@ -228,7 +229,7 @@ function savePortablePackFromLab(
   return pack;
 }
 
-rulepackRoutes.post('/api/rulepacks', asyncHandler(async (req, res) => {
+rulepackRoutes.post('/api/rulepacks', requireRole('auditor'), asyncHandler(async (req, res) => {
   if (req.is('multipart/form-data')) {
     res.status(400).json({
       error: { message: '文件上传请使用 /api/rulepacks/upload', code: 'srv.uploadEndpointMismatch' },
@@ -270,7 +271,7 @@ rulepackRoutes.post('/api/rulepacks', asyncHandler(async (req, res) => {
   }
 }));
 
-rulepackRoutes.patch('/api/rulepacks/:id', asyncHandler(async (req, res) => {
+rulepackRoutes.patch('/api/rulepacks/:id', requireRole('admin'), asyncHandler(async (req, res) => {
   const pack = getRulePack(req.params.id);
   if (!pack) throw new HttpError(404, '规则包不存在或已被删除', { code: 'srv.packNotFound' });
   const enabled = req.body?.enabled;
@@ -289,6 +290,7 @@ const uploadYaml = memoryFileUpload(MAX_RULE_YAML_BYTES, {
 
 rulepackRoutes.post(
   '/api/rulepacks/upload',
+  requireRole('auditor'),
   limit400(uploadYaml.single('file'), MAX_RULE_YAML_BYTES),
   asyncHandler(async (req, res) => {
     if (!req.file) {
@@ -320,7 +322,7 @@ rulepackRoutes.get('/api/rulepacks/:id/content', asyncHandler(async (req, res) =
   res.json({ id: pack.id, name: pack.name, language: pack.language, content: fs.readFileSync(filePath, 'utf8') });
 }));
 
-rulepackRoutes.put('/api/rulepacks/:id/content', asyncHandler(async (req, res) => {
+rulepackRoutes.put('/api/rulepacks/:id/content', requireRole('admin'), asyncHandler(async (req, res) => {
   const pack = getRulePack(req.params.id);
   if (!pack) throw new HttpError(404, '规则包不存在或已被删除', { code: 'srv.packNotFound' });
   if (pack.builtin) {
@@ -356,7 +358,7 @@ rulepackRoutes.put('/api/rulepacks/:id/content', asyncHandler(async (req, res) =
   res.json({ ...pack, ruleCount });
 }));
 
-rulepackRoutes.delete('/api/rulepacks/:id', asyncHandler(async (req, res) => {
+rulepackRoutes.delete('/api/rulepacks/:id', requireRole('admin'), asyncHandler(async (req, res) => {
   const pack = getRulePack(req.params.id);
   if (!pack) throw new HttpError(404, '规则包不存在或已被删除', { code: 'srv.packNotFound' });
   if (pack.builtin) {
@@ -609,6 +611,7 @@ async function importLoosePack(
 
 rulepackRoutes.post(
   '/api/rulepacks/import',
+  requireRole('admin'),
   limit400(importPackUpload.single('file'), MAX_PACK_ZIP_BYTES),
   asyncHandler(async (req, res) => {
     if (!req.file) {
@@ -644,7 +647,7 @@ rulepackRoutes.post(
   }),
 );
 
-rulepackRoutes.post('/api/rulepacks/:id/check', asyncHandler(async (req, res) => {
+rulepackRoutes.post('/api/rulepacks/:id/check', requireRole('auditor'), asyncHandler(async (req, res) => {
   const pack = getRulePack(req.params.id);
   if (!pack) throw new HttpError(404, '规则包不存在或已被删除', { code: 'srv.packNotFound' });
   if (pack.builtin) {

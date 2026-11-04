@@ -28,6 +28,7 @@ import {
 import { getRuleKnowledge } from '../knowledge.js';
 import { hasRunningScan, MAX_PATH_FILTER_GLOBSTARS } from '../scan-runner.js';
 import { runRuleLab } from '../rule-lab.js';
+import { requireRole } from '../auth.js';
 import { asyncHandler, isEngineJobBusy, MAX_RULE_YAML_BYTES, MAX_SAMPLE_BYTES, newId, parseProductLang, withEngineJobBusy } from './shared.js';
 
 export const miscRoutes = Router();
@@ -183,7 +184,7 @@ miscRoutes.get('/api/configs', (_req, res) => {
   res.json(listConfigs());
 });
 
-miscRoutes.post('/api/configs', asyncHandler(async (req, res) => {
+miscRoutes.post('/api/configs', requireRole('admin'), asyncHandler(async (req, res) => {
   const values = requireValidConfigValues(req.body ?? {});
   const scanConfig: ScanConfig = {
     id: newId('cfg'),
@@ -194,7 +195,7 @@ miscRoutes.post('/api/configs', asyncHandler(async (req, res) => {
   res.status(201).json(scanConfig);
 }));
 
-miscRoutes.put('/api/configs/:id', asyncHandler(async (req, res) => {
+miscRoutes.put('/api/configs/:id', requireRole('admin'), asyncHandler(async (req, res) => {
   const existing = getConfig(req.params.id);
   if (!existing) {
     throw new HttpError(404, '扫描配置不存在或已被删除', { code: 'srv.configNotFound' });
@@ -204,7 +205,7 @@ miscRoutes.put('/api/configs/:id', asyncHandler(async (req, res) => {
   res.json(getConfig(existing.id));
 }));
 
-miscRoutes.delete('/api/configs/:id', asyncHandler(async (req, res) => {
+miscRoutes.delete('/api/configs/:id', requireRole('admin'), asyncHandler(async (req, res) => {
   const existing = getConfig(req.params.id);
   if (!existing) {
     throw new HttpError(404, '扫描配置不存在或已被删除', { code: 'srv.configNotFound' });
@@ -228,7 +229,7 @@ miscRoutes.get('/api/rules/knowledge/:ruleId', asyncHandler(async (req, res) => 
   res.json(getRuleKnowledge(ruleId, lang));
 }));
 
-miscRoutes.post('/api/rulelab/run', asyncHandler(async (req, res) => {
+miscRoutes.post('/api/rulelab/run', requireRole('auditor'), asyncHandler(async (req, res) => {
   const yaml = String(req.body?.yaml ?? '');
   if (!yaml.trim()) throw new HttpError(400, '请输入规则 YAML', { code: 'srv.ruleYamlRequired' });
   if (yaml.length > MAX_RULE_YAML_BYTES) {
@@ -265,7 +266,7 @@ miscRoutes.get('/api/engine/upgrade', (_req, res) => {
   res.json(engineUpgradeState());
 });
 
-miscRoutes.post('/api/engine/upgrade', asyncHandler(async (_req, res) => {
+miscRoutes.post('/api/engine/upgrade', requireRole('admin'), asyncHandler(async (_req, res) => {
   if (hasRunningScan()) {
     throw new HttpError(409, '有扫描任务正在运行，请等扫描结束后再升级引擎', {
       code: 'srv.upgradeScanBusy',
