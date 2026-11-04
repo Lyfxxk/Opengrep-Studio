@@ -506,3 +506,13 @@
   --font-display: 'Space Grotesk', 'Segoe UI', system-ui, 'PingFang TC', 'PingFang SC', 'Microsoft JhengHei', 'Microsoft YaHei', sans-serif;
   --font-body:    'Segoe UI', system-ui, -apple-system, 'PingFang TC', 'PingFang SC', 'Microsoft JhengHei', 'Microsoft YaHei', sans-serif;
 }
+
+.login-shell:lang(ja) {
+  --font-display: 'Space Grotesk', 'Segoe UI', system-ui, 'Hiragino Kaku Gothic ProN', 'Yu Gothic UI', 'Meiryo', sans-serif;
+  --font-body:    'Segoe UI', system-ui, -apple-system, 'Hiragino Kaku Gothic ProN', 'Yu Gothic UI', 'Meiryo', sans-serif;
+}
+
+.login-shell:lang(ko) {
+  --font-display: 'Space Grotesk', 'Segoe UI', system-ui, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  --font-body:    'Segoe UI', system-ui, -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+}
