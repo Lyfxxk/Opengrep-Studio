@@ -22,6 +22,7 @@ const zhHant: typeof zh = {
   },
   header: {
     logout: '登出',
+    userManagement: '使用者管理',
     avatarAlt: '管理員頭像',
     language: '切換語言',
     theme: '切換主題',
@@ -1024,6 +1025,7 @@ const zhHant: typeof zh = {
     errorUsername: '請輸入帳號',
     errorPassword: '請輸入密碼',
     errorInvalid: '帳號或密碼錯誤',
+    errorLoginFailed: '登入失敗，請稍後再試',
     submit: '登　入',
     submitting: '登入中…',
     successTitle: '身分已確認',

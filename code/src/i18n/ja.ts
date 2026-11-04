@@ -22,6 +22,7 @@ const ja: typeof zh = {
   },
   header: {
     logout: 'ログアウト',
+    userManagement: 'ユーザー管理',
     avatarAlt: '管理者のアバター',
     language: '言語の切り替え',
     theme: 'テーマの切り替え',
@@ -1019,6 +1020,7 @@ const ja: typeof zh = {
     errorUsername: 'アカウントを入力してください',
     errorPassword: 'パスワードを入力してください',
     errorInvalid: 'アカウントまたはパスワードが正しくありません',
+    errorLoginFailed: 'ログインに失敗しました。しばらくしてからもう一度お試しください。',
     submit: 'ログイン',
     submitting: 'ログイン中…',
     successTitle: '認証済み',

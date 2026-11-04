@@ -22,6 +22,7 @@ const en: typeof zh = {
   },
   header: {
     logout: 'Sign out',
+    userManagement: 'User management',
     avatarAlt: 'Admin avatar',
     language: 'Switch language',
     theme: 'Switch theme',
@@ -1059,6 +1060,7 @@ const en: typeof zh = {
     errorUsername: 'Please enter your username',
     errorPassword: 'Please enter your password',
     errorInvalid: 'Incorrect username or password',
+    errorLoginFailed: 'Login failed. Please try again later.',
     submit: 'Sign in',
     submitting: 'Signing in…',
     successTitle: 'Identity confirmed',

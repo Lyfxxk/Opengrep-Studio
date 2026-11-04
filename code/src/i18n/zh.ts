@@ -20,6 +20,7 @@ const zh = {
   },
   header: {
     logout: '退出登录',
+    userManagement: '用户管理',
     avatarAlt: '管理员头像',
     language: '切换语言',
     theme: '切换主题',
@@ -1021,6 +1022,7 @@ const zh = {
     errorUsername: '请输入账号',
     errorPassword: '请输入密码',
     errorInvalid: '账号或密码错误',
+    errorLoginFailed: '登录失败，请稍后重试',
     submit: '登　录',
     submitting: '登录中…',
     successTitle: '身份已确认',

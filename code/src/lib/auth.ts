@@ -1,46 +1,78 @@
+import { USE_MOCK, authApi, type SessionUser, type UserRole } from '@/lib/api';
+
 const AUTH_KEY = '__global_opengrep_auth';
-const USERNAME_KEY = '__global_opengrep_username';
 
 const store = sessionStorage;
 
 const LOCAL_ACCOUNT = { username: 'admin', password: '123456' } as const;
 
+const ROLES: UserRole[] = ['admin', 'auditor', 'viewer'];
+
 export function validateCredentials(username: string, password: string): boolean {
   return username === LOCAL_ACCOUNT.username && password === LOCAL_ACCOUNT.password;
 }
 
-export function isAuthenticated(): boolean {
+export function getCurrentUser(): SessionUser | null {
   try {
-    return store.getItem(AUTH_KEY) === '1';
+    const raw = store.getItem(AUTH_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<SessionUser> | null;
+    if (parsed && typeof parsed.username === 'string' && ROLES.includes(parsed.role as UserRole)) {
+      return { username: parsed.username, role: parsed.role as UserRole };
+    }
   } catch (error) {
     console.error('Failed to read auth state:', String(error));
-    return false;
   }
+  return null;
 }
 
-export function login(username: string): void {
+export function getCurrentUsername(): string {
+  return getCurrentUser()?.username ?? '';
+}
+
+function storeUser(user: SessionUser): void {
   try {
-    store.setItem(AUTH_KEY, '1');
-    store.setItem(USERNAME_KEY, username);
+    store.setItem(AUTH_KEY, JSON.stringify(user));
   } catch (error) {
     console.error('Failed to write auth state:', String(error));
   }
 }
 
-export function logout(): void {
+export function clearCurrentUser(): void {
   try {
     store.removeItem(AUTH_KEY);
-    store.removeItem(USERNAME_KEY);
   } catch (error) {
     console.error('Failed to clear auth state:', String(error));
   }
 }
 
-export function getCurrentUsername(): string {
+export async function login(username: string, password: string): Promise<SessionUser> {
+  if (USE_MOCK) {
+    const user: SessionUser = { username, role: 'admin' };
+    storeUser(user);
+    return user;
+  }
+  const user = await authApi.login(username, password);
+  storeUser(user);
+  return user;
+}
+
+export async function logout(): Promise<void> {
+  if (!USE_MOCK) {
+    await authApi.logout().catch(() => undefined);
+  }
+  clearCurrentUser();
+}
+
+export async function restoreSession(): Promise<SessionUser | null> {
+  const cached = getCurrentUser();
+  if (cached) return cached;
+  if (USE_MOCK) return null;
   try {
-    return store.getItem(USERNAME_KEY) || 'admin';
-  } catch (error) {
-    console.error('Failed to read current user:', String(error));
-    return 'admin';
+    const user = await authApi.me();
+    storeUser(user);
+    return user;
+  } catch {
+    return null;
   }
 }
