@@ -206,10 +206,11 @@ pipeline {
           IMAGE="opengrep-studio:latest"
           STAGING="opengrep-studio-staging"
 
-          docker build -t "$IMAGE" .
+          docker build -t "opengrep-studio:${BUILD_NUMBER}" -t "$IMAGE" .
 
+          # 临时容器不挂数据卷：应用用 SQLite 存储，避免与线上实例并发写同一库文件
           docker rm -f "$STAGING" > /dev/null 2>&1 || true
-          docker run -d --name "$STAGING" -v ogstudio-data:/data "$IMAGE" > /dev/null
+          docker run -d --name "$STAGING" "$IMAGE" > /dev/null
 
           ready=0
           for _ in $(seq 1 30); do
@@ -248,6 +249,8 @@ pipeline {
             docker logs --tail 80 opengrep-studio || true
             exit 1
           fi
+
+          docker image prune -f > /dev/null 2>&1 || true
 
           echo "[jenkins] 部署完成：http://localhost:8787"
         '''
