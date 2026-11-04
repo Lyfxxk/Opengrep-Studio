@@ -5,11 +5,14 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   compareVersions,
+  describeHttpErrorInfo,
+  errorInfo,
   findAsset,
   normalizeVersion,
   parseDigest,
   readInstalledManifest,
   resolveTarget,
+  withInfo,
   writeInstalledManifest,
 } from './engine-install.mjs';
 
@@ -135,4 +138,21 @@ test('installed.json 读写往返，损坏或字段缺失时视为不存在', ()
   assert.equal(readInstalledManifest(dir), undefined, '坏 JSON 视为无效');
 
   fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('describeHttpErrorInfo 把 HTTP 状态映射为结构化错误码', () => {
+  assert.equal(describeHttpErrorInfo(403).code, 'engine.rateLimited');
+  assert.equal(describeHttpErrorInfo(429).code, 'engine.rateLimited');
+  assert.equal(describeHttpErrorInfo(404).code, 'engine.upstreamNotFound');
+  assert.equal(describeHttpErrorInfo(502).code, 'engine.upstreamUnavailable');
+  assert.equal(describeHttpErrorInfo(418).code, 'engine.upstreamHttpError');
+  assert.deepEqual(describeHttpErrorInfo(403).params, { status: 403 });
+});
+
+test('withInfo/errorInfo 携带并取回结构化错误信息', () => {
+  const error = withInfo(new Error('x'), { code: 'engine.shaMismatch', params: { expected: 'a', actual: 'b' } });
+  assert.equal(errorInfo(error)?.code, 'engine.shaMismatch');
+  assert.deepEqual(errorInfo(error)?.params, { expected: 'a', actual: 'b' });
+  assert.equal(errorInfo(new Error('plain')), undefined);
+  assert.equal(errorInfo(undefined), undefined);
 });

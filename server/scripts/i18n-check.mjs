@@ -100,6 +100,12 @@ for (const file of serverFiles) {
     serverCodes.add(`archive.tarExtract${match[1]}`);
   }
 }
+const engineInstallText = fs.readFileSync(
+  path.join(root, 'server', 'scripts', 'engine-install.mjs'),
+  'utf8',
+);
+for (const match of engineInstallText.matchAll(/'(engine\.[a-zA-Z0-9_.]+)'/g)) serverCodes.add(match[1]);
+
 for (const code of serverCodes) {
   for (const lang of langs) {
     if (!ui[lang].has(`apiErrors.${code}`)) {

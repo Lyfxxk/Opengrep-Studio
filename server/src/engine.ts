@@ -6,6 +6,7 @@ import { HttpError } from './errors.js';
 import { engineTarget, engineToolDir } from './engine-manifest.js';
 import {
   compareVersions,
+  errorInfo,
   fetchLatestRelease,
   findAsset,
   installEngineAsset,
@@ -244,6 +245,14 @@ function messageOf(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
+function errorReasonParams(error: unknown): Record<string, unknown> {
+  const info = errorInfo(error);
+  if (info) {
+    return { reasonCode: info.code, ...(info.params ? { reasonParams: info.params } : {}) };
+  }
+  return { reason: messageOf(error) };
+}
+
 async function buildUpdateInfo(): Promise<EngineUpdateInfo> {
   const current = await getEngineVersion();
   const target = engineTarget();
@@ -294,7 +303,7 @@ async function buildUpdateInfo(): Promise<EngineUpdateInfo> {
       ...base,
       error: `无法获取上游最新版本：${messageOf(error)}`,
       errorCode: 'engine.checkFailed',
-      errorParams: { reason: messageOf(error) },
+      errorParams: errorReasonParams(error),
     };
   }
 
@@ -453,7 +462,7 @@ export async function startEngineUpgrade(): Promise<EngineUpgradeState> {
           ...(from
             ? {
                 messageCode: 'engine.upgradeFailedKeepCurrent',
-                messageParams: { detail, from },
+                messageParams: { ...errorReasonParams(error), from },
               }
             : {}),
           finishedAt: new Date().toISOString(),

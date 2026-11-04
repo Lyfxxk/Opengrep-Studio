@@ -786,6 +786,15 @@ const en: typeof zh = {
       upToDateVersion: 'Already on the latest stable version (v{{version}})',
       assetMissing: 'Upstream {{tag}} has no asset {{asset}} — automatic upgrade is unavailable',
       digestMissing: 'Upstream {{tag}} provides no sha256 digest — automatic upgrade is unavailable',
+      rateLimited: 'GitHub API rate limited (60 anonymous requests/hour, HTTP {{status}}); try again later',
+      upstreamNotFound: 'Upstream release not found (HTTP 404); check the version tag',
+      upstreamUnavailable: 'GitHub is temporarily unavailable (HTTP {{status}}); try again later',
+      upstreamHttpError: 'GitHub API returned HTTP {{status}}',
+      downloadAllFailed: 'All download channels failed ({{channels}})',
+      shaMismatch: 'SHA-256 mismatch (expected {{expected}}…, got {{actual}}…)',
+      probeNoOutput: 'The downloaded engine will not run (--version printed nothing)',
+      versionMismatch: 'Downloaded engine version {{version}} does not match the target {{tag}}',
+      replaceFailed: 'Failed to replace engine files (possibly held by a scan or the Rule Lab): {{detail}}',
       upgraded: 'Engine upgraded to v{{version}}. Rescan and rebuild the baseline.',
       upgradeFailedKeepCurrent: '{{detail}}; the existing engine v{{from}} is untouched and still works',
     },
@@ -909,6 +918,7 @@ const en: typeof zh = {
       ruleFileInvalidDetail: 'Rule file {{name}} is invalid: {{reason}}',
       ruleYamlInvalid: 'Invalid rule YAML: {{reason}}',
       packExportParseFailed: 'The rule pack content could not be parsed; export aborted: {{reason}}',
+      packManifestUnparseable: 'Could not parse pack.yaml: {{reason}}',
       packManifestMissing:
         'The archive contains multiple rule files but no pack.yaml manifest. Package it in the portable format (pack.yaml + rules/).',
       allFilesIgnored:

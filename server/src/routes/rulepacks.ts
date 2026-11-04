@@ -403,9 +403,12 @@ function buildExportReadme(pack: RulePack, packDir?: string): string {
     }
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
+    const params = error instanceof RuleYamlError
+      ? { reasonCode: error.code, ...(error.params ? { reasonParams: error.params } : {}) }
+      : { reason };
     throw new HttpError(400, `规则包内容无法解析，导出中止：${reason}`, {
       code: 'srv.packExportParseFailed',
-      params: { reason },
+      params,
     });
   }
   return buildPackReadme({
@@ -492,7 +495,11 @@ async function importPortablePack(root: string, res: Response): Promise<void> {
     manifest = parsePackManifest(fs.readFileSync(path.join(root, 'pack.yaml'), 'utf8'));
   } catch (error) {
     if (error instanceof HttpError) throw error;
-    throw new HttpError(400, error instanceof Error ? error.message : String(error));
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new HttpError(400, reason, {
+      code: 'srv.packManifestUnparseable',
+      params: { reason },
+    });
   }
   const rulesStat = fs.statSync(path.join(root, 'rules'), { throwIfNoEntry: false });
   if (!rulesStat?.isDirectory()) {
