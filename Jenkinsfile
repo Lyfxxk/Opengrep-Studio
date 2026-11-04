@@ -1,3 +1,4 @@
+// CD 流水线：push → 全量测试 → 构建镜像 → 容器内健康自检通过后替换 opengrep-studio 容器（8787）
 pipeline {
   agent any
 
