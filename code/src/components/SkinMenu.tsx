@@ -22,7 +22,7 @@ function skinLabel(skin: SkinDefinition, lang: string): string {
 }
 
 export default function SkinMenu({ className = '' }: { className?: string }) {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const current = i18n.resolvedLanguage ?? i18n.language;
   const [skin, setSkin] = useState<SkinId>(resolveInitialSkin);
   const active = SKINS.find((item) => item.id === skin) ?? SKINS[0];
@@ -32,8 +32,8 @@ export default function SkinMenu({ className = '' }: { className?: string }) {
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          aria-label={activeLabel}
-          title={activeLabel}
+          aria-label={t('header.skin')}
+          title={t('header.skin')}
           className={className}
         >
           <SwatchBook className="size-4" />

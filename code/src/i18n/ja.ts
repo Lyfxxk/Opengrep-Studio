@@ -25,6 +25,7 @@ const ja: typeof zh = {
     avatarAlt: '管理者のアバター',
     language: '言語の切り替え',
     theme: 'テーマの切り替え',
+    skin: 'スキンの切り替え',
   },
   lang: {
     zh: '简体中文',

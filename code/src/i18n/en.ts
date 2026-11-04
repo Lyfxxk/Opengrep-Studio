@@ -25,6 +25,7 @@ const en: typeof zh = {
     avatarAlt: 'Admin avatar',
     language: 'Switch language',
     theme: 'Switch theme',
+    skin: 'Switch skin',
   },
   lang: {
     zh: '简体中文',

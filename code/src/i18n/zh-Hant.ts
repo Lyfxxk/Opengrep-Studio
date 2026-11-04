@@ -25,6 +25,7 @@ const zhHant: typeof zh = {
     avatarAlt: '管理員頭像',
     language: '切換語言',
     theme: '切換主題',
+    skin: '切換皮膚',
   },
   lang: {
     zh: '简体中文',

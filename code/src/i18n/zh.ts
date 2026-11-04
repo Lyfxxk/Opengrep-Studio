@@ -23,6 +23,7 @@ const zh = {
     avatarAlt: '管理员头像',
     language: '切换语言',
     theme: '切换主题',
+    skin: '切换皮肤',
   },
   lang: {
     zh: '简体中文',
