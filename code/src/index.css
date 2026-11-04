@@ -2,6 +2,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "./tailwind-theme.css";
+@import "./skins/graphite.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
