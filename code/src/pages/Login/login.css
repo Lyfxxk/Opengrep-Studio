@@ -1,31 +1,31 @@
 
 .login-shell {
-  --bg:            oklch(0.155 0.014 245);
-  --surface:       oklch(0.195 0.016 245);
-  --surface-2:     oklch(0.235 0.018 245);
-  --fg:            oklch(0.93 0.008 240);
-  --muted:         oklch(0.66 0.014 245);
-  --border:        oklch(0.295 0.018 245);
-  --border-strong: oklch(0.38 0.02 245);
+  --bg:            hsl(220 30% 95%);
+  --surface:       hsl(0 0% 100%);
+  --surface-2:     hsl(220 32% 98%);
+  --fg:            hsl(220 16% 15%);
+  --muted:         hsl(220 10% 42%);
+  --border:        hsl(220 13% 87%);
+  --border-strong: hsl(220 12% 76%);
 
-  --accent:        #3b82f6;
-  --accent-deep:   #2563eb;
-  --on-accent:     #ffffff;
+  --accent:        hsl(211 100% 50%);
+  --accent-deep:   hsl(210 100% 42%);
+  --on-accent:     hsl(0 0% 100%);
   --accent-soft:   color-mix(in srgb, var(--accent) 16%, transparent);
 
-  --signal:        #00e5ff;
-  --signal-soft:   color-mix(in srgb, var(--signal) 13%, transparent);
+  --signal:        hsl(192 85% 34%);
+  --signal-soft:   color-mix(in srgb, var(--signal) 12%, transparent);
 
-  --ok:            oklch(0.8 0.165 152);
+  --ok:            hsl(142 55% 32%);
   --ok-soft:       color-mix(in oklch, var(--ok) 13%, transparent);
 
-  --warn:          oklch(0.82 0.13 85);
-  --danger:        oklch(0.72 0.17 25);
-  --danger-soft:   color-mix(in oklch, var(--danger) 14%, transparent);
+  --warn:          hsl(30 85% 38%);
+  --danger:        hsl(0 70% 46%);
+  --danger-soft:   color-mix(in oklch, var(--danger) 12%, transparent);
 
-  --grid-line:     color-mix(in oklch, var(--fg) 4%, transparent);
-  --glow:          color-mix(in oklch, var(--accent) 7%, transparent);
-  --shadow-deep:   color-mix(in oklch, var(--bg) 72%, black);
+  --grid-line:     color-mix(in oklab, var(--fg) 5%, transparent);
+  --glow:          color-mix(in srgb, var(--accent) 9%, transparent);
+  --shadow-deep:   color-mix(in srgb, hsl(220 30% 40%) 26%, transparent);
 
   --font-display: 'Space Grotesk', 'Segoe UI', system-ui, 'PingFang SC', 'Microsoft YaHei', sans-serif;
   --font-body:    'Segoe UI', system-ui, -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
@@ -46,6 +46,47 @@
   line-height: 1.55;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+}
+
+:root.dark .login-shell {
+  --bg:            oklch(0.155 0.014 245);
+  --surface:       oklch(0.195 0.016 245);
+  --surface-2:     oklch(0.235 0.018 245);
+  --fg:            oklch(0.93 0.008 240);
+  --muted:         oklch(0.66 0.014 245);
+  --border:        oklch(0.295 0.018 245);
+  --border-strong: oklch(0.38 0.02 245);
+
+  --accent:        #3b82f6;
+  --accent-deep:   #2563eb;
+  --on-accent:     #ffffff;
+
+  --signal:        #00e5ff;
+
+  --ok:            oklch(0.8 0.165 152);
+  --warn:          oklch(0.82 0.13 85);
+  --danger:        oklch(0.72 0.17 25);
+
+  --grid-line:     color-mix(in oklch, var(--fg) 4%, transparent);
+  --glow:          color-mix(in oklch, var(--accent) 7%, transparent);
+  --shadow-deep:   color-mix(in oklch, var(--bg) 72%, black);
+}
+
+[data-skin='graphite'] .login-shell {
+  --accent:        hsl(215 15% 30%);
+  --accent-deep:   hsl(215 15% 22%);
+  --signal:        hsl(215 15% 30%);
+  --radius: 4px;
+  --radius-lg: 5px;
+}
+
+:root.dark[data-skin='graphite'] .login-shell {
+  --accent:        hsl(215 15% 68%);
+  --accent-deep:   hsl(215 15% 76%);
+  --on-accent:     hsl(220 15% 12%);
+  --signal:        hsl(215 15% 72%);
+  --radius: 4px;
+  --radius-lg: 5px;
 }
 
 .login-shell ::selection { background: color-mix(in oklch, var(--accent) 30%, transparent); color: var(--fg); }
@@ -134,6 +175,17 @@
 }
 
 .login-shell .term {
+  --bg:            oklch(0.155 0.014 245);
+  --surface:       oklch(0.195 0.016 245);
+  --surface-2:     oklch(0.235 0.018 245);
+  --fg:            oklch(0.93 0.008 240);
+  --muted:         oklch(0.66 0.014 245);
+  --border:        oklch(0.295 0.018 245);
+  --border-strong: oklch(0.38 0.02 245);
+  --signal:        #00e5ff;
+  --ok:            oklch(0.8 0.165 152);
+  --warn:          oklch(0.82 0.13 85);
+  --danger:        oklch(0.72 0.17 25);
   position: relative;
   margin-top: clamp(24px, 4.2vh, 46px);
   max-width: 760px;
@@ -275,27 +327,31 @@
 }
 .login-shell .form-col { width: min(410px, 100%); }
 
-.login-shell .lang-switch {
+.login-shell .login-switches {
   position: absolute;
   top: 14px;
   right: 14px;
   z-index: 10;
   display: inline-flex;
   align-items: center;
+  gap: 8px;
+}
+.login-shell .login-switch {
+  display: inline-flex;
+  align-items: center;
   gap: 6px;
   padding: 6px 10px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: transparent;
   color: var(--muted);
   font-size: 12.5px;
   transition: color 0.15s, border-color 0.15s;
 }
-.login-shell .lang-switch:hover {
+.login-shell .login-switch:hover {
   color: var(--fg);
   border-color: var(--border-strong);
 }
-.login-shell .lang-switch svg { width: 14px; height: 14px; }
 
 .login-shell .form-brand {
   display: flex;

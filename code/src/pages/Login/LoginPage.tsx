@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { login, validateCredentials } from '@/lib/auth';
 import LanguageMenu from '@/components/LanguageMenu';
+import SkinMenu from '@/components/SkinMenu';
+import ThemeMenu from '@/components/ThemeMenu';
 import logoUrl from '@/assets/images/logo.png';
 import './login.css';
 
@@ -176,7 +178,11 @@ export default function LoginPage() {
       </section>
 
       <section className="form-panel" aria-label={t('login.formPanel')}>
-        <LanguageMenu className="lang-switch" />
+        <div className="login-switches">
+          <ThemeMenu className="login-switch" />
+          <LanguageMenu className="login-switch" />
+          <SkinMenu className="login-switch" />
+        </div>
         <div className="form-col">
           <div className="form-brand">
             <img className="brand-logo" src={logoUrl} alt="" aria-hidden="true" />

@@ -1,19 +1,14 @@
 import { Fragment } from 'react';
 import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useTheme } from 'next-themes';
 import {
-  Check,
   FileText,
   FolderOpen,
   LayoutDashboard,
   LogOut,
-  Monitor,
-  Moon,
   Puzzle,
   Radar,
   SlidersHorizontal,
-  Sun,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -45,6 +40,7 @@ import {
 } from '@/components/ui/sidebar';
 import LanguageMenu from '@/components/LanguageMenu';
 import SkinMenu from '@/components/SkinMenu';
+import ThemeMenu from '@/components/ThemeMenu';
 import { getCurrentUsername, isAuthenticated, logout } from '@/lib/auth';
 import avatarUrl from '@/assets/images/avatar.jpg';
 import logoUrl from '@/assets/images/logo.png';
@@ -73,12 +69,6 @@ const NAV_ITEMS: Array<{ path: string; label: NavKey; icon: typeof LayoutDashboa
 
 const ICON_BUTTON_CLASS =
   'flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
-
-const THEMES = [
-  { mode: 'light', labelKey: 'theme.light', Icon: Sun },
-  { mode: 'dark', labelKey: 'theme.dark', Icon: Moon },
-  { mode: 'system', labelKey: 'theme.system', Icon: Monitor },
-] as const;
 
 function AppSidebar() {
   const { pathname } = useLocation();
@@ -141,9 +131,6 @@ export const Layout = () => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const { t } = useTranslation();
-  const { theme, setTheme } = useTheme();
-  const active = THEMES.find((item) => item.mode === theme) ?? THEMES[0];
-  const ActiveIcon = active.Icon;
 
   const segments = pathname.split('/').filter(Boolean);
   const navLabel = NAV_ITEMS.find((item) => item.path === `/${segments[0]}`)?.label;
@@ -209,27 +196,7 @@ export const Layout = () => {
           </Breadcrumb>
 
           <div className="ml-auto flex items-center gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  aria-label={t('header.theme')}
-                  title={t('header.theme')}
-                  className={ICON_BUTTON_CLASS}
-                >
-                  <ActiveIcon className="size-4" />
-                  <span className="hidden sm:inline">{t(active.labelKey)}</span>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {THEMES.map((item) => (
-                  <DropdownMenuItem key={item.mode} onSelect={() => setTheme(item.mode)}>
-                    {item.mode === active.mode && <Check className="size-4" />}
-                    {t(item.labelKey)}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <ThemeMenu className={ICON_BUTTON_CLASS} />
             <LanguageMenu className={ICON_BUTTON_CLASS} />
             <SkinMenu className={ICON_BUTTON_CLASS} />
 
