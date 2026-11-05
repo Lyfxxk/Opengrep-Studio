@@ -182,7 +182,7 @@ const zh = {
     statsIssues: '累计检出问题',
     issueStats: '当前活跃 {{active}} · 待复核 {{pending}}',
     statsPacks: '规则包',
-    packStats: '内置 {{builtin}} · 自建 {{custom}}',
+    packStats: '内置 {{builtin}} · 自定义 {{custom}}',
     loadFailed: '部分数据加载失败，当前展示可能不完整',
     riskDistTitle: '风险分布',
     riskDistScope: '口径：各项目最近一次已完成扫描',
