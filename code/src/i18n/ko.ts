@@ -181,7 +181,7 @@ const ko: typeof zh = {
     statsProjects: '감사 프로젝트',
     statsScans: '누적 스캔',
     scanStats: '완료 {{completed}} · 실패 {{failed}}',
-    statsIssues: '누적 탐지된 문제',
+    statsIssues: '누적 탐지 문제',
     issueStats: '현재 활성 {{active}} · 검토 대기 {{pending}}',
     statsPacks: '규칙 팩',
     packStats: '기본 제공 {{builtin}} · 사용자 지정 {{custom}}',
