@@ -14,14 +14,14 @@ export default function ScanStatusBadge({
   if (status === 'scanning') {
     if (queued) {
       return (
-        <Badge variant="outline" className="gap-1 font-normal">
+        <Badge data-testid="scan-status" data-status={status} variant="outline" className="gap-1 font-normal">
           <Clock className="size-3" />
           {t('scanStatus.queued')}
         </Badge>
       );
     }
     return (
-      <Badge variant="outline" className="gap-1 font-normal">
+      <Badge data-testid="scan-status" data-status={status} variant="outline" className="gap-1 font-normal">
         <Loader2 className="size-3 animate-spin" />
         {t('scanStatus.scanning')}
       </Badge>
@@ -29,14 +29,14 @@ export default function ScanStatusBadge({
   }
   if (status === 'failed') {
     return (
-      <Badge variant="destructive" className="gap-1 font-normal">
+      <Badge data-testid="scan-status" data-status={status} variant="destructive" className="gap-1 font-normal">
         <XCircle className="size-3" />
         {t('scanStatus.failed')}
       </Badge>
     );
   }
   return (
-    <Badge variant="secondary" className="gap-1 font-normal">
+    <Badge data-testid="scan-status" data-status={status} variant="secondary" className="gap-1 font-normal">
       <CheckCircle2 className="size-3 text-success" />
       {t('scanStatus.completed')}
     </Badge>

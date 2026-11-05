@@ -201,6 +201,18 @@ flowchart LR
 - SQLite stores projects / scans / findings / reviews / configs — no external service dependencies; all data lives in `server/data/`
 - Up to 2 scans run concurrently (extra ones are queued automatically) to make use of local resources; the Rule Lab and scans are mutually exclusive
 
+## Testing
+
+```sh
+npm test             # backend unit tests
+npm run test-packs   # rule pack structure + bundled samples
+npm run e2e          # HTTP end-to-end against a running backend (real engine)
+npm run e2e:ui       # browser end-to-end (Playwright; builds the frontend, boots an isolated backend on :8799)
+npm run e2e:ui:fast  # browser end-to-end without the engine-dependent scan case
+```
+
+Browser tests live in `code/e2e/` and write to `code/e2e/.tmp/`, so they never touch your `server/data/`. CI runs both suites against the real engine.
+
 ## Security Model
 
 Honest disclosure — please read:

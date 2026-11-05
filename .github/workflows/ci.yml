@@ -55,7 +55,7 @@ jobs:
         run: npm --prefix code run build
 
   e2e:
-    name: 后端 E2E（真实引擎扫描）
+    name: E2E（真实引擎 + 浏览器端）
     runs-on: ubuntu-latest
     needs: [server]
     steps:
@@ -89,6 +89,24 @@ jobs:
         with:
           name: e2e-log
           path: e2e.log
+          retention-days: 7
+      - name: 安装前端依赖
+        run: npm --prefix code ci
+      - name: 缓存 Playwright 浏览器
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('code/package-lock.json') }}
+      - name: 安装 Playwright Chromium
+        run: npm --prefix code run e2e:install
+      - name: 浏览器端 E2E
+        run: npm --prefix code run e2e:ui
+      - name: 上传浏览器端 E2E 报告（失败时）
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: code/e2e/.tmp/report
           retention-days: 7
 
   docker:
