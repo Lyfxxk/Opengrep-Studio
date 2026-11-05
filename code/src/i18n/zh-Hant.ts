@@ -34,6 +34,9 @@ const zhHant: typeof zh = {
     en: 'English',
     ja: '日語',
     ko: '韓語',
+    ru: '俄語',
+    fr: '法語',
+    de: '德語',
   },
   theme: {
     light: '淺色',

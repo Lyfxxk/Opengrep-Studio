@@ -12,11 +12,29 @@ export interface SkinDefinition {
 export const SKINS: SkinDefinition[] = [
   {
     id: 'default',
-    labels: { zh: '群青', 'zh-Hant': '群青', en: 'Ultramarine', ja: '群青', ko: '군청' },
+    labels: {
+      zh: '群青',
+      'zh-Hant': '群青',
+      en: 'Ultramarine',
+      ja: '群青',
+      ko: '군청',
+      ru: 'Ультрамарин',
+      fr: 'Outremer',
+      de: 'Ultramarin',
+    },
   },
   {
     id: 'graphite',
-    labels: { zh: '石墨', 'zh-Hant': '石墨', en: 'Graphite', ja: 'グラファイト', ko: '그라파이트' },
+    labels: {
+      zh: '石墨',
+      'zh-Hant': '石墨',
+      en: 'Graphite',
+      ja: 'グラファイト',
+      ko: '그라파이트',
+      ru: 'Графит',
+      fr: 'Graphite',
+      de: 'Graphit',
+    },
   },
 ];
 

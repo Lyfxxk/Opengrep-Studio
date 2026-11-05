@@ -94,6 +94,9 @@ function productLang(): string {
   if (lang.startsWith('en')) return 'en';
   if (lang.startsWith('ja')) return 'ja';
   if (lang.startsWith('ko')) return 'ko';
+  if (lang.startsWith('ru')) return 'ru';
+  if (lang.startsWith('fr')) return 'fr';
+  if (lang.startsWith('de')) return 'de';
   return 'zh';
 }
 

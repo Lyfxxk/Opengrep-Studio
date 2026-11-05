@@ -34,6 +34,9 @@ const ja: typeof zh = {
     en: 'English',
     ja: '日本語',
     ko: '韓国語',
+    ru: 'ロシア語',
+    fr: 'フランス語',
+    de: 'ドイツ語',
   },
   theme: {
     light: 'ライト',

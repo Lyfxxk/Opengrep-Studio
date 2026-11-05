@@ -5,17 +5,20 @@ import zhHant from './zh-Hant';
 import en from './en';
 import ja from './ja';
 import ko from './ko';
+import ru from './ru';
+import fr from './fr';
+import de from './de';
 
 declare module 'i18next' {
   interface CustomTypeOptions {
     defaultNS: 'translation';
-    resources: { translation: typeof zh };
+    resources: { translation: typeof zh | typeof ru | typeof fr | typeof de };
   }
 }
 
 const LANG_STORAGE_KEY = '__global_opengrep_lang';
 
-export type AppLanguage = 'zh' | 'zh-Hant' | 'en' | 'ja' | 'ko';
+export type AppLanguage = 'zh' | 'zh-Hant' | 'en' | 'ja' | 'ko' | 'ru' | 'fr' | 'de';
 
 const HTML_LANG: Record<AppLanguage, string> = {
   zh: 'zh-CN',
@@ -23,11 +26,21 @@ const HTML_LANG: Record<AppLanguage, string> = {
   en: 'en',
   ja: 'ja',
   ko: 'ko',
+  ru: 'ru',
+  fr: 'fr',
+  de: 'de',
 };
 
 function isAppLanguage(value: string | null): value is AppLanguage {
   return (
-    value === 'zh' || value === 'zh-Hant' || value === 'en' || value === 'ja' || value === 'ko'
+    value === 'zh' ||
+    value === 'zh-Hant' ||
+    value === 'en' ||
+    value === 'ja' ||
+    value === 'ko' ||
+    value === 'ru' ||
+    value === 'fr' ||
+    value === 'de'
   );
 }
 
@@ -35,6 +48,9 @@ function detectLanguage(tag: string): AppLanguage {
   const lower = tag.toLowerCase();
   if (lower.startsWith('ja')) return 'ja';
   if (lower.startsWith('ko')) return 'ko';
+  if (lower.startsWith('ru')) return 'ru';
+  if (lower.startsWith('fr')) return 'fr';
+  if (lower.startsWith('de')) return 'de';
   if (!lower.startsWith('zh')) return 'en';
   return /^zh-(tw|hk|mo|hant)/.test(lower) ? 'zh-Hant' : 'zh';
 }
@@ -58,6 +74,9 @@ void i18n.use(initReactI18next).init({
     en: { translation: en },
     ja: { translation: ja },
     ko: { translation: ko },
+    ru: { translation: ru },
+    fr: { translation: fr },
+    de: { translation: de },
   },
   lng: initial,
   fallbackLng: 'zh',
