@@ -443,7 +443,7 @@ const en: typeof zh = {
     loadFailed: 'Failed to load configs — refresh and retry.',
     saveFailed: 'Failed to save the config. Please retry.',
     deleteFailed: 'Failed to delete the config. Please retry.',
-    deletedUnboundToast: 'Config deleted; bindings of {{count}} projects were released',
+    deletedUnboundToast: 'Config deleted; {{count}} projects have been unbound',
     batchPartial_one: 'Deleted {{count}} config; {{failed}} failed',
     batchPartial_other: 'Deleted {{count}} configs; {{failed}} failed',
     batchExtra: 'Deleting an in-use config automatically unbinds the projects using it.',
@@ -581,7 +581,7 @@ const en: typeof zh = {
     contentLoading: 'Loading rule content…',
     emptyContent: '(empty)',
     builtinContentHint:
-      'Built-in rule packs ship with the project and are view/toggle only; update them via server/scripts.',
+      'Built-in rule packs ship with the project and can only be viewed, enabled, or disabled; update them via server/scripts.',
     saving: 'Saving…',
   },
   tagPath: {
