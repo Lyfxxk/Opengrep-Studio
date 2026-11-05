@@ -39,6 +39,10 @@ Thumbs.db
 tmp/
 temp/
 .playwright-cli/
+e2e/.tmp/
+test-results/
+playwright-report/
+blob-report/
 
 yarn.lock
 pnpm-lock.yaml

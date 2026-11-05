@@ -18,6 +18,8 @@
     "dev:server": "npm --prefix server run dev",
     "dev:web": "npm --prefix code run dev",
     "e2e": "node server/scripts/e2e.mjs",
+    "e2e:ui": "npm --prefix code run e2e:ui",
+    "e2e:ui:fast": "npm --prefix code run e2e:ui:fast",
     "docker:build": "docker build -t opengrep-studio .",
     "docker:run": "docker run --rm -p 8787:8787 -v ogstudio-data:/data opengrep-studio"
   },
