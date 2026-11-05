@@ -13,7 +13,8 @@
     "lint": "concurrently npm:typecheck npm:lint:eslint",
     "lint:eslint": "eslint src",
     "e2e:ui": "playwright test",
-    "e2e:ui:fast": "playwright test --grep-invert @engine"
+    "e2e:ui:fast": "playwright test --grep-invert @engine",
+    "e2e:install": "playwright install --with-deps chromium"
   },
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.5",
