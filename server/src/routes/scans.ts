@@ -28,7 +28,7 @@ import {
 } from '../db.js';
 import { ensureFallbackScanConfig } from '../fallback-config.js';
 import { listRuleMessages } from '../knowledge.js';
-import { engineAvailable, engineInstallHint, engineUpgradeRunning, getEngineVersion } from '../engine.js';
+import { engineAvailable, engineInstallHint, engineUpgradeRunning } from '../engine.js';
 import { diffSnapshots } from '../snapshot-diff.js';
 import { packRuleFiles } from '../rulepacks.js';
 import { buildSarifReport, parseSarifImport } from '../sarif.js';
@@ -143,10 +143,8 @@ function toScanSummary(
   return rest;
 }
 
-async function resolveScanEngineVersion(scan: ScanRecord): Promise<string | undefined> {
-  if (scan.engineVersion) return scan.engineVersion;
-  if (!scan.commandLine) return undefined;
-  return getEngineVersion();
+function resolveScanEngineVersion(scan: ScanRecord): string | undefined {
+  return scan.engineVersion;
 }
 
 scanRoutes.post('/api/projects/:id/scans', requireRole('auditor'), asyncHandler(async (req, res) => {
