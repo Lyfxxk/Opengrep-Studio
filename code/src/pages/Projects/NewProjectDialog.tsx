@@ -102,7 +102,7 @@ export default function NewProjectDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {t('common.cancel')}
           </Button>
-          <Button onClick={() => void handleSubmit()} disabled={submitting}>
+          <Button data-testid="project-create-submit" onClick={() => void handleSubmit()} disabled={submitting}>
             {isEditing ? t('projects.save') : t('projects.createSubmit')}
           </Button>
         </DialogFooter>
