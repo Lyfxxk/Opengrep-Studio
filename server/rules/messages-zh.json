@@ -676,7 +676,7 @@
   "python.paramiko-implicit-trust-host-key": "检测到隐式信任服务器主机密钥的 paramiko HostKey 策略。应校验主机密钥以确保连接的不是恶意服务器。请改用 RejectPolicy 或自定义子类。",
   "python.pass-body-fn": "函数 $X 的函数体只有 `pass`。请移除它；若是待办事项，请抛出 NotImplementedError()。",
   "python.pass-body-range": "`for $X in $Y` 的循环体只有 `pass`。请移除它；若是待办事项，请抛出 NotImplementedError()。",
-  "python.password-empty-string": "'$VAR' 是空字符串却被用于设置 '$MODEL' 的密码。如果想设置不可用密码，请设为 None 或调用 'set_unusable_password()'。",
+  "python.password-empty-string": "'$VAR' 是空字符串却被用于设置 '$MODEL' 的口令。如果想设置不可用口令，请设为 None 或调用 'set_unusable_password()'。",
   "python.path-traversal-file-name": "请求数据被用作文件名 `$FILE`，构成路径穿越漏洞，可能导致敏感数据泄露。缓解办法：使用 os.path.abspath、os.path.realpath 或 pathlib 库。",
   "python.path-traversal-join": "请求数据被传入 os.path.join() 和 open()，构成路径穿越漏洞，可能导致敏感数据泄露。缓解办法：使用 os.path.abspath、os.path.realpath 或 pathlib 库。",
   "python.path-traversal-open": "发现请求数据进入 'open' 调用。请校验或净化请求数据，否则可能造成路径穿越攻击、导致敏感数据泄露。缓解办法：使用 os.path.abspath、os.path.realpath 或 pathlib 库。",
