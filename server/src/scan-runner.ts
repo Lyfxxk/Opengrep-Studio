@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import type { ChildProcess } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -56,6 +56,23 @@ const MAX_CONCURRENT_SCANS = 2;
 let activeScans = 0;
 const scanWaitQueue: Array<() => void> = [];
 
+const INSTANCE_TOKEN = randomUUID();
+const INSTANCE_HEARTBEAT_MS = 15_000;
+const INSTANCE_STALE_MS = 60_000;
+
+function touchScanInstance(): void {
+  db.prepare(
+    'INSERT INTO scan_instances (token, last_seen) VALUES (?, ?) ON CONFLICT(token) DO UPDATE SET last_seen = excluded.last_seen',
+  ).run(INSTANCE_TOKEN, new Date().toISOString());
+}
+
+touchScanInstance();
+setInterval(touchScanInstance, INSTANCE_HEARTBEAT_MS).unref();
+
+export function getScanInstanceToken(): string {
+  return INSTANCE_TOKEN;
+}
+
 function acquireScanSlot(): { queued: boolean; ready: Promise<void> } {
   if (activeScans < MAX_CONCURRENT_SCANS) {
     activeScans += 1;
@@ -86,13 +103,19 @@ export function requestScanCancel(scanId: string): boolean {
 export function enqueueScan(scanId: string, plan: ScanPlan): void {
   const slot = acquireScanSlot();
   if (slot.queued) {
-    updateScan(scanId, { queuedAt: new Date().toISOString() });
+    updateScan(scanId, { queuedAt: new Date().toISOString(), queueOwner: INSTANCE_TOKEN });
   }
   void slot.ready
     .then(() => {
       const current = getScan(scanId);
       if (!current || current.status !== 'scanning') return;
-      if (slot.queued) updateScan(scanId, { queuedAt: null, dequeuedAt: new Date().toISOString() });
+      if (slot.queued) {
+        updateScan(scanId, {
+          queuedAt: null,
+          dequeuedAt: new Date().toISOString(),
+          queueOwner: null,
+        });
+      }
       return runScan(scanId, plan);
     })
     .catch((error) => {
@@ -162,7 +185,34 @@ export function hasRunningScan(): boolean {
 
 const STALE_SCAN_GRACE_MS = 2 * 60 * 1000;
 
+function reapOrphanedQueuedScans(): void {
+  const aliveCutoff = new Date(Date.now() - INSTANCE_STALE_MS).toISOString();
+  const rows = db.prepare(
+    `SELECT id FROM scans
+     WHERE status = 'scanning' AND queued_at IS NOT NULL
+       AND (queue_owner IS NULL OR queue_owner NOT IN (
+         SELECT token FROM scan_instances WHERE last_seen >= ?
+       ))`,
+  ).all(aliveCutoff) as Array<{ id: string }>;
+  for (const row of rows) {
+    updateScan(row.id, {
+      status: 'failed',
+      finishedAt: new Date().toISOString(),
+      message: '服务重启导致扫描中断，请重新发起',
+      errorCode: 'scan.interrupted',
+      queuedAt: null,
+      queueOwner: null,
+    });
+  }
+  db.prepare('DELETE FROM scan_instances WHERE last_seen < ?').run(
+    new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+  );
+}
+
+setInterval(reapOrphanedQueuedScans, 30_000).unref();
+
 export function markStaleScansFailed(): void {
+  reapOrphanedQueuedScans();
   const cutoff = new Date(Date.now() - (config.scanTimeoutMs + STALE_SCAN_GRACE_MS)).toISOString();
   const rows = db.prepare(
     `SELECT id FROM scans

@@ -4,7 +4,9 @@ import assert from 'node:assert/strict';
 
 const tempDataDir = useTempDataDir('og-scan-runner-');
 
-const { normalizeGlob, ScanError, markStaleScansFailed } = await import('../src/scan-runner.ts');
+const { normalizeGlob, ScanError, markStaleScansFailed, getScanInstanceToken } = await import(
+  '../src/scan-runner.ts'
+);
 const { insertProject, insertScan, updateScan, getScan, closeDatabase } = await import('../src/db.ts');
 trackTempDir(tempDataDir, closeDatabase);
 
@@ -51,7 +53,7 @@ test('exclude：保持保守近似（引擎不支持带通配符的路径模式�
 
 const hoursAgo = (h) => new Date(Date.now() - h * 3600 * 1000).toISOString();
 
-function seedScanning(id, { startedAt, queuedAt, dequeuedAt, scannedAt }) {
+function seedScanning(id, { startedAt, queuedAt, dequeuedAt, scannedAt, queueOwner }) {
   insertProject({ id: `proj-${id}`, name: id, language: 'python', createdAt: scannedAt });
   insertScan({
     id,
@@ -64,11 +66,16 @@ function seedScanning(id, { startedAt, queuedAt, dequeuedAt, scannedAt }) {
   if (queuedAt) updateScan(id, { queuedAt });
   if (dequeuedAt) updateScan(id, { dequeuedAt });
   if (startedAt) updateScan(id, { startedAt });
+  if (queueOwner) updateScan(id, { queueOwner });
 }
 
 test('未超过引擎超时的 scanning 记录不被启动清理误杀（另一实例可能正在跑）', () => {
   seedScanning('scan-running-fresh', { startedAt: new Date().toISOString(), scannedAt: hoursAgo(0) });
-  seedScanning('scan-queued-fresh', { queuedAt: new Date().toISOString(), scannedAt: hoursAgo(0) });
+  seedScanning('scan-queued-fresh', {
+    queuedAt: new Date().toISOString(),
+    scannedAt: hoursAgo(0),
+    queueOwner: getScanInstanceToken(),
+  });
   markStaleScansFailed();
   assert.equal(getScan('scan-running-fresh').status, 'scanning', '刚开跑的扫描被误判为中断');
   assert.equal(getScan('scan-queued-fresh').status, 'scanning', '刚排队的扫描被误判为中断');
@@ -84,13 +91,38 @@ test('超过引擎超时仍在 scanning 的残骸被标记失败并带上可翻�
 });
 
 test('长时间排队的扫描不被启动清理误杀（另一实例可能只是队列深、排得久）', () => {
-  seedScanning('scan-queued-long', { queuedAt: hoursAgo(3), scannedAt: hoursAgo(3) });
+  seedScanning('scan-queued-long', {
+    queuedAt: hoursAgo(3),
+    scannedAt: hoursAgo(3),
+    queueOwner: getScanInstanceToken(),
+  });
   markStaleScansFailed();
   assert.equal(
     getScan('scan-queued-long').status,
     'scanning',
     '排队等待可以合法超过超时+宽限（2 槽位 × 硬超时），不能按时间判死',
   );
+});
+
+test('排队扫描的所属实例已失联时被清理', () => {
+  seedScanning('scan-queued-orphan', {
+    queuedAt: hoursAgo(1),
+    scannedAt: hoursAgo(1),
+    queueOwner: 'dead-instance',
+  });
+  markStaleScansFailed();
+  const orphan = getScan('scan-queued-orphan');
+  assert.equal(orphan.status, 'failed');
+  assert.equal(orphan.errorCode, 'scan.interrupted');
+  assert.equal(orphan.queuedAt, undefined, '清理后不应再显示为排队中');
+});
+
+test('旧版本遗留的无归属排队扫描被清理', () => {
+  seedScanning('scan-queued-legacy', { queuedAt: hoursAgo(1), scannedAt: hoursAgo(1) });
+  markStaleScansFailed();
+  const orphan = getScan('scan-queued-legacy');
+  assert.equal(orphan.status, 'failed');
+  assert.equal(orphan.errorCode, 'scan.interrupted');
 });
 
 test('已出队进入准备阶段的扫描不被启动清理误杀（出队时刻要晚于含排队等待的发起时间）', () => {

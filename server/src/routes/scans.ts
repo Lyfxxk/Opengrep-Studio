@@ -130,8 +130,16 @@ function requireScan(id: string): ScanRecord {
   return scan;
 }
 
-function toScanSummary(scan: ScanRecord): Omit<ScanRecord, 'srcHash' | 'commandLine' | 'configSnapshot'> {
-  const { srcHash: _srcHash, commandLine: _commandLine, configSnapshot: _configSnapshot, ...rest } = scan;
+function toScanSummary(
+  scan: ScanRecord,
+): Omit<ScanRecord, 'srcHash' | 'commandLine' | 'configSnapshot' | 'queueOwner'> {
+  const {
+    srcHash: _srcHash,
+    commandLine: _commandLine,
+    configSnapshot: _configSnapshot,
+    queueOwner: _queueOwner,
+    ...rest
+  } = scan;
   return rest;
 }
 
@@ -219,7 +227,8 @@ scanRoutes.get('/api/dashboard/risk-summary', asyncHandler(async (_req, res) => 
 }));
 
 scanRoutes.get('/api/scans/:scanId', asyncHandler(async (req, res) => {
-  res.json(requireScan(req.params.scanId));
+  const { queueOwner: _queueOwner, ...scan } = requireScan(req.params.scanId);
+  res.json(scan);
 }));
 
 scanRoutes.delete('/api/scans/:scanId', requireRole('admin'), asyncHandler(async (req, res) => {

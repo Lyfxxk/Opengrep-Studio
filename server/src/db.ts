@@ -85,6 +85,7 @@ export interface ScanRecord {
   engineVersion?: string;
   queuedAt?: string | null;
   dequeuedAt?: string;
+  queueOwner?: string | null;
 }
 
 export interface ScanConfigSnapshot {
@@ -247,6 +248,11 @@ CREATE TABLE IF NOT EXISTS users (
   role TEXT NOT NULL,
   created_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS scan_instances (
+  token TEXT PRIMARY KEY,
+  last_seen TEXT NOT NULL
+);
 `);
 
 for (const sql of [
@@ -265,6 +271,7 @@ for (const sql of [
   'ALTER TABLE scans ADD COLUMN error_code TEXT',
   'ALTER TABLE scans ADD COLUMN error_params TEXT',
   'ALTER TABLE scans ADD COLUMN import_meta TEXT',
+  'ALTER TABLE scans ADD COLUMN queue_owner TEXT',
   'ALTER TABLE configs ADD COLUMN is_protected INTEGER NOT NULL DEFAULT 0',
   'ALTER TABLE issues ADD COLUMN dataflow_trace TEXT',
 ]) {
@@ -351,6 +358,7 @@ function rowToScan(row: SqlRow): ScanRecord {
     engineVersion: str(row.engine_version as string | null),
     queuedAt: str(row.queued_at as string | null),
     dequeuedAt: str(row.dequeued_at as string | null),
+    queueOwner: str(row.queue_owner as string | null),
   };
 }
 
@@ -516,6 +524,7 @@ export function updateScan(id: string, patch: Partial<Omit<ScanRecord, 'id' | 'p
   if (patch.engineVersion !== undefined) { sets.push('engine_version = ?'); values.push(patch.engineVersion ?? null); }
   if (patch.queuedAt !== undefined) { sets.push('queued_at = ?'); values.push(patch.queuedAt ?? null); }
   if (patch.dequeuedAt !== undefined) { sets.push('dequeued_at = ?'); values.push(patch.dequeuedAt ?? null); }
+  if (patch.queueOwner !== undefined) { sets.push('queue_owner = ?'); values.push(patch.queueOwner ?? null); }
   if (patch.configSnapshot !== undefined) {
     sets.push('config_snapshot = ?');
     values.push(patch.configSnapshot ? JSON.stringify(patch.configSnapshot) : null);
