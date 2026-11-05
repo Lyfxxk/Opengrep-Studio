@@ -1082,7 +1082,7 @@ const en: typeof zh = {
     step3Title: 'Review risks one by one',
     step3Desc: 'Check each finding against its matched rule.',
     step4Title: 'View the test report',
-    step4Desc: 'Summarize severity levels into a test report.',
+    step4Desc: 'Summarize risk levels and generate a test report.',
     username: 'Username',
     password: 'Password',
     showPassword: 'Show password',
@@ -1094,7 +1094,7 @@ const en: typeof zh = {
     submit: 'Sign in',
     submitting: 'Signing in…',
     successTitle: 'Identity confirmed',
-    successDesc: 'Entering the workspace…',
+    successDesc: 'Entering the workbench…',
   },
 };
 
