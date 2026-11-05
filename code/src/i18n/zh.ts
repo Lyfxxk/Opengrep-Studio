@@ -32,6 +32,9 @@ const zh = {
     en: 'English',
     ja: '日语',
     ko: '韩语',
+    ru: '俄语',
+    fr: '法语',
+    de: '德语',
   },
   theme: {
     light: '浅色',

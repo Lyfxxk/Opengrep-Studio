@@ -54,3 +54,5 @@ coverage/
 .eslintcache
 
 __pycache__/
+
+site/dist/

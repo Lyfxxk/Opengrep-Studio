@@ -34,6 +34,9 @@ const ko: typeof zh = {
     en: 'English',
     ja: '일본어',
     ko: '한국어',
+    ru: '러시아어',
+    fr: '프랑스어',
+    de: '독일어',
   },
   theme: {
     light: '라이트',

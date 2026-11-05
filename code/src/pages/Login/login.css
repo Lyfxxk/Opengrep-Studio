@@ -577,3 +577,10 @@
   --font-display: 'Space Grotesk', 'Segoe UI', system-ui, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
   --font-body:    'Segoe UI', system-ui, -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
 }
+
+.login-shell:lang(ru),
+.login-shell:lang(fr),
+.login-shell:lang(de) {
+  --font-display: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif;
+  --font-body:    'Segoe UI', system-ui, -apple-system, sans-serif;
+}

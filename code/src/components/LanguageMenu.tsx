@@ -10,13 +10,24 @@ import { changeAppLanguage, type AppLanguage } from '@/i18n';
 
 const LANGUAGES: Array<{
   code: AppLanguage;
-  labelKey: 'lang.zh' | 'lang.zhHant' | 'lang.en' | 'lang.ja' | 'lang.ko';
+  labelKey:
+    | 'lang.zh'
+    | 'lang.zhHant'
+    | 'lang.en'
+    | 'lang.ja'
+    | 'lang.ko'
+    | 'lang.ru'
+    | 'lang.fr'
+    | 'lang.de';
 }> = [
   { code: 'zh', labelKey: 'lang.zh' },
   { code: 'zh-Hant', labelKey: 'lang.zhHant' },
   { code: 'en', labelKey: 'lang.en' },
   { code: 'ja', labelKey: 'lang.ja' },
   { code: 'ko', labelKey: 'lang.ko' },
+  { code: 'ru', labelKey: 'lang.ru' },
+  { code: 'fr', labelKey: 'lang.fr' },
+  { code: 'de', labelKey: 'lang.de' },
 ];
 
 export default function LanguageMenu({ className = '' }: { className?: string }) {

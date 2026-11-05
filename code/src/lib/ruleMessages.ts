@@ -10,6 +10,9 @@ function messagePath(language: string): string | null {
   if (language.startsWith('zh-Hant')) return '/api/messages-zh-Hant';
   if (language.startsWith('ja')) return '/api/messages-ja';
   if (language.startsWith('ko')) return '/api/messages-ko';
+  if (language.startsWith('ru')) return '/api/messages-ru';
+  if (language.startsWith('fr')) return '/api/messages-fr';
+  if (language.startsWith('de')) return '/api/messages-de';
   return language.startsWith('zh') ? '/api/messages-zh' : null;
 }
 
