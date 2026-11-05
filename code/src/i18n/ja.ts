@@ -88,7 +88,7 @@ const ja: typeof zh = {
   review: {
     title: '手動レビュー',
     verdictLabel: 'レビュー判定',
-    hintConfirmed: '実際のリスクと確認済みで、修正が必要です',
+    hintConfirmed: '実際のリスクと確認済み。修正が必要です',
     hintFalsePositive: '誤検知です。根拠を説明すれば無視できます',
     hintAccepted: '実際のリスクですが当面は修正せず、理由を記録します',
     reasonLabel: '判定理由',
