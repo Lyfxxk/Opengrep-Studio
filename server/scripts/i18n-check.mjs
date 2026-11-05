@@ -24,7 +24,7 @@ function leafEntries(value, prefix = '', out = new Map()) {
   return out;
 }
 
-const langs = ['zh', 'en', 'zh-Hant', 'ja', 'ko'];
+const langs = ['zh', 'en', 'zh-Hant', 'ja', 'ko', 'ru', 'fr', 'de'];
 const ui = {};
 const uiValues = {};
 for (const lang of langs) {
@@ -45,7 +45,7 @@ for (const lang of langs) {
 const readJson = (file) =>
   JSON.parse(fs.readFileSync(path.join(root, 'server', 'rules', file), 'utf8'));
 
-const ruleLangs = ['zh-Hant', 'ja', 'ko'];
+const ruleLangs = ['zh-Hant', 'ja', 'ko', 'ru', 'fr', 'de'];
 const checkPair = (prefix, display) => {
   const zh = readJson(`${prefix}-zh.json`);
   const counts = [`zh=${Object.keys(zh).length}`];
@@ -154,14 +154,14 @@ for (const [lang, cjkAllowed] of hanChecks) {
 }
 
 console.log(`UI 叶子键：${langs.map((lang) => `${lang}=${ui[lang].size}`).join(' / ')}`);
-console.log(`服务端错误码：${serverCodes.size}（五包 apiErrors 覆盖校验）`);
+console.log(`服务端错误码：${serverCodes.size}（八包 apiErrors 覆盖校验）`);
 checkPair('messages', '规则说明');
 checkPair('cwe', 'CWE 知识库');
 
 if (problems.length) {
   console.error('\n发现不一致：');
   for (const line of problems) console.error(`- ${line}`);
-  console.error('请同步 code/src/i18n 五份语言包与 server/rules/messages-*.json、cwe-*.json（各语言同键），再重跑 npm run i18n:check');
+  console.error('请同步 code/src/i18n 八份语言包与 server/rules/messages-*.json、cwe-*.json（各语言同键），再重跑 npm run i18n:check');
   process.exitCode = 1;
 } else {
   console.log('i18n 资源一致');

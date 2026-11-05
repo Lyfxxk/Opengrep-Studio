@@ -87,6 +87,9 @@ miscRoutes.get('/api/messages-zh', serveRuleMessages('messages-zh.json'));
 miscRoutes.get('/api/messages-zh-Hant', serveRuleMessages('messages-zh-Hant.json'));
 miscRoutes.get('/api/messages-ja', serveRuleMessages('messages-ja.json'));
 miscRoutes.get('/api/messages-ko', serveRuleMessages('messages-ko.json'));
+miscRoutes.get('/api/messages-ru', serveRuleMessages('messages-ru.json'));
+miscRoutes.get('/api/messages-fr', serveRuleMessages('messages-fr.json'));
+miscRoutes.get('/api/messages-de', serveRuleMessages('messages-de.json'));
 
 function requireValidConfigValues(body: Record<string, unknown>, existingId?: string) {
   const name = String(body?.name ?? '').trim();

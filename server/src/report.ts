@@ -89,7 +89,7 @@ const REVIEW_LABEL: Record<ReviewStatus, string> = {
   accepted: '已接受',
 };
 
-export type ReportLang = 'zh' | 'zh-Hant' | 'en' | 'ja' | 'ko';
+export type ReportLang = 'zh' | 'zh-Hant' | 'en' | 'ja' | 'ko' | 'ru' | 'fr' | 'de';
 
 const HANT_SEVERITY: Record<Severity, string> = {
   critical: '嚴重',
@@ -614,6 +614,12 @@ const REPORT_TEXT_KO: typeof REPORT_TEXT_ZH = {
     ` 수동 검토 ${s.reviewed}건 완료(확인됨 ${s.confirmed}, 오탐 ${s.falsePositives}, 조건부 수용 ${s.accepted}).`,
 };
 
+const REPORT_TEXT_RU: typeof REPORT_TEXT_ZH = { ...REPORT_TEXT_EN, htmlLang: 'ru' };
+
+const REPORT_TEXT_FR: typeof REPORT_TEXT_ZH = { ...REPORT_TEXT_EN, htmlLang: 'fr' };
+
+const REPORT_TEXT_DE: typeof REPORT_TEXT_ZH = { ...REPORT_TEXT_EN, htmlLang: 'de' };
+
 type ReportText = typeof REPORT_TEXT_ZH;
 
 const REPORT_TEXT: Record<ReportLang, ReportText> = {
@@ -622,6 +628,9 @@ const REPORT_TEXT: Record<ReportLang, ReportText> = {
   en: REPORT_TEXT_EN,
   ja: REPORT_TEXT_JA,
   ko: REPORT_TEXT_KO,
+  ru: REPORT_TEXT_RU,
+  fr: REPORT_TEXT_FR,
+  de: REPORT_TEXT_DE,
 };
 
 interface ConclusionInput {
@@ -964,6 +973,11 @@ const REPORT_CSS = `
   html:lang(ko) body {
     font-family: -apple-system, 'BlinkMacSystemFont', 'Helvetica Neue', Tahoma,
       'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif;
+  }
+  html:lang(ru) body,
+  html:lang(fr) body,
+  html:lang(de) body {
+    font-family: -apple-system, 'BlinkMacSystemFont', 'Helvetica Neue', Tahoma, sans-serif;
   }
   .doc { max-width: 760px; margin: 0 auto; padding: 28px 32px 48px; }
   h1, h2, h3 { margin: 0; font-weight: 600; }
