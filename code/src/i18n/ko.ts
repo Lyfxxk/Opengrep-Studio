@@ -1050,7 +1050,7 @@ const ko: typeof zh = {
     errorUsername: '아이디를 입력하십시오',
     errorPassword: '비밀번호를 입력하십시오',
     errorInvalid: '아이디 또는 비밀번호가 올바르지 않습니다',
-    errorLoginFailed: '로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.',
+    errorLoginFailed: '로그인에 실패했습니다. 잠시 후 다시 시도하십시오.',
     submit: '로그인',
     submitting: '로그인 중…',
     successTitle: '신원 확인 완료',
