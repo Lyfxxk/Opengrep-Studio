@@ -710,7 +710,7 @@ const en: typeof zh = {
     engineRunning: 'Engine running — matching samples…',
     idleHint: 'Not run yet · Ctrl+Enter to run',
     passPositives: '{{count}} positive matches',
-    passNegatives: '{{count}} false positives in negatives',
+    passNegatives: '{{count}} false positives on negatives',
     passMeta: '{{count}} rules · engine took {{duration}}',
     ruleError: 'Rule error',
     positiveHits: 'Positive matches ({{count}})',
@@ -739,7 +739,7 @@ const en: typeof zh = {
     saveNamePlaceholder: 'e.g. Experiment rule pack',
     attachSamplesTitle: 'Attach test samples',
     attachSamplesOn:
-      'Positives/negatives are saved with the pack as a portable rule pack — run one-click quality checks later in the rule packs tab.',
+      'Positives/negatives are saved with the pack as a portable rule pack — run quality checks later in the rule packs tab.',
     attachSamplesOff: 'No test samples filled in; a plain single-file rule pack will be created.',
     overwriteWarning:
       'The YAML in the editor will replace the entire rule pack content, and this cannot be undone. Built-in packs cannot be overwritten.',
