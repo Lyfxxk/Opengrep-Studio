@@ -1,5 +1,4 @@
 import fs from 'node:fs';
-import net from 'node:net';
 import path from 'node:path';
 import express, { type NextFunction, type Request, type Response } from 'express';
 import multer from 'multer';
@@ -9,6 +8,7 @@ import { HttpError } from './errors.js';
 import { engineInstallHint, terminateTrackedChildren } from './engine.js';
 import { engineTargetVersion } from './engine-manifest.js';
 import { ensureFallbackScanConfig } from './fallback-config.js';
+import { isAllowedHost } from './host-guard.js';
 import { markStaleScansFailed } from './scan-runner.js';
 import { cleanupRuleLabScratch } from './rule-lab.js';
 import { reportCustomPackDrift } from './rulepacks.js';
@@ -24,11 +24,6 @@ import { scanRoutes } from './routes/scans.js';
 
 const app = express();
 app.use(express.json({ limit: '5mb' }));
-
-function isLocalHost(hostname: string): boolean {
-  const name = hostname.replace(/^\[|\]$/g, '').toLowerCase();
-  return name === 'localhost' || net.isIP(name) !== 0;
-}
 
 const LOOPBACK_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1']);
 
@@ -51,7 +46,10 @@ app.use((req, _res, next) => {
   let hostOk = false;
   if (typeof req.headers.host === 'string') {
     try {
-      hostOk = isLocalHost(new URL(`http://${req.headers.host.trim()}`).hostname);
+      hostOk = isAllowedHost(
+        new URL(`http://${req.headers.host.trim()}`).hostname,
+        req.socket.localAddress,
+      );
     } catch {
       hostOk = false;
     }
