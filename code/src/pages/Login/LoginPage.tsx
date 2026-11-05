@@ -246,7 +246,7 @@ export default function LoginPage() {
                       id="login-username"
                       name="username"
                       type="text"
-                      maxLength={30}
+                      maxLength={50}
                       autoComplete="username"
                       value={username}
                       aria-invalid={errorField === 'username' ? true : undefined}
@@ -283,7 +283,7 @@ export default function LoginPage() {
                       id="login-password"
                       name="password"
                       type={showPassword ? 'text' : 'password'}
-                      maxLength={30}
+                      maxLength={100}
                       autoComplete="current-password"
                       value={password}
                       style={{ paddingRight: '52px' }}
