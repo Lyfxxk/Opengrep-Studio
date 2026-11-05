@@ -1023,6 +1023,80 @@ function renderHome() {
 `;
 }
 
+function buildSite(data) {
+  const pages = new Map();
+  pages.set('index.html', renderHome());
+  const cweRuleMap = new Map();
+  for (const rule of data.rules) {
+    pages.set(`rules/${rule.id}.html`, renderRulePage(rule, data));
+    for (const id of rule.cwe ?? []) {
+      const num = cweNumber(id);
+      if (!cweRuleMap.has(num)) cweRuleMap.set(num, []);
+      cweRuleMap.get(num).push(rule);
+    }
+  }
+  const baseCwe = data.cwe['zh' in data.cwe ? 'zh' : data.languages[0]] ?? {};
+  const nums = Object.keys(baseCwe).sort((a, b) => (Number(a) || 0) - (Number(b) || 0));
+  for (const num of nums) {
+    pages.set(`cwe/${num}.html`, renderCwePage(num, data, cweRuleMap.get(num) ?? []));
+  }
+  pages.set('cwe/index.html', renderCweIndex(data, nums));
+  return pages;
+}
+
+function resolveSitePath(fromRelPath, link) {
+  const dir = path.posix.dirname(fromRelPath);
+  const stack = dir === '.' ? [] : dir.split('/');
+  for (const part of link.split('/')) {
+    if (part === '' || part === '.') continue;
+    if (part === '..') stack.pop();
+    else stack.push(part);
+  }
+  return stack.join('/');
+}
+
+function stripScripts(html) {
+  return html.replace(/<script>[\s\S]*?<\/script>/g, '');
+}
+
+function inspectSite(data, pages) {
+  const linkProblems = [];
+  const placeholderPages = [];
+  const missingLangPages = [];
+  let linkCount = 0;
+  for (const [relPath, html] of pages) {
+    const staticHtml = stripScripts(html);
+    for (const match of staticHtml.matchAll(/(href|src)="([^"]*)"/g)) {
+      const link = match[2];
+      if (!link || link.startsWith('#') || /^(https?:)?\/\//i.test(link) || /^(mailto|data):/i.test(link)) continue;
+      linkCount += 1;
+      const target = resolveSitePath(relPath, link);
+      if (!pages.has(target)) linkProblems.push(`${relPath} 内部链接落空：${link}（解析为 ${target}）`);
+    }
+    const hasPlaceholder =
+      /="{{/.test(staticHtml) ||
+      />{{/.test(staticHtml) ||
+      /="undefined"/.test(staticHtml) ||
+      />undefined</.test(staticHtml) ||
+      /="TODO"/.test(staticHtml) ||
+      />TODO</.test(staticHtml);
+    if (hasPlaceholder) placeholderPages.push(relPath);
+    if (relPath.startsWith('rules/')) {
+      const table = staticHtml.match(/<table class="lang-table">[\s\S]*?<\/table>/);
+      const missing = data.languages.filter((lang) => !table || !table[0].includes(`<th>${lang}</th>`));
+      if (missing.length) missingLangPages.push(`${relPath} 缺少语言列：${missing.join('、')}`);
+    }
+  }
+  const problems = [];
+  for (const line of linkProblems.slice(0, 5)) problems.push(line);
+  if (linkProblems.length > 5) problems.push(`内部链接落空的页面共 ${linkProblems.length} 个`);
+  for (const relPath of placeholderPages.slice(0, 5)) problems.push(`存在未替换的占位符痕迹：${relPath}`);
+  if (placeholderPages.length > 5) problems.push(`存在占位符痕迹的页面共 ${placeholderPages.length} 个`);
+  for (const line of missingLangPages.slice(0, 5)) problems.push(line);
+  if (missingLangPages.length > 5) problems.push(`缺少语言列的详情页共 ${missingLangPages.length} 个`);
+  return { problems, linkCount, pageCount: pages.size };
+}
+
 const collected = collectRules();
 const messages = readDictionaries('messages');
 const cwe = readDictionaries('cwe');
@@ -1043,36 +1117,39 @@ if (problems.length) {
 
 console.log('[build-rules-site] 校验全部通过 ✔');
 
+const { data, searchIndex } = buildDataset(collected, messages, cwe);
+const pages = buildSite(data);
+const site = inspectSite(data, pages);
+console.log(`[build-rules-site] 整站自检：${site.pageCount} 个页面 / ${site.linkCount} 个内部链接 / ${data.rules.length} 个规则详情页语言列`);
+
+if (site.problems.length) {
+  console.error(`[build-rules-site] 整站自检发现 ${site.problems.length} 个问题：`);
+  for (const line of site.problems) console.error(`- ${line}`);
+  console.error(
+    check
+      ? '[build-rules-site] 整站自检未通过；请修复上方条目后重跑 node server/scripts/build-rules-site.mjs --check'
+      : '[build-rules-site] 已取消生成 site/dist；请先修复上方条目再重跑',
+  );
+  process.exit(1);
+}
+
 if (check) {
+  console.log('[build-rules-site] 整站自检通过 ✔（内部链接全部可达 · 无占位符痕迹 · 详情页语言列齐全）');
   process.exit(0);
 }
 
-const { data, searchIndex } = buildDataset(collected, messages, cwe);
 fs.mkdirSync(distDir, { recursive: true });
 fs.writeFileSync(path.join(distDir, 'data.json'), JSON.stringify(data));
 fs.writeFileSync(path.join(distDir, 'search-index.json'), JSON.stringify(searchIndex));
-fs.writeFileSync(path.join(distDir, 'index.html'), renderHome());
-const rulesOutDir = path.join(distDir, 'rules');
-const cweOutDir = path.join(distDir, 'cwe');
-fs.mkdirSync(rulesOutDir, { recursive: true });
-fs.mkdirSync(cweOutDir, { recursive: true });
-const cweRuleMap = new Map();
-for (const rule of data.rules) {
-  fs.writeFileSync(path.join(rulesOutDir, `${rule.id}.html`), renderRulePage(rule, data));
-  for (const id of rule.cwe ?? []) {
-    const num = cweNumber(id);
-    if (!cweRuleMap.has(num)) cweRuleMap.set(num, []);
-    cweRuleMap.get(num).push(rule);
-  }
+for (const [relPath, html] of pages) {
+  const outFile = path.join(distDir, relPath);
+  fs.mkdirSync(path.dirname(outFile), { recursive: true });
+  fs.writeFileSync(outFile, html);
 }
-const baseCwe = data.cwe['zh' in data.cwe ? 'zh' : data.languages[0]] ?? {};
-const nums = Object.keys(baseCwe).sort((a, b) => (Number(a) || 0) - (Number(b) || 0));
-for (const num of nums) {
-  fs.writeFileSync(path.join(cweOutDir, `${num}.html`), renderCwePage(num, data, cweRuleMap.get(num) ?? []));
-}
-fs.writeFileSync(path.join(cweOutDir, 'index.html'), renderCweIndex(data, nums));
+const rulePageCount = [...pages.keys()].filter((key) => key.startsWith('rules/')).length;
+const cwePageCount = [...pages.keys()].filter((key) => key.startsWith('cwe/') && key !== 'cwe/index.html').length;
 console.log(`[build-rules-site] 已生成 site/dist/data.json（${formatSize(fs.statSync(path.join(distDir, 'data.json')).size)}）`);
 console.log(`[build-rules-site] 已生成 site/dist/search-index.json（${formatSize(fs.statSync(path.join(distDir, 'search-index.json')).size)}）`);
 console.log(`[build-rules-site] 已生成 site/dist/index.html（${formatSize(fs.statSync(path.join(distDir, 'index.html')).size)}）`);
-console.log(`[build-rules-site] 已生成 site/dist/rules/（${data.rules.length} 个规则详情页）`);
-console.log(`[build-rules-site] 已生成 site/dist/cwe/（${nums.length} 个 CWE 详情页 + 1 个索引）`);
+console.log(`[build-rules-site] 已生成 site/dist/rules/（${rulePageCount} 个规则详情页）`);
+console.log(`[build-rules-site] 已生成 site/dist/cwe/（${cwePageCount} 个 CWE 详情页 + 1 个索引）`);
