@@ -1,19 +1,19 @@
 {
   "14": {
-    "name": "编译期缓冲区清零检查被移除",
-    "fix": "不要依赖编译器自动清零局部缓冲区，显式初始化或 memset 后再使用。"
+    "name": "Vom Compiler entfernte Prüfung zum Nullen von Puffern",
+    "fix": "Verlassen Sie sich nicht darauf, dass der Compiler lokale Puffer automatisch nullt; initialisieren Sie sie ausdrücklich oder mit memset, bevor Sie sie verwenden."
   },
   "20": {
-    "name": "输入校验不当",
-    "fix": "在信任边界对所有外部输入做白名单校验（类型、长度、范围、格式），拒绝默认。"
+    "name": "Unzureichende Eingabevalidierung",
+    "fix": "Validieren Sie alle externen Eingaben an der Vertrauensgrenze per Whitelist (Typ, Länge, Bereich, Format) und verweigern Sie standardmäßig."
   },
   "22": {
-    "name": "路径穿越",
-    "fix": "拒绝包含 `..` 的路径，并将解析后的真实路径约束在基准目录内。"
+    "name": "Path Traversal",
+    "fix": "Verweigern Sie Pfade mit `..` und beschränken Sie den aufgelösten realen Pfad auf das Basisverzeichnis."
   },
   "23": {
-    "name": "相对路径遍历",
-    "fix": "规范化路径后校验其位于允许的基准目录内，拒绝 `..` 分量。"
+    "name": "Traversal über relative Pfade",
+    "fix": "Kanonisieren Sie den Pfad, prüfen Sie anschließend, dass er im erlaubten Basisverzeichnis liegt, und verweigern Sie `..`-Komponenten."
   },
   "73": {
     "name": "外部可控的文件名或路径",
@@ -68,176 +68,176 @@
     "fix": "禁用远程文件包含，包含路径固定为白名单并 realpath 校验。"
   },
   "113": {
-    "name": "HTTP 响应拆分",
-    "fix": "写入响应头前剔除 CR/LF 等控制字符，校验头的取值。"
+    "name": "HTTP-Response-Splitting",
+    "fix": "Entfernen Sie vor dem Schreiben in Antwortheader Steuerzeichen wie CR/LF und prüfen Sie die Header-Werte."
   },
   "115": {
-    "name": "输入被误解为其他语义",
-    "fix": "显式声明并统一各层对编码与格式的解析约定。"
+    "name": "Eingabe wird mit anderer Bedeutung interpretiert",
+    "fix": "Deklarieren Sie die Konventionen zum Parsen von Kodierung und Format über alle Ebenen hinweg ausdrücklich und einheitlich."
   },
   "116": {
-    "name": "输出编码或转义不当",
-    "fix": "按输出目标上下文（HTML/属性/JS/URL/日志）选择正确编码，统一走转义工具。"
+    "name": "Unzureichende Kodierung oder Maskierung der Ausgabe",
+    "fix": "Wählen Sie je nach Ausgabekontext (HTML/Attribut/JS/URL/Log) die richtige Kodierung und maskieren Sie einheitlich über Werkzeuge."
   },
   "117": {
-    "name": "日志注入",
-    "fix": "对写入日志的用户输入转义 CRLF 与控制字符，使用结构化日志。"
+    "name": "Log-Injection",
+    "fix": "Maskieren Sie CRLF und Steuerzeichen in Benutzereingaben, die in Logs geschrieben werden, und verwenden Sie strukturiertes Logging."
   },
   "119": {
-    "name": "内存缓冲区越界",
-    "fix": "使用带边界检查的安全 API（如 snprintf/memcpy_s），校验索引与长度，开启编译器加固。"
+    "name": "Zugriff außerhalb der Speicherpuffergrenzen",
+    "fix": "Verwenden Sie sichere APIs mit Grenzprüfung (etwa snprintf/memcpy_s), prüfen Sie Indizes und Längen und aktivieren Sie die Compiler-Härtung."
   },
   "134": {
-    "name": "格式化字符串注入",
-    "fix": "不把用户输入作为格式化模板，格式串固定、参数分离传入。"
+    "name": "Format-String-Injection",
+    "fix": "Verwenden Sie Benutzereingaben nicht als Formatvorlage; halten Sie den Format-String fest und übergeben Sie Parameter getrennt."
   },
   "155": {
-    "name": "通配符未中和",
-    "fix": "不要把外部输入交给 shell 通配符展开；确需匹配时转义特殊字符或用白名单。"
+    "name": "Unzureichende Neutralisierung von Wildcards",
+    "fix": "Übergeben Sie externe Eingaben nicht an die Wildcard-Expansion der Shell; maskieren Sie beim Matching Sonderzeichen oder arbeiten Sie mit einer Whitelist."
   },
   "183": {
-    "name": "允许列表过于宽松",
-    "fix": "白名单只放行明确的值，禁止“排除式”黑名单；默认拒绝未列出的输入。"
+    "name": "Zu großzügige Allowlist",
+    "fix": "In der Allowlist gehören nur eindeutige Werte; „ausschließende“ Blacklists sind zu vermeiden. Verweigern Sie nicht gelistete Eingaben standardmäßig."
   },
   "190": {
-    "name": "整数溢出或回绕",
-    "fix": "使用安全整数运算与溢出检查，对数值输入限定范围。"
+    "name": "Integer-Überlauf oder -Wraparound",
+    "fix": "Verwenden Sie sichere Ganzzahloperationen mit Überlaufprüfung und begrenzen Sie den Wertebereich numerischer Eingaben."
   },
   "200": {
-    "name": "信息泄露",
-    "fix": "最小化接口返回字段，敏感数据不进入响应、日志与错误信息。"
+    "name": "Offenlegung von Informationen",
+    "fix": "Minimieren Sie die von Schnittstellen zurückgegebenen Felder; sensible Daten gehören weder in Antworten noch in Logs oder Fehlermeldungen."
   },
   "209": {
-    "name": "错误信息中的信息泄露",
-    "fix": "对外返回通用错误码，堆栈与内部细节仅记录在受保护的日志中。"
+    "name": "Preisgabe von Informationen in Fehlermeldungen",
+    "fix": "Geben Sie nach außen generische Fehlercodes zurück; Stacktraces und interne Details werden ausschließlich in geschützten Logs festgehalten."
   },
   "242": {
-    "name": "使用已弃用的代码",
-    "fix": "迁移到仍在维护的安全 API，不使用被上游标记弃用的函数。"
+    "name": "Verwendung veralteten Codes",
+    "fix": "Migrieren Sie zu sicheren APIs, die noch gewartet werden, und vermeiden Sie Funktionen, die der Upstream als veraltet markiert hat."
   },
   "250": {
-    "name": "以不必要的特权执行",
-    "fix": "按最小权限运行进程与数据库账号，避免 root/sudo。"
+    "name": "Ausführung mit unnötigen Privilegien",
+    "fix": "Betreiben Sie Prozesse und Datenbankkonten mit minimalen Rechten; vermeiden Sie root/sudo."
   },
   "252": {
-    "name": "未检查返回值",
-    "fix": "检查并处理关键调用的返回值与异常，避免静默失败。"
+    "name": "Ungeprüfter Rückgabewert",
+    "fix": "Prüfen und behandeln Sie Rückgabewerte und Ausnahmen kritischer Aufrufe, um stille Fehlschläge zu vermeiden."
   },
   "269": {
-    "name": "权限管理不当",
-    "fix": "建立显式的授权模型，默认拒绝，提权需重新认证。"
+    "name": "Unzureichendes Rechte-Management",
+    "fix": "Bauen Sie ein explizites Autorisierungsmodell auf, verweigern Sie standardmäßig und verlangen Sie für Rechteerweiterungen eine erneute Authentifizierung."
   },
   "272": {
-    "name": "违反最小权限原则",
-    "fix": "为每个组件与账号分配仅够完成职责的权限。"
+    "name": "Verletzung des Prinzips minimaler Rechte",
+    "fix": "Weisen Sie jeder Komponente und jedem Konto nur die Rechte zu, die für ihre Aufgabe nötig sind."
   },
   "276": {
-    "name": "默认权限配置错误",
-    "fix": "显式设置文件/目录权限（如 0o644/0o600），不要依赖 umask 默认值。"
+    "name": "Falsche Standardberechtigungen",
+    "fix": "Setzen Sie Datei-/Verzeichnisrechte ausdrücklich (etwa 0o644/0o600) und verlassen Sie sich nicht auf die umask-Standards."
   },
   "284": {
-    "name": "访问控制不当",
-    "fix": "服务端对每个敏感请求做鉴权，未登录/越权一律拒绝。"
+    "name": "Unzureichende Zugriffskontrolle",
+    "fix": "Prüfen Sie serverseitig bei jeder sensiblen Anfrage die Berechtigung; verweigern Sie Zugriffe ohne Anmeldung oder mit überschrittenen Befugnissen ausnahmslos."
   },
   "285": {
-    "name": "授权不当",
-    "fix": "显式的权限校验覆盖所有资源访问，重点检查越权（IDOR）场景。"
+    "name": "Unzureichende Autorisierung",
+    "fix": "Explizite Rechteprüfungen decken jeden Ressourcenzugriff ab; prüfen Sie besonders Szenarien mit überschrittenen Befugnissen (IDOR)."
   },
   "287": {
-    "name": "认证不当",
-    "fix": "使用成熟的认证框架，校验会话与令牌的有效性与绑定关系。"
+    "name": "Unzureichende Authentifizierung",
+    "fix": "Verwenden Sie ausgereifte Authentifizierungs-Frameworks und prüfen Sie Gültigkeit und Bindung von Sitzungen und Tokens."
   },
   "289": {
-    "name": "认证绕过（直接采信认证结果）",
-    "fix": "服务端重新校验身份与授权，不信任客户端提交的身份字段。"
+    "name": "Authentifizierungsumgehung (direktes Vertrauen in Authentifizierungsergebnisse)",
+    "fix": "Prüfen Sie Identität und Berechtigung serverseitig erneut und vertrauen Sie nicht den vom Client übermittelten Identitätsfeldern."
   },
   "295": {
-    "name": "证书校验不当",
-    "fix": "启用完整证书链与有效期校验，禁止关闭验证的选项（如 rejectUnauthorized=false）。"
+    "name": "Unzureichende Zertifikatsprüfung",
+    "fix": "Aktivieren Sie die vollständige Zertifikatskette samt Gültigkeitsprüfung; Optionen zum Abschalten der Prüfung (etwa rejectUnauthorized=false) sind zu verbieten."
   },
   "297": {
-    "name": "TLS 主机名校验不当",
-    "fix": "校验证书与目标主机名匹配，不跳过 hostname 校验。"
+    "name": "Unzureichende TLS-Hostnamenprüfung",
+    "fix": "Prüfen Sie, dass das Zertifikat zum Ziel-Hostnamen passt, und überspringen Sie die Hostnamenprüfung nicht."
   },
   "300": {
-    "name": "中间人攻击（通道未认证）",
-    "fix": "所有外部通信启用 TLS 并校验对端身份。"
+    "name": "Man-in-the-Middle-Angriff (Kanal ohne Authentifizierung)",
+    "fix": "Aktivieren Sie für die gesamte externe Kommunikation TLS und prüfen Sie die Identität der Gegenstelle."
   },
   "307": {
-    "name": "缺少尝试次数限制",
-    "fix": "登录、验证码、找回密码等接口加限流、验证码与锁定策略。"
+    "name": "Fehlende Begrenzung der Versuchsanzahl",
+    "fix": "Ergänzen Sie Schnittstellen wie Anmeldung, Verifizierungscode und Passwort-Wiederherstellung um Ratenbegrenzung, Verifizierungscodes und Sperrstrategien."
   },
   "310": {
-    "name": "密码学问题",
-    "fix": "使用平台标准加密库与成熟方案，不自行设计加密协议。"
+    "name": "Kryptografische Probleme",
+    "fix": "Verwenden Sie die Standard-Kryptobibliothek der Plattform und ausgereifte Verfahren; entwerfen Sie keine eigenen Kryptoprotokolle."
   },
   "311": {
-    "name": "缺失加密",
-    "fix": "敏感数据在存储与传输全程加密。"
+    "name": "Fehlende Verschlüsselung",
+    "fix": "Verschlüsseln Sie sensible Daten durchgängig bei Speicherung und Übertragung."
   },
   "319": {
-    "name": "明文传输敏感信息",
-    "fix": "强制 TLS 1.2+，禁用 http/ftp 等明文协议传输凭据与个人数据。"
+    "name": "Klartextübertragung sensibler Informationen",
+    "fix": "Erzwingen Sie TLS 1.2+ und verbieten Sie die Übertragung von Anmeldedaten und personenbezogenen Daten über Klartextprotokolle wie http/ftp."
   },
   "322": {
-    "name": "密钥交换未认证",
-    "fix": "使用经过认证的密钥交换（如带证书校验的 TLS）。"
+    "name": "Unauthentifizierter Schlüsselaustausch",
+    "fix": "Verwenden Sie authentifizierte Schlüsselaustauschverfahren (etwa TLS mit Zertifikatsprüfung)."
   },
   "323": {
-    "name": "重用 Nonce 或密钥对",
-    "fix": "每次会话使用唯一随机 nonce/盐值，不复用密钥流。"
+    "name": "Wiederverwendung von Nonce oder Schlüsselpaar",
+    "fix": "Verwenden Sie je Sitzung eine eindeutige zufällige Nonce bzw. ein einzigartiges Salz; verwenden Sie den Schlüsselstrom nicht erneut."
   },
   "326": {
-    "name": "加密强度不足",
-    "fix": "密钥长度不低于 128 位等效强度，禁用过短的 RSA/DH 密钥。"
+    "name": "Unzureichende Verschlüsselungsstärke",
+    "fix": "Die Schlüssellänge sollte mindestens einer Äquivalenzstärke von 128 Bit entsprechen; verbieten Sie zu kurze RSA/DH-Schlüssel."
   },
   "327": {
-    "name": "使用被破解或有风险的哈希算法",
-    "fix": "哈希迁移到 SHA-256 及以上；口令存储使用 bcrypt/Argon2/scrypt 等慢哈希加盐。"
+    "name": "Verwendung geknackter oder riskanter Hash-Algorithmen",
+    "fix": "Migrieren Sie Hashes zu SHA-256 oder höher; für den Passwortspeicher verwenden Sie gesalzene, langsame Hashes wie bcrypt/Argon2/scrypt."
   },
   "328": {
-    "name": "可逆的单向哈希",
-    "fix": "改用加盐慢哈希，禁用无盐或可查表的哈希。"
+    "name": "Umkehrbarer Einweg-Hash",
+    "fix": "Wechseln Sie zu gesalzenen, langsamen Hashes; verbieten Sie salzfreie Hashes oder solche, die über Nachschlagetabellen geknackt werden können."
   },
   "329": {
-    "name": "CBC 模式未随机化 IV",
-    "fix": "使用随机 IV 并优先采用 AEAD 模式（如 AES-GCM）。"
+    "name": "CBC-Modus ohne randomisierten IV",
+    "fix": "Verwenden Sie einen zufälligen IV und bevorzugen Sie AEAD-Modi (etwa AES-GCM)."
   },
   "330": {
-    "name": "使用随机性不足的值",
-    "fix": "安全用途一律使用密码学安全随机源（SecureRandom/crypto.randomBytes/secrets），禁用 Math.random 与时间戳。"
+    "name": "Verwendung von Werten mit unzureichender Zufälligkeit",
+    "fix": "Verwenden Sie für Sicherheitszwecke stets kryptografisch sichere Zufallsquellen (SecureRandom/crypto.randomBytes/secrets); Math.random und Zeitstempel sind tabu."
   },
   "338": {
-    "name": "弱随机数（安全用途）",
-    "fix": "安全场景使用 CSPRNG（crypto.randomBytes/SecureRandom），不用 Math.random/rand。"
+    "name": "Schwacher Zufallswert (Sicherheitszweck)",
+    "fix": "Verwenden Sie in Sicherheitsszenarien einen CSPRNG (crypto.randomBytes/SecureRandom), nicht Math.random/rand."
   },
   "345": {
-    "name": "数据真实性校验不足",
-    "fix": "对关键数据用签名或 HMAC 校验来源与完整性。"
+    "name": "Unzureichende Prüfung der Datenauthentizität",
+    "fix": "Prüfen Sie Herkunft und Integrität kritischer Daten per Signatur oder HMAC."
   },
   "346": {
-    "name": "来源校验错误",
-    "fix": "校验请求的 Origin/Referer 与跨域来源，不默认信任。"
+    "name": "Fehler bei der Herkunftsprüfung",
+    "fix": "Prüfen Sie Origin/Referer der Anfrage und die Cross-Origin-Herkunft; vertrauen Sie nicht standardmäßig."
   },
   "347": {
-    "name": "密码签名验证不当",
-    "fix": "使用完整签名验证（常量时间比较），锁定算法与密钥来源，防范算法混淆。"
+    "name": "Unzureichende Verifikation kryptografischer Signaturen",
+    "fix": "Verifizieren Sie Signaturen vollständig (Vergleich in konstanter Zeit), verankern Sie Algorithmus und Schlüsselherkunft und wehren Sie Algorithmus-Confusion ab."
   },
   "352": {
-    "name": "跨站请求伪造（CSRF）",
-    "fix": "CSRF Token + Cookie SameSite 属性 + 校验 Origin。"
+    "name": "Cross-Site Request Forgery (CSRF)",
+    "fix": "CSRF-Token + SameSite-Attribut des Cookies + Prüfung des Origin."
   },
   "377": {
-    "name": "不安全的临时文件",
-    "fix": "使用安全临时文件 API（带随机名与受限权限），不复用可预测路径。"
+    "name": "Unsichere temporäre Dateien",
+    "fix": "Verwenden Sie sichere APIs für temporäre Dateien (mit zufälligem Namen und eingeschränkten Rechten) und greifen Sie nicht auf vorhersagbare Pfade zurück."
   },
   "400": {
-    "name": "未限制资源消耗",
-    "fix": "对请求体大小、执行时间、并发与速率设置上限。"
+    "name": "Unbegrenzter Ressourcenverbrauch",
+    "fix": "Setzen Sie Obergrenzen für Anfragekörpergröße, Ausführungszeit, Parallelität und Rate."
   },
   "415": {
-    "name": "重复释放内存",
-    "fix": "使用带所有权/GC 的语言特性，或规范内存所有权与释放责任。"
+    "name": "Doppelte Freigabe von Speicher",
+    "fix": "Verwenden Sie Sprachmerkmale mit Ownership/GC oder regeln Sie Speicherbesitz und Freigabeverantwortung sauber."
   },
   "416": {
     "name": "释放后使用（UAF）",
@@ -404,31 +404,31 @@
     "fix": "查询条件参数化，禁止将输入直接拼入查询表达式。"
   },
   "1004": {
-    "name": "敏感 Cookie 未设置 HttpOnly",
-    "fix": "敏感 Cookie 增加 HttpOnly 属性，防脚本读取。"
+    "name": "Sensibles Cookie ohne HttpOnly-Flag",
+    "fix": "Weisen Sie dem sensiblen Cookie das Attribut HttpOnly zu, um das Auslesen durch Skripte zu verhindern."
   },
   "1104": {
-    "name": "使用无人维护的第三方组件",
-    "fix": "评估替代的活跃维护组件，或自行 fork 维护并跟踪安全补丁。"
+    "name": "Verwendung einer nicht mehr gewarteten Drittanbieter-Komponente",
+    "fix": "Bewerten Sie alternativ aktiv gepflegte Komponenten oder forken und pflegen Sie die Komponente selbst und verfolgen Sie die Sicherheitspatches."
   },
   "1204": {
-    "name": "未配置 HSTS",
-    "fix": "响应增加 Strict-Transport-Security 头并长期生效。"
+    "name": "HSTS nicht konfiguriert",
+    "fix": "Ergänzen Sie die Antwort um den Header Strict-Transport-Security mit langer Gültigkeit."
   },
   "1236": {
-    "name": "CSV 公式注入",
-    "fix": "导出 CSV 时对 = + - @ 开头的单元格加前缀转义。"
+    "name": "CSV-Formel-Injection",
+    "fix": "Ergänzen Sie beim CSV-Export bei Zellen, die mit = + - @ beginnen, ein Maskierungspräfix."
   },
   "1275": {
-    "name": "敏感 Cookie 未标记 Sensitive",
-    "fix": "敏感 Cookie 标记 Sensitive 并配合 Secure 属性。"
+    "name": "Sensibles Cookie ohne Sensitive-Markierung",
+    "fix": "Markieren Sie das sensible Cookie als Sensitive und kombinieren Sie das mit dem Attribut Secure."
   },
   "1333": {
-    "name": "正则表达式复杂度过高（ReDoS）",
-    "fix": "避免嵌套量词与回溯爆炸的正则，限制输入长度，使用 RE2 或 recheck 校验。"
+    "name": "Zu hohe Komplexität des regulären Ausdrucks (ReDoS)",
+    "fix": "Vermeiden Sie verschachtelte Quantoren und Regexes mit explodierendem Backtracking, begrenzen Sie die Eingabelänge und prüfen Sie mit RE2 oder recheck."
   },
   "1336": {
-    "name": "服务端模板注入（SSTI）",
-    "fix": "模板渲染使用数据参数而非拼接模板字符串，禁用受控模板中的代码执行能力。"
+    "name": "Server-Side-Template-Injection (SSTI)",
+    "fix": "Rendern Sie Templates mit Datenparametern, statt Template-Strings zu verketten, und deaktivieren Sie die Code-Ausführungsfähigkeit in kontrollierten Templates."
   }
 }
