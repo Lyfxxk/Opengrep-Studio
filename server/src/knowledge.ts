@@ -95,7 +95,7 @@ function normalizeCweId(raw: string): string {
   return match ? `CWE-${match[1]}` : raw.trim();
 }
 
-export type KnowledgeLang = 'zh' | 'zh-Hant' | 'ja' | 'ko';
+export type KnowledgeLang = 'zh' | 'zh-Hant' | 'ja' | 'ko' | 'ru' | 'fr' | 'de';
 
 export type RuleKnowledgeLang = KnowledgeLang | 'en';
 

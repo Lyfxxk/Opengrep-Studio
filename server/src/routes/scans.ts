@@ -403,7 +403,13 @@ scanRoutes.get('/api/scans/:scanId/report', asyncHandler(async (req, res) => {
             ? 'テストレポート'
             : lang === 'ko'
               ? '테스트 보고서'
-              : '测试报告';
+              : lang === 'ru'
+                ? 'тестовый-отчет'
+                : lang === 'fr'
+                  ? 'rapport-test'
+                  : lang === 'de'
+                    ? 'testbericht'
+                    : '测试报告';
     const fileName = `${prefix}-${project.name}-${scan.id}.html`;
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader(
@@ -515,7 +521,13 @@ scanRoutes.get('/api/scans/:scanId/manifest', asyncHandler(async (req, res) => {
               ? 'sha256（相対パス順にソートし、パス + \\0 + ファイル内容 + \\0 の並びに対して計算）'
               : lang === 'ko'
                 ? 'sha256（상대 경로 기준 정렬 후, 경로 + \\0 + 파일 내용 + \\0 시퀀스에 대해 계산）'
-                : 'sha256（按相对路径排序，对 路径 + \\0 + 文件内容 + \\0 序列计算）',
+                : lang === 'ru'
+                  ? 'sha256（按相对路径排序，对 路径 + \\0 + 文件内容 + \\0 序列计算）'
+                  : lang === 'fr'
+                    ? 'sha256（按相对路径排序，对 路径 + \\0 + 文件内容 + \\0 序列计算）'
+                    : lang === 'de'
+                      ? 'sha256（按相对路径排序，对 路径 + \\0 + 文件内容 + \\0 序列计算）'
+                      : 'sha256（按相对路径排序，对 路径 + \\0 + 文件内容 + \\0 序列计算）',
       sha256: scan.srcHash ?? null,
       fileCount: scan.fileCount,
     },

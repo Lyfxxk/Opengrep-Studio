@@ -43,7 +43,13 @@ export function parseProductLang(value: unknown): ReportLang {
         ? 'ja'
         : value === 'ko'
           ? 'ko'
-          : 'zh';
+          : value === 'ru'
+            ? 'ru'
+            : value === 'fr'
+              ? 'fr'
+              : value === 'de'
+                ? 'de'
+                : 'zh';
 }
 
 export const asyncHandler =

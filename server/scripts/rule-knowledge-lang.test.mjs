@@ -96,13 +96,16 @@ test('未知规则在 en 下也返回 found:false 且不带说明', () => {
   assert.equal('message' in knowledge, false);
 });
 
-test('接口语言参数只认五种标识，其余回落简体', () => {
+test('接口语言参数只认八种标识，其余回落简体', () => {
   assert.equal(parseProductLang('en'), 'en');
   assert.equal(parseProductLang('zh-Hant'), 'zh-Hant');
   assert.equal(parseProductLang('zh'), 'zh');
   assert.equal(parseProductLang('ja'), 'ja');
   assert.equal(parseProductLang('ko'), 'ko');
-  assert.equal(parseProductLang('fr'), 'zh');
+  assert.equal(parseProductLang('ru'), 'ru');
+  assert.equal(parseProductLang('fr'), 'fr');
+  assert.equal(parseProductLang('de'), 'de');
+  assert.equal(parseProductLang('pt'), 'zh');
   assert.equal(parseProductLang(undefined), 'zh');
   assert.equal(parseProductLang(['zh', 'en']), 'zh');
 });
@@ -112,4 +115,7 @@ test('listRuleMessages 按语言返回磁盘随包词典', () => {
   assert.deepEqual(listRuleMessages('zh-Hant'), messagesHant);
   assert.deepEqual(listRuleMessages('ja'), messagesJa);
   assert.deepEqual(listRuleMessages('ko'), messagesKo);
+  assert.deepEqual(listRuleMessages('ru'), readJson('messages-ru.json'));
+  assert.deepEqual(listRuleMessages('fr'), readJson('messages-fr.json'));
+  assert.deepEqual(listRuleMessages('de'), readJson('messages-de.json'));
 });
