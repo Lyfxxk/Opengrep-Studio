@@ -997,7 +997,7 @@ const zh = {
     usernameLabel: '用户名',
     usernamePlaceholder: '仅限字母、数字、下划线与连字符',
     passwordLabel: '初始密码',
-    passwordPlaceholder: '6-100 个字符',
+    passwordPlaceholder: '6–100 个字符',
     roleLabel: '角色',
     errorUsername: '用户名须为 1–50 个字符，仅限字母、数字、下划线与连字符',
     errorPassword: '密码长度须为 6–100 个字符',
