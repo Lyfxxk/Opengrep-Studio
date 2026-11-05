@@ -296,7 +296,7 @@
   "js-ts.express-cookie-session-default-name": "不要使用默认会话 Cookie 名。使用默认名会让应用暴露于攻击之下，其隐患与 X-Powered-By 类似：攻击者可据此对服务器做指纹识别并针对性攻击。",
   "js-ts.express-cookie-session-no-domain": "默认会话中间件未设置 `domain`。该选项声明 Cookie 的域，与请求 URL 的服务器域比对；匹配后再检查 path 属性。",
   "js-ts.express-cookie-session-no-expires": "默认会话中间件未设置 `expires`。该选项用于设置持久化 Cookie 的过期时间。",
-  "js-ts.express-cookie-session-no-httponly": "默认会话中间件未设置 `httpOnly`。该选项确保 Cookie 只经 HTTP(S) 传输、客户端 JavaScript 无法读取，有助于防御 XSS。",
+  "js-ts.express-cookie-session-no-httponly": "默认会话中间件未设置 `httpOnly`。该选项确保 Cookie 只经 HTTP(S) 传输，客户端 JavaScript 无法读取，有助于防御 XSS。",
   "js-ts.express-cookie-session-no-path": "默认会话中间件未设置 `path`。该选项声明 Cookie 的路径，用于与请求路径比对，匹配时才会随请求发送 Cookie。",
   "js-ts.express-cookie-session-no-secure": "默认会话中间件未设置 `secure`。该选项确保浏览器只通过 HTTPS 发送 Cookie。",
   "js-ts.express-data-exfiltration": "视上下文而定，`Object.assign` 中的用户可控数据可能导致 Web 响应包含不该返回的数据，或形成批量赋值（mass assignment）漏洞。",
