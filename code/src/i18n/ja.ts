@@ -23,7 +23,7 @@ const ja: typeof zh = {
   header: {
     logout: 'ログアウト',
     userManagement: 'ユーザー管理',
-    avatarAlt: '管理者のアバター',
+    avatarAlt: '管理者アバター',
     language: '言語の切り替え',
     theme: 'テーマの切り替え',
     skin: 'スキンの切り替え',
