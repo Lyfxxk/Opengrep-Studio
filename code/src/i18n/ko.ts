@@ -41,7 +41,7 @@ const ko: typeof zh = {
   theme: {
     light: '라이트',
     dark: '다크',
-    system: '시스템 따라가기',
+    system: '시스템 설정 따름',
   },
   common: {
     loading: '로드 중…',
