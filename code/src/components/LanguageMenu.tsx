@@ -28,6 +28,7 @@ export default function LanguageMenu({ className = '' }: { className?: string })
       <DropdownMenuTrigger asChild>
         <button
           type="button"
+          data-testid="language-menu-trigger"
           aria-label={t('header.language')}
           title={t('header.language')}
           className={className}
@@ -38,7 +39,11 @@ export default function LanguageMenu({ className = '' }: { className?: string })
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         {LANGUAGES.map((item) => (
-          <DropdownMenuItem key={item.code} onSelect={() => changeAppLanguage(item.code)}>
+          <DropdownMenuItem
+            key={item.code}
+            data-testid={`language-${item.code}`}
+            onSelect={() => changeAppLanguage(item.code)}
+          >
             {item.code === active.code && <Check className="size-4" />}
             {t(item.labelKey)}
           </DropdownMenuItem>
