@@ -427,7 +427,7 @@ const zhHant: typeof zh = {
     samplePositives: '正例（應命中）',
     sampleNegatives: '反例（不應命中）',
     upstreamLink: '檢視上游規則原始檔',
-    notFound: '未在已安裝的規則包中找到該規則的定義，僅展示規則說明與命中統計。',
+    notFound: '未在已安裝的規則包中找到該規則的定義，僅顯示規則說明與命中統計。',
   },
   configs: {
     pageTitle: '掃描設定',
