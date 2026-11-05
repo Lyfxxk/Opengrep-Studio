@@ -72,14 +72,13 @@ export async function logout(): Promise<void> {
 }
 
 export async function restoreSession(): Promise<SessionUser | null> {
-  const cached = getCurrentUser();
-  if (cached) return cached;
-  if (USE_MOCK) return null;
+  if (USE_MOCK) return getCurrentUser();
   try {
     const user = await authApi.me();
     storeUser(user);
     return user;
   } catch {
+    clearCurrentUser();
     return null;
   }
 }

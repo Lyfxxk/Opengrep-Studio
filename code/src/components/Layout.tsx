@@ -133,8 +133,8 @@ export const Layout = () => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const { t } = useTranslation();
-  const [session, setSession] = useState<SessionUser | null | 'pending'>(
-    () => getCurrentUser() ?? 'pending',
+  const [session, setSession] = useState<SessionUser | null | 'pending'>(() =>
+    USE_MOCK ? getCurrentUser() ?? 'pending' : 'pending',
   );
 
   useEffect(() => {
