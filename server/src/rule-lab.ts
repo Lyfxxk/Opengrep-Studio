@@ -481,6 +481,10 @@ export async function runRuleLab(
         result.errorParams = { exitCode: code };
       }
     }
+    if (code !== 0 && !result.errorCode) {
+      result.errorCode = 'lab.engineFailed';
+      result.errorParams = { exitCode: code };
+    }
 
     const byKind: Record<'positive' | 'negative', RuleLabMatch[]> = {
       positive: [],
@@ -524,7 +528,7 @@ export async function runRuleLab(
     }
 
     result.verdict =
-      timedOut || result.engineErrors.length > 0 || !output
+      timedOut || code !== 0 || result.engineErrors.length > 0 || !output
         ? 'error'
         : result.failures.length > 0
           ? 'fail'
