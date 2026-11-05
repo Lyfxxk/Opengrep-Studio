@@ -186,7 +186,7 @@ const en: typeof zh = {
     issueStats: '{{active}} active · {{pending}} pending review',
     statsPacks: 'Rule Packs',
     packStats: '{{builtin}} built-in · {{custom}} custom',
-    loadFailed: 'Some data failed to load; what is shown may be incomplete.',
+    loadFailed: 'Some data failed to load; the view may be incomplete.',
     riskDistTitle: 'Risk Distribution',
     riskDistScope: 'Scope: latest completed scan per project',
     riskDistEmpty: 'The latest scan found no issues, or no scan has completed yet',
@@ -200,7 +200,7 @@ const en: typeof zh = {
   },
   engine: {
     title: 'Engine Status',
-    checkUpdate: 'Check updates',
+    checkUpdate: 'Check for updates',
     ready: 'Engine ready',
     source: 'Source: {{source}}',
     pinnedVersion: 'Manifest v{{version}}',
@@ -248,11 +248,11 @@ const en: typeof zh = {
     uploading: 'Uploading…',
     dropTitle: 'Drag a source folder or archive here, or click to pick an archive',
     dropHint: 'ZIP / 7Z / RAR / TAR·GZ, or a whole folder · Max {{limit}}MB per file',
-    respectIgnoreTitle: 'Ignore files per .gitignore (recommended)',
+    respectIgnoreTitle: 'Respect .gitignore (recommended)',
     ignoreOn:
       'Uploaded content is filtered by .gitignore / .opengrepignore, matching direct repo scans; ignored files like .env never enter the scan.',
     ignoreOff:
-      'Scan everything you upload, including ignored files like .env — for deep hunts for hardcoded secrets.',
+      'Scan everything you upload, including ignored files like .env — ideal for in-depth detection of hardcoded secrets.',
     branchPlaceholder: 'Branch / tag (optional)',
     cloneButton: 'Clone & import',
   },
