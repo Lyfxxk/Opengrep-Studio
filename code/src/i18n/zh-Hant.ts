@@ -1035,7 +1035,7 @@ const zhHant: typeof zh = {
     termHigh: '高危',
     termMedium: '中危',
     termRuleCredentials: '硬編碼憑證',
-    termRuleSql: 'SQL 拼接風險',
+    termRuleSql: 'SQL 串接風險',
     termRuleAuthz: '越權存取風險',
     termScanDone: '掃描完成 ·',
     termFiles: '個檔案 ·',
