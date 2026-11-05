@@ -104,7 +104,7 @@ export default function UsersPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-xl font-semibold">{t('users.title')}</h1>
-        <Button className="gap-1" onClick={() => setCreateOpen(true)}>
+        <Button data-testid="user-create-open" className="gap-1" onClick={() => setCreateOpen(true)}>
           <Plus className="size-4" />
           {t('users.newUser')}
         </Button>
@@ -356,7 +356,7 @@ function CreateUserDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {t('common.cancel')}
           </Button>
-          <Button onClick={() => void handleSubmit()} disabled={submitting}>
+          <Button data-testid="user-create-submit" onClick={() => void handleSubmit()} disabled={submitting}>
             {t('users.createAction')}
           </Button>
         </DialogFooter>

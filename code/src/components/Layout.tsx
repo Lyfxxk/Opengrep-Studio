@@ -224,6 +224,7 @@ export const Layout = () => {
               <DropdownMenuTrigger asChild>
                 <button
                   type="button"
+                  data-testid="user-menu-trigger"
                   className="flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <Avatar className="size-7">
@@ -237,12 +238,12 @@ export const Layout = () => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-40">
                 {session.role === 'admin' && !USE_MOCK && (
-                  <DropdownMenuItem onSelect={() => navigate('/users')}>
+                  <DropdownMenuItem data-testid="user-menu-users" onSelect={() => navigate('/users')}>
                     <Users className="size-4" />
                     {t('header.userManagement')}
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem onSelect={handleLogout}>
+                <DropdownMenuItem data-testid="user-menu-logout" onSelect={handleLogout}>
                   <LogOut className="size-4" />
                   {t('header.logout')}
                 </DropdownMenuItem>

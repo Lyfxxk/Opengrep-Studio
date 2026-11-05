@@ -147,7 +147,7 @@ export default function ProjectsPage() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-xl font-semibold">{t('nav.projects')}</h1>
         {canEdit && (
-          <Button className="gap-1" onClick={() => setCreateOpen(true)}>
+          <Button data-testid="project-create" className="gap-1" onClick={() => setCreateOpen(true)}>
             <Plus className="size-4" />
             {t('projects.newProject')}
           </Button>
