@@ -122,7 +122,7 @@ export default function ScanConfigTab() {
   const handleEdit = (config: IConfig) => {
     setTarget({
       id: config.id,
-      values: toFormValues(config, configDisplay(config).name),
+      values: toFormValues(config),
     });
     setDialogOpen(true);
   };
