@@ -4,7 +4,7 @@ import path from 'node:path';
 import { ALWAYS_SKIP_DIR_NAMES } from './fs-walk.js';
 
 
-const HASH_READ_CAP = 5 * 1024 * 1024;
+const HASH_CHUNK_BYTES = 1024 * 1024;
 const DIFF_MATRIX_CAP = 1_000_000;
 const DIFF_LIST_CAP = 500;
 
@@ -33,15 +33,13 @@ async function hashFile(file: string): Promise<FileEntry> {
   const stat = await fs.promises.stat(file);
   const fd = await fs.promises.open(file, 'r');
   try {
-    const headLength = Math.min(stat.size, HASH_READ_CAP);
-    const head = Buffer.alloc(headLength);
-    await fd.read(head, 0, head.length, 0);
-    hash.update(head);
-    if (stat.size > HASH_READ_CAP) {
-      const tailLength = Math.min(stat.size - HASH_READ_CAP, HASH_READ_CAP);
-      const tail = Buffer.alloc(tailLength);
-      await fd.read(tail, 0, tail.length, stat.size - tailLength);
-      hash.update(tail);
+    const chunk = Buffer.alloc(HASH_CHUNK_BYTES);
+    let offset = 0;
+    while (offset < stat.size) {
+      const { bytesRead } = await fd.read(chunk, 0, Math.min(chunk.length, stat.size - offset), offset);
+      if (bytesRead <= 0) break;
+      hash.update(chunk.subarray(0, bytesRead));
+      offset += bytesRead;
     }
   } finally {
     await fd.close();

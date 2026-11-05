@@ -47,6 +47,20 @@ test('差异落在行级读取窗口之外：标记为不可逐行统计，而�
   assert.equal(changed.removedLines, null);
 });
 
+test('大文件首尾窗口之外的中段改动仍被识别为 modified', async () => {
+  const root = makeTempDir('og-diff-mid-');
+  const before = path.join(root, 'before');
+  const after = path.join(root, 'after');
+  const head = 'a'.repeat(5 * 1024 * 1024);
+  const tail = 'z'.repeat(5 * 1024 * 1024);
+  writeTree(before, { 'big.bin': `${head}${'0'.repeat(2 * 1024 * 1024)}${tail}` });
+  writeTree(after, { 'big.bin': `${head}${'1'.repeat(2 * 1024 * 1024)}${tail}` });
+
+  const diff = await diffSnapshots(before, after);
+  const changed = diff.modified.find((file) => file.path === 'big.bin');
+  assert.ok(changed, '中段改动的大文件必须进入 modified');
+});
+
 test('modified 列表超过 500 条时截断（防大仓库撑爆响应）', async () => {
   const root = makeTempDir('og-diff-cap-');
   const before = path.join(root, 'before');
