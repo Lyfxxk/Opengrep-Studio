@@ -27,7 +27,7 @@ import {
   type Review,
 } from '../db.js';
 import { cloneRepo } from '../git-clone.js';
-import { requireRole } from '../auth.js';
+import { getSessionUser, requireRole } from '../auth.js';
 import { asyncHandler, decodeUploadFileName, newId, requireProject, requireValidBaseline } from './shared.js';
 
 export const projectRoutes = Router();
@@ -398,9 +398,9 @@ projectRoutes.put('/api/projects/:id/reviews', requireRole('auditor'), asyncHand
   if (reason.length > 500) {
     throw new HttpError(400, '复核理由不能超过 500 字符', { code: 'srv.reasonTooLong' });
   }
-  const reviewer = String(req.body?.reviewer ?? '').trim() || 'admin';
-  if (reviewer.length > 100) {
-    throw new HttpError(400, '复核人不能超过 100 字符', { code: 'srv.reviewerTooLong' });
+  const reviewer = getSessionUser(req)?.username;
+  if (!reviewer) {
+    throw new HttpError(401, '请先登录后再访问接口', { code: 'srv.authRequired' });
   }
   const review: Review = {
     projectId: project.id,

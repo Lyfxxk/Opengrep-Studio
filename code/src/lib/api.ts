@@ -1014,7 +1014,7 @@ export const api = {
   setReview(
     projectId: string,
     fingerprint: string,
-    input: { status: 'confirmed' | 'false_positive' | 'accepted'; reason?: string; reviewer?: string },
+    input: { status: 'confirmed' | 'false_positive' | 'accepted'; reason?: string },
   ): Promise<IReviewRecord> {
     if (USE_MOCK) {
       const record: IReviewRecord = {
@@ -1022,7 +1022,7 @@ export const api = {
         fingerprint,
         status: input.status,
         ...(input.reason ? { reason: input.reason } : {}),
-        reviewer: input.reviewer || 'admin',
+        reviewer: 'admin',
         updatedAt: new Date().toISOString(),
       };
       const rest = loadReviews().filter(

@@ -36,7 +36,6 @@ import { cn } from '@/lib/utils';
 import { usePackDisplayName } from '@/lib/displayNames';
 import { usePagedList, useRowSelection } from '@/lib/usePagedList';
 import { api } from '@/lib/api';
-import { getCurrentUsername } from '@/lib/auth';
 import { KnowledgeLink } from './KnowledgeSheet';
 
 interface IssueFilterListProps {
@@ -111,7 +110,7 @@ export default function IssueFilterList({
     let failed = 0;
     for (const issue of selectedIssues) {
       try {
-        await api.setReview(projectId, issue.fingerprint!, { status, reason, reviewer: getCurrentUsername() });
+        await api.setReview(projectId, issue.fingerprint!, { status, reason });
       } catch {
         failed += 1;
       }

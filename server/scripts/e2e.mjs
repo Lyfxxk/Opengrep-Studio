@@ -1300,8 +1300,8 @@ assert(badReview.status === 400, '非法复核状态被拒绝');
 const { json: issuesA2 } = await api('GET', `/api/scans/${p20scanA.id}/issues`);
 const reviewedIssue = issuesA2.find((issue) => issue.fingerprint === reviewTarget.fingerprint);
 assert(
-  reviewedIssue?.review?.status === 'false_positive' && reviewedIssue.review.reviewer === 'e2e-reviewer',
-  'issues 接口带复核结论', JSON.stringify(reviewedIssue?.review));
+  reviewedIssue?.review?.status === 'false_positive' && reviewedIssue.review.reviewer === 'admin',
+  '复核人取会话身份，请求体的 reviewer 不生效', JSON.stringify(reviewedIssue?.review));
 const p20scanB = await pollScan((await api('POST', `/api/projects/${p20proj}/scans`, {})).json.id);
 const { json: issuesB } = await api('GET', `/api/scans/${p20scanB.id}/issues`);
 const inherited = issuesB.find((issue) => issue.fingerprint === reviewTarget.fingerprint);
