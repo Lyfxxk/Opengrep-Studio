@@ -2,13 +2,13 @@ import zh from './zh';
 
 const zhHant: typeof zh = {
   app: {
-    tagline: '碼審工作台',
+    tagline: '程式碼稽核工作台',
   },
   title: {
-    app: 'Opengrep Studio | 碼審工作台',
+    app: 'Opengrep Studio | 程式碼稽核工作台',
   },
   nav: {
-    dashboard: '儀表看盤',
+    dashboard: '儀表板',
     projects: '專案管理',
     scans: '掃描中心',
     reports: '報告中心',
@@ -65,8 +65,8 @@ const zhHant: typeof zh = {
     prev: '上一頁',
     next: '下一頁',
     aria: '分頁',
-    first: '首頁',
-    last: '末頁',
+    first: '第一頁',
+    last: '最後一頁',
     pageOf: '第 {{page}} / {{total}} 頁',
     pagePrefix: '第',
     pageSuffix: '/ {{total}} 頁',
