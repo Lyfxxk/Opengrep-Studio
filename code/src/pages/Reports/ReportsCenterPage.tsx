@@ -50,6 +50,19 @@ export default function ReportsCenterPage() {
         countLabel={t('reports.filterCount', { count: filteredRows.length })}
       />
 
+      {loadFailed && rows !== null && (
+        <div className="rounded-lg border border-warning/40 bg-warning/10 px-4 py-2 text-sm text-muted-foreground">
+          {t('common.loadFailedHint')}
+          <button
+            type="button"
+            className="ml-2 font-medium text-primary hover:underline"
+            onClick={() => void load()}
+          >
+            {t('common.retry')}
+          </button>
+        </div>
+      )}
+
       {rows === null ? (
         <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
           {loadFailed ? (
