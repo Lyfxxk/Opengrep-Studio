@@ -394,6 +394,7 @@ export default function ProjectDetailPage() {
         </div>
         {canWrite && (
           <Button
+            data-testid="start-scan"
             className="gap-1"
             disabled={!canStartScan}
             onClick={() => void handleStartScan()}
