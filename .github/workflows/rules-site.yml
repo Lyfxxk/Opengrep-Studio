@@ -1,0 +1,40 @@
+name: 发布规则百科站（GitHub Pages）
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    name: 构建并发布规则百科站
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: 安装依赖（仅生产依赖）
+        run: npm --prefix server ci --omit=dev
+      - name: 构建规则百科站
+        run: node server/scripts/build-rules-site.mjs
+      - name: 配置 GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: 上传 Pages 产物
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/dist
+      - name: 发布
+        id: deployment
+        uses: actions/deploy-pages@v4
