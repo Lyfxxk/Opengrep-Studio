@@ -10,7 +10,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -21,7 +20,6 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { type IIssue, type ReviewStatus } from '@/data/issues';
-import { getCurrentUsername } from '@/lib/auth';
 import { api } from '@/lib/api';
 
 interface ReviewDialogProps {
@@ -43,14 +41,12 @@ export default function ReviewDialog({ projectId, issue, onClose, onSaved }: Rev
   const { t } = useTranslation();
   const [status, setStatus] = useState<ReviewStatus>('confirmed');
   const [reason, setReason] = useState('');
-  const [reviewer, setReviewer] = useState(getCurrentUsername());
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (issue) {
       setStatus(issue.review?.status ?? 'confirmed');
       setReason(issue.review?.reason ?? '');
-      setReviewer(issue.review?.reviewer ?? getCurrentUsername());
     }
   }, [issue]);
 
@@ -68,7 +64,6 @@ export default function ReviewDialog({ projectId, issue, onClose, onSaved }: Rev
       await api.setReview(projectId, issue.fingerprint, {
         status: status as ReviewableStatus,
         ...(reason.trim() ? { reason: reason.trim() } : {}),
-        reviewer: reviewer.trim() || undefined,
       });
       onSaved();
       onClose();
@@ -134,15 +129,6 @@ export default function ReviewDialog({ projectId, issue, onClose, onSaved }: Rev
               rows={3}
               maxLength={500}
               placeholder={t('review.reasonPlaceholder')}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="review-reviewer">{t('review.reviewerLabel')}</Label>
-            <Input
-              id="review-reviewer"
-              value={reviewer}
-              onChange={(event) => setReviewer(event.target.value)}
-              maxLength={100}
             />
           </div>
         </div>
