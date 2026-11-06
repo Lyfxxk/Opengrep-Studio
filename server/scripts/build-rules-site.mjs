@@ -385,6 +385,42 @@ const SITE_I18N = {
     subRule: '规则详情',
     subCwe: 'CWE 详情',
   },
+  en: {
+    title: 'Opengrep Studio Rule Wiki',
+    statsRules: 'Total rules',
+    statsPacks: 'Rule packs',
+    statsLangs: 'Interface language',
+    statsCwe: 'CWE coverage',
+    searchPlaceholder: 'Search rule ID, description, CWE, OWASP…',
+    filterPack: 'Rule pack',
+    filterSeverity: 'Severity',
+    filterCwe: 'CWE',
+    allOption: 'All',
+    showing: 'Showing {shown} / {total} rules',
+    noMatch: 'No matching rules. Adjust the filters',
+    loadError: 'Failed to load data. Open this page via a static server with data.json and search-index.json in the same directory',
+    noDescription: 'No description',
+    updated: 'Data generated {time} · Opengrep Studio',
+    backHome: 'Back to list',
+    cweIndexLink: 'CWE index',
+    secMessages: 'Messages in all languages',
+    secCwe: 'CWE knowledge card',
+    secOwasp: 'OWASP',
+    secMeta: 'Metadata',
+    secFix: 'Fix fields',
+    secRelated: 'Related rules',
+    thLang: 'Language',
+    thDesc: 'Message',
+    thName: 'Name',
+    thFix: 'Suggested fix',
+    thRules: 'Rules',
+    yesBadge: 'yes',
+    noBadge: 'no',
+    upstreamLabel: 'Upstream rule source',
+    noRelated: 'No rules reference this CWE',
+    subRule: 'Rule details',
+    subCwe: 'CWE details',
+  },
   'zh-Hant': {
     title: 'Opengrep Studio 規則百科',
     statsRules: '規則總數',
@@ -603,7 +639,7 @@ const SITE_I18N = {
   },
 };
 
-const SITE_LANG_NAMES = { zh: '简体中文', 'zh-Hant': '繁體中文', ja: '日本語', ko: '한국어', de: 'Deutsch', fr: 'Français', ru: 'Русский' };
+const SITE_LANG_NAMES = { en: 'English', zh: '简体中文', 'zh-Hant': '繁體中文', ja: '日本語', ko: '한국어', de: 'Deutsch', fr: 'Français', ru: 'Русский' };
 
 const I18N_SNIPPET = `var I18N = ${JSON.stringify(SITE_I18N)}; var LANG_NAMES = ${JSON.stringify(SITE_LANG_NAMES)};`;
 
