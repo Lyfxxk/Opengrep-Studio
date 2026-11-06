@@ -16,56 +16,56 @@
     "fix": "Normalisez le chemin puis vérifiez qu'il reste dans le répertoire de base autorisé, en refusant les composants `..`."
   },
   "73": {
-    "name": "外部可控的文件名或路径",
-    "fix": "校验并规范化文件路径，约束在基准目录内，拒绝把外部输入直接拼进路径。"
+    "name": "Contrôle externe du nom de fichier ou du chemin",
+    "fix": "Validez et normalisez les chemins de fichiers, contraints au répertoire de base ; refusez de concaténer directement l'entrée externe dans le chemin."
   },
   "74": {
-    "name": "下游组件输出注入",
-    "fix": "对输出到下游组件（命令、SQL、模板等）的数据按目标语法转义，禁止直接拼接。"
+    "name": "Neutralisation inappropriée des éléments spéciaux dans une sortie utilisée par un composant en aval (injection)",
+    "fix": "Échappez vers la syntaxe cible les données destinées à des composants en aval (commandes, SQL, templates, etc.) ; interdisez la concaténation directe."
   },
   "78": {
-    "name": "OS 命令注入",
-    "fix": "禁止拼接 shell 命令；使用参数化 API（execFile/spawn 数组传参）或库函数替代 shell，必要时做白名单校验并以最小权限执行。"
+    "name": "Neutralisation inappropriée des éléments spéciaux dans une commande OS (injection de commande)",
+    "fix": "Interdisez la concaténation de commandes shell ; utilisez des API paramétrées (execFile/spawn avec arguments en tableau) ou des fonctions de bibliothèque à la place du shell, avec validation en liste blanche si nécessaire et exécution aux moindres privilèges."
   },
   "79": {
-    "name": "跨站脚本（XSS）",
-    "fix": "输出按上下文编码（HTML/属性/JS/URL），使用模板引擎自动转义，禁用不可信 HTML，并配置 CSP。"
+    "name": "Neutralisation inappropriée de l'entrée lors de la génération d'une page web (cross-site scripting)",
+    "fix": "Encodez la sortie selon le contexte (HTML/attribut/JS/URL), laissez le moteur de templates échapper automatiquement, interdisez le HTML non fiable et configurez une CSP."
   },
   "80": {
-    "name": "基础型跨站脚本（XSS）",
-    "fix": "输出按 HTML 上下文转义，使用模板引擎自动转义并配置 CSP，过滤 script 相关标签。"
+    "name": "Cross-site scripting de base (XSS)",
+    "fix": "Échappez la sortie selon le contexte HTML, utilisez un moteur de templates avec échappement automatique et configurez une CSP ; filtrez les balises liées à script."
   },
   "89": {
-    "name": "SQL 注入",
-    "fix": "全部使用参数化查询/预编译语句，禁止字符串拼接 SQL，ORM 关闭原生拼接入口。"
+    "name": "Neutralisation inappropriée des éléments spéciaux dans une commande SQL (injection SQL)",
+    "fix": "Utilisez systématiquement des requêtes paramétrées ou des instructions préparées ; interdisez la concaténation de SQL et fermez les points d'entrée SQL brut de l'ORM."
   },
   "90": {
-    "name": "LDAP 注入",
-    "fix": "对 LDAP 过滤器与 DN 中的特殊字符转义，使用安全库构造查询。"
+    "name": "Neutralisation inappropriée des éléments spéciaux dans une requête LDAP (injection LDAP)",
+    "fix": "Échappez les caractères spéciaux des filtres et des DN LDAP et construisez les requêtes avec une bibliothèque sûre."
   },
   "91": {
-    "name": "XML 注入",
-    "fix": "对进入 XML 的数据做转义，禁用自定义 DTD/实体，优先使用安全解析库。"
+    "name": "Injection XML",
+    "fix": "Échappez les données entrant dans le XML, interdisez les DTD/entités personnalisées et préférez des bibliothèques d'analyse sûres."
   },
   "93": {
-    "name": "日志输出注入",
-    "fix": "过滤或转义日志中的换行与控制字符，采用结构化日志字段。"
+    "name": "Neutralisation inappropriée des séquences CRLF (injection CRLF)",
+    "fix": "Filtrez ou échappez les retours à la ligne et les caractères de contrôle dans les journaux, avec des champs de journalisation structurés."
   },
   "94": {
-    "name": "代码注入",
-    "fix": "禁止将不可信输入拼入动态执行的代码；用数据驱动的配置或查表逻辑替代代码生成。"
+    "name": "Contrôle inapproprié de la génération de code (injection de code)",
+    "fix": "Interdisez de concaténer des entrées non fiables dans du code exécuté dynamiquement ; remplacez la génération de code par des configurations pilotées par les données ou de la logique par table de correspondance."
   },
   "95": {
-    "name": "Eval 注入",
-    "fix": "禁止对不可信输入使用 eval()/exec() 类动态求值，改用解析器或查表。"
+    "name": "Neutralisation inappropriée de directives dans du code évalué dynamiquement (injection eval)",
+    "fix": "Interdisez l'évaluation dynamique de type eval()/exec() sur des entrées non fiables ; utilisez un analyseur ou une table de correspondance."
   },
   "96": {
-    "name": "不安全的动态代码求值/包含",
-    "fix": "以白名单映射替代动态拼接的路径、类名或模板名。"
+    "name": "Neutralisation inappropriée de directives dans du code stocké statiquement (injection de code statique)",
+    "fix": "Remplacez les chemins, noms de classes ou noms de templates assemblés dynamiquement par des mappages en liste blanche."
   },
   "98": {
-    "name": "远程文件包含",
-    "fix": "禁用远程文件包含，包含路径固定为白名单并 realpath 校验。"
+    "name": "Contrôle inapproprié du nom de fichier pour les instructions include/require (inclusion de fichiers distants)",
+    "fix": "Désactivez l'inclusion de fichiers distants ; fixez les chemins d'inclusion à une liste blanche avec validation realpath."
   },
   "113": {
     "name": "Scission de réponse HTTP (HTTP Response Splitting)",
@@ -240,168 +240,168 @@
     "fix": "Utilisez les mécanismes de propriété ou de ramasse-miettes du langage, ou formalisez la propriété mémoire et la responsabilité de la libération."
   },
   "416": {
-    "name": "释放后使用（UAF）",
-    "fix": "释放后立即置空引用；优先使用内存安全语言或智能指针。"
+    "name": "Utilisation après libération (Use After Free)",
+    "fix": "Remettez les références à zéro immédiatement après la libération ; privilégiez les langages à sécurité mémoire ou les pointeurs intelligents."
   },
   "436": {
-    "name": "解释冲突",
-    "fix": "统一各组件对路径、编码与协议的解析方式，避免歧义输入。"
+    "name": "Conflit d'interprétation",
+    "fix": "Unifiez entre composants l'analyse des chemins, de l'encodage et des protocoles pour éviter les entrées ambiguës."
   },
   "451": {
-    "name": "关键信息界面呈现失真",
-    "fix": "关键信息（价格、权限、状态）的展示不依赖客户端可控字段，必要时做服务端确认与防混淆设计。"
+    "name": "Représentation trompeuse d'informations critiques dans l'interface utilisateur",
+    "fix": "L'affichage des informations critiques (prix, permissions, états) ne doit pas dépendre de champs contrôlables par le client ; confirmez côté serveur si nécessaire et concevez contre la confusion."
   },
   "454": {
-    "name": "信任外部注入的初始化值",
-    "fix": "受信状态在服务端内部初始化，不从请求中读取。"
+    "name": "Initialisation externe de variables ou de stockages de données de confiance",
+    "fix": "Initialisez les états de confiance en interne côté serveur, sans lecture depuis les requêtes."
   },
   "470": {
-    "name": "不安全的文件包含",
-    "fix": "文件路径白名单 + realpath 规范化校验，不使用外部输入直接拼接包含路径。"
+    "name": "Inclusion de fichiers non sécurisée",
+    "fix": "Liste blanche des chemins de fichiers + validation par realpath ; ne construisez jamais le chemin d'inclusion par simple concaténation d'entrée externe."
   },
   "477": {
-    "name": "使用已弃用的函数",
-    "fix": "迁移到官方推荐的现代替代 API，逐个替换并跟踪弃用告警。"
+    "name": "Utilisation de fonctions obsolètes",
+    "fix": "Migrez vers les API modernes recommandées officiellement, en remplaçant une à une et en suivant les avertissements d'obsolescence."
   },
   "489": {
-    "name": "调试信息残留",
-    "fix": "生产构建移除调试端点、详细堆栈与调试日志开关。"
+    "name": "Code de débogage actif",
+    "fix": "Retirez des builds de production les points de terminaison de débogage, les piles d'appels détaillées et les interrupteurs de journalisation de débogage."
   },
   "501": {
-    "name": "信任边界违反",
-    "fix": "在信任边界显式校验所有外部输入；未认证数据不得直接参与安全决策。"
+    "name": "Violation de frontière de confiance",
+    "fix": "Validez explicitement toutes les entrées externes aux frontières de confiance ; les données non authentifiées ne doivent pas participer directement aux décisions de sécurité."
   },
   "502": {
-    "name": "不安全的反序列化",
-    "fix": "禁止对不可信数据使用原生反序列化（pickle/unserialize/yaml.load）；改用 JSON 等安全格式并做 schema 校验。"
+    "name": "Désérialisation de données non fiables",
+    "fix": "Interdisez la désérialisation native de données non fiables (pickle/unserialize/yaml.load) ; préférez des formats sûrs comme JSON avec validation de schéma."
   },
   "521": {
-    "name": "弱密码策略",
-    "fix": "强制密码复杂度与长度下限，启用多因素认证。"
+    "name": "Exigences de mot de passe faibles",
+    "fix": "Imposez une complexité et une longueur minimale des mots de passe et activez l'authentification multifacteur."
   },
   "522": {
-    "name": "凭证保护不足",
-    "fix": "口令使用加盐慢哈希存储，密钥文件限制读取权限。"
+    "name": "Identifiants insuffisamment protégés",
+    "fix": "Stockez les mots de passe avec un hachage lent et salé, et restreignez les permissions de lecture des fichiers de clés."
   },
   "523": {
-    "name": "明文存储凭据",
-    "fix": "不存储明文口令/密钥；必须存储时加密并保护密钥。"
+    "name": "Transport non protégé des identifiants",
+    "fix": "Ne stockez pas de mots de passe ni de clés en clair ; si le stockage est indispensable, chiffrez et protégez les clés."
   },
   "532": {
-    "name": "凭据写入日志或文件",
-    "fix": "日志与异常信息脱敏，凭据字段不落盘。"
+    "name": "Insertion d'informations sensibles dans un fichier de journal",
+    "fix": "Masquez les informations sensibles dans les journaux et les exceptions ; aucun champ d'identifiant ne doit être écrit sur disque."
   },
   "538": {
-    "name": "敏感信息写入外部可读文件",
-    "fix": "敏感配置不写入 Web 可访问目录；文件权限收紧。"
+    "name": "Insertion d'informations sensibles dans un fichier accessible de l'extérieur",
+    "fix": "N'écrivez pas de configuration sensible dans des répertoires accessibles au web ; resserrez les permissions des fichiers."
   },
   "548": {
-    "name": "目录列表暴露",
-    "fix": "关闭 Web 服务器的目录枚举，敏感目录不对外提供列表。"
+    "name": "Exposition d'informations via le listage de répertoires",
+    "fix": "Désactivez l'énumération de répertoires du serveur web ; n'exposez pas la liste des répertoires sensibles."
   },
   "553": {
-    "name": "外部可访问目录中的命令 shell",
-    "fix": "不要把 shell 脚本/可执行文件放在 Web 可访问目录，禁止向可执行路径上传内容。"
+    "name": "Shell de commandes dans un répertoire accessible de l'extérieur",
+    "fix": "Ne placez pas de scripts shell ni d'exécutables dans les répertoires accessibles au web, et interdisez tout téléversement vers les chemins exécutables."
   },
   "601": {
-    "name": "开放重定向",
-    "fix": "跳转目标使用白名单校验或相对路径，不接受完整外部 URL。"
+    "name": "Redirection d'URL vers un site non fiable",
+    "fix": "Validez les cibles de redirection par liste blanche ou utilisez des chemins relatifs ; n'acceptez pas d'URL externes complètes."
   },
   "611": {
-    "name": "XXE（XML 外部实体注入）",
-    "fix": "解析 XML 时禁用外部实体与 DTD（安全 parser 配置），或改用 JSON。"
+    "name": "Restriction inappropriée des références d'entités externes XML (XXE)",
+    "fix": "Désactivez les entités externes et les DTD à l'analyse XML (configuration sûre de l'analyseur), ou passez à JSON."
   },
   "613": {
-    "name": "会话过期设置不足",
-    "fix": "设置合理的会话超时并在敏感操作后重建会话。"
+    "name": "Expiration de session insuffisante",
+    "fix": "Définissez des délais d'expiration de session raisonnables et recréez la session après les opérations sensibles."
   },
   "614": {
-    "name": "敏感 Cookie 未设置 Secure 属性",
-    "fix": "敏感 Cookie 增加 Secure、HttpOnly 与 SameSite 属性。"
+    "name": "Cookie sensible dans une session HTTPS sans l'attribut 'Secure'",
+    "fix": "Ajoutez aux cookies sensibles les attributs Secure, HttpOnly et SameSite."
   },
   "643": {
-    "name": "XPath 注入",
-    "fix": "使用参数化 XPath 查询，对变量做转义。"
+    "name": "Neutralisation inappropriée de données dans des expressions XPath (injection XPath)",
+    "fix": "Utilisez des requêtes XPath paramétrées et échappez les variables."
   },
   "668": {
-    "name": "资源暴露给错误作用域",
-    "fix": "按最小暴露原则存放配置、日志与临时文件，用权限和路径约束收窄可见范围。"
+    "name": "Exposition d'une ressource à la mauvaise sphère",
+    "fix": "Rangez configurations, journaux et fichiers temporaires selon le principe d'exposition minimale, et resserrez la visibilité par permissions et par chemins."
   },
   "676": {
-    "name": "使用潜在危险函数",
-    "fix": "用更安全的标准 API 替代危险函数，并集中封装审核调用点。"
+    "name": "Utilisation d'une fonction potentiellement dangereuse",
+    "fix": "Remplacez les fonctions dangereuses par des API standard plus sûres et centralisez l'encapsulation de leurs points d'appel pour audit."
   },
   "697": {
-    "name": "等价比较不当",
-    "fix": "明确比较语义（值/引用/范围），统一类型后再比较。"
+    "name": "Comparaison incorrecte",
+    "fix": "Clarifiez la sémantique de comparaison (valeur/référence/plage) et unifiez les types avant de comparer."
   },
   "704": {
-    "name": "类型转换不当",
-    "fix": "显式校验类型与取值范围后再转换，避免隐式截断。"
+    "name": "Conversion ou cast de type incorrect",
+    "fix": "Validez explicitement le type et la plage de valeurs avant toute conversion, pour éviter les troncatures implicites."
   },
   "706": {
-    "name": "使用被操控的变量名",
-    "fix": "以白名单映射访问变量/字段，不使用外部输入拼接标识符。"
+    "name": "Utilisation d'un nom ou d'une référence résolue de manière incorrecte",
+    "fix": "Accédez aux variables et champs via un mappage en liste blanche ; ne construisez pas d'identifiants par concaténation d'entrée externe."
   },
   "774": {
-    "name": "不限制内存分配大小",
-    "fix": "对分配大小设置上限与校验，防止超大分配。"
+    "name": "Allocation de descripteurs de fichiers ou de tampons sans limites ni régulation",
+    "fix": "Fixez des limites et des validations aux tailles d'allocation pour prévenir les allocations démesurées."
   },
   "776": {
-    "name": "XML 实体展开",
-    "fix": "限制 DTD 与实体引用（禁用 DOCTYPE 或设置实体数量/深度上限），使用安全解析器选项。"
+    "name": "Restriction inappropriée des références d'entités récursives dans les DTD (expansion d'entités XML)",
+    "fix": "Restreignez les DTD et les références d'entités (désactivez DOCTYPE ou fixez des limites de nombre et de profondeur d'entités) avec des options d'analyse sûres."
   },
   "780": {
-    "name": "RSA 未使用 OAEP 填充",
-    "fix": "RSA 加密使用 OAEP 填充，禁用 PKCS#1 v1.5。"
+    "name": "Utilisation de l'algorithme RSA sans OAEP",
+    "fix": "Chiffrez en RSA avec le remplissage OAEP ; interdisez PKCS#1 v1.5."
   },
   "798": {
-    "name": "硬编码凭据",
-    "fix": "凭据外置到环境变量或密钥管理服务，默认口令首次登录强制修改。"
+    "name": "Identifiants codés en dur",
+    "fix": "Externalisez les identifiants vers des variables d'environnement ou un service de gestion de secrets ; forcez le changement des mots de passe par défaut à la première connexion."
   },
   "807": {
-    "name": "安全决策依赖不可信输入",
-    "fix": "安全判定在服务端独立完成，不信任客户端提交的字段。"
+    "name": "Dépendance à des entrées non fiables dans une décision de sécurité",
+    "fix": "Effectuez les décisions de sécurité de manière indépendante côté serveur ; ne vous fiez pas aux champs soumis par le client."
   },
   "862": {
-    "name": "缺失授权",
-    "fix": "每个敏感操作显式校验当前用户权限，包括对象级归属。"
+    "name": "Autorisation manquante",
+    "fix": "Vérifiez explicitement les permissions de l'utilisateur courant pour chaque opération sensible, y compris la propriété au niveau des objets."
   },
   "913": {
-    "name": "授权控制设计不当",
-    "fix": "限制内部元数据与管理接口的可达范围（如云元数据地址）。"
+    "name": "Contrôle inapproprié des ressources de code gérées dynamiquement",
+    "fix": "Limitez la portée des métadonnées internes et des interfaces d'administration (comme les adresses de métadonnées cloud)."
   },
   "915": {
-    "name": "批量赋值（Mass Assignment）",
-    "fix": "请求对象到模型的字段显式白名单，禁止整对象透传。"
+    "name": "Modification insuffisamment contrôlée d'attributs d'objets déterminés dynamiquement",
+    "fix": "Liste blanche explicite des champs entre l'objet de requête et le modèle ; interdisez la transmission d'objets entiers."
   },
   "916": {
-    "name": "口令哈希计算强度不足",
-    "fix": "口令哈希使用 bcrypt/scrypt/argon2/PBKDF2，并配置足够的迭代因子。"
+    "name": "Utilisation d'un hachage de mot de passe à effort de calcul insuffisant",
+    "fix": "Hachez les mots de passe avec bcrypt/scrypt/argon2/PBKDF2 et configurez un facteur d'itérations suffisant."
   },
   "918": {
-    "name": "SSRF（服务端请求伪造）",
-    "fix": "目标 URL 白名单校验，禁用内网/回环/元数据地址，统一经受控代理出网。"
+    "name": "Falsification de requête côté serveur (SSRF)",
+    "fix": "Validez les URL cibles par liste blanche, interdisez les adresses internes/loopback/métadonnées et faites sortir tout le trafic par un proxy contrôlé."
   },
   "921": {
-    "name": "敏感数据存储于无访问控制的介质",
-    "fix": "敏感数据加密存储并设置访问控制。"
+    "name": "Stockage de données sensibles dans un mécanisme sans contrôle d'accès",
+    "fix": "Chiffrez les données sensibles au stockage et définissez un contrôle d'accès."
   },
   "922": {
-    "name": "敏感信息存储不安全",
-    "fix": "敏感信息加密存储，密钥交由密钥管理服务；禁止明文落盘，访问需鉴权。"
+    "name": "Stockage non sécurisé d'informations sensibles",
+    "fix": "Chiffrez les informations sensibles au stockage et confiez les clés à un service de gestion de clés ; interdisez l'écriture en clair sur disque et exigez une authentification pour l'accès."
   },
   "939": {
-    "name": "自定义 URL Scheme 授权不当",
-    "fix": "校验 Scheme 调用的来源与参数，按最小权限处理，敏感动作要求用户确认。"
+    "name": "Autorisation inappropriée dans le gestionnaire d'un schéma d'URL personnalisé",
+    "fix": "Validez l'origine et les paramètres des appels de schéma, traitez aux moindres privilèges et exigez une confirmation utilisateur pour les actions sensibles."
   },
   "942": {
-    "name": "跨域策略过于宽松",
-    "fix": "CORS/跨域策略仅放行明确可信的域，禁止通配符与凭据同时使用。"
+    "name": "Politique inter-domaines permissive avec des domaines non fiables",
+    "fix": "N'autorisez dans les politiques CORS/inter-domaines que des domaines explicitement fiables ; interdisez la combinaison de caractères génériques et d'identifiants."
   },
   "943": {
-    "name": "数据查询逻辑使用不可信输入",
-    "fix": "查询条件参数化，禁止将输入直接拼入查询表达式。"
+    "name": "Neutralisation inappropriée des éléments spéciaux dans la logique de requête de données",
+    "fix": "Paramétrez les conditions de requête ; interdisez de concaténer directement l'entrée dans l'expression de requête."
   },
   "1004": {
     "name": "Cookie sensible sans l'option 'HttpOnly'",
