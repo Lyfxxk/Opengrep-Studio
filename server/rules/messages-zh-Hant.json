@@ -164,7 +164,7 @@
   "java.defaulthttpclient-is-deprecated": "DefaultHttpClient 已廢棄，且不支援 TLS1.2 連線，繼續使用存在安全隱患。請改用 HttpClientBuilder。",
   "java.do-privileged-use": "將程式碼標記為特權程式碼，會讓受信程式碼臨時獲得超出呼叫者直接可用範圍的資源存取。請謹慎使用特權結構，並始終把特權程式碼段壓到最小。",
   "java.documentbuilderfactory-disallow-doctype-decl-false": "$DBFACTORY 啟用了 DOCTYPE 宣告，在沒有禁止外部實體宣告的情況下易受 XML 外部實體（XXE）攻擊。請將特性 \"http://apache.org/xml/features/disallow-doctype-decl\" 設為 true 禁用；或保留 DOCTYPE 但禁止外部實體——把特性 \"http://xml.org/sax/features/external-general-entities\" 與 \"http://xml.org/sax/features/external-parameter-entities\" 設為 false。",
-  "java.documentbuilderfactory-disallow-doctype-decl-missing": "該 DocumentBuilderFactory 啟用了 DOCTYPE 宣告，易受 XML 外部實體（XXE）攻擊。請將特性 \"http://apache.org/xml/features/disallow-doctype-decl\" 設為 true 禁用；或保留 DOCTYPE 但禁止外部實體——把特性 \"http://xml.org/sax/features/external-general-entities\" 與 \"http://xml.org/sax/features/external-parameter-entities\" 設為 false。",
+  "java.documentbuilderfactory-disallow-doctype-decl-missing": "該 DocumentBuilderFactory 啟用了 DOCTYPE 宣告，易受 XML 外部實體（XXE）攻擊。請將特性 \"http://apache.org/xml/features/disallow-doctype-decl\" 設為 true 停用；或保留 DOCTYPE 但禁止外部實體——把特性 \"http://xml.org/sax/features/external-general-entities\" 與 \"http://xml.org/sax/features/external-parameter-entities\" 設為 false。",
   "java.documentbuilderfactory-external-general-entities-true": "$DBFACTORY 允許外部實體，易受 XML 外部實體（XXE）攻擊。請將特性 \"http://xml.org/sax/features/external-general-entities\" 設為 false 禁用。",
   "java.documentbuilderfactory-external-parameter-entities-true": "$DBFACTORY 允許外部實體，易受 XML 外部實體（XXE）攻擊。請將特性 \"http://xml.org/sax/features/external-parameter-entities\" 設為 false 禁用。",
   "java.ecb-cipher": "檢測到 ECB 模式加密。ECB 對相同輸入總是輸出相同結果，攻擊者可攔截並重放資料，且 ECB 不提供任何完整性驗證。參見 https://find-sec-bugs.github.io/bugs.htm#CIPHER_INTEGRITY 。",
@@ -810,5 +810,5 @@
   "swift.insecure-random": "檢測到的亂數產生器**不保證**密碼學安全。若該熵源用於安全用途（如配合其他密碼學操作），請顯式使用 `SecCopyRandomBytes` API。",
   "swift.swift-potential-sqlite-injection": "潛在的用戶端 SQL 注入，影響隨 SQL 使用場景而異：可能包括繞過本機認證機制、獲取應用敏感資料或篡改用戶端行為。雖無法確認資料來源是否不可信，但應用應避免把動態資料串接進 SQL 查詢，改用參數化查詢。",
   "swift.swift-user-defaults": "發現可能敏感的資料被存入 UserDefaults，它不足以保護敏感資訊。敏感資料應使用 Keychain。",
-  "swift.swift-webview-config-allows-js-open-windows": "發現 WKWebview 被顯式允許其中的 JavaScript 自動開啟新視窗。按照最小權限原則，如非必需請禁用該功能。"
+  "swift.swift-webview-config-allows-js-open-windows": "發現 WKWebview 被顯式允許其中的 JavaScript 自動開啟新視窗。按照最小權限原則，如非必需請停用該功能。"
 }

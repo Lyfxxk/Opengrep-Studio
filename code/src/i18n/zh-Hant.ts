@@ -907,7 +907,7 @@ const zhHant: typeof zh = {
       ruleYamlInvalid: '規則 YAML 不合法：{{reason}}',
       packExportParseFailed: '規則包內容無法解析，匯出中止：{{reason}}',
       packManifestUnparseable: 'pack.yaml 無法解析：{{reason}}',
-      packManifestMissing: '壓縮檔含多個規則檔但缺少 pack.yaml 清單，請以可攜格式打包（pack.yaml + rules/ 目錄）',
+      packManifestMissing: '壓縮檔含多個規則檔但缺少 pack.yaml 清單，請以可移植格式打包（pack.yaml + rules/ 目錄）',
       allFilesIgnored: '依 .gitignore 忽略規則過濾後沒有剩餘可掃描的檔案，請檢查忽略規則，或關閉「依 .gitignore 忽略檔案」後重新上傳',
       noEnabledBuiltinPacks: '沒有已啟用的內建規則包，無法建立備用掃描設定；請先在設定管理建立設定並在專案詳情頁綁定',
       importSuccess: '匯入成功：{{rules}} 條規則、{{samples}} 個樣本，建議先執行品質檢查',
