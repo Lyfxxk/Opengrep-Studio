@@ -863,7 +863,127 @@ const REPORT_TEXT_FR: typeof REPORT_TEXT_ZH = {
     ` Revue manuelle effectuée sur ${s.reviewed} ${frPlural(s.reviewed, 'problème', 'problèmes')} (${s.confirmed} ${frPlural(s.confirmed, 'confirmé', 'confirmés')}, ${s.falsePositives} ${frPlural(s.falsePositives, 'faux positif', 'faux positifs')}, ${s.accepted} ${frPlural(s.accepted, 'accepté sous conditions', 'acceptés sous conditions')}).`,
 };
 
-const REPORT_TEXT_DE: typeof REPORT_TEXT_ZH = { ...REPORT_TEXT_EN, htmlLang: 'de' };
+const DE_SEVERITY: Record<Severity, string> = {
+  critical: 'Kritisch',
+  high: 'Hoch',
+  medium: 'Mittel',
+  low: 'Niedrig',
+};
+const DE_COMPARISON: Record<ComparisonStatus, string> = {
+  new: 'Neu',
+  fixed: 'Behoben',
+  remaining: 'Bestehend',
+};
+const DE_REVIEW: Record<ReviewStatus, string> = {
+  pending: 'Prüfung ausstehend',
+  confirmed: 'Bestätigt',
+  false_positive: 'Falsch positiv',
+  accepted: 'Akzeptiert',
+};
+
+function dePlural(n: number, one: string, many: string): string {
+  return n === 1 ? one : many;
+}
+
+function deSourceFiles(files: string): string {
+  const n = Number(files);
+  return Number.isInteger(n) && n > 0
+    ? `${files} ${dePlural(n, 'Quellcodedatei', 'Quellcodedateien')}`
+    : `${files} Quellcodedateien`;
+}
+
+const REPORT_TEXT_DE: typeof REPORT_TEXT_ZH = {
+  htmlLang: 'de',
+  brand: 'Opengrep Studio · Arbeitsbereich für Code-Audit',
+  docTitle: 'Code-Audit-Testbericht',
+  severity: DE_SEVERITY,
+  comparison: DE_COMPARISON,
+  review: DE_REVIEW,
+  sections: {
+    actions: 'Maßnahmenliste · nach Datei',
+    details: 'Problemdetails',
+    method: 'Methodik und Nachweise',
+    rulesAppendix: 'Anhang · Regelbeschreibungen',
+  },
+  meta: {
+    engine: 'Scan-Engine',
+    sourceHash: 'Hash des Quellcodes',
+    commandLine: 'Engine-Kommandozeile',
+    generatedAt: 'Bericht erstellt am',
+    finishedAt: 'Abgeschlossen am',
+    rulesLabel: 'Regeln',
+  },
+  metrics: { total: 'Gesamtzahl der Risiken', critical: 'Kritisch', high: 'Hoch', files: 'Betroffene Dateien' },
+  distTitle: 'Risikoverteilung',
+  top5Title: 'Die 5 Dateien mit den meisten Problemen',
+  top5Hint: 'Sortiert nach Anzahl – entspricht nicht der Risikopriorität; die Prioritäten finden Sie in der „Maßnahmenliste“.',
+  thFile: 'Datei',
+  thCount: 'Gesamt',
+  thMaxSeverity: 'Maximaler Schweregrad',
+  scopeLabel: 'Prüfumfang',
+  baselineLabel: 'Baseline-Vergleich',
+  distLabel: 'Problemverteilung',
+  distSentence: (total: number, files: number, rules: number) =>
+    `${total} ${dePlural(total, 'Problem', 'Probleme')} in ${files} ${dePlural(files, 'Datei', 'Dateien')} und ${rules} ${dePlural(rules, 'Regel', 'Regeln')}`,
+  firstScanNoBaseline: 'Erster Scan – keine Baseline zum Vergleich',
+  baselineSentence: (id: string, added: number, remaining: number, fixed: number) =>
+    `Gegenüber der Baseline ${id}: ${added} ${dePlural(added, 'neues', 'neue')} · ${remaining} ${dePlural(remaining, 'bestehendes', 'bestehende')} · ${fixed} ${dePlural(fixed, 'behobenes', 'behobene')}`,
+  actionsHint: (files: number) =>
+    `Insgesamt ${files} ${dePlural(files, 'Datei', 'Dateien')}; Sortierung: „maximaler Schweregrad zuerst, bei gleicher Stufe nach Problemzahl absteigend“. Es wird empfohlen, von oben nach unten zu arbeiten.`,
+  thFileMainIssue: 'Datei / Hauptproblem',
+  groupCount: (count: number, files: number) =>
+    `${count} ${dePlural(count, 'Problem', 'Probleme')} · ${files} ${dePlural(files, 'Datei', 'Dateien')}`,
+  groupHint: {
+    critical: 'Kann direkt zur Remote-Code-Ausführung oder zur Offenlegung von Zugangsdaten führen; sofort beheben und gesondert dokumentieren.',
+    high: 'Liegt auf typischen Angriffspfaden; sollte noch in der aktuellen Iteration behoben werden.',
+    medium: 'Erfordert besondere Voraussetzungen oder hat begrenzte Auswirkungen; in die Liste der technischen Schulden der nächsten Iteration aufnehmen.',
+    low: 'Betrifft Codekonventionen und Wartbarkeit; kann bei alltäglichen Änderungen nebenbei behoben werden.',
+  },
+  fixedHeading: (count: number) => `Behoben (gegenüber der Baseline, ${count})`,
+  appendixHint: (rules: number) =>
+    `${rules} ${dePlural(rules, 'Regel', 'Regeln')}, sortiert nach Trefferzahl; die vollständige Beschreibung einer Regel (inkl. Lösungshinweisen) erscheint hier nur einmal.`,
+  ruleStat: (count: number, files: number) =>
+    `${count} ${dePlural(count, 'Treffer', 'Treffer')} · ${files} ${dePlural(files, 'Datei', 'Dateien')}`,
+  noMessage: '(noch keine Beschreibung)',
+  noDescription: '(keine Beschreibung angegeben)',
+  unknownPath: '(unbekannter Pfad)',
+  methodSub: { packs: 'Regelsätze', repro: 'Engine und Reproduzierbarkeit', review: 'Prüfung und Abdeckung', exclusions: 'Ausschlüsse', boundaries: 'Abdeckungsgrenzen' },
+  packThName: 'Regelpaket',
+  packThId: 'Kennung',
+  noPacks: 'Keine Regelpakete erfasst',
+  sarifImport: (tool?: string) => (tool ? `SARIF-Import (${tool})` : 'SARIF-Import'),
+  filesChecked: 'Gescannte Dateien',
+  filesUnit: (n: number) => `${n} ${dePlural(n, 'Datei', 'Dateien')}`,
+  issuesUnit: (n: number) => `${n} ${dePlural(n, 'Problem', 'Probleme')}`,
+  durationSeconds: (s: number) => `${s} s`,
+  durationMinutes: (m: number, s: number) => `${m} min ${s} s`,
+  exclusions: 'Beachtet die .gitignore des Projekts; node_modules und .git werden übersprungen',
+  notCovered: 'Dieser Bericht spiegelt nur die Treffer der geladenen Regeln wider und belegt nicht das Fehlen weiterer Mängel',
+  reviewLabel: 'Manuelle Prüfung',
+  reviewLine: (s: ReportReviewSummary) =>
+    `${s.reviewed} ${dePlural(s.reviewed, 'Problem geprüft', 'Probleme geprüft')}: ${s.confirmed} bestätigt · ${s.falsePositives} falsch positiv · ${s.accepted} akzeptiert.`,
+  reviewNone: 'In diesem Scan fand keine manuelle Prüfung statt; alle Probleme entsprechen den unveränderten Bewertungen der Engine.',
+  noIssues: 'In diesem Scan wurden keine Risikoprobleme gefunden.',
+  snippetOverflow: (limit: number) =>
+    `Limit für Codeausschnitte erreicht – nur die ersten ${limit} werden angezeigt; den Rest finden Sie auf der Scan-Ergebnisseite.`,
+  footer: (time: string) =>
+    `Dieser Bericht wurde automatisch von Opengrep Studio erstellt · Erstellungszeit: ${time} · Regeltreffer und Schweregrade stammen von der opengrep-Engine; bitte im Geschäftskontext manuell prüfen.`,
+  listSeparator: ', ',
+  sentenceSeparator: ' ',
+  severityPhrase: (label: string, count: number) => `${label}: ${count}`,
+  conclusionNoIssues: (files: string) =>
+    `In diesem Scan wurden ${deSourceFiles(files)} geprüft; keine der aktivierten Regeln ist angesprungen und es wurden keine Risikoprobleme gefunden.`,
+  conclusionSummary: (files: string, total: number, sevText: string) =>
+    `In diesem Scan wurden ${deSourceFiles(files)} geprüft und ${total} ${dePlural(total, 'Risikoproblem', 'Risikoprobleme')} gefunden (${sevText}).`,
+  comparisonSentence: (baseline: string, added: number, remaining: number, fixed: number) =>
+    `Gegenüber dem Baseline-Scan ${baseline}: ${added} ${dePlural(added, 'neues', 'neue')}, ${remaining} ${dePlural(remaining, 'bestehendes', 'bestehende')}, ${fixed} ${dePlural(fixed, 'behobenes', 'behobene')}.`,
+  urgentHint: (urgent: number) =>
+    `Es wird empfohlen, kritische und hohe Probleme vorrangig zu beheben (insgesamt ${urgent}) und anschließend zur Verifikation erneut zu scannen.`,
+  nonUrgentHint: () =>
+    'Zurzeit liegen keine kritischen oder hohen Probleme vor; die Behebung der mittleren und niedrigen Probleme sollte nach Geschäftsprioritäten eingeplant werden.',
+  summaryReview: (s: ReportReviewSummary) =>
+    ` Manuelle Prüfung abgeschlossen für ${s.reviewed} ${dePlural(s.reviewed, 'Problem', 'Probleme')} (${s.confirmed} bestätigt, ${s.falsePositives} falsch positiv, ${s.accepted} unter Vorbehalt akzeptiert).`,
+};
 
 type ReportText = typeof REPORT_TEXT_ZH;
 
