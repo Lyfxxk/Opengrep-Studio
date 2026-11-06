@@ -3,7 +3,7 @@
 <h1>Opengrep Studio · コード監査ワークベンチ</h1>
 <p><strong>潜むリスクを、攻撃者より先に可視化する。</strong></p>
 <p>ローカルファーストの <a href="https://github.com/opengrep/opengrep">Opengrep</a> 静的コード監査ワークベンチ——ソースコードのアップロード、ルールスキャン、問題ごとのレビュー、ベースライン比較、納品用レポートまで、<strong>コードは一切マシンの外に出ません</strong>。</p>
-<p><a href="../README.md">English</a> · <a href="./README.zh-Hans.md">简体中文</a> · <a href="./README.zh-Hant.md">繁體中文</a> · <a href="./README.ko.md">한국어</a></p>
+<p><a href="../README.md">English</a> · <a href="./README.zh-Hans.md">简体中文</a> · <a href="./README.zh-Hant.md">繁體中文</a> · <a href="./README.ja.md">日本語</a> · <a href="./README.ko.md">한국어</a> · <a href="./README.ru.md">Русский</a> · <a href="./README.fr.md">Français</a></p>
 <p>
 <a href="https://github.com/Lyfxxk/Opengrep-Studio/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/Lyfxxk/Opengrep-Studio/ci.yml?branch=main&label=CI&style=flat-square" alt="CI"/></a>
 <a href="#license"><img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="License: MIT"/></a>

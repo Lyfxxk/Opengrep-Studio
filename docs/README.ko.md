@@ -3,7 +3,7 @@
 <h1>Opengrep Studio · 코드 감사 워크벤치</h1>
 <p><strong>숨어 있는 위험을 공격자보다 먼저 드러냅니다.</strong></p>
 <p>로컬 퍼스트 방식의 <a href="https://github.com/opengrep/opengrep">Opengrep</a> 정적 코드 감사 워크벤치 — 소스 코드 가져오기, 규칙 스캔, 항목별 검토, 베이스라인 비교, 리포트 전달까지, <strong>코드는 사용자 컴퓨터를 떠나지 않습니다</strong>.</p>
-<p><a href="../README.md">English</a> · <a href="./README.zh-Hans.md">简体中文</a> · <a href="./README.zh-Hant.md">繁體中文</a> · <a href="./README.ja.md">日本語</a></p>
+<p><a href="../README.md">English</a> · <a href="./README.zh-Hans.md">简体中文</a> · <a href="./README.zh-Hant.md">繁體中文</a> · <a href="./README.ja.md">日本語</a> · <a href="./README.ko.md">한국어</a> · <a href="./README.ru.md">Русский</a> · <a href="./README.fr.md">Français</a></p>
 <p>
 <a href="https://github.com/Lyfxxk/Opengrep-Studio/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/Lyfxxk/Opengrep-Studio/ci.yml?branch=main&label=CI&style=flat-square" alt="CI"/></a>
 <a href="#라이선스"><img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="라이선스: MIT"/></a>
