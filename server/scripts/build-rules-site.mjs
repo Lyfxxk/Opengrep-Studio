@@ -320,45 +320,66 @@ header h1 { margin: 0; font-size: 19px; font-weight: 600; letter-spacing: -.01em
   cursor: pointer;
 }
 :focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
-.stats {
-  display: flex; flex-wrap: wrap; gap: 0 28px;
-  padding: 14px 0 16px; border-bottom: 1px solid var(--rule);
-  font-size: 13px; color: var(--ink-secondary);
-}
-.stat { display: inline-flex; align-items: baseline; gap: 7px; }
-.stat .v { font-size: 16px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
-.stat .k { font-size: 13px; }
 .filters {
   display: grid;
-  grid-template-columns: minmax(220px, 1.6fr) repeat(3, minmax(130px, 1fr));
+  grid-template-columns: minmax(240px, 1.6fr) repeat(3, minmax(130px, 1fr));
   gap: 12px; align-items: end;
-  padding: 18px 0;
+  padding: 26px 0 20px;
 }
-.filters input[type='search'], .field select {
-  width: 100%; padding: 8px 10px;
-  border: 1px solid var(--rule); border-radius: 6px;
+.search-wrap { position: relative; }
+.search-wrap input[type='search'] {
+  width: 100%; padding: 10px 34px 10px 12px;
+  border: 1px solid var(--rule); border-radius: 8px;
   background: var(--paper); color: var(--ink);
   font: inherit; font-size: 14px;
+  transition: border-color .12s ease, box-shadow .12s ease;
 }
-.filters input[type='search']:focus, .field select:focus { border-color: var(--blue); outline: none; box-shadow: 0 0 0 2px var(--blue-wash); }
+.search-wrap input[type='search']::-webkit-search-cancel-button { display: none; }
+.search-wrap input[type='search']:focus { border-color: var(--blue); outline: none; box-shadow: 0 0 0 3px var(--blue-wash); }
+.search-wrap.is-active input[type='search'] { border-color: var(--blue); }
+.clear-q {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  width: 24px; height: 24px; line-height: 22px; text-align: center;
+  border: 0; border-radius: 50%; background: var(--rule-soft); color: var(--ink-secondary);
+  font-size: 17px; cursor: pointer;
+}
+.clear-q:hover { background: var(--blue-wash); color: var(--blue); }
 .field { display: flex; flex-direction: column; gap: 5px; font-size: 12px; color: var(--ink-secondary); }
-.field select { cursor: pointer; }
-.count { color: var(--ink-secondary); font-size: 13px; margin: 0 0 10px; }
+.field select {
+  width: 100%; padding: 10px 12px;
+  border: 1px solid var(--rule); border-radius: 8px;
+  background: var(--paper); color: var(--ink);
+  font: inherit; font-size: 14px; cursor: pointer;
+  transition: border-color .12s ease, box-shadow .12s ease;
+}
+.field select:focus { border-color: var(--blue); outline: none; box-shadow: 0 0 0 3px var(--blue-wash); }
+.field.is-active > span { color: var(--blue); font-weight: 600; }
+.field.is-active select { border-color: var(--blue); background: var(--blue-wash); }
+.results-bar { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 0 0 12px; }
+.count { color: var(--ink-secondary); font-size: 13px; }
 .count.error { color: #b3261e; }
-.rules { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
+.clear-all {
+  border: 0; background: none; padding: 0; color: var(--blue);
+  font: inherit; font-size: 13px; cursor: pointer;
+}
+.clear-all:hover { text-decoration: underline; }
+.rules { list-style: none; margin: 0; padding: 0; }
 .rules li {
   display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 0 14px;
-  padding: 13px 4px 14px;
-  border-bottom: 1px solid var(--rule-soft);
+  padding: 20px 12px 21px;
+  border-radius: 8px;
+  transition: background-color .12s ease;
 }
+.rules li + li { border-top: 1px solid var(--rule-soft); }
 .rules li:hover { background: var(--paper); }
+.rules.is-filtered li[hidden] { display: none; }
 .row-index {
   font-family: var(--mono); font-size: 12px; color: var(--ink-secondary);
-  text-align: right; padding-top: 2px; font-variant-numeric: tabular-nums;
+  text-align: right; padding-top: 3px; font-variant-numeric: tabular-nums;
   user-select: none;
 }
 .row-body { min-width: 0; }
-.head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
 .head code { font-family: var(--mono); font-size: 13px; font-weight: 600; overflow-wrap: anywhere; color: var(--ink); }
 a.rule-link { color: var(--blue); text-decoration: none; }
 a.rule-link:hover code { text-decoration: underline; text-underline-offset: 2px; }
@@ -389,10 +410,11 @@ a.rule-link:hover code { text-decoration: underline; text-underline-offset: 2px;
 .card { background: var(--paper); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 20px; margin: 16px 0; min-width: 0; }
 .card h2 { font-size: 14px; font-weight: 600; margin: 0 0 12px; }
 .lang-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-.lang-table th, .lang-table td { text-align: left; padding: 9px 12px; border-top: 1px solid var(--rule-soft); vertical-align: top; font-size: 13px; overflow-wrap: anywhere; }
+.lang-table th, .lang-table td { text-align: left; padding: 16px 14px; border-top: 1px solid var(--rule-soft); vertical-align: top; font-size: 13px; overflow-wrap: anywhere; }
 .lang-table thead th { border-top: 0; color: var(--ink-secondary); font-size: 12px; font-weight: 600; }
 .lang-table tbody th { color: var(--ink-secondary); font-family: var(--mono); font-size: 12px; font-weight: 600; white-space: nowrap; width: 92px; }
 .lang-table tbody tr:nth-child(even) { background: #fafbfc; }
+.lang-table tbody th { padding-top: 18px; }
 .msg-text { margin: 0; white-space: pre-wrap; word-break: break-word; }
 .kv { display: flex; align-items: baseline; gap: 12px; padding: 6px 0; flex-wrap: wrap; font-size: 13px; }
 .kv .k { font-family: var(--mono); font-size: 12px; color: var(--ink-secondary); min-width: 110px; }
@@ -460,13 +482,10 @@ a.rule-link:hover code { text-decoration: underline; text-underline-offset: 2px;
 
 const SITE_I18N = {
   zh: {
-    introText: 'Opengrep Studio 内置规则的可浏览索引',
+    clearFilters: '清除筛选',
     introLink: '查看项目与源码',
     title: 'Opengrep Studio 规则百科',
-    statsRules: '规则总数',
-    statsPacks: '规则包',
     statsLangs: '界面语言',
-    statsCwe: 'CWE 覆盖',
     searchPlaceholder: '搜索规则 ID、说明、CWE、OWASP…',
     filterPack: '语言包',
     filterSeverity: '严重级',
@@ -498,13 +517,10 @@ const SITE_I18N = {
     subCwe: 'CWE 详情',
   },
   en: {
-    introText: 'A browsable index of the rules built into Opengrep Studio',
+    clearFilters: 'Clear filters',
     introLink: 'View project on GitHub',
     title: 'Opengrep Studio Rule Wiki',
-    statsRules: 'Total rules',
-    statsPacks: 'Rule packs',
     statsLangs: 'Interface language',
-    statsCwe: 'CWE coverage',
     searchPlaceholder: 'Search rule ID, description, CWE, OWASP…',
     filterPack: 'Rule pack',
     filterSeverity: 'Severity',
@@ -536,13 +552,10 @@ const SITE_I18N = {
     subCwe: 'CWE details',
   },
   'zh-Hant': {
-    introText: 'Opengrep Studio 內建規則的可瀏覽索引',
+    clearFilters: '清除篩選',
     introLink: '查看專案與原始碼',
     title: 'Opengrep Studio 規則百科',
-    statsRules: '規則總數',
-    statsPacks: '規則包',
     statsLangs: '介面語言',
-    statsCwe: 'CWE 覆蓋',
     searchPlaceholder: '搜尋規則 ID、說明、CWE、OWASP…',
     filterPack: '語言包',
     filterSeverity: '嚴重度',
@@ -574,13 +587,10 @@ const SITE_I18N = {
     subCwe: 'CWE 詳情',
   },
   ja: {
-    introText: 'Opengrep Studio に組み込まれたルールの閲覧用索引',
+    clearFilters: '条件をクリア',
     introLink: 'プロジェクトを見る',
     title: 'Opengrep Studio ルール百科',
-    statsRules: 'ルール総数',
-    statsPacks: 'ルールパック',
     statsLangs: '表示言語',
-    statsCwe: 'CWE カバレッジ',
     searchPlaceholder: 'ルール ID・説明・CWE・OWASP を検索',
     filterPack: 'ルールパック',
     filterSeverity: '重要度',
@@ -612,13 +622,10 @@ const SITE_I18N = {
     subCwe: 'CWE 詳細',
   },
   ko: {
-    introText: 'Opengrep Studio 내장 규칙의 탐색 색인',
+    clearFilters: '필터 지우기',
     introLink: '프로젝트 보기',
     title: 'Opengrep Studio 규칙 백과',
-    statsRules: '규칙 총수',
-    statsPacks: '규칙 팩',
     statsLangs: '인터페이스 언어',
-    statsCwe: 'CWE 커버리지',
     searchPlaceholder: '규칙 ID·설명·CWE·OWASP 검색',
     filterPack: '규칙 팩',
     filterSeverity: '심각도',
@@ -650,13 +657,10 @@ const SITE_I18N = {
     subCwe: 'CWE 상세',
   },
   de: {
-    introText: 'Ein durchsuchbares Verzeichnis der in Opengrep Studio enthaltenen Regeln',
+    clearFilters: 'Filter zurücksetzen',
     introLink: 'Projekt auf GitHub ansehen',
     title: 'Opengrep Studio Regelwiki',
-    statsRules: 'Regeln gesamt',
-    statsPacks: 'Regelpakete',
     statsLangs: 'Oberflächensprache',
-    statsCwe: 'CWE-Abdeckung',
     searchPlaceholder: 'Regel-ID, Beschreibung, CWE, OWASP durchsuchen',
     filterPack: 'Regelpaket',
     filterSeverity: 'Schweregrad',
@@ -688,13 +692,10 @@ const SITE_I18N = {
     subCwe: 'CWE-Details',
   },
   fr: {
-    introText: 'Un index consultable des règles intégrées à Opengrep Studio',
+    clearFilters: 'Effacer les filtres',
     introLink: 'Voir le projet sur GitHub',
     title: 'Opengrep Studio Wiki des règles',
-    statsRules: 'Règles au total',
-    statsPacks: 'Paquets de règles',
     statsLangs: 'Langue de l’interface',
-    statsCwe: 'Couverture CWE',
     searchPlaceholder: 'Rechercher par ID de règle, description, CWE, OWASP…',
     filterPack: 'Paquet',
     filterSeverity: 'Gravité',
@@ -726,13 +727,10 @@ const SITE_I18N = {
     subCwe: 'Détail du CWE',
   },
   ru: {
-    introText: 'Просматриваемый указатель правил, встроенных в Opengrep Studio',
+    clearFilters: 'Сбросить фильтры',
     introLink: 'Открыть проект на GitHub',
     title: 'Opengrep Studio вики правил',
-    statsRules: 'Всего правил',
-    statsPacks: 'Пакеты правил',
     statsLangs: 'Язык интерфейса',
-    statsCwe: 'Покрытие CWE',
     searchPlaceholder: 'Поиск по ID правила, описанию, CWE, OWASP…',
     filterPack: 'Пакет',
     filterSeverity: 'Серьёзность',
@@ -987,21 +985,26 @@ function renderHome() {
 <header>
   <div>
     <h1 data-i18n="title">Opengrep Studio 规则百科</h1>
-    <p class="intro"><span data-i18n="introText">Opengrep Studio 内置规则的可浏览索引</span> · <a href="https://github.com/Lyfxxk/Opengrep-Studio" data-i18n="introLink">查看项目与源码</a></p>
+    <p class="intro"><a href="https://github.com/Lyfxxk/Opengrep-Studio" data-i18n="introLink">查看项目与源码</a></p>
   </div>
   <div class="head-actions">
     <a class="navlink" href="cwe/index.html" data-i18n="cweIndexLink">CWE 索引</a>
     <select id="lang" aria-label="界面语言"></select>
   </div>
 </header>
-<section id="stats" class="stats"></section>
 <section class="filters">
-  <input id="q" type="search" autocomplete="off">
+  <div class="search-wrap">
+    <input id="q" type="search" autocomplete="off" spellcheck="false">
+    <button type="button" id="clear-q" class="clear-q" aria-label="清除搜索" hidden>×</button>
+  </div>
   <label class="field"><span id="label-pack" data-i18n="filterPack">语言包</span><select id="pack"></select></label>
   <label class="field"><span id="label-severity" data-i18n="filterSeverity">严重级</span><select id="severity"></select></label>
   <label class="field"><span id="label-cwe" data-i18n="filterCwe">CWE</span><select id="cwe"></select></label>
 </section>
-<div id="count" class="count"></div>
+<div class="results-bar">
+  <div id="count" class="count"></div>
+  <button type="button" id="clear-all" class="clear-all" data-i18n="clearFilters" hidden>清除筛选</button>
+</div>
 <ul id="rules" class="rules"></ul>
 <footer id="footer" class="footer"></footer>
 <noscript><p class="count error">需要启用 JavaScript 才能浏览规则列表。</p></noscript>
@@ -1016,13 +1019,14 @@ function renderHome() {
   var rowById = new Map();
   var listEl = document.getElementById('rules');
   var countEl = document.getElementById('count');
-  var statsEl = document.getElementById('stats');
   var footerEl = document.getElementById('footer');
   var langEl = document.getElementById('lang');
   var qEl = document.getElementById('q');
   var packEl = document.getElementById('pack');
   var severityEl = document.getElementById('severity');
   var cweEl = document.getElementById('cwe');
+  var clearQEl = document.getElementById('clear-q');
+  var clearAllEl = document.getElementById('clear-all');
 
   function t(key) {
     var pack = I18N[state.lang];
@@ -1085,19 +1089,6 @@ function renderHome() {
     langEl.setAttribute('aria-label', t('statsLangs'));
     footerEl.textContent = fmt('updated', { time: String(data.generatedAt || '').slice(0, 10) });
   }
-  function renderStats() {
-    var dict = data.cwe[state.lang] || {};
-    var covered = refCwes.filter(function (id) { return dict[cweKey(id)]; }).length;
-    var items = [
-      { v: data.ruleCount, k: t('statsRules') },
-      { v: data.packs.length, k: t('statsPacks') },
-      { v: data.languages.length, k: t('statsLangs') },
-      { v: covered + ' / ' + Object.keys(dict).length, k: t('statsCwe') }
-    ];
-    statsEl.innerHTML = items.map(function (item) {
-      return '<div class="stat"><div class="v">' + escapeHtml(item.v) + '</div><div class="k">' + escapeHtml(item.k) + '</div></div>';
-    }).join('');
-  }
   function fillSelect(sel, options, current) {
     sel.innerHTML = options.map(function (o) {
       return '<option value="' + escapeHtml(o.v) + '"' + (o.v === current ? ' selected' : '') + '>' + escapeHtml(o.k) + '</option>';
@@ -1140,13 +1131,31 @@ function renderHome() {
     });
     countEl.className = shown === 0 && filtered ? 'count error' : 'count';
     countEl.textContent = shown === 0 && filtered ? t('noMatch') : fmt('showing', { shown: shown, total: data.ruleCount });
+    clearQEl.hidden = !state.q;
+    clearAllEl.hidden = !filtered;
+    qEl.parentElement.classList.toggle('is-active', Boolean(state.q));
+    [packEl, severityEl, cweEl].forEach(function (sel) {
+      sel.closest('.field').classList.toggle('is-active', Boolean(sel.value));
+    });
+    listEl.classList.toggle('is-filtered', filtered);
+  }
+  function clearAll() {
+    state.q = '';
+    state.pack = '';
+    state.severity = '';
+    state.cwe = '';
+    qEl.value = '';
+    packEl.value = '';
+    severityEl.value = '';
+    cweEl.value = '';
+    apply();
+    qEl.focus();
   }
   function setLang(lang) {
     state.lang = data.languages.indexOf(lang) >= 0 ? lang : 'zh';
     document.documentElement.lang = state.lang === 'zh' ? 'zh-CN' : state.lang;
     try { localStorage.setItem('rules-site-lang', state.lang); } catch (e) {}
     applyTexts();
-    renderStats();
     renderFilters();
     renderList();
     apply();
@@ -1173,6 +1182,22 @@ function renderHome() {
       qEl.addEventListener('input', function () {
         clearTimeout(timer);
         timer = setTimeout(function () { state.q = qEl.value; apply(); }, 120);
+      });
+      qEl.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') { state.q = ''; qEl.value = ''; apply(); }
+      });
+      clearQEl.addEventListener('click', function () {
+        state.q = '';
+        qEl.value = '';
+        apply();
+        qEl.focus();
+      });
+      clearAllEl.addEventListener('click', clearAll);
+      document.addEventListener('keydown', function (e) {
+        if (e.key === '/' && document.activeElement !== qEl && !e.metaKey && !e.ctrlKey && !e.altKey) {
+          e.preventDefault();
+          qEl.focus();
+        }
       });
       packEl.addEventListener('change', function () { state.pack = packEl.value; apply(); });
       severityEl.addEventListener('change', function () { state.severity = severityEl.value; apply(); });
