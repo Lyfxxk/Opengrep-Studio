@@ -704,7 +704,8 @@ assert(igUp.json.fileCount === 2 && igUp.json.ignoredCount === 3,
 const igUpOff = await api('POST', `/api/projects/${igProject.id}/source`,
   fileForm(makeIgnoreZip(), 'application/zip', 'ig-off.zip', { respectGitignore: 'false' }));
 assert(igUpOff.status === 200 && igUpOff.json.fileCount === 6 && igUpOff.json.ignoredCount === 0,
-  `关闭过滤保留全部 6 个文件 (got ${igUpOff.json.fileCount}/${igUpOff.json.ignoredCount})`);
+  `关闭过滤保留全部 6 个文件 (got ${igUpOff.json.fileCount}/${igUpOff.json.ignoredCount})`,
+  JSON.stringify({ status: igUpOff.status, body: igUpOff.json }));
 const allIgnoredZip = new AdmZip();
 allIgnoredZip.addFile('demo-src/.gitignore', Buffer.from('*\n', 'utf8'));
 allIgnoredZip.addFile('demo-src/only.env', Buffer.from('A=1\n', 'utf8'));
@@ -1364,7 +1365,7 @@ assert((kbEn.json?.fixSuggestion ?? '').length > 0, '英文修复建议回落简
 assert(
   kbEn.json?.cwe?.some((item) => (item.name ?? '').length > 0) === true,
   '英文 CWE 名回落简体词典', JSON.stringify(kbEn.json?.cwe));
-const kbBadLang = await api('GET', '/api/rules/knowledge/aead-no-final?lang=fr');
+const kbBadLang = await api('GET', '/api/rules/knowledge/aead-no-final?lang=xx');
 assert(kbBadLang.json?.message === kbUpstream.json?.message, '非法 lang 回落简体', kbBadLang.json?.message);
 
 const kbJa = await api('GET', '/api/rules/knowledge/aead-no-final?lang=ja');
