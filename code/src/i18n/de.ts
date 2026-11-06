@@ -673,7 +673,7 @@ const de: typeof zh = {
     reviewLine: 'Geprüft: {{reviewed}} – bestätigt {{confirmed}} · Falsch-Positiv {{falsePositives}} · akzeptiert {{accepted}}.',
     reviewNone: 'In diesem Scan fand keine manuelle Prüfung statt; alle Funde sind die Rohbewertungen der Engine.',
     noIssues: 'In diesem Scan wurden keine Risikofunde festgestellt.',
-    disclaimer: 'Regeltreffer und Schweregrade werden automatisch von der opengrep-Engine erzeugt; bitte prüfen Sie vor dem Geschäftshintergrund manuell nach. Vollständige Beschreibungen finden Sie unter „Anhang · Regelbeschreibungen“.',
+    disclaimer: 'Regeltreffer und Schweregrade werden automatisch von der opengrep-Engine erzeugt; bitte prüfen Sie die Treffer vor dem Hintergrund des Geschäftskontexts manuell nach. Vollständige Beschreibungen finden Sie unter „Anhang · Regelbeschreibungen“.',
     footer: 'Dieser Bericht wurde automatisch von der Opengrep Studio Code-Audit-Workbench erstellt · Erstellungszeitpunkt {{time}}',
   },
   lab: {
@@ -978,7 +978,7 @@ const de: typeof zh = {
     demoEngineHint: 'Demomodus: Backend und Engine sind nicht verbunden; alle angezeigten Daten sind lokale Demodaten.',
     demoUpdateReason: 'Der Demomodus prüft Engine-Updates nicht online',
     demoUpgradeUnsupported: 'Der Demomodus unterstützt kein Engine-Upgrade',
-    demoNoRiskConclusion: 'Keine der aktivierten Regeln ist in diesem Scan angeschlagen; es wurden keine Risikofunde festgestellt.',
+    demoNoRiskConclusion: 'Keine der aktivierten Regeln hat in diesem Scan angeschlagen; es wurden keine Risikofunde festgestellt.',
     demoConclusion: 'Dieser Scan hat {{total}} Risikofunde ergeben – Schweregrade: Kritisch {{critical}} · Hoch {{high}} · Mittel {{medium}} · Niedrig {{low}}.',
     demoRootDir: '(Stammverzeichnis)',
   },

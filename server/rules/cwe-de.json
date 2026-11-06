@@ -5,7 +5,7 @@
   },
   "20": {
     "name": "Unzureichende Eingabevalidierung",
-    "fix": "Validieren Sie alle externen Eingaben an der Vertrauensgrenze per Whitelist (Typ, Länge, Bereich, Format) und verweigern Sie standardmäßig."
+    "fix": "Validieren Sie alle externen Eingaben an der Vertrauensgrenze per Allowlist (Typ, Länge, Bereich, Format) und verweigern Sie standardmäßig."
   },
   "22": {
     "name": "Path Traversal",
@@ -25,10 +25,10 @@
   },
   "78": {
     "name": "OS-Command-Injection",
-    "fix": "Verketten Sie keine Shell-Befehle; verwenden Sie parametrisierte APIs (execFile/spawn mit Array-Argumenten) oder Bibliotheksfunktionen statt einer Shell, prüfen Sie ggf. per Whitelist und führen Sie mit minimalen Rechten aus."
+    "fix": "Verketten Sie keine Shell-Befehle; verwenden Sie parametrisierte APIs (execFile/spawn mit Array-Argumenten) oder Bibliotheksfunktionen statt einer Shell, prüfen Sie ggf. per Allowlist und führen Sie mit minimalen Rechten aus."
   },
   "79": {
-    "name": "Cross-Site Scripting (XSS)",
+    "name": "Cross-Site-Scripting (XSS)",
     "fix": "Kodieren Sie Ausgaben nach Kontext (HTML/Attribut/JS/URL), lassen Sie die Template-Engine automatisch escapen, verbieten Sie nicht vertrauenswürdiges HTML und konfigurieren Sie CSP."
   },
   "80": {
@@ -61,11 +61,11 @@
   },
   "96": {
     "name": "Unsichere dynamische Code-Auswertung bzw. -Einbindung",
-    "fix": "Ersetzen Sie dynamisch zusammengesetzte Pfade, Klassennamen oder Templatenamen durch Whitelist-Zuordnungen."
+    "fix": "Ersetzen Sie dynamisch zusammengesetzte Pfade, Klassennamen oder Templatenamen durch Allowlist-Zuordnungen."
   },
   "98": {
     "name": "Remote File Inclusion",
-    "fix": "Deaktivieren Sie das Einbinden entfernter Dateien; verankern Sie Include-Pfade in einer Whitelist und prüfen Sie mit realpath."
+    "fix": "Deaktivieren Sie das Einbinden entfernter Dateien; verankern Sie Include-Pfade in einer Allowlist und prüfen Sie mit realpath."
   },
   "113": {
     "name": "HTTP-Response-Splitting",
@@ -93,7 +93,7 @@
   },
   "155": {
     "name": "Unzureichende Neutralisierung von Wildcards",
-    "fix": "Übergeben Sie externe Eingaben nicht an die Wildcard-Expansion der Shell; maskieren Sie beim Matching Sonderzeichen oder arbeiten Sie mit einer Whitelist."
+    "fix": "Übergeben Sie externe Eingaben nicht an die Wildcard-Expansion der Shell; maskieren Sie beim Matching Sonderzeichen oder arbeiten Sie mit einer Allowlist."
   },
   "183": {
     "name": "Zu großzügige Allowlist",
@@ -224,7 +224,7 @@
     "fix": "Verifizieren Sie Signaturen vollständig (Vergleich in konstanter Zeit), verankern Sie Algorithmus und Schlüsselherkunft und wehren Sie Algorithmus-Confusion ab."
   },
   "352": {
-    "name": "Cross-Site Request Forgery (CSRF)",
+    "name": "Cross-Site-Request-Forgery (CSRF)",
     "fix": "CSRF-Token + SameSite-Attribut des Cookies + Prüfung des Origin."
   },
   "377": {
@@ -257,7 +257,7 @@
   },
   "470": {
     "name": "Unsicherer Datei-Include",
-    "fix": "Arbeiten Sie mit einer Pfad-Whitelist und realpath-Kanonisierung; fügen Sie Include-Pfade nicht direkt aus externen Eingaben zusammen."
+    "fix": "Arbeiten Sie mit einer Pfad-Allowlist und realpath-Kanonisierung; fügen Sie Include-Pfade nicht direkt aus externen Eingaben zusammen."
   },
   "477": {
     "name": "Verwendung veralteter Funktionen",
@@ -305,7 +305,7 @@
   },
   "601": {
     "name": "Open Redirect",
-    "fix": "Prüfen Sie Weiterleitungsziele per Whitelist oder verwenden Sie relative Pfade; vollständige externe URLs werden nicht akzeptiert."
+    "fix": "Prüfen Sie Weiterleitungsziele per Allowlist oder verwenden Sie relative Pfade; vollständige externe URLs werden nicht akzeptiert."
   },
   "611": {
     "name": "XXE (Injection von XML-External-Entities)",
@@ -341,7 +341,7 @@
   },
   "706": {
     "name": "Verwendung manipulierbarer Variablennamen",
-    "fix": "Greifen Sie über Whitelist-Zuordnungen auf Variablen/Felder zu und setzen Sie keine Bezeichner aus externen Eingaben zusammen."
+    "fix": "Greifen Sie über Allowlist-Zuordnungen auf Variablen/Felder zu und setzen Sie keine Bezeichner aus externen Eingaben zusammen."
   },
   "774": {
     "name": "Unbegrenzte Größe von Speicherzuweisungen",
@@ -373,7 +373,7 @@
   },
   "915": {
     "name": "Mass Assignment",
-    "fix": "Whitelisten Sie die Felder vom Anfrageobjekt zum Modell explizit; das Durchreichen ganzer Objekte ist tabu."
+    "fix": "Erlauben Sie nur explizit gelistete Felder vom Anfrageobjekt zum Modell; das Durchreichen ganzer Objekte ist tabu."
   },
   "916": {
     "name": "Unzureichende Rechenstärke beim Passwort-Hashing",
@@ -381,7 +381,7 @@
   },
   "918": {
     "name": "SSRF (Server-Side Request Forgery)",
-    "fix": "Prüfen Sie Ziel-URLs per Whitelist, blockieren Sie interne/Loopback-/Metadaten-Adressen und leiten Sie ausgehende Anfragen einheitlich über einen kontrollierten Proxy."
+    "fix": "Prüfen Sie Ziel-URLs per Allowlist, blockieren Sie interne/Loopback-/Metadaten-Adressen und leiten Sie ausgehende Anfragen einheitlich über einen kontrollierten Proxy."
   },
   "921": {
     "name": "Sensible Daten auf Medien ohne Zugriffskontrolle",
