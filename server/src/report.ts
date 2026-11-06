@@ -614,7 +614,132 @@ const REPORT_TEXT_KO: typeof REPORT_TEXT_ZH = {
     ` 수동 검토 ${s.reviewed}건 완료(확인됨 ${s.confirmed}, 오탐 ${s.falsePositives}, 조건부 수용 ${s.accepted}).`,
 };
 
-const REPORT_TEXT_RU: typeof REPORT_TEXT_ZH = { ...REPORT_TEXT_EN, htmlLang: 'ru' };
+const RU_SEVERITY: Record<Severity, string> = {
+  critical: 'Критический',
+  high: 'Высокий',
+  medium: 'Средний',
+  low: 'Низкий',
+};
+const RU_COMPARISON: Record<ComparisonStatus, string> = {
+  new: 'Новая',
+  fixed: 'Исправлена',
+  remaining: 'Осталась',
+};
+const RU_REVIEW: Record<ReviewStatus, string> = {
+  pending: 'Ожидает проверки',
+  confirmed: 'Подтверждена',
+  false_positive: 'Ложное срабатывание',
+  accepted: 'Принята',
+};
+
+function ruPlural(n: number, one: string, few: string, many: string): string {
+  const mod100 = Math.abs(n) % 100;
+  const mod10 = mod100 % 10;
+  if (mod100 >= 11 && mod100 <= 14) return many;
+  if (mod10 === 1) return one;
+  if (mod10 >= 2 && mod10 <= 4) return few;
+  return many;
+}
+
+function ruSourceFiles(files: string): string {
+  const n = Number(files);
+  return Number.isInteger(n) && n > 0
+    ? `${files} ${ruPlural(n, 'исходный файл', 'исходных файла', 'исходных файлов')}`
+    : `${files} исходных файлов`;
+}
+
+const REPORT_TEXT_RU: typeof REPORT_TEXT_ZH = {
+  htmlLang: 'ru',
+  brand: 'Opengrep Studio · Среда аудита кода',
+  docTitle: 'Отчёт о тестовом аудите кода',
+  severity: RU_SEVERITY,
+  comparison: RU_COMPARISON,
+  review: RU_REVIEW,
+  sections: {
+    actions: 'Список действий · по файлам',
+    details: 'Детали проблем',
+    method: 'Методика и доказательства',
+    rulesAppendix: 'Приложение · Описания правил',
+  },
+  meta: {
+    engine: 'Движок сканирования',
+    sourceHash: 'Хеш исходного кода',
+    commandLine: 'Командная строка движка',
+    generatedAt: 'Время формирования отчёта',
+    finishedAt: 'Время завершения',
+    rulesLabel: 'Правила',
+  },
+  metrics: { total: 'Всего рисков', critical: 'Критический', high: 'Высокий', files: 'Затронутые файлы' },
+  distTitle: 'Распределение рисков',
+  top5Title: '5 файлов с наибольшим числом проблем',
+  top5Hint: 'Сортировка выполнена по количеству и не отражает приоритетность рисков; приоритетные риски см. в разделе «Список действий».',
+  thFile: 'Файл',
+  thCount: 'Всего',
+  thMaxSeverity: 'Максимальная критичность',
+  scopeLabel: 'Область проверки',
+  baselineLabel: 'Базовое сравнение',
+  distLabel: 'Распределение проблем',
+  distSentence: (total: number, files: number, rules: number) =>
+    `${total} ${ruPlural(total, 'проблема', 'проблемы', 'проблем')} в ${files} ${ruPlural(files, 'файле', 'файлах', 'файлах')} и ${rules} ${ruPlural(rules, 'правиле', 'правилах', 'правилах')}`,
+  firstScanNoBaseline: 'Первое сканирование — базовый скан для сравнения отсутствует',
+  baselineSentence: (id: string, added: number, remaining: number, fixed: number) =>
+    `С базовым сканом ${id}: новых ${added} · оставшихся ${remaining} · исправленных ${fixed}`,
+  actionsHint: (files: number) =>
+    `Всего ${files} ${ruPlural(files, 'файл', 'файла', 'файлов')}; порядок сортировки: «сначала максимальная критичность, при равном уровне — по убыванию числа проблем». Рекомендуется планировать исправления сверху вниз.`,
+  thFileMainIssue: 'Файл / основная проблема',
+  groupCount: (count: number, files: number) =>
+    `${count} ${ruPlural(count, 'проблема', 'проблемы', 'проблем')} · ${files} ${ruPlural(files, 'файл', 'файла', 'файлов')}`,
+  groupHint: {
+    critical: 'Может непосредственно привести к удалённому выполнению кода или утечке учётных данных; рекомендуется исправить немедленно и подготовить отдельное пояснение.',
+    high: 'Расположена на типовых путях атаки; рекомендуется исправить в текущей итерации.',
+    medium: 'Требует определённых предусловий или имеет ограниченное воздействие; рекомендуется внести в список технического долга следующей итерации.',
+    low: 'Вопросы соблюдения стандартов кодирования и сопровождаемости; можно исправлять попутно с повседневными изменениями.',
+  },
+  fixedHeading: (count: number) => `Исправлено (сравнение с базовым сканом, ${count})`,
+  appendixHint: (rules: number) =>
+    `Отсортировано ${rules} ${ruPlural(rules, 'правило', 'правила', 'правил')} по числу срабатываний; полное описание правила (включая рекомендации по исправлению) приводится здесь лишь один раз.`,
+  ruleStat: (count: number, files: number) =>
+    `${count} ${ruPlural(count, 'срабатывание', 'срабатывания', 'срабатываний')} · ${files} ${ruPlural(files, 'файл', 'файла', 'файлов')}`,
+  noMessage: '(примечание пока отсутствует)',
+  noDescription: '(описание не предоставлено)',
+  unknownPath: '(неизвестный путь)',
+  methodSub: { packs: 'Наборы правил', repro: 'Движок и воспроизводимость', review: 'Проверка и покрытие', exclusions: 'Исключения', boundaries: 'Границы покрытия' },
+  packThName: 'Пакет правил',
+  packThId: 'Идентификатор',
+  noPacks: 'Записи о пакетах правил отсутствуют',
+  sarifImport: (tool?: string) => (tool ? `Импорт SARIF (${tool})` : 'Импорт SARIF'),
+  filesChecked: 'Просканированные файлы',
+  filesUnit: (n: number) => `${n} ${ruPlural(n, 'файл', 'файла', 'файлов')}`,
+  issuesUnit: (n: number) => `${n} ${ruPlural(n, 'проблема', 'проблемы', 'проблем')}`,
+  durationSeconds: (s: number) => `${s} сек.`,
+  durationMinutes: (m: number, s: number) => `${m} мин ${s} сек`,
+  exclusions: 'Соблюдается .gitignore проекта; каталоги node_modules и .git пропускаются',
+  notCovered: 'Этот отчёт отражает только срабатывания загруженных правил и не означает отсутствия иных дефектов',
+  reviewLabel: 'Ручная проверка',
+  reviewLine: (s: ReportReviewSummary) =>
+    `Проверено ${s.reviewed} ${ruPlural(s.reviewed, 'проблема', 'проблемы', 'проблем')}: подтверждено ${s.confirmed} · ложных срабатываний ${s.falsePositives} · принято ${s.accepted}.`,
+  reviewNone: 'Ручная проверка для этого сканирования не проводилась; все проблемы — исходные вердикты движка.',
+  noIssues: 'В этом сканировании проблем, представляющих риск, не обнаружено.',
+  snippetOverflow: (limit: number) =>
+    `Превышен лимит фрагментов кода — показаны первые ${limit}; остальное смотрите на странице результатов сканирования.`,
+  footer: (time: string) =>
+    `Отчёт автоматически сформирован Opengrep Studio · время формирования ${time} · срабатывания правил и критичность получены от движка opengrep; проверьте результаты вручную с учётом бизнес-контекста.`,
+  listSeparator: ', ',
+  sentenceSeparator: ' ',
+  severityPhrase: (label: string, count: number) => `${label}: ${count}`,
+  conclusionNoIssues: (files: string) =>
+    `В этом сканировании проверено ${ruSourceFiles(files)}; ни одно из включённых правил не сработало, проблем не обнаружено.`,
+  conclusionSummary: (files: string, total: number, sevText: string) =>
+    `В этом сканировании проверено ${ruSourceFiles(files)}; обнаружено ${total} ${ruPlural(total, 'проблема', 'проблемы', 'проблем')} (${sevText}).`,
+  comparisonSentence: (baseline: string, added: number, remaining: number, fixed: number) =>
+    `По сравнению с базовым сканом ${baseline}: новых ${added}, оставшихся ${remaining}, исправленных ${fixed}.`,
+  urgentHint: (urgent: number) =>
+    `Рекомендуется в первую очередь устранить проблемы критического и высокого уровня (всего ${urgent}); после исправления выполните повторное сканирование для проверки.`,
+  nonUrgentHint: () =>
+    'Сейчас проблем критического и высокого уровня нет; устранение проблем среднего и низкого уровня стоит планировать по бизнес-приоритетам.',
+  summaryReview: (s: ReportReviewSummary) =>
+    ` Ручная проверка завершена: ${s.reviewed} ${ruPlural(s.reviewed, 'проблема', 'проблемы', 'проблем')} (подтверждено ${s.confirmed}, ложных срабатываний ${s.falsePositives}, принято с оговорками ${s.accepted}).`,
+};
 
 const REPORT_TEXT_FR: typeof REPORT_TEXT_ZH = { ...REPORT_TEXT_EN, htmlLang: 'fr' };
 
