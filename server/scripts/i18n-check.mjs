@@ -46,6 +46,7 @@ const readJson = (file) =>
   JSON.parse(fs.readFileSync(path.join(root, 'server', 'rules', file), 'utf8'));
 
 const ruleLangs = ['zh-Hant', 'ja', 'ko', 'ru', 'fr', 'de'];
+const cjkFreeDictLangs = new Set(['ru', 'fr', 'de']);
 const checkPair = (prefix, display) => {
   const zh = readJson(`${prefix}-zh.json`);
   const counts = [`zh=${Object.keys(zh).length}`];
@@ -65,6 +66,17 @@ const checkPair = (prefix, display) => {
       const actualVars = varsOfValue(other[key]);
       if (expectedVars !== actualVars) {
         problems.push(`${prefix}-${lang} 键 ${key} 的插值变量不一致：zh="${expectedVars}" ${lang}="${actualVars}"`);
+      }
+      if (cjkFreeDictLangs.has(lang)) {
+        const values =
+          typeof other[key] === 'string'
+            ? [other[key]]
+            : Object.values(other[key] ?? {}).map((item) => String(item ?? ''));
+        for (const value of values) {
+          if (CJK.test(value)) {
+            problems.push(`${prefix}-${lang} 键 ${key} 仍含汉字：${value.slice(0, 40)}`);
+          }
+        }
       }
     }
     counts.push(`${lang}=${Object.keys(other).length}`);
@@ -144,6 +156,9 @@ const CJK = /[\u4e00-\u9fff]/;
 const hanChecks = [
   ['en', new Set(['lang.zh', 'lang.zhHant', 'lang.ja', 'lang.ko'])],
   ['ko', new Set(['lang.zh', 'lang.zhHant', 'lang.ja'])],
+  ['ru', new Set(['lang.zh', 'lang.zhHant'])],
+  ['fr', new Set(['lang.zh', 'lang.zhHant'])],
+  ['de', new Set(['lang.zh', 'lang.zhHant'])],
 ];
 for (const [lang, cjkAllowed] of hanChecks) {
   for (const [key, value] of uiValues[lang]) {
