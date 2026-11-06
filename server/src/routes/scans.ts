@@ -524,7 +524,7 @@ scanRoutes.get('/api/scans/:scanId/manifest', asyncHandler(async (req, res) => {
                 : lang === 'ru'
                   ? 'sha256 (пути сортируются по относительному пути, затем вычисляется хеш последовательности путь + \\0 + содержимое файла + \\0)'
                   : lang === 'fr'
-                    ? 'sha256（按相对路径排序，对 路径 + \\0 + 文件内容 + \\0 序列计算）'
+                    ? 'sha256 (chemins triés, puis hachage de la séquence chemin + \\0 + contenu du fichier + \\0)'
                     : lang === 'de'
                       ? 'sha256（按相对路径排序，对 路径 + \\0 + 文件内容 + \\0 序列计算）'
                       : 'sha256（按相对路径排序，对 路径 + \\0 + 文件内容 + \\0 序列计算）',

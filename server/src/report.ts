@@ -741,7 +741,127 @@ const REPORT_TEXT_RU: typeof REPORT_TEXT_ZH = {
     ` Ручная проверка завершена: ${s.reviewed} ${ruPlural(s.reviewed, 'проблема', 'проблемы', 'проблем')} (подтверждено ${s.confirmed}, ложных срабатываний ${s.falsePositives}, принято с оговорками ${s.accepted}).`,
 };
 
-const REPORT_TEXT_FR: typeof REPORT_TEXT_ZH = { ...REPORT_TEXT_EN, htmlLang: 'fr' };
+const FR_SEVERITY: Record<Severity, string> = {
+  critical: 'Critique',
+  high: 'Élevé',
+  medium: 'Moyen',
+  low: 'Faible',
+};
+const FR_COMPARISON: Record<ComparisonStatus, string> = {
+  new: 'Nouveau',
+  fixed: 'Corrigé',
+  remaining: 'Persistant',
+};
+const FR_REVIEW: Record<ReviewStatus, string> = {
+  pending: 'En attente de revue',
+  confirmed: 'Confirmé',
+  false_positive: 'Faux positif',
+  accepted: 'Accepté',
+};
+
+function frPlural(n: number, one: string, many: string): string {
+  return n > 1 ? many : one;
+}
+
+function frSourceFiles(files: string): string {
+  const n = Number(files);
+  return Number.isInteger(n) && n > 0
+    ? `${files} ${frPlural(n, 'fichier source', 'fichiers sources')}`
+    : `${files} fichiers sources`;
+}
+
+const REPORT_TEXT_FR: typeof REPORT_TEXT_ZH = {
+  htmlLang: 'fr',
+  brand: 'Opengrep Studio · Atelier d’audit de code',
+  docTitle: 'Rapport de test d’audit de code',
+  severity: FR_SEVERITY,
+  comparison: FR_COMPARISON,
+  review: FR_REVIEW,
+  sections: {
+    actions: 'Liste d’actions · par fichier',
+    details: 'Détail des problèmes',
+    method: 'Méthode et preuves',
+    rulesAppendix: 'Annexe · Descriptions des règles',
+  },
+  meta: {
+    engine: 'Moteur d’analyse',
+    sourceHash: 'Hachage du code source',
+    commandLine: 'Ligne de commande du moteur',
+    generatedAt: 'Rapport généré le',
+    finishedAt: 'Terminé le',
+    rulesLabel: 'Règles',
+  },
+  metrics: { total: 'Total des risques', critical: 'Critique', high: 'Élevé', files: 'Fichiers concernés' },
+  distTitle: 'Répartition des risques',
+  top5Title: '5 fichiers comptant le plus de problèmes',
+  top5Hint: 'Le tri est effectué par nombre de problèmes et ne reflète pas la priorité des risques ; les priorités figurent dans la « Liste d’actions ».',
+  thFile: 'Fichier',
+  thCount: 'Total',
+  thMaxSeverity: 'Sévérité maximale',
+  scopeLabel: 'Périmètre de vérification',
+  baselineLabel: 'Comparaison à la référence',
+  distLabel: 'Répartition des problèmes',
+  distSentence: (total: number, files: number, rules: number) =>
+    `${total} ${frPlural(total, 'problème', 'problèmes')} touchant ${files} ${frPlural(files, 'fichier', 'fichiers')} et ${rules} ${frPlural(rules, 'règle', 'règles')}`,
+  firstScanNoBaseline: 'Première analyse, aucune référence à comparer',
+  baselineSentence: (id: string, added: number, remaining: number, fixed: number) =>
+    `Référence ${id} : ${added} ${frPlural(added, 'nouveau', 'nouveaux')} · ${remaining} ${frPlural(remaining, 'conservé', 'conservés')} · ${fixed} ${frPlural(fixed, 'corrigé', 'corrigés')}`,
+  actionsHint: (files: number) =>
+    `Au total, ${files} ${frPlural(files, 'fichier', 'fichiers')} ; tri : « sévérité maximale d’abord, puis nombre de problèmes décroissant à sévérité égale ». Il est recommandé de traiter de haut en bas.`,
+  thFileMainIssue: 'Fichier / problème principal',
+  groupCount: (count: number, files: number) =>
+    `${count} ${frPlural(count, 'problème', 'problèmes')} · ${files} ${frPlural(files, 'fichier', 'fichiers')}`,
+  groupHint: {
+    critical: 'Peut directement mener à l’exécution de code à distance ou à la fuite d’identifiants ; à corriger immédiatement, avec une note explicative distincte.',
+    high: 'Se situe sur des voies d’attaque courantes ; à corriger au cours de l’itération en cours.',
+    medium: 'Nécessite des conditions préalables ou a un impact limité ; à inscrire à la liste de dette technique de la prochaine itération.',
+    low: 'Concerne les conventions de codage et la maintenabilité ; à corriger au fil des modifications courantes.',
+  },
+  fixedHeading: (count: number) => `Corrigés (par rapport à la référence, ${count})`,
+  appendixHint: (rules: number) =>
+    `${rules} ${frPlural(rules, 'règle triée', 'règles triées')} par nombre d’occurrences ; la description complète d’une règle (avec les pistes de correction) n’apparaît ici qu’une seule fois.`,
+  ruleStat: (count: number, files: number) =>
+    `${count} ${frPlural(count, 'occurrence', 'occurrences')} · ${files} ${frPlural(files, 'fichier', 'fichiers')}`,
+  noMessage: '(description momentanément indisponible)',
+  noDescription: '(aucune description fournie)',
+  unknownPath: '(chemin inconnu)',
+  methodSub: { packs: 'Ensembles de règles', repro: 'Moteur et reproductibilité', review: 'Revue et couverture', exclusions: 'Exclusions', boundaries: 'Limites de la couverture' },
+  packThName: 'Paquet de règles',
+  packThId: 'Identifiant',
+  noPacks: 'Aucun paquet de règles enregistré',
+  sarifImport: (tool?: string) => (tool ? `Import SARIF (${tool})` : 'Import SARIF'),
+  filesChecked: 'Fichiers analysés',
+  filesUnit: (n: number) => `${n} ${frPlural(n, 'fichier', 'fichiers')}`,
+  issuesUnit: (n: number) => `${n} ${frPlural(n, 'problème', 'problèmes')}`,
+  durationSeconds: (s: number) => `${s} s`,
+  durationMinutes: (m: number, s: number) => `${m} min ${s} s`,
+  exclusions: 'Respecte le fichier .gitignore du projet ; les dossiers node_modules et .git sont ignorés',
+  notCovered: 'Ce rapport ne reflète que les correspondances des règles chargées et ne garantit pas l’absence d’autres défauts',
+  reviewLabel: 'Revue manuelle',
+  reviewLine: (s: ReportReviewSummary) =>
+    `${s.reviewed} ${frPlural(s.reviewed, 'problème examiné', 'problèmes examinés')} : ${s.confirmed} ${frPlural(s.confirmed, 'confirmé', 'confirmés')} · ${s.falsePositives} ${frPlural(s.falsePositives, 'faux positif', 'faux positifs')} · ${s.accepted} ${frPlural(s.accepted, 'accepté', 'acceptés')}.`,
+  reviewNone: 'Aucune revue manuelle n’a été effectuée lors de cette analyse ; tous les problèmes reflètent le verdict brut du moteur.',
+  noIssues: 'Aucun problème à risque n’a été détecté lors de cette analyse.',
+  snippetOverflow: (limit: number) =>
+    `Limite d’extraits de code atteinte — seuls les ${limit} premiers sont affichés ; consultez la page de résultats de l’analyse pour les autres.`,
+  footer: (time: string) =>
+    `Rapport généré automatiquement par Opengrep Studio · généré le ${time} · les correspondances de règles et les sévérités sont produites par le moteur opengrep ; à réviser manuellement selon le contexte métier.`,
+  listSeparator: ', ',
+  sentenceSeparator: ' ',
+  severityPhrase: (label: string, count: number) => `${label} : ${count}`,
+  conclusionNoIssues: (files: string) =>
+    `Cette analyse a vérifié ${frSourceFiles(files)}, sans qu’aucune règle activée ne soit déclenchée ; aucun problème à risque n’a été détecté.`,
+  conclusionSummary: (files: string, total: number, sevText: string) =>
+    `Cette analyse a vérifié ${frSourceFiles(files)} et détecté ${total} ${frPlural(total, 'problème à risque', 'problèmes à risque')} (${sevText}).`,
+  comparisonSentence: (baseline: string, added: number, remaining: number, fixed: number) =>
+    `Par rapport à l’analyse de référence ${baseline} : ${added} ${frPlural(added, 'nouveau', 'nouveaux')}, ${remaining} ${frPlural(remaining, 'conservé', 'conservés')}, ${fixed} ${frPlural(fixed, 'corrigé', 'corrigés')}.`,
+  urgentHint: (urgent: number) =>
+    `Il est recommandé de traiter en priorité les problèmes critiques et de sévérité élevée (${urgent} au total), puis de relancer une analyse pour vérifier les corrections.`,
+  nonUrgentHint: () =>
+    'Aucun problème critique ou de sévérité élevée à ce stade ; planifiez la correction des problèmes moyens et faibles selon les priorités métier.',
+  summaryReview: (s: ReportReviewSummary) =>
+    ` Revue manuelle effectuée sur ${s.reviewed} ${frPlural(s.reviewed, 'problème', 'problèmes')} (${s.confirmed} ${frPlural(s.confirmed, 'confirmé', 'confirmés')}, ${s.falsePositives} ${frPlural(s.falsePositives, 'faux positif', 'faux positifs')}, ${s.accepted} ${frPlural(s.accepted, 'accepté sous conditions', 'acceptés sous conditions')}).`,
+};
 
 const REPORT_TEXT_DE: typeof REPORT_TEXT_ZH = { ...REPORT_TEXT_EN, htmlLang: 'de' };
 
