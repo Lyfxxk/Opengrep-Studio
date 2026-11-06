@@ -435,7 +435,7 @@ const fr: typeof zh = {
     loadFailed: 'Échec du chargement des paramètres — actualisez la page, puis réessayez',
     saveFailed: "Échec de l'enregistrement des paramètres. Réessayez.",
     deleteFailed: 'Échec de la suppression des paramètres. Réessayez.',
-    deletedUnboundToast: 'Paramètres supprimés ; {{count}} projets ont été déliés',
+    deletedUnboundToast: 'Paramètres supprimés ; {{count}} projets ne sont plus liés à ces paramètres',
     batchPartial_one: '{{count}} paramètres supprimés, {{failed}} en échec',
     batchPartial_other: '{{count}} paramètres supprimés, {{failed}} en échec',
     batchExtra: "La suppression de paramètres en cours d'utilisation délie automatiquement les projets concernés.",

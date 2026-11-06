@@ -324,7 +324,7 @@
     "fix": "Utilisez des requêtes XPath paramétrées et échappez les variables."
   },
   "668": {
-    "name": "Exposition d'une ressource à la mauvaise sphère",
+    "name": "Exposition d'une ressource à un périmètre inapproprié",
     "fix": "Rangez configurations, journaux et fichiers temporaires selon le principe d'exposition minimale, et resserrez la visibilité par permissions et par chemins."
   },
   "676": {
