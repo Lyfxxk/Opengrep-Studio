@@ -2,7 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const serverRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+export const serverRoot =
+  process.env.SERVER_ROOT ?? path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 
 function engineNameFor(platform: NodeJS.Platform): string {
   return platform === 'win32' ? 'opengrep.exe' : 'opengrep';

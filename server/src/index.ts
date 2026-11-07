@@ -3,7 +3,7 @@ import path from 'node:path';
 import express, { type NextFunction, type Request, type Response } from 'express';
 import multer from 'multer';
 import { ensureInitialAdmin, getSessionUser } from './auth.js';
-import { config, engineSource } from './config.js';
+import { config, engineSource, serverRoot } from './config.js';
 import { HttpError } from './errors.js';
 import { engineInstallHint, terminateTrackedChildren } from './engine.js';
 import { engineTargetVersion } from './engine-manifest.js';
@@ -89,7 +89,7 @@ app.use('/api', (_req, res) => {
   res.status(404).json({ error: { message: '接口不存在', code: 'srv.routeNotFound' } });
 });
 
-const distDir = path.join(import.meta.dirname, '..', '..', 'code', 'dist');
+const distDir = path.join(serverRoot, '..', 'code', 'dist');
 if (fs.existsSync(distDir)) {
   app.use(express.static(distDir));
   app.use((req, res, next) => {
@@ -186,3 +186,9 @@ function shutdown(signal: NodeJS.Signals): void {
 }
 process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));
+for (const signal of ['SIGHUP', 'SIGBREAK'] as const) {
+  try {
+    process.on(signal, () => shutdown(signal));
+  } catch {
+  }
+}

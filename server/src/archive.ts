@@ -4,7 +4,7 @@ import path from 'node:path';
 import { Worker } from 'node:worker_threads';
 import AdmZip from 'adm-zip';
 import * as tar from 'tar';
-import { config } from './config.js';
+import { config, serverRoot } from './config.js';
 import { HttpError } from './errors.js';
 import { walkAndStripSymlinks, ALWAYS_SKIP_DIR_NAMES } from './fs-walk.js';
 
@@ -289,7 +289,7 @@ async function extractSevenZ(buffer: Buffer, destDir: string, fileName: string):
   const ext = path.extname(fileName).toLowerCase() || '.7z';
   let abortReason: string | null = null;
   let abortCode: string | null = null;
-  const worker = new Worker(path.join(import.meta.dirname, 'seven-z-worker.mjs'));
+  const worker = new Worker(path.join(serverRoot, 'src', 'seven-z-worker.mjs'));
   worker.postMessage({ buffer, ext, destDir });
   try {
     const result = await new Promise<{ ok: boolean; message?: string }>((resolve) => {
