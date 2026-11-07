@@ -1,13 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import {
   normalizeVersion,
   readInstalledManifest,
   resolveTarget,
 } from '../scripts/engine-install.mjs';
-
-const serverRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+import { serverRoot } from './config.js';
 
 export const engineToolDir = path.join(serverRoot, '..', 'opengrep-tool');
 

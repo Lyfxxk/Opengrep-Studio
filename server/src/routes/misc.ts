@@ -59,6 +59,8 @@ miscRoutes.get('/api/health', asyncHandler(async (_req, res) => {
       : engineNotRunnableHintInfo();
   res.json({
     ok: true,
+    app: 'opengrep-studio',
+    version: process.env.APP_VERSION,
     platform: process.platform,
     arch: process.arch,
     engineVersion,

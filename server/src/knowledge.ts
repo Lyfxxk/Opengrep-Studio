@@ -1,13 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { load as yamlLoad } from 'js-yaml';
+import { serverRoot } from './config.js';
 import { db, listRulePacks, type RulePack } from './db.js';
 import { customPackDir, packRuleFiles } from './rulepacks.js';
 import { isSampleKind } from './pack-format.js';
 
-const srcDir = path.dirname(fileURLToPath(import.meta.url));
-const rulesDir = path.join(srcDir, '..', 'rules');
+const rulesDir = path.join(serverRoot, 'rules');
 
 export function isSafeSampleDirName(ruleId: string): boolean {
   const name = ruleId.replace(/\\/g, '/');
