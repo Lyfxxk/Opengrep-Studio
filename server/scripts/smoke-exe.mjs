@@ -130,8 +130,9 @@ try {
     output += chunk;
   });
   child.once('exit', (code) => {
+    console.log(`[smoke] exe 进程退出（code=${code}）`);
     if (code !== null && code !== 0 && checks.length === 0) {
-      console.error(`[smoke] exe 提前退出（code ${code}）：\n${output}`);
+      console.error(`[smoke] exe 提前退出：\n${output}`);
     }
   });
 
@@ -183,6 +184,7 @@ try {
   summary.ok = true;
 } catch (error) {
   summary.error = error instanceof Error ? error.message : String(error);
+  if (output.trim()) console.error(`[smoke] exe 输出末尾：\n${output.slice(-3000)}`);
   process.exitCode = 1;
 } finally {
   killTree(childPid);
