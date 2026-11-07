@@ -13,7 +13,9 @@
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test \"scripts/*.test.mjs\"",
     "i18n:check": "node --import tsx scripts/i18n-check.mjs",
-    "test-packs": "node --import tsx scripts/pack-regression.mjs"
+    "test-packs": "node --import tsx scripts/pack-regression.mjs",
+    "build:exe": "node scripts/build-exe.mjs",
+    "smoke:exe": "node scripts/smoke-exe.mjs"
   },
   "dependencies": {
     "7z-wasm": "^1.2.0",
@@ -29,6 +31,8 @@
     "@types/express": "^4.17.23",
     "@types/multer": "^2.0.0",
     "@types/node": "^22.10.0",
+    "esbuild": "^0.28.2",
+    "postject": "^1.0.0-alpha.6",
     "tsx": "^4.20.0",
     "typescript": "^5.9.0"
   }
