@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
+import http from 'node:http';
 import net from 'node:net';
 import path from 'node:path';
 import { getAsset, getAssetKeys, isSea } from 'node:sea';
@@ -71,34 +72,62 @@ function extractResources(rootDir: string): void {
 function portOccupied(port: number): Promise<boolean> {
   return new Promise((resolve) => {
     const socket = net.connect({ host: '127.0.0.1', port });
+    let settled = false;
     const settle = (occupied: boolean) => {
+      if (settled) return;
+      settled = true;
       socket.destroy();
       resolve(occupied);
     };
     socket.once('connect', () => settle(true));
     socket.once('error', () => settle(false));
+    socket.once('close', () => settle(false));
     socket.setTimeout(1000, () => settle(true));
   });
 }
 
-async function probeOwnInstance(port: number): Promise<boolean> {
-  try {
-    const res = await fetch(`http://127.0.0.1:${port}/api/health`, {
-      signal: AbortSignal.timeout(2000),
+function readHealth(url: string, timeoutMs: number): Promise<{ ok?: boolean; app?: string } | null> {
+  return new Promise((resolve) => {
+    const req = http.get(url, { timeout: timeoutMs }, (res) => {
+      let raw = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk: string) => {
+        raw += chunk;
+      });
+      res.on('end', () => {
+        try {
+          resolve(JSON.parse(raw) as { ok?: boolean; app?: string });
+        } catch {
+          resolve(null);
+        }
+      });
     });
-    const data = (await res.json()) as { app?: string } | undefined;
-    return data?.app === 'opengrep-studio';
-  } catch {
-    return false;
-  }
+    req.on('timeout', () => req.destroy(new Error('health 探测超时')));
+    req.on('error', () => resolve(null));
+  });
+}
+
+async function probeOwnInstance(port: number): Promise<boolean> {
+  const data = await readHealth(`http://127.0.0.1:${port}/api/health`, 2000);
+  return data?.app === 'opengrep-studio';
+}
+
+function withLimit<T>(task: Promise<T>, limitMs: number, fallback: T): Promise<T> {
+  return Promise.race([
+    task,
+    new Promise<T>((resolve) => {
+      const timer = setTimeout(() => resolve(fallback), limitMs);
+      timer.unref();
+    }),
+  ]);
 }
 
 async function pickPort(): Promise<{ kind: 'free' | 'own'; port: number }> {
   const startPort = Number(process.env.PORT) || 8787;
   for (let offset = 0; offset < PORT_TRIES; offset += 1) {
     const port = startPort + offset;
-    if (!(await portOccupied(port))) return { kind: 'free', port };
-    if (await probeOwnInstance(port)) return { kind: 'own', port };
+    if (!(await withLimit(portOccupied(port), 3000, true))) return { kind: 'free', port };
+    if (await withLimit(probeOwnInstance(port), 3000, false)) return { kind: 'own', port };
     console.log(`[sea] 端口 ${port} 被其他程序占用，顺延到 ${port + 1} …`);
   }
   fail([
@@ -122,12 +151,8 @@ function browserSkipped(): boolean {
 async function waitHealthy(url: string): Promise<boolean> {
   const deadline = Date.now() + HEALTH_TIMEOUT_MS;
   while (Date.now() < deadline) {
-    try {
-      const res = await fetch(`${url}/api/health`, { signal: AbortSignal.timeout(2000) });
-      const data = (await res.json()) as { ok?: boolean } | undefined;
-      if (data?.ok === true) return true;
-    } catch {
-    }
+    const data = await readHealth(`${url}/api/health`, 2000);
+    if (data?.ok === true) return true;
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
   return false;
