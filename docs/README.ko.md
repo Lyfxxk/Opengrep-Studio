@@ -153,6 +153,10 @@ npm run docker:run    # docker run --rm -p 8787:8787 -v ogstudio-data:/data open
 
 참고: 컨테이너 안의 "원클릭 업그레이드"는 컨테이너의 쓰기 가능 레이어(`/app/opengrep-tool`)에 기록됩니다. 컨테이너 재시작 후에도 유지되지만, 컨테이너를 재생성하면(예: `docker compose down && up`) 사라지고 `engines.json`의 고정 버전으로 되돌아갑니다. 장기적으로 엔진 버전을 바꾸려면 `server/scripts/engines.json`을 수정한 뒤 이미지를 다시 빌드하십시오.
 
+### 방법 4: Windows 포터블 exe(Node.js 불필요)
+
+[Releases](https://github.com/Lyfxxk/Opengrep-Studio/releases)에서 `OpengrepStudio.exe`를 내려받아 쓰기 가능한 폴더(바탕 화면, 다운로드 등. Program Files 제외)에 두고 두 번 클릭하면 브라우저가 자동으로 열립니다. 첫 실행 시 exe와 같은 위치에 실행 파일이 풀리고 `data/` 폴더가 만들어집니다. 스캔 엔진은 exe에 포함되어 있지 않으므로 대시보드의 "엔진 상태" 카드에서 원클릭으로 내려받으면 됩니다(약 50MB, SHA-256 검증). 기존 엔진이 있으면 `OPENGREP_BIN`으로 지정할 수 있습니다. Node.js 설치가 전혀 필요 없습니다. SmartScreen에 '알 수 없는 게시자' 경고가 뜨면 '추가 정보 → 실행'을 누르십시오(코드 서명이 없어 나오는 정상 동작입니다). Git 저장소 클론 가져오기 기능만 로컬에 Git이 설치되어 있으면 됩니다.
+
 ### 처음 사용
 
 기본 계정은 `admin` / `123456`입니다([보안 모델](#보안-모델) 참조). 권장 흐름:

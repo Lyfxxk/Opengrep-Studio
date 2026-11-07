@@ -153,6 +153,10 @@ The image ships with the engine and the built frontend — open <http://localhos
 
 One caveat on upgrades: a one-click upgrade writes to the container layer (`/app/opengrep-tool`), so it survives container restarts but is lost when the container is recreated (`docker compose down && up`), falling back to the version pinned in `engines.json`. For a long-term engine bump, change `server/scripts/engines.json` and rebuild the image.
 
+### Option 4: Windows portable exe (no Node.js needed)
+
+Download `OpengrepStudio.exe` from the [Releases](https://github.com/Lyfxxk/Opengrep-Studio/releases) page, put it in a writable folder (Desktop, Downloads — not `Program Files`) and double-click: the browser opens the console automatically. On first launch the runtime files are unpacked next to the exe along with a `data/` folder. The scan engine is not bundled — install it in one click from the dashboard "Engine status" card (~50 MB, SHA-256-verified) or point `OPENGREP_BIN` at an existing engine. No Node.js installation is required. If Windows SmartScreen warns about an unknown publisher, click "More info → Run anyway" (the binary is not code-signed; that's expected). Only the Git-clone import needs a local Git installation.
+
 ### First run
 
 Default login: `admin` / `123456` (see [Security Model](#security-model)). Suggested flow:

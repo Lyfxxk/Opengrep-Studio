@@ -1,4 +1,4 @@
-name: 发布镜像到 ghcr.io
+name: 发布产物（ghcr 镜像 + Windows exe）
 
 on:
   push:
@@ -41,3 +41,32 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  windows-exe:
+    name: 构建并冒烟 Windows exe
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: 安装依赖
+        run: |
+          npm --prefix server ci
+          npm --prefix code ci
+      - name: 构建前端
+        run: npm --prefix code run build
+      - name: 构建 exe（SEA 单文件）
+        run: node server/scripts/build-exe.mjs
+      - name: 冒烟门禁
+        run: node server/scripts/smoke-exe.mjs
+      - name: 上传 exe 到同 tag 的 Release（不存在则创建）
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          gh release view "${{ github.ref_name }}" --repo "${{ github.repository }}" > /dev/null 2>&1 || \
+            gh release create "${{ github.ref_name }}" --repo "${{ github.repository }}" --title "${{ github.ref_name }}" --generate-notes
+          gh release upload "${{ github.ref_name }}" dist-exe/*.exe --repo "${{ github.repository }}" --clobber

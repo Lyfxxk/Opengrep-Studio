@@ -153,6 +153,10 @@ npm run docker:run    # 等价于 docker run --rm -p 8787:8787 -v ogstudio-data:
 
 注意：容器内「一键升级」写入的是容器可写层（`/app/opengrep-tool`），容器重启后仍在，但重建容器（如 `docker compose down && up`）后会丢失并回落到 `engines.json` 钉住的版本；长期更换引擎版本请修改 `server/scripts/engines.json` 后重新构建镜像。
 
+### 方式四：Windows 免安装 exe（无需 Node）
+
+从 [Releases](https://github.com/Lyfxxk/Opengrep-Studio/releases) 下载 `OpengrepStudio.exe`，放到可写目录（桌面、下载文件夹均可，不要放 Program Files）后双击，浏览器会自动打开控制台。首次启动会在 exe 同目录解压运行文件并生成 `data/` 数据目录。扫描引擎不随 exe 打包，在仪表盘「引擎状态」卡一键下载即可（约 50 MB，SHA-256 校验），也可用 `OPENGREP_BIN` 指向已有引擎。全程不需要安装 Node.js。Windows SmartScreen 弹出「未知发布者」提示时，点「更多信息 → 仍要运行」即可（未做代码签名，属预期）。仅 Git 仓库克隆导入功能需要本机装有 Git。
+
 ### 首次使用
 
 默认账号 `admin` / `123456`（见[安全模型](#安全模型)）。建议流程：
