@@ -152,6 +152,10 @@ L’image est livrée avec le moteur et le frontend compilé — ouvrez <http://
 
 Une réserve sur les mises à niveau : une mise à niveau en un clic écrit dans la couche du conteneur (`/app/opengrep-tool`), elle survit donc aux redémarrages du conteneur mais est perdue quand le conteneur est recréé (`docker compose down && up`), retombant sur la version figée dans `engines.json`. Pour une montée de version durable du moteur, modifiez `server/scripts/engines.json` et reconstruisez l’image.
 
+### Option 4 : exe portable pour Windows (sans Node.js)
+
+Téléchargez `OpengrepStudio.exe` depuis la page [Releases](https://github.com/Lyfxxk/Opengrep-Studio/releases), placez-le dans un dossier accessible en écriture (Bureau, Téléchargements — pas dans Program Files) puis double-cliquez : le navigateur s’ouvre automatiquement. Au premier lancement, les fichiers d’exécution sont extraits à côté de l’exécutable avec un dossier `data/`. Le moteur de scan n’est pas livré dans l’exe — installez-le en un clic depuis la carte « État du moteur » du tableau de bord (~50 Mo, vérifié par SHA-256) ou faites pointer `OPENGREP_BIN` vers un moteur déjà présent. Node.js n’est pas nécessaire. Si SmartScreen signale un éditeur inconnu, cliquez sur « Plus d’infos → Exécuter quand même » (absence de signature de code, comportement attendu). Seul l’import par clonage de dépôt Git nécessite un Git installé localement.
+
 ### Premier lancement
 
 Connexion par défaut : `admin` / `123456` (voir [Modèle de sécurité](#modèle-de-sécurité)). Déroulé suggéré :
