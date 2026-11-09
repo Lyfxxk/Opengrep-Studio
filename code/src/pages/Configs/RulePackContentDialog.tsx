@@ -35,11 +35,19 @@ export default function RulePackContentDialog({
   const [saving, setSaving] = useState(false);
   const [content, setContent] = useState('');
 
+  const contentKey = open && pack ? pack.id : null;
+  const [prevContentKey, setPrevContentKey] = useState<string | null>(null);
+  if (prevContentKey !== contentKey) {
+    setPrevContentKey(contentKey);
+    if (contentKey !== null) {
+      setEditing(false);
+      setLoading(true);
+    }
+  }
+
   useEffect(() => {
     if (!open || !pack) return;
     let cancelled = false;
-    setEditing(false);
-    setLoading(true);
     api
       .getRulePackContent(pack.id)
       .then((data) => {

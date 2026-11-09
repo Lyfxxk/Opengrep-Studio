@@ -101,20 +101,25 @@ export default function ProjectDetailPage() {
     }
   }, [id, t]);
 
-  useEffect(() => {
-    activeIdRef.current = id;
+  const [prevId, setPrevId] = useState(id);
+  if (prevId !== id) {
+    setPrevId(id);
     setProject(null);
     setScans([]);
     setLoadFailed(false);
+    setUpload({ status: 'idle' });
+    setStartingScan(false);
+  }
+
+  useEffect(() => {
+    activeIdRef.current = id;
     loadedOnceRef.current = false;
     prevScansRef.current = [];
     pollErrorShownRef.current = false;
-    setUpload({ status: 'idle' });
-    setStartingScan(false);
   }, [id]);
 
   useEffect(() => {
-    void refresh();
+    void Promise.resolve().then(() => void refresh());
   }, [refresh]);
 
   useEffect(() => {

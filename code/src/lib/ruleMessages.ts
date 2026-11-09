@@ -44,8 +44,12 @@ export function useRuleMessageMap(): RuleMessageMap {
   const { i18n } = useTranslation();
   const path = messagePath(i18n.resolvedLanguage ?? i18n.language);
   const [map, setMap] = useState<RuleMessageMap>({});
-  useEffect(() => {
+  const [prevPath, setPrevPath] = useState(path);
+  if (prevPath !== path) {
+    setPrevPath(path);
     setMap({});
+  }
+  useEffect(() => {
     if (!path) return;
     let mounted = true;
     void loadOnce(path).then((loaded) => {

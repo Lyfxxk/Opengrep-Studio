@@ -84,7 +84,7 @@ export default function ProjectsPage() {
   }, [t]);
 
   useEffect(() => {
-    void refresh();
+    void Promise.resolve().then(() => void refresh());
   }, [refresh]);
 
   const handleSave = async (

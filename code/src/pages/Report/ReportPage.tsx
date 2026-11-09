@@ -227,12 +227,20 @@ export default function ReportPage() {
   const [failReason, setFailReason] = useState('');
   const messageMap = useRuleMessageMap();
 
+  const routeKey = scanId ? `${id ?? ''}|${scanId}` : null;
+  const [prevRouteKey, setPrevRouteKey] = useState<string | null>(null);
+  if (prevRouteKey !== routeKey) {
+    setPrevRouteKey(routeKey);
+    if (routeKey !== null) {
+      setLoading(true);
+      setNotFound(false);
+      setFailReason('');
+    }
+  }
+
   useEffect(() => {
     let mounted = true;
     if (!scanId) return;
-    setLoading(true);
-    setNotFound(false);
-    setFailReason('');
     api
       .getScanReport(scanId)
       .then((data) => {

@@ -162,8 +162,11 @@ export default function ConfigFormDialog({
 
   const isEditing = Boolean(target?.id);
 
-  useEffect(() => {
-    if (open && target) {
+  const formInitKey = open && target ? (target.id ?? 'new') : null;
+  const [prevFormInitKey, setPrevFormInitKey] = useState<string | null>(null);
+  if (prevFormInitKey !== formInitKey) {
+    setPrevFormInitKey(formInitKey);
+    if (formInitKey !== null && target) {
       setName(target.values.name);
       setDescription(target.values.description ?? '');
       setSelectedPacks(target.values.rulePackIds);
@@ -181,8 +184,7 @@ export default function ConfigFormDialog({
       setErrors({});
       setSubmitting(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, target]);
+  }
 
   const allPackIds = useMemo(() => rulePacks.map((pack) => pack.id), [rulePacks]);
   const allSelected = allPackIds.length > 0 && selectedPacks.length === allPackIds.length;

@@ -43,12 +43,14 @@ export default function ReviewDialog({ projectId, issue, onClose, onSaved }: Rev
   const [reason, setReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
+  const [prevIssue, setPrevIssue] = useState(issue);
+  if (prevIssue !== issue) {
+    setPrevIssue(issue);
     if (issue) {
       setStatus(issue.review?.status ?? 'confirmed');
       setReason(issue.review?.reason ?? '');
     }
-  }, [issue]);
+  }
 
   const submit = async () => {
     if (!issue?.fingerprint) {

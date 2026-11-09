@@ -52,13 +52,17 @@ export default function KnowledgeSheet({ ruleId, onClose }: KnowledgeSheetProps)
   const [loading, setLoading] = useState(false);
   const language = i18n.resolvedLanguage ?? i18n.language;
 
+  const ruleKey = ruleId ? `${ruleId}|${language}` : null;
+  const [prevRuleKey, setPrevRuleKey] = useState<string | null>(null);
+  if (prevRuleKey !== ruleKey) {
+    setPrevRuleKey(ruleKey);
+    setLoading(ruleKey !== null);
+    if (!ruleId) setKnowledge(null);
+  }
+
   useEffect(() => {
-    if (!ruleId) {
-      setKnowledge(null);
-      return;
-    }
+    if (!ruleId) return;
     let mounted = true;
-    setLoading(true);
     api
       .getRuleKnowledge(ruleId)
       .then((data) => {

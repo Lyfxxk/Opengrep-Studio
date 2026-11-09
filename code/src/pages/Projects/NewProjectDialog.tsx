@@ -37,14 +37,17 @@ export default function NewProjectDialog({
 
   const isEditing = Boolean(project);
 
-  useEffect(() => {
+  const initKey = open ? (project?.id ?? 'new') : null;
+  const [prevInitKey, setPrevInitKey] = useState<string | null>(null);
+  if (prevInitKey !== initKey) {
+    setPrevInitKey(initKey);
     if (open) {
       setName(project?.name ?? '');
       setDescription(project?.description ?? '');
       setError('');
       setSubmitting(false);
     }
-  }, [open, project]);
+  }
 
   const handleSubmit = async () => {
     if (submitting) return;

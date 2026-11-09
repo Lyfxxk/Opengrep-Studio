@@ -49,14 +49,16 @@ export default function RulePackCreateDialog({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  useEffect(() => {
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (prevOpen !== open) {
+    setPrevOpen(open);
     if (open) {
       setName('');
       setLanguage('Java');
       setContent(yamlTemplate(t('rulePacks.packTemplateMessage')));
       setError('');
     }
-  }, [open, t]);
+  }
 
   const handleSubmit = async () => {
     const trimmed = name.trim();

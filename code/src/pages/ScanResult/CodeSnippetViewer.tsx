@@ -35,15 +35,18 @@ export default function CodeSnippetViewer({
   const [wrap, setWrap] = useState(false);
   const messageMap = useRuleMessageMap();
 
-  useEffect(() => {
-    if (!issue) {
-      setSnippet(null);
-      setError('');
-      return;
-    }
-    let cancelled = false;
-    setLoading(true);
+  const issueKey = issue ? (issue.fingerprint ?? null) : null;
+  const [prevIssueKey, setPrevIssueKey] = useState<string | null>(null);
+  if (prevIssueKey !== issueKey) {
+    setPrevIssueKey(issueKey);
+    setSnippet(null);
     setError('');
+    setLoading(issueKey !== null);
+  }
+
+  useEffect(() => {
+    if (!issue) return;
+    let cancelled = false;
     api
       .getSnippet(scanId, issue)
       .then((data) => {

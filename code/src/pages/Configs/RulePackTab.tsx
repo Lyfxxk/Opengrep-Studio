@@ -126,22 +126,24 @@ export default function RulePackTab() {
   }, [t]);
 
   useEffect(() => {
-    void loadAll();
+    void Promise.resolve().then(() => void loadAll());
   }, [loadAll]);
 
   useEffect(() => {
     const packId = searchParams.get('pack');
     if (!packId || loading || loadFailed) return;
-    const target = rulePacks.find((pack) => pack.id === packId);
-    if (target) {
-      if (target.builtin) setBuiltinOpen(true);
-      setContentTarget(target);
-    } else {
-      toast.warning(t('rulePacks.deepLinkMissing', { id: packId }));
-    }
-    const next = new URLSearchParams(searchParams);
-    next.delete('pack');
-    setSearchParams(next, { replace: true });
+    void Promise.resolve().then(() => {
+      const target = rulePacks.find((pack) => pack.id === packId);
+      if (target) {
+        if (target.builtin) setBuiltinOpen(true);
+        setContentTarget(target);
+      } else {
+        toast.warning(t('rulePacks.deepLinkMissing', { id: packId }));
+      }
+      const next = new URLSearchParams(searchParams);
+      next.delete('pack');
+      setSearchParams(next, { replace: true });
+    });
   }, [loading, loadFailed, rulePacks, searchParams, setSearchParams, t]);
 
   const handleContentDialogOpenChange = useCallback((open: boolean) => {

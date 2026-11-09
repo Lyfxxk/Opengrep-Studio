@@ -97,7 +97,7 @@ export default function ScanConfigTab() {
   }, [t]);
 
   useEffect(() => {
-    void loadAll();
+    void Promise.resolve().then(() => void loadAll());
   }, [loadAll]);
 
   const handleCreate = () => {

@@ -74,7 +74,7 @@ export default function UsersPage() {
   }, [t]);
 
   useEffect(() => {
-    void refresh();
+    void Promise.resolve().then(() => void refresh());
   }, [refresh]);
 
   const handleRoleChange = async (user: IUserRecord, role: UserRole) => {
@@ -266,7 +266,9 @@ function CreateUserDialog({
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
+  const [prevCreateOpen, setPrevCreateOpen] = useState(open);
+  if (prevCreateOpen !== open) {
+    setPrevCreateOpen(open);
     if (open) {
       setUsername('');
       setPassword('');
@@ -274,7 +276,7 @@ function CreateUserDialog({
       setError('');
       setSubmitting(false);
     }
-  }, [open]);
+  }
 
   const handleSubmit = async () => {
     if (submitting) return;
@@ -379,13 +381,15 @@ function ResetPasswordDialog({
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
+  const [prevResetTarget, setPrevResetTarget] = useState(target);
+  if (prevResetTarget !== target) {
+    setPrevResetTarget(target);
     if (target) {
       setPassword('');
       setError('');
       setSubmitting(false);
     }
-  }, [target]);
+  }
 
   const handleSubmit = async () => {
     if (!target || submitting) return;

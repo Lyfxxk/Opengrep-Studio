@@ -149,10 +149,13 @@ export default function ScanResultPage() {
   }, [id, scanId, i18n]);
 
   useEffect(() => {
-    void load();
+    void Promise.resolve().then(() => void load());
   }, [load]);
 
-  useEffect(() => {
+  const routeKey = `${id ?? ''}|${scanId ?? ''}`;
+  const [prevRouteKey, setPrevRouteKey] = useState(routeKey);
+  if (prevRouteKey !== routeKey) {
+    setPrevRouteKey(routeKey);
     setProject(null);
     setScan(null);
     setBaselineScan(null);
@@ -164,6 +167,9 @@ export default function ScanResultPage() {
     setKnowledgeRuleId(null);
     setCompareOpen(false);
     setPacksOpen(false);
+  }
+
+  useEffect(() => {
     loadedOnceRef.current = false;
     pollErrorShownRef.current = false;
   }, [id, scanId]);

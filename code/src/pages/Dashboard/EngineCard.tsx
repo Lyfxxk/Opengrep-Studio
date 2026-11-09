@@ -58,7 +58,7 @@ export default function EngineCard({ health, scanRunning, onUpgraded }: EngineCa
   }, []);
 
   useEffect(() => {
-    if (ready && managed) void check(false);
+    if (ready && managed) void Promise.resolve().then(() => void check(false));
   }, [ready, managed, check]);
 
   useEffect(() => {
