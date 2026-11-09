@@ -67,7 +67,13 @@ function touchScanInstance(): void {
 }
 
 touchScanInstance();
-setInterval(touchScanInstance, INSTANCE_HEARTBEAT_MS).unref();
+setInterval(() => {
+  try {
+    touchScanInstance();
+  } catch (error) {
+    console.error('[scan-runner] 实例心跳写入失败，跳过本轮:', error);
+  }
+}, INSTANCE_HEARTBEAT_MS).unref();
 
 export function getScanInstanceToken(): string {
   return INSTANCE_TOKEN;
@@ -102,9 +108,6 @@ export function requestScanCancel(scanId: string): boolean {
 
 export function enqueueScan(scanId: string, plan: ScanPlan): void {
   const slot = acquireScanSlot();
-  if (slot.queued) {
-    updateScan(scanId, { queuedAt: new Date().toISOString(), queueOwner: INSTANCE_TOKEN });
-  }
   void slot.ready
     .then(() => {
       const current = getScan(scanId);
@@ -125,6 +128,13 @@ export function enqueueScan(scanId: string, plan: ScanPlan): void {
       cancelRequested.delete(scanId);
       releaseScanSlot();
     });
+  if (slot.queued) {
+    try {
+      updateScan(scanId, { queuedAt: new Date().toISOString(), queueOwner: INSTANCE_TOKEN });
+    } catch (error) {
+      console.error(`[scan-runner] 扫描 ${scanId} 排队标记写入失败:`, error);
+    }
+  }
 }
 
 
@@ -209,7 +219,13 @@ function reapOrphanedQueuedScans(): void {
   );
 }
 
-setInterval(reapOrphanedQueuedScans, 30_000).unref();
+setInterval(() => {
+  try {
+    reapOrphanedQueuedScans();
+  } catch (error) {
+    console.error('[scan-runner] 孤儿扫描清理失败，跳过本轮:', error);
+  }
+}, 30_000).unref();
 
 export function markStaleScansFailed(): void {
   reapOrphanedQueuedScans();
