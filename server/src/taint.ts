@@ -73,7 +73,8 @@ export function extractTaintFlow(raw: unknown): TaintStep[] | undefined {
   if (sink) steps.push(toStep('sink', sink.loc, sink.text));
 
   if (steps.length === 0) return undefined;
-  return steps.slice(0, MAX_STEPS);
+  if (steps.length <= MAX_STEPS) return steps;
+  return [...steps.slice(0, MAX_STEPS - 1), steps[steps.length - 1]];
 }
 
 export function relativizeTaintFlow(

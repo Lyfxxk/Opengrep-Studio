@@ -157,7 +157,7 @@ const REPORT_TEXT_ZH = {
   },
   fixedHeading: (count: number) => `已修复（对比基线，${count} 项）`,
   appendixHint: (rules: number) =>
-    `${rules} 条规则按命中次数排序，同一规则的完整说明（含修复建议）只在此处出现一次。`,
+    `${rules} 条规则按最高严重度排序，同级别内按命中次数排列；同一规则的完整说明（含修复建议）只在此处出现一次。`,
   ruleStat: (count: number, files: number) => `命中 ${count} 次 · ${files} 个文件`,
   noMessage: '（暂无说明）',
   noDescription: '（结果未提供描述）',
@@ -246,7 +246,7 @@ const REPORT_TEXT_HANT: typeof REPORT_TEXT_ZH = {
   },
   fixedHeading: (count: number) => `已修復（對比基線，${count} 項）`,
   appendixHint: (rules: number) =>
-    `${rules} 條規則按命中次數排序，同一規則的完整說明（含修復建議）只在此處出現一次。`,
+    `${rules} 條規則按最高嚴重度排序，同等級內按命中次數排列；同一規則的完整說明（含修復建議）只在此處出現一次。`,
   ruleStat: (count: number, files: number) => `命中 ${count} 次 · ${files} 個檔案`,
   noMessage: '（暫無說明）',
   noDescription: '（結果未提供描述）',
@@ -353,7 +353,7 @@ const REPORT_TEXT_EN: typeof REPORT_TEXT_ZH = {
   },
   fixedHeading: (count: number) => `Fixed (vs baseline, ${count})`,
   appendixHint: (rules: number) =>
-    `${rules} rules sorted by hit count; the full note (with fix guidance) appears here only once per rule.`,
+    `${rules} rules sorted by max severity, then hit count; the full note (with fix guidance) appears here only once per rule.`,
   ruleStat: (count: number, files: number) => `${count} hits · ${files} files`,
   noMessage: '(no note available)',
   noDescription: '(no description provided)',
@@ -462,7 +462,7 @@ const REPORT_TEXT_JA: typeof REPORT_TEXT_ZH = {
   },
   fixedHeading: (count: number) => `修正済み（ベースライン比較、${count} 件）`,
   appendixHint: (rules: number) =>
-    `${rules} 件のルールをヒット回数順に並べています。同一ルールの完全な説明（修正提案を含む）は、ここに一度だけ表示されます。`,
+    `${rules} 件のルールを最大深刻度の高い順に（同レベル内はヒット回数順に）並べています。同一ルールの完全な説明（修正提案を含む）は、ここに一度だけ表示されます。`,
   ruleStat: (count: number, files: number) => `ヒット ${count}回 · ${files} 件のファイル`,
   noMessage: '（説明はまだありません）',
   noDescription: '（結果に説明がありません）',
@@ -571,7 +571,7 @@ const REPORT_TEXT_KO: typeof REPORT_TEXT_ZH = {
   },
   fixedHeading: (count: number) => `수정 완료(베이스라인 대비, ${count}건)`,
   appendixHint: (rules: number) =>
-    `${rules}개 규칙을 탐지 횟수 기준으로 정렬했습니다. 같은 규칙의 전체 설명(수정 제안 포함)은 여기에 한 번만 표시됩니다.`,
+    `${rules}개 규칙을 최고 심각도 순으로 정렬했습니다(같은 심각도 내에서는 탐지 횟수 순). 같은 규칙의 전체 설명(수정 제안 포함)은 여기에 한 번만 표시됩니다.`,
   ruleStat: (count: number, files: number) => `탐지 ${count}회 · ${files}개 파일`,
   noMessage: '(설명 없음)',
   noDescription: '(결과에 설명이 제공되지 않았습니다)',
@@ -697,7 +697,7 @@ const REPORT_TEXT_RU: typeof REPORT_TEXT_ZH = {
   },
   fixedHeading: (count: number) => `Исправлено (сравнение с базовым сканом, ${count})`,
   appendixHint: (rules: number) =>
-    `Отсортировано ${rules} ${ruPlural(rules, 'правило', 'правила', 'правил')} по числу срабатываний; полное описание правила (включая рекомендации по исправлению) приводится здесь лишь один раз.`,
+    `Отсортировано ${rules} ${ruPlural(rules, 'правило', 'правила', 'правил')} по наивысшей критичности (внутри уровня — по числу срабатываний); полное описание правила (включая рекомендации по исправлению) приводится здесь лишь один раз.`,
   ruleStat: (count: number, files: number) =>
     `${count} ${ruPlural(count, 'срабатывание', 'срабатывания', 'срабатываний')} · ${files} ${ruPlural(files, 'файл', 'файла', 'файлов')}`,
   noMessage: '(примечание пока отсутствует)',
@@ -819,7 +819,7 @@ const REPORT_TEXT_FR: typeof REPORT_TEXT_ZH = {
   },
   fixedHeading: (count: number) => `Corrigés (par rapport à la référence, ${count})`,
   appendixHint: (rules: number) =>
-    `${rules} ${frPlural(rules, 'règle triée', 'règles triées')} par nombre d’occurrences ; la description complète d’une règle (avec les pistes de correction) n’apparaît ici qu’une seule fois.`,
+    `${rules} ${frPlural(rules, 'règle triée', 'règles triées')} par sévérité maximale puis par nombre d’occurrences ; la description complète d’une règle (avec les pistes de correction) n’apparaît ici qu’une seule fois.`,
   ruleStat: (count: number, files: number) =>
     `${count} ${frPlural(count, 'occurrence', 'occurrences')} · ${files} ${frPlural(files, 'fichier', 'fichiers')}`,
   noMessage: '(description momentanément indisponible)',
@@ -941,7 +941,7 @@ const REPORT_TEXT_DE: typeof REPORT_TEXT_ZH = {
   },
   fixedHeading: (count: number) => `Behoben (gegenüber der Baseline, ${count})`,
   appendixHint: (rules: number) =>
-    `${rules} ${dePlural(rules, 'Regel', 'Regeln')}, sortiert nach Trefferzahl; die vollständige Beschreibung einer Regel (inkl. Lösungshinweisen) erscheint hier nur einmal.`,
+    `${rules} ${dePlural(rules, 'Regel', 'Regeln')}, sortiert nach höchstem Schweregrad, dann nach Trefferzahl; die vollständige Beschreibung einer Regel (inkl. Lösungshinweisen) erscheint hier nur einmal.`,
   ruleStat: (count: number, files: number) =>
     `${count} ${dePlural(count, 'Treffer', 'Treffer')} · ${files} ${dePlural(files, 'Datei', 'Dateien')}`,
   noMessage: '(noch keine Beschreibung)',
