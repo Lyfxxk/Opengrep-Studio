@@ -1109,6 +1109,13 @@ assert(manifest.engine?.name === 'opengrep' && Boolean(manifest.engine?.version)
   'manifest 引擎版本', JSON.stringify(manifest.engine));
 const scanRecord = (await api('GET', `/api/scans/${packScanDone.id}`)).json;
 assert(scanRecord.srcHash === manifest.source.sha256, '扫描记录与 manifest 哈希一致');
+assert(
+  typeof scanRecord.commandLine === 'string'
+    && scanRecord.commandLine === manifest.commandLine,
+  '扫描详情命令行与 manifest 同口径脱敏', scanRecord.commandLine);
+assert(
+  typeof health.json.engine === 'string' && !/[\\/]/.test(health.json.engine),
+  '健康检查引擎只留文件名', health.json.engine);
 const projectScanList = (await api('GET', `/api/projects/${packScanDone.projectId}/scans`)).json;
 assert(
   Array.isArray(projectScanList)

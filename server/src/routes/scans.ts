@@ -226,7 +226,7 @@ scanRoutes.get('/api/dashboard/risk-summary', asyncHandler(async (_req, res) => 
 
 scanRoutes.get('/api/scans/:scanId', asyncHandler(async (req, res) => {
   const { queueOwner: _queueOwner, ...scan } = requireScan(req.params.scanId);
-  res.json(scan);
+  res.json({ ...scan, commandLine: scan.commandLine ? sanitizeCommand(scan.commandLine) : null });
 }));
 
 scanRoutes.delete('/api/scans/:scanId', requireRole('admin'), asyncHandler(async (req, res) => {
