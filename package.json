@@ -26,6 +26,6 @@
     "docker:run": "docker run --rm -p 8787:8787 -v ogstudio-data:/data opengrep-studio"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "concurrently": "^10.0.7"
   }
 }

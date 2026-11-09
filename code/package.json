@@ -57,7 +57,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.0.0",
-    "concurrently": "^9",
+    "concurrently": "^10.0.7",
     "eslint": "^9",
     "eslint-plugin-react-hooks": "^5.2.0",
     "globals": "^16.4.0",
