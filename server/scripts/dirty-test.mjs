@@ -239,9 +239,11 @@ async function main() {
   res = await call(`/api/projects/${reviewProject.id}/reviews`, json({ fingerprint: 'f1', status: 'confirmed', reason: 'r'.repeat(501) }));
   expect4xx('复核[reason 501 字符] → 400', res);
   res = await call(`/api/projects/${reviewProject.id}/reviews`, json({ fingerprint: 'f1', status: 'confirmed', reviewer: 'v'.repeat(101) }));
-  expect4xx('复核[reviewer 101 字符] → 400', res);
+  expect2xx('复核[请求体 reviewer 脏数据被忽略] → 200', res);
+  record('复核[复核人取会话用户而非请求体]', res.body?.reviewer === 'admin', JSON.stringify(res.body));
   res = await call(`/api/projects/${reviewProject.id}/reviews`, json({ fingerprint: 'dirty-fp-' + 'z'.repeat(480), status: 'confirmed', reason: '边界'.repeat(250), reviewer: '脏测试复核员' }));
   expect2xx('复核[reason 顶格 500 字符 + 怪指纹] → 落库', res);
+  record('复核[落库复核人同样取会话用户]', res.body?.reviewer === 'admin', JSON.stringify(res.body));
   res = await call(`/api/projects/p-none/reviews`, json({ fingerprint: 'f1', status: 'confirmed' }));
   expect4xx('复核到不存在项目 → 404', res);
 
