@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { TextDecoder } from 'node:util';
 import { Worker } from 'node:worker_threads';
 import AdmZip from 'adm-zip';
 import * as tar from 'tar';
@@ -41,6 +42,45 @@ export function safeRelativePath(raw: string): string {
 
 export function isPathWithin(root: string, target: string): boolean {
   return path.resolve(target).startsWith(path.resolve(root) + path.sep);
+}
+
+export function rethrowLongPath(error: unknown, raw: string): void {
+  if ((error as NodeJS.ErrnoException | null)?.code === 'ENAMETOOLONG') {
+    const shown = raw.length > 80 ? `${raw.slice(0, 80)}…` : raw;
+    throw new HttpError(
+      400,
+      `文件路径过长，无法写入：${shown}`,
+      { code: 'archive.pathTooLong', params: { raw: shown } },
+    );
+  }
+}
+
+interface ZipEntryNameLike {
+  entryName: string;
+  rawEntryName: Buffer;
+  header: { flags: number };
+}
+
+let zipUtf8Strict: TextDecoder | undefined;
+let zipGbk: TextDecoder | undefined;
+
+function decodeZipEntryName(entry: ZipEntryNameLike): string {
+  if ((entry.header.flags & 0x800) === 0) {
+    if (!zipUtf8Strict) zipUtf8Strict = new TextDecoder('utf-8', { fatal: true });
+    try {
+      return zipUtf8Strict.decode(entry.rawEntryName);
+    } catch {
+    }
+    if (!zipGbk) {
+      try {
+        zipGbk = new TextDecoder('gbk');
+      } catch {
+        return entry.entryName;
+      }
+    }
+    return zipGbk.decode(entry.rawEntryName);
+  }
+  return entry.entryName;
 }
 
 export async function copyDirectory(src: string, dest: string): Promise<void> {
@@ -101,19 +141,20 @@ export async function extractZipSafely(buffer: Buffer, destDir: string): Promise
   const names: string[] = [];
   let totalBytes = 0;
   for (const entry of fileEntries) {
-    const name = safeRelativePath(entry.entryName);
+    const raw = decodeZipEntryName(entry);
+    const name = safeRelativePath(raw);
     if (!name) {
       throw new HttpError(
         400,
-        `ZIP 包内含不安全的路径条目：${entry.entryName}`,
-        { code: 'archive.zipUnsafePath', params: { entry: entry.entryName } },
+        `ZIP 包内含不安全的路径条目：${raw}`,
+        { code: 'archive.zipUnsafePath', params: { entry: raw } },
       );
     }
     if (entry.header.size === 0 && entry.header.compressedSize > 0) {
       throw new HttpError(
         400,
-        `ZIP 包内含伪造体积的条目：${entry.entryName}`,
-        { code: 'archive.zipFakeSize', params: { entry: entry.entryName } },
+        `ZIP 包内含伪造体积的条目：${raw}`,
+        { code: 'archive.zipFakeSize', params: { entry: raw } },
       );
     }
     totalBytes += entry.header.size;
@@ -148,8 +189,13 @@ export async function extractZipSafely(buffer: Buffer, destDir: string): Promise
         { code: 'archive.zipTooLarge', params: { gb: config.maxExtractedBytes / 1024 ** 3 } },
       );
     }
-    await fs.promises.mkdir(path.dirname(target), { recursive: true });
-    await fs.promises.writeFile(target, data);
+    try {
+      await fs.promises.mkdir(path.dirname(target), { recursive: true });
+      await fs.promises.writeFile(target, data);
+    } catch (error) {
+      rethrowLongPath(error, names[index]);
+      throw error;
+    }
   }
   return fileEntries.length;
 }

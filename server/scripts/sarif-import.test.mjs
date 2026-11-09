@@ -129,6 +129,14 @@ test('空 results 合法（干净基线工作流）', () => {
   assert.equal(issues.length, 0);
 });
 
+test('UTF-8 BOM 开头的 SARIF 正常解析', () => {
+  const { toolName, issues } = parseSarifImport(
+    `\uFEFF${sarif([{ ruleId: RULE_ID, level: 'error', message: { text: 'x' } }])}`,
+  );
+  assert.equal(toolName, '外部扫描器');
+  assert.equal(issues.length, 1);
+});
+
 test('region 缺省时行号为 1；无 locations 时路径留空', () => {
   const { issues } = parseSarifImport(sarif([{ ruleId: 'r1', message: { text: 'x' } }]));
   assert.equal(issues[0].startLine, 1);

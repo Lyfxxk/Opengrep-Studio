@@ -9,6 +9,7 @@ import {
   extractArchive,
   isArchiveFileName,
   isPathWithin,
+  rethrowLongPath,
   safeRelativePath,
 } from '../archive.js';
 import { pruneIgnoredFiles } from '../fs-walk.js';
@@ -28,7 +29,7 @@ import {
 } from '../db.js';
 import { cloneRepo } from '../git-clone.js';
 import { getSessionUser, requireRole } from '../auth.js';
-import { asyncHandler, decodeUploadFileName, newId, requireProject, requireValidBaseline } from './shared.js';
+import { asyncHandler, decodeUploadFileName, newId, normalizeLanguageField, requireProject, requireValidBaseline } from './shared.js';
 
 export const projectRoutes = Router();
 
@@ -64,7 +65,7 @@ projectRoutes.post('/api/projects', requireRole('auditor'), asyncHandler(async (
     id: newId('p'),
     name,
     description: normalizeProjectDescription(req.body?.description) || undefined,
-    language: String(req.body?.language ?? '').trim(),
+    language: normalizeLanguageField(req.body?.language),
     createdAt: new Date().toISOString(),
   };
   insertProject(project);
@@ -85,7 +86,7 @@ projectRoutes.patch('/api/projects/:id', requireRole('auditor'), asyncHandler(as
   if (req.body?.description !== undefined) {
     patch.description = normalizeProjectDescription(req.body.description) || null;
   }
-  if (req.body?.language !== undefined) patch.language = String(req.body.language);
+  if (req.body?.language !== undefined) patch.language = normalizeLanguageField(req.body.language);
   if (req.body?.baselineScanId !== undefined) {
     const scanId = req.body.baselineScanId;
     if (scanId === null || scanId === '') {
@@ -184,8 +185,13 @@ function stageLooseFiles(
         params: { path: relPaths[index] },
       });
     }
-    fs.mkdirSync(path.dirname(target), { recursive: true });
-    fs.writeFileSync(target, file.buffer);
+    try {
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      fs.writeFileSync(target, file.buffer);
+    } catch (error) {
+      rethrowLongPath(error, rel);
+      throw error;
+    }
   });
   return totalBytes;
 }

@@ -81,6 +81,17 @@ export function requireValidBaseline(projectId: string, baselineParam: unknown):
   return scan.id;
 }
 
+export function normalizeLanguageField(raw: unknown): string {
+  const text = String(raw ?? '').trim();
+  if (text.length > 50) {
+    throw new HttpError(400, '语言字段不能超过 50 个字符', {
+      code: 'srv.languageTooLong',
+      params: { limit: 50 },
+    });
+  }
+  return text;
+}
+
 export function limit400(
   limited: import('express').RequestHandler,
   limitBytes: number,

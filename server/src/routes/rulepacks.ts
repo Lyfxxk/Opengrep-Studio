@@ -32,7 +32,7 @@ import {
   scanPackSamples,
   type PackManifest,
 } from '../pack-format.js';
-import { asyncHandler, decodeUploadFileName, limit400, MAX_RULE_YAML_BYTES, MAX_SAMPLE_BYTES, memoryFileUpload, newId, withEngineJobBusy } from './shared.js';
+import { asyncHandler, decodeUploadFileName, limit400, MAX_RULE_YAML_BYTES, MAX_SAMPLE_BYTES, memoryFileUpload, newId, normalizeLanguageField, withEngineJobBusy } from './shared.js';
 
 export const rulepackRoutes = Router();
 
@@ -237,7 +237,7 @@ rulepackRoutes.post('/api/rulepacks', requireRole('auditor'), asyncHandler(async
     return;
   }
   const name = requireValidPackName(req.body?.name);
-  const language = String(req.body?.language ?? '').trim() || 'Java';
+  const language = normalizeLanguageField(req.body?.language) || 'Java';
   const content = String(req.body?.content ?? '');
   if (!content.trim()) {
     throw new HttpError(400, '请输入规则包 YAML 内容', { code: 'srv.packContentRequired' });
@@ -297,7 +297,7 @@ rulepackRoutes.post(
       throw new HttpError(400, '请通过 multipart 表单上传 file 字段', { code: 'srv.fileRequired' });
     }
     const name = requireValidPackName(req.body?.name);
-    const language = String(req.body?.language ?? '').trim() || 'Java';
+    const language = normalizeLanguageField(req.body?.language) || 'Java';
     const content = req.file.buffer.toString('utf8');
     try {
       res.status(201).json(saveNewRulePack(name, language, content, decodeUploadFileName(req.file.originalname)));

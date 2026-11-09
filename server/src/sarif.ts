@@ -231,7 +231,8 @@ function messageOf(result: SarifResult, rule: SarifRule | undefined): string {
   return fromRule || '';
 }
 
-export function parseSarifImport(text: string): SarifImportResult {
+export function parseSarifImport(input: string): SarifImportResult {
+  const text = input.charCodeAt(0) === 0xfeff ? input.slice(1) : input;
   let doc: SarifDocument;
   try {
     doc = JSON.parse(text) as SarifDocument;

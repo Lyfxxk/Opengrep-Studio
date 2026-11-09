@@ -5,7 +5,7 @@ import zlib from 'node:zlib';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import AdmZip from 'adm-zip';
-import { extractArchive, extractZipSafely, isPathWithin, safeRelativePath } from '../src/archive.ts';
+import { extractArchive, extractZipSafely, isPathWithin, rethrowLongPath, safeRelativePath } from '../src/archive.ts';
 import { config } from '../src/config.ts';
 
 function craftZip(entries) {
@@ -18,12 +18,13 @@ function craftZip(entries) {
     const crc = entry.crc ?? zlib.crc32(data);
     const declaredSize = entry.declaredSize ?? data.length;
     const declaredCompSize = entry.declaredCompSize ?? data.length;
-    const nameBuf = Buffer.from(entry.name, 'utf8');
+    const nameBuf = entry.nameBytes ?? Buffer.from(entry.name, 'utf8');
+    const flags = entry.flags ?? 0;
 
     const loc = Buffer.alloc(30 + nameBuf.length + data.length);
     loc.writeUInt32LE(0x04034b50, 0);
     loc.writeUInt16LE(20, 4);
-    loc.writeUInt16LE(0, 6);
+    loc.writeUInt16LE(flags, 6);
     loc.writeUInt16LE(method, 8);
     loc.writeUInt32LE(crc, 14);
     loc.writeUInt32LE(declaredCompSize, 18);
@@ -37,6 +38,7 @@ function craftZip(entries) {
     cen.writeUInt32LE(0x02014b50, 0);
     cen.writeUInt16LE(20, 4);
     cen.writeUInt16LE(20, 6);
+    cen.writeUInt16LE(flags, 8);
     cen.writeUInt16LE(method, 10);
     cen.writeUInt32LE(crc, 16);
     cen.writeUInt32LE(declaredCompSize, 20);
@@ -185,6 +187,56 @@ test('extractZipSafely 拒绝实际膨胀超限的炸弹：声明 4 字节、真
   } finally {
     fs.rmSync(parent, { recursive: true, force: true });
   }
+});
+
+test('extractZipSafely 未置 UTF-8 标志位的 GBK 名按 GBK 还原，不再乱码互覆', async () => {
+  const { parent, dest } = makeTemp();
+  try {
+    const gbkName = Buffer.from([214, 208, 206, 196, 46, 116, 120, 116]);
+    const gbkName2 = Buffer.from([212, 180, 194, 235, 46, 116, 120, 116]);
+    const zip = craftZip([
+      { nameBytes: gbkName, data: Buffer.from('first') },
+      { nameBytes: gbkName2, data: Buffer.from('second') },
+    ]);
+    const count = await extractZipSafely(zip, dest);
+    assert.equal(count, 2);
+    assert.deepEqual(fs.readdirSync(dest).sort(), ['中文.txt', '源码.txt']);
+    assert.equal(fs.readFileSync(path.join(dest, '中文.txt'), 'utf8'), 'first');
+    assert.equal(fs.readFileSync(path.join(dest, '源码.txt'), 'utf8'), 'second');
+  } finally {
+    fs.rmSync(parent, { recursive: true, force: true });
+  }
+});
+
+test('extractZipSafely 未置标志位但字节为合法 UTF-8 时按 UTF-8 还原', async () => {
+  const { parent, dest } = makeTemp();
+  try {
+    const zip = craftZip([
+      { name: 'src/组件/页面.tsx', data: Buffer.from('ok') },
+    ]);
+    const count = await extractZipSafely(zip, dest);
+    assert.equal(count, 1);
+    assert.equal(
+      fs.readFileSync(path.join(dest, 'src', '组件', '页面.tsx'), 'utf8'),
+      'ok',
+    );
+  } finally {
+    fs.rmSync(parent, { recursive: true, force: true });
+  }
+});
+
+test('rethrowLongPath 只把 ENAMETOOLONG 转 400 archive.pathTooLong，其余错误原样放行', () => {
+  assert.throws(
+    () => rethrowLongPath({ code: 'ENAMETOOLONG', syscall: 'writeFile' }, `${'长'.repeat(60)}`),
+    (error) => {
+      assert.equal(error.status, 400);
+      assert.equal(error.meta?.code, 'archive.pathTooLong');
+      assert.match(error.message, /路径过长/);
+      return true;
+    },
+  );
+  assert.equal(rethrowLongPath({ code: 'EACCES' }, 'x.txt'), undefined);
+  assert.equal(rethrowLongPath(new Error('boom'), 'x.txt'), undefined);
 });
 
 test('extractArchive 把膨胀炸弹包装成 400 archive.extractFailed 并清掉半成品目录', async () => {
