@@ -15,6 +15,7 @@ const checks = [];
 let childPid;
 let tmpDir;
 let dummy;
+let output = '';
 
 function baseFail(message, ...hints) {
   console.error(`[smoke] ${message}`);
@@ -122,7 +123,7 @@ try {
   console.log(`[smoke] 启动 exe（期望顺延至 ${appPort}，数据目录 ${dataDir}）…`);
   const child = spawn(exePath, [], { env, stdio: ['ignore', 'pipe', 'pipe'] });
   childPid = child.pid;
-  let output = '';
+  output = '';
   child.stdout.on('data', (chunk) => {
     output += chunk;
   });

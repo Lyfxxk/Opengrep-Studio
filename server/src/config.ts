@@ -48,7 +48,7 @@ const resolvedEngine = resolveEngineBin();
 export const engineSource = resolvedEngine.source;
 
 export const config = {
-  port: Number(process.env.PORT ?? 8787),
+  port: Number(process.env.PORT) || 8787,
   host: process.env.HOST ?? '127.0.0.1',
   dataDir: process.env.DATA_DIR ?? path.join(serverRoot, 'data'),
   rulesDir: path.join(serverRoot, 'rules'),
