@@ -239,7 +239,7 @@ export default function ReportPage() {
         if (!mounted) return;
         if (id && data.meta.projectId !== id) {
           setNotFound(true);
-          setFailReason(t('report.unavailableProjectMismatch'));
+          setFailReason(i18n.t('report.unavailableProjectMismatch'));
           return;
         }
         setReport(data);
@@ -249,7 +249,7 @@ export default function ReportPage() {
         setNotFound(true);
         const message = error instanceof Error ? error.message : String(error);
         setFailReason(message);
-        toast.error(t('report.loadFailedToast', { error: message }));
+        toast.error(i18n.t('report.loadFailedToast', { error: message }));
       })
       .finally(() => {
         if (mounted) setLoading(false);
@@ -257,7 +257,7 @@ export default function ReportPage() {
     return () => {
       mounted = false;
     };
-  }, [id, scanId, t]);
+  }, [id, scanId, i18n]);
 
   const { fileList, ruleList } = useMemo(() => {
     if (!report) return { fileList: [] as FileAgg[], ruleList: [] as RuleAgg[] };

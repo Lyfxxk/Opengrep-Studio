@@ -82,7 +82,7 @@ function ComparisonSummary({ issues }: { issues: IIssue[] }) {
 }
 
 export default function ScanResultPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { id, scanId } = useParams();
   const canReview = hasRole('auditor');
   const [project, setProject] = useState<IProject | null>(null);
@@ -139,14 +139,14 @@ export default function ScanResultPage() {
       if (!loadedOnceRef.current) setLoadFailed(true);
       if (!pollErrorShownRef.current) {
         pollErrorShownRef.current = true;
-        toast.error(t('scanResult.loadFailedToast', { error: error instanceof Error ? error.message : String(error) }));
+        toast.error(i18n.t('scanResult.loadFailedToast', { error: error instanceof Error ? error.message : String(error) }));
       }
     } finally {
       if (requestSeqRef.current === seq) {
         setLoading(false);
       }
     }
-  }, [id, scanId, t]);
+  }, [id, scanId, i18n]);
 
   useEffect(() => {
     void load();

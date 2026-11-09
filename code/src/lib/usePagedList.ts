@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import type { IProject } from '@/data/projects';
@@ -37,10 +37,14 @@ export function useScanRows(options?: { completedOnly?: boolean }) {
   const [scans, setScans] = useState<ScanWithProject[] | null>(null);
   const [projects, setProjects] = useState<IProject[]>([]);
   const [loadFailed, setLoadFailed] = useState(false);
+  const requestSeqRef = useRef(0);
 
   const reload = useCallback(async () => {
+    const seq = requestSeqRef.current + 1;
+    requestSeqRef.current = seq;
     try {
       const [allScans, allProjects] = await Promise.all([api.listAllScans(), api.listProjects()]);
+      if (requestSeqRef.current !== seq) return;
       setProjects(allProjects);
       setLoadFailed(false);
       setScans(
@@ -50,6 +54,7 @@ export function useScanRows(options?: { completedOnly?: boolean }) {
         ),
       );
     } catch (error) {
+      if (requestSeqRef.current !== seq) return;
       toast.error(error instanceof Error ? error.message : String(error));
       setLoadFailed(true);
     }

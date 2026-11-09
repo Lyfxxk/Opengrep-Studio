@@ -59,7 +59,7 @@ export default function ProjectDetailPage() {
       if (requestSeqRef.current !== seq) return;
       const found = projects.find((item) => item.id === id) ?? null;
       setProject(found);
-      if (found?.hasSource) {
+      if (found?.hasSource && !loadedOnceRef.current) {
         setUpload((prev) =>
           prev.status === 'idle'
             ? { status: 'uploaded', sourceType: 'upload', fileName: t('projectDetail.sourceRestored') }
