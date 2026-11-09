@@ -62,6 +62,10 @@ export function newId(prefix: string): string {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+export function paramStr(value: string | string[] | undefined): string {
+  return Array.isArray(value) ? (value[0] ?? '') : (value ?? '');
+}
+
 export function decodeUploadFileName(name: string): string {
   const decoded = Buffer.from(name, 'latin1').toString('utf8');
   return decoded.includes('\uFFFD') ? name : decoded;

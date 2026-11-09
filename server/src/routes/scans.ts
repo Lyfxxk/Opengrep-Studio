@@ -40,6 +40,7 @@ import {
   decodeUploadFileName,
   limit400,
   memoryFileUpload,
+  paramStr,
   parseProductLang,
   requireProject,
   requireValidBaseline,
@@ -153,7 +154,7 @@ scanRoutes.post('/api/projects/:id/scans', requireRole('auditor'), asyncHandler(
       code: 'srv.scanUpgradeBusy',
     });
   }
-  const project = requireProject(req.params.id);
+  const project = requireProject(paramStr(req.params.id));
   if (isProjectImporting(project.id)) {
     throw new HttpError(409, '该项目正在导入源码（上传/克隆）中，请等待完成后再试', {
       code: 'srv.projectImportBusy',
@@ -212,8 +213,8 @@ scanRoutes.post('/api/projects/:id/scans', requireRole('auditor'), asyncHandler(
 }));
 
 scanRoutes.get('/api/projects/:id/scans', asyncHandler(async (req, res) => {
-  requireProject(req.params.id);
-  res.json(listScans(req.params.id).map(toScanSummary));
+  requireProject(paramStr(req.params.id));
+  res.json(listScans(paramStr(req.params.id)).map(toScanSummary));
 }));
 
 scanRoutes.get('/api/scans', asyncHandler(async (_req, res) => {
@@ -225,12 +226,12 @@ scanRoutes.get('/api/dashboard/risk-summary', asyncHandler(async (_req, res) => 
 }));
 
 scanRoutes.get('/api/scans/:scanId', asyncHandler(async (req, res) => {
-  const { queueOwner: _queueOwner, ...scan } = requireScan(req.params.scanId);
+  const { queueOwner: _queueOwner, ...scan } = requireScan(paramStr(req.params.scanId));
   res.json({ ...scan, commandLine: scan.commandLine ? sanitizeCommand(scan.commandLine) : null });
 }));
 
 scanRoutes.delete('/api/scans/:scanId', requireRole('admin'), asyncHandler(async (req, res) => {
-  const scan = requireScan(req.params.scanId);
+  const scan = requireScan(paramStr(req.params.scanId));
   if (scan.status === 'scanning') {
     throw new HttpError(409, '扫描进行中，请等扫描完成或失败后再删除', { code: 'srv.scanBusy' });
   }
@@ -247,7 +248,7 @@ scanRoutes.delete('/api/scans/:scanId', requireRole('admin'), asyncHandler(async
 }));
 
 scanRoutes.post('/api/scans/:scanId/cancel', requireRole('auditor'), asyncHandler(async (req, res) => {
-  const scan = requireScan(req.params.scanId);
+  const scan = requireScan(paramStr(req.params.scanId));
   if (scan.status !== 'scanning') {
     throw new HttpError(409, '扫描已结束，无需取消', { code: 'srv.scanNotRunning' });
   }
@@ -266,7 +267,7 @@ scanRoutes.post('/api/scans/:scanId/cancel', requireRole('auditor'), asyncHandle
 }));
 
 scanRoutes.get('/api/scans/:scanId/issues', asyncHandler(async (req, res) => {
-  const scan = requireScan(req.params.scanId);
+  const scan = requireScan(paramStr(req.params.scanId));
   const issues = listIssues(scan.id);
   const reviews = new Map(listReviews(scan.projectId).map((review) => [review.fingerprint, review]));
   res.json(
@@ -297,7 +298,7 @@ scanRoutes.get('/api/scans/:scanId/issues', asyncHandler(async (req, res) => {
 }));
 
 scanRoutes.get('/api/scans/:scanId/snippet', asyncHandler(async (req, res) => {
-  const scan = requireScan(req.params.scanId);
+  const scan = requireScan(paramStr(req.params.scanId));
   const filePath = String(req.query.path ?? '');
   const startLine = Number(req.query.start ?? 0);
   const endLine = Number(req.query.end ?? 0);
@@ -376,7 +377,7 @@ scanRoutes.get('/api/scans/:scanId/snippet', asyncHandler(async (req, res) => {
 }));
 
 scanRoutes.get('/api/scans/:scanId/report', asyncHandler(async (req, res) => {
-  const scan = requireScan(req.params.scanId);
+  const scan = requireScan(paramStr(req.params.scanId));
   if (scan.status !== 'completed') {
     throw new HttpError(400, '仅已完成的扫描可生成测试报告', { code: 'srv.scanNotCompleted' });
   }
@@ -423,7 +424,7 @@ scanRoutes.get('/api/scans/:scanId/report', asyncHandler(async (req, res) => {
 }));
 
 scanRoutes.get('/api/scans/:scanId/sarif', asyncHandler(async (req, res) => {
-  const scan = requireScan(req.params.scanId);
+  const scan = requireScan(paramStr(req.params.scanId));
   if (scan.status !== 'completed') {
     throw new HttpError(400, '仅已完成的扫描可导出 SARIF', { code: 'srv.sarifNotCompleted' });
   }
@@ -448,7 +449,7 @@ scanRoutes.post(
   requireRole('auditor'),
   limit400(importSarifUpload.single('file'), MAX_SARIF_BYTES),
   asyncHandler(async (req, res) => {
-    const project = requireProject(req.params.id);
+    const project = requireProject(paramStr(req.params.id));
     if (!req.file) {
       throw new HttpError(400, '请通过 multipart 表单上传 file 字段（.sarif / .json）', {
         code: 'srv.fileRequired',
@@ -495,7 +496,7 @@ scanRoutes.post(
 );
 
 scanRoutes.get('/api/scans/:scanId/manifest', asyncHandler(async (req, res) => {
-  const scan = requireScan(req.params.scanId);
+  const scan = requireScan(paramStr(req.params.scanId));
   const project = getProject(scan.projectId);
   const engineVersion = await resolveScanEngineVersion(scan);
   const lang = parseProductLang(req.query.lang);
@@ -539,7 +540,7 @@ scanRoutes.get('/api/scans/:scanId/manifest', asyncHandler(async (req, res) => {
 
 
 scanRoutes.get('/api/scans/:scanId/diff', asyncHandler(async (req, res) => {
-  const scan = requireScan(req.params.scanId);
+  const scan = requireScan(paramStr(req.params.scanId));
   if (scan.status !== 'completed') {
     throw new HttpError(400, '仅已完成的扫描可参与对比', { code: 'srv.diffNotCompleted' });
   }

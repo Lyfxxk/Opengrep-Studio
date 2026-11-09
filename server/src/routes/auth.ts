@@ -19,7 +19,7 @@ import {
   requireRole,
   verifyPassword,
 } from '../auth.js';
-import { asyncHandler, newId } from './shared.js';
+import { asyncHandler, newId, paramStr } from './shared.js';
 
 export const authRoutes = Router();
 
@@ -120,7 +120,7 @@ authRoutes.post('/api/users', requireRole('admin'), asyncHandler(async (req: Req
 }));
 
 authRoutes.patch('/api/users/:id', requireRole('admin'), asyncHandler(async (req: Request, res: Response) => {
-  const target = requireTargetUser(req.params.id);
+  const target = requireTargetUser(paramStr(req.params.id));
   const operator = getSessionUser(req);
   const rawRole = req.body?.role;
   const rawPassword = req.body?.password;
@@ -143,7 +143,7 @@ authRoutes.patch('/api/users/:id', requireRole('admin'), asyncHandler(async (req
 }));
 
 authRoutes.delete('/api/users/:id', requireRole('admin'), asyncHandler(async (req: Request, res: Response) => {
-  const target = requireTargetUser(req.params.id);
+  const target = requireTargetUser(paramStr(req.params.id));
   const operator = getSessionUser(req);
   requireManageableTarget(target, operator);
   deleteUser(target.id);

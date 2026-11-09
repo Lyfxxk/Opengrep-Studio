@@ -29,7 +29,7 @@ import { getRuleKnowledge } from '../knowledge.js';
 import { hasRunningScan, MAX_PATH_FILTER_GLOBSTARS } from '../scan-runner.js';
 import { runRuleLab } from '../rule-lab.js';
 import { requireRole } from '../auth.js';
-import { asyncHandler, isEngineJobBusy, MAX_RULE_YAML_BYTES, MAX_SAMPLE_BYTES, newId, parseProductLang, withEngineJobBusy } from './shared.js';
+import { asyncHandler, isEngineJobBusy, MAX_RULE_YAML_BYTES, MAX_SAMPLE_BYTES, newId, paramStr, parseProductLang, withEngineJobBusy } from './shared.js';
 
 export const miscRoutes = Router();
 
@@ -201,7 +201,7 @@ miscRoutes.post('/api/configs', requireRole('admin'), asyncHandler(async (req, r
 }));
 
 miscRoutes.put('/api/configs/:id', requireRole('admin'), asyncHandler(async (req, res) => {
-  const existing = getConfig(req.params.id);
+  const existing = getConfig(paramStr(req.params.id));
   if (!existing) {
     throw new HttpError(404, '扫描配置不存在或已被删除', { code: 'srv.configNotFound' });
   }
@@ -211,7 +211,7 @@ miscRoutes.put('/api/configs/:id', requireRole('admin'), asyncHandler(async (req
 }));
 
 miscRoutes.delete('/api/configs/:id', requireRole('admin'), asyncHandler(async (req, res) => {
-  const existing = getConfig(req.params.id);
+  const existing = getConfig(paramStr(req.params.id));
   if (!existing) {
     throw new HttpError(404, '扫描配置不存在或已被删除', { code: 'srv.configNotFound' });
   }

@@ -32,7 +32,7 @@ import {
   scanPackSamples,
   type PackManifest,
 } from '../pack-format.js';
-import { asyncHandler, decodeUploadFileName, limit400, MAX_RULE_YAML_BYTES, MAX_SAMPLE_BYTES, memoryFileUpload, newId, normalizeLanguageField, withEngineJobBusy } from './shared.js';
+import { asyncHandler, decodeUploadFileName, limit400, MAX_RULE_YAML_BYTES, MAX_SAMPLE_BYTES, memoryFileUpload, newId, normalizeLanguageField, paramStr, withEngineJobBusy } from './shared.js';
 
 export const rulepackRoutes = Router();
 
@@ -272,7 +272,7 @@ rulepackRoutes.post('/api/rulepacks', requireRole('auditor'), asyncHandler(async
 }));
 
 rulepackRoutes.patch('/api/rulepacks/:id', requireRole('admin'), asyncHandler(async (req, res) => {
-  const pack = getRulePack(req.params.id);
+  const pack = getRulePack(paramStr(req.params.id));
   if (!pack) throw new HttpError(404, '规则包不存在或已被删除', { code: 'srv.packNotFound' });
   const enabled = req.body?.enabled;
   if (typeof enabled !== 'boolean') {
@@ -308,7 +308,7 @@ rulepackRoutes.post(
 );
 
 rulepackRoutes.get('/api/rulepacks/:id/content', asyncHandler(async (req, res) => {
-  const pack = getRulePack(req.params.id);
+  const pack = getRulePack(paramStr(req.params.id));
   if (!pack) throw new HttpError(404, '规则包不存在或已被删除', { code: 'srv.packNotFound' });
   if (pack.isDir) {
     throw new HttpError(400, '目录式规则包含多个规则文件与样本，暂不支持在线查看/编辑', {
@@ -323,7 +323,7 @@ rulepackRoutes.get('/api/rulepacks/:id/content', asyncHandler(async (req, res) =
 }));
 
 rulepackRoutes.put('/api/rulepacks/:id/content', requireRole('admin'), asyncHandler(async (req, res) => {
-  const pack = getRulePack(req.params.id);
+  const pack = getRulePack(paramStr(req.params.id));
   if (!pack) throw new HttpError(404, '规则包不存在或已被删除', { code: 'srv.packNotFound' });
   if (pack.builtin) {
     throw new HttpError(403, '内置规则包不可在线编辑，请通过 server/scripts/curate-rules.py 更新', {
@@ -359,7 +359,7 @@ rulepackRoutes.put('/api/rulepacks/:id/content', requireRole('admin'), asyncHand
 }));
 
 rulepackRoutes.delete('/api/rulepacks/:id', requireRole('admin'), asyncHandler(async (req, res) => {
-  const pack = getRulePack(req.params.id);
+  const pack = getRulePack(paramStr(req.params.id));
   if (!pack) throw new HttpError(404, '规则包不存在或已被删除', { code: 'srv.packNotFound' });
   if (pack.builtin) {
     throw new HttpError(403, '内置规则包不可删除，如不需要可在配置中取消勾选或停用', {
@@ -432,7 +432,7 @@ function buildExportReadme(pack: RulePack, packDir?: string): string {
 }
 
 rulepackRoutes.get('/api/rulepacks/:id/export', asyncHandler(async (req, res) => {
-  const pack = getRulePack(req.params.id);
+  const pack = getRulePack(paramStr(req.params.id));
   if (!pack) throw new HttpError(404, '规则包不存在或已被删除', { code: 'srv.packNotFound' });
   if (pack.builtin) {
     throw new HttpError(403, '内置规则包不可导出，请从官方 opengrep-rules 仓库获取', {
@@ -648,7 +648,7 @@ rulepackRoutes.post(
 );
 
 rulepackRoutes.post('/api/rulepacks/:id/check', requireRole('auditor'), asyncHandler(async (req, res) => {
-  const pack = getRulePack(req.params.id);
+  const pack = getRulePack(paramStr(req.params.id));
   if (!pack) throw new HttpError(404, '规则包不存在或已被删除', { code: 'srv.packNotFound' });
   if (pack.builtin) {
     throw new HttpError(403, '内置规则包暂无样本，不支持质量检查', { code: 'srv.builtinNoSamples' });
