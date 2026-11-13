@@ -271,3 +271,31 @@ test('extractZipSafely 正常 ZIP 解压成功且条目数正确（防过度拦�
     fs.rmSync(parent, { recursive: true, force: true });
   }
 });
+
+test('extractZipSafely 拒绝大小写冲突的条目（大小写不敏感平台静默覆盖会丢文件）', async () => {
+  const { parent, dest } = makeTemp();
+  try {
+    const zip = new AdmZip();
+    zip.addFile('Web.config', Buffer.from('upper'));
+    zip.addFile('web.config', Buffer.from('lower'));
+    await assertRejectedAsync(() => extractZipSafely(zip.toBuffer(), dest), 'archive.zipCaseConflict');
+    assert.equal(fs.existsSync(dest), false);
+  } finally {
+    fs.rmSync(parent, { recursive: true, force: true });
+  }
+});
+
+test('extractZipSafely 对精确同名条目放行（adm-zip 按名去重，后者胜出）', async () => {
+  const { parent, dest } = makeTemp();
+  try {
+    const zip = new AdmZip();
+    zip.addFile('a.txt', Buffer.from('1'));
+    zip.addFile('a.txt', Buffer.from('2'));
+    const count = await extractZipSafely(zip.toBuffer(), dest);
+    assert.equal(count, 1);
+    assert.equal(fs.readFileSync(path.join(dest, 'a.txt'), 'utf8'), '2');
+    assert.equal(fs.readdirSync(dest).length, 1);
+  } finally {
+    fs.rmSync(parent, { recursive: true, force: true });
+  }
+});

@@ -168,6 +168,21 @@ export async function extractZipSafely(buffer: Buffer, destDir: string): Promise
     names.push(name);
   }
 
+  const seen = new Map<string, string>();
+  const caseFold = process.platform === 'win32' || process.platform === 'darwin';
+  for (const name of names) {
+    const key = caseFold ? name.toLowerCase() : name;
+    const previous = seen.get(key);
+    if (previous !== undefined && previous !== name) {
+      throw new HttpError(
+        400,
+        `ZIP 包内存在大小写冲突的条目：${previous} 与 ${name}`,
+        { code: 'archive.zipCaseConflict', params: { entry: `${previous} / ${name}` } },
+      );
+    }
+    if (previous === undefined) seen.set(key, name);
+  }
+
   await fs.promises.rm(destDir, { recursive: true, force: true });
   let extractedBytes = 0;
   for (let index = 0; index < fileEntries.length; index += 1) {
