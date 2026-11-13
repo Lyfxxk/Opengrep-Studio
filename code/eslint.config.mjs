@@ -1,5 +1,5 @@
 import { globalIgnores } from 'eslint/config'
-import tseslint from 'typescript-eslint'
+import babelParser from '@babel/eslint-parser'
 import reactHooks from 'eslint-plugin-react-hooks'
 import globals from 'globals'
 
@@ -8,17 +8,20 @@ export default [
   {
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
-      parser: tseslint.parser,
-      parserOptions: { ecmaFeatures: { jsx: true } },
+      parser: babelParser,
+      parserOptions: {
+        ecmaFeatures: { jsx: true },
+        requireConfigFile: false,
+        babelOptions: { parserOpts: { plugins: ['typescript', 'jsx'] } },
+      },
       globals: { ...globals.browser, ...globals.node },
     },
     plugins: {
-      '@typescript-eslint': tseslint.plugin,
       'react-hooks': reactHooks,
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
-      '@typescript-eslint/no-redeclare': 'error',
+      'no-redeclare': 'error',
     },
   },
 ]
