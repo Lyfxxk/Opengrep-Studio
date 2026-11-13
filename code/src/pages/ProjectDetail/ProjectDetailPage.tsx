@@ -139,10 +139,13 @@ export default function ProjectDetailPage() {
 
   const handleConfigChange = async (configId: string) => {
     if (!id) return;
+    const requestId = id;
     try {
       const updated = await api.updateProject(id, { configId });
+      if (activeIdRef.current !== requestId) return;
       setProject(updated);
     } catch (error) {
+      if (activeIdRef.current !== requestId) return;
       toast.error(error instanceof Error ? error.message : String(error));
     }
   };
@@ -253,37 +256,46 @@ export default function ProjectDetailPage() {
 
   const handleStartScan = async () => {
     if (!id || !project) return;
+    const requestId = id;
     setStartingScan(true);
     try {
       const record = await api.startScan(id, {
         baselineScanId: project.baselineScanId ?? null,
       });
+      if (activeIdRef.current !== requestId) return;
       setScans((prev) => [record, ...prev]);
       setUpload({ status: 'idle' });
       void refresh();
     } catch (error) {
+      if (activeIdRef.current !== requestId) return;
       toast.error(error instanceof Error ? error.message : String(error));
     } finally {
-      setStartingScan(false);
+      if (activeIdRef.current === requestId) setStartingScan(false);
     }
   };
 
   const handleSetBaseline = async (scanId: string) => {
     if (!id) return;
+    const requestId = id;
     try {
       const updated = await api.updateProject(id, { baselineScanId: scanId });
+      if (activeIdRef.current !== requestId) return;
       setProject(updated);
     } catch (error) {
+      if (activeIdRef.current !== requestId) return;
       toast.error(error instanceof Error ? error.message : String(error));
     }
   };
 
   const handleUnsetBaseline = async () => {
     if (!id) return;
+    const requestId = id;
     try {
       const updated = await api.updateProject(id, { baselineScanId: null });
+      if (activeIdRef.current !== requestId) return;
       setProject(updated);
     } catch (error) {
+      if (activeIdRef.current !== requestId) return;
       toast.error(error instanceof Error ? error.message : String(error));
     }
   };
@@ -293,14 +305,17 @@ export default function ProjectDetailPage() {
 
   const handleImportSarif = async (file: File) => {
     if (!id) return;
+    const requestId = id;
     setImportingSarif(true);
     try {
       await api.importSarif(id, file, project?.baselineScanId ?? undefined);
+      if (activeIdRef.current !== requestId) return;
       await refresh();
     } catch (error) {
+      if (activeIdRef.current !== requestId) return;
       toast.error(error instanceof Error ? error.message : String(error));
     } finally {
-      setImportingSarif(false);
+      if (activeIdRef.current === requestId) setImportingSarif(false);
     }
   };
 
