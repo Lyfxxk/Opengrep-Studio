@@ -116,7 +116,6 @@ export function enqueueScan(scanId: string, plan: ScanPlan): void {
         updateScan(scanId, {
           queuedAt: null,
           dequeuedAt: new Date().toISOString(),
-          queueOwner: null,
         });
       }
       return runScan(scanId, plan);
@@ -197,13 +196,16 @@ const STALE_SCAN_GRACE_MS = 2 * 60 * 1000;
 
 function reapOrphanedQueuedScans(): void {
   const aliveCutoff = new Date(Date.now() - INSTANCE_STALE_MS).toISOString();
+  const runCutoff = new Date(Date.now() - (config.scanTimeoutMs + STALE_SCAN_GRACE_MS)).toISOString();
   const rows = db.prepare(
-    `SELECT id FROM scans
-     WHERE status = 'scanning' AND queued_at IS NOT NULL
+    `SELECT id, queued_at, started_at, dequeued_at FROM scans
+     WHERE status = 'scanning'
        AND (queue_owner IS NULL OR queue_owner NOT IN (
          SELECT token FROM scan_instances WHERE last_seen >= ?
-       ))`,
-  ).all(aliveCutoff) as Array<{ id: string }>;
+       ))
+       AND (queued_at IS NOT NULL
+         OR COALESCE(started_at, dequeued_at, scanned_at) < ?)`,
+  ).all(aliveCutoff, runCutoff) as Array<{ id: string }>;
   for (const row of rows) {
     updateScan(row.id, {
       status: 'failed',
@@ -229,20 +231,6 @@ setInterval(() => {
 
 export function markStaleScansFailed(): void {
   reapOrphanedQueuedScans();
-  const cutoff = new Date(Date.now() - (config.scanTimeoutMs + STALE_SCAN_GRACE_MS)).toISOString();
-  const rows = db.prepare(
-    `SELECT id FROM scans
-     WHERE status = 'scanning' AND queued_at IS NULL
-       AND COALESCE(started_at, dequeued_at, scanned_at) < ?`,
-  ).all(cutoff) as Array<{ id: string }>;
-  for (const row of rows) {
-    updateScan(row.id, {
-      status: 'failed',
-      finishedAt: new Date().toISOString(),
-      message: '服务重启导致扫描中断，请重新发起',
-      errorCode: 'scan.interrupted',
-    });
-  }
 }
 
 async function countFiles(dir: string): Promise<number> {

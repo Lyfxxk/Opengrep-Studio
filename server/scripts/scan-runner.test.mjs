@@ -163,3 +163,27 @@ test('未带 code 的意外失败只留中文兜底文案，回读不产生空�
   assert.equal(scan.errorCode, undefined);
   assert.equal(scan.errorParams, undefined);
 });
+
+test('运行中扫描的所属实例已失联且超过超时+宽限时被 reaper 回收（修复硬杀幽灵扫描）', () => {
+  seedScanning('scan-running-orphan', {
+    startedAt: hoursAgo(3),
+    dequeuedAt: hoursAgo(3),
+    scannedAt: hoursAgo(3),
+    queueOwner: 'dead-instance',
+  });
+  markStaleScansFailed();
+  const orphan = getScan('scan-running-orphan');
+  assert.equal(orphan.status, 'failed');
+  assert.equal(orphan.errorCode, 'scan.interrupted');
+});
+
+test('运行中扫描的所属实例已失联但未超时时不被误杀（另一实例可能还在跑）', () => {
+  seedScanning('scan-running-recent-orphan', {
+    startedAt: hoursAgo(0.05),
+    dequeuedAt: hoursAgo(0.05),
+    scannedAt: hoursAgo(0.05),
+    queueOwner: 'dead-instance',
+  });
+  markStaleScansFailed();
+  assert.equal(getScan('scan-running-recent-orphan').status, 'scanning');
+});
