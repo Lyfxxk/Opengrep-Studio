@@ -272,14 +272,22 @@ test('extractZipSafely 正常 ZIP 解压成功且条目数正确（防过度拦�
   }
 });
 
-test('extractZipSafely 拒绝大小写冲突的条目（大小写不敏感平台静默覆盖会丢文件）', async () => {
+test('extractZipSafely 大小写冲突条目按平台处理：不敏感平台拒绝，敏感平台两个都保留', async () => {
   const { parent, dest } = makeTemp();
   try {
     const zip = new AdmZip();
     zip.addFile('Web.config', Buffer.from('upper'));
     zip.addFile('web.config', Buffer.from('lower'));
-    await assertRejectedAsync(() => extractZipSafely(zip.toBuffer(), dest), 'archive.zipCaseConflict');
-    assert.equal(fs.existsSync(dest), false);
+    if (process.platform === 'win32' || process.platform === 'darwin') {
+      await assertRejectedAsync(() => extractZipSafely(zip.toBuffer(), dest), 'archive.zipCaseConflict');
+      assert.equal(fs.existsSync(dest), false);
+    } else {
+      const count = await extractZipSafely(zip.toBuffer(), dest);
+      assert.equal(count, 2);
+      assert.equal(fs.readdirSync(dest).length, 2);
+      assert.equal(fs.readFileSync(path.join(dest, 'Web.config'), 'utf8'), 'upper');
+      assert.equal(fs.readFileSync(path.join(dest, 'web.config'), 'utf8'), 'lower');
+    }
   } finally {
     fs.rmSync(parent, { recursive: true, force: true });
   }
