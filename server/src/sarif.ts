@@ -262,12 +262,29 @@ export function parseSarifImport(input: string): SarifImportResult {
   let totalResults = 0;
 
   for (const run of doc.runs) {
+    if (typeof run !== 'object' || run === null || Array.isArray(run)) {
+      throw new HttpError(400, 'SARIF runs 数组的每一项必须是对象', { code: 'sarif.runInvalid' });
+    }
     const driver = run?.tool?.driver;
     const rules = Array.isArray(driver?.rules) ? driver!.rules! : [];
     if (!toolName && typeof driver?.name === 'string' && driver.name.trim()) {
       toolName = driver.name.trim();
     }
-    for (const result of run?.results ?? []) {
+    if (run.results !== undefined && run.results !== null && !Array.isArray(run.results)) {
+      throw new HttpError(400, 'SARIF run 的 results 必须是数组', { code: 'sarif.resultsInvalid' });
+    }
+    for (const result of run.results ?? []) {
+      if (typeof result !== 'object' || result === null || Array.isArray(result)) {
+        throw new HttpError(400, 'SARIF results 数组的每一项必须是对象', { code: 'sarif.resultInvalid' });
+      }
+      if (result.ruleId !== undefined && result.ruleId !== null && typeof result.ruleId !== 'string') {
+        throw new HttpError(400, 'SARIF result 的 ruleId 必须是字符串', { code: 'sarif.ruleIdInvalid' });
+      }
+      if (result.message !== undefined && result.message !== null
+        && (typeof result.message !== 'object' || Array.isArray(result.message)
+          || (result.message.text !== undefined && result.message.text !== null && typeof result.message.text !== 'string'))) {
+        throw new HttpError(400, 'SARIF result 的 message.text 必须是字符串', { code: 'sarif.messageInvalid' });
+      }
       totalResults += 1;
       if (totalResults > config.maxImportEntries) {
         throw new HttpError(400, `SARIF 结果数超过 ${config.maxImportEntries} 上限`, {

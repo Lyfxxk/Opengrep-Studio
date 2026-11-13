@@ -173,3 +173,27 @@ test('非法输入全部 400：坏 JSON / 非 2.x / 缺 runs / 顶层非对象',
     (error) => error.meta?.code === 'sarif.notObject',
   );
 });
+
+test('类型混淆的载荷全部 400 而不是裸 TypeError（结构合法但类型错误的 SARIF）', () => {
+  const cases = [
+    [sarifWith({ results: {} }), 'sarif.resultsInvalid'],
+    [sarifWith({ results: [null] }), 'sarif.resultInvalid'],
+    [sarifWith({ results: [{ ruleId: 42, message: { text: 'x' } }] }), 'sarif.ruleIdInvalid'],
+    [sarifWith({ results: [{ ruleId: 'r', message: { text: 5 } }] }), 'sarif.messageInvalid'],
+  ];
+  for (const [payload, code] of cases) {
+    assert.throws(() => parseSarifImport(payload), (error) => error.meta?.code === code, `期望 ${code}`);
+  }
+
+  function sarifWith(overrides) {
+    const run = {
+      tool: { driver: { name: '外部扫描器', rules: [{ id: RULE_ID }] } },
+      results: [],
+    };
+    for (const [key, value] of Object.entries(overrides)) {
+      if (key === 'tool') run.tool = value;
+      else run[key] = value;
+    }
+    return JSON.stringify({ version: '2.1.0', runs: [run] });
+  }
+});
