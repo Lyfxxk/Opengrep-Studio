@@ -601,7 +601,12 @@ async function importLoosePack(
   } catch (error) {
     throw asRuleFileHttpError(error, looseFiles[0].name);
   }
-  const pack = saveNewRulePack(name, language || 'Other', content, options.originalName);
+  let pack;
+  try {
+    pack = saveNewRulePack(name, language || 'Other', content, options.originalName);
+  } catch (error) {
+    throw asRuleFileHttpError(error, looseFiles[0].name);
+  }
   res.status(201).json({
     ...pack,
     message: '导入成功（单文件包，无样本，basic 档）',

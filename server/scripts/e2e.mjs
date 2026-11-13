@@ -1227,6 +1227,19 @@ const nestedImported = await api('POST', '/api/rulepacks/import', packZipForm(ne
 assert(nestedImported.status === 201 && nestedImported.json.ruleCount === 1,
   '单层目录内的散装 YAML 可导入', JSON.stringify(nestedImported.json));
 
+const brokenLoosePack = new AdmZip();
+brokenLoosePack.addFile('broken.yaml', Buffer.from('rules: [ { broken\n', 'utf8'));
+const brokenLooseForm = new FormData();
+brokenLooseForm.append('file', new Blob([brokenLoosePack.toBuffer()], { type: 'application/zip' }), 'broken-loose.zip');
+brokenLooseForm.append('language', 'Java');
+const brokenLooseImported = await api('POST', '/api/rulepacks/import', brokenLooseForm);
+assert(
+  brokenLooseImported.status === 400
+    && brokenLooseImported.json.error?.code === 'srv.ruleFileInvalidDetail',
+  '带 language 字段导入非法 YAML 返回结构化 400 而非 500',
+  JSON.stringify(brokenLooseImported.json),
+);
+
 const basicPack = new AdmZip();
 basicPack.addFile('pack.yaml', Buffer.from('name: E2E-无样本包\nversion: 0.3.0\n', 'utf8'));
 basicPack.addFile('rules/eval.yaml', Buffer.from(LAB_EVAL_RULE, 'utf8'));
