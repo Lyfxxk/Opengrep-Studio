@@ -41,6 +41,23 @@ function freePort() {
   });
 }
 
+function canBind(port) {
+  return new Promise((resolve) => {
+    const server = net.createServer();
+    server.once('error', () => resolve(false));
+    server.once('listening', () => server.close(() => resolve(true)));
+    server.listen(port, '127.0.0.1');
+  });
+}
+
+async function freePortPair() {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const port = await freePort();
+    if ((await canBind(port)) && (await canBind(port + 1))) return port;
+  }
+  throw new Error('找不到连续两个可绑定的端口，请检查系统保留端口段');
+}
+
 async function waitHealthy(port, timeoutMs) {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
@@ -55,20 +72,6 @@ async function waitHealthy(port, timeoutMs) {
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
   return null;
-}
-
-function portFree(port) {
-  return new Promise((resolve) => {
-    const socket = net.connect({ host: '127.0.0.1', port });
-    socket.once('connect', () => {
-      socket.destroy();
-      resolve(false);
-    });
-    socket.once('error', () => {
-      socket.destroy();
-      resolve(true);
-    });
-  });
 }
 
 function listen(port) {
@@ -104,8 +107,7 @@ try {
   const customRulesDir = path.join(tmpDir, 'custom-rules');
   fs.mkdirSync(dataDir, { recursive: true });
   fs.mkdirSync(customRulesDir, { recursive: true });
-  let port = await freePort();
-  while (!(await portFree(port + 1))) port = await freePort();
+  let port = await freePortPair();
   dummy = await listen(port);
   const appPort = port + 1;
   console.log(`[smoke] 端口 ${port} 预置为他家 TCP 服务，验证 exe 顺延到 ${appPort} …`);
