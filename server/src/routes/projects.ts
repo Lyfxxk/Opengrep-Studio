@@ -284,9 +284,19 @@ projectRoutes.post(
       const looseFiles = filesMap.files ?? [];
       const respectGitignore = req.body?.respectGitignore !== 'false';
 
-      const commitStaging = () => {
+      const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+      const commitStaging = async () => {
         fs.rmSync(destDir, { recursive: true, force: true });
-        fs.renameSync(stagingDir, destDir);
+        for (let attempt = 0; ; attempt += 1) {
+          try {
+            fs.renameSync(stagingDir, destDir);
+            return;
+          } catch (error) {
+            const code = (error as NodeJS.ErrnoException | null)?.code;
+            if (attempt >= 4 || (code !== 'EPERM' && code !== 'EACCES')) throw error;
+            await sleep(100 * 2 ** attempt);
+          }
+        }
       };
 
       if (archive) {
@@ -301,7 +311,7 @@ projectRoutes.post(
         const extracted = await extractArchive(archive.buffer, stagingDir, archiveName);
         const { fileCount, ignoredCount } = await applyIgnoreFilter(stagingDir, extracted, respectGitignore);
         const languageStats = await collectLanguageStats(stagingDir);
-        commitStaging();
+        await commitStaging();
         updateProject(project.id, { languageStats });
         res.json({
           fileName: archiveName,
@@ -330,7 +340,7 @@ projectRoutes.post(
           commonRoot ?? (looseFiles.length === 1 ? firstSegments[0] : `${looseFiles.length} 个文件`);
         const { fileCount, ignoredCount } = await applyIgnoreFilter(stagingDir, looseFiles.length, respectGitignore);
         const languageStats = await collectLanguageStats(stagingDir);
-        commitStaging();
+        await commitStaging();
         updateProject(project.id, { languageStats });
         res.json({
           fileName: label,
