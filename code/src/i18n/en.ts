@@ -1043,7 +1043,7 @@ const en: typeof zh = {
     usernameLabel: 'Username',
     usernamePlaceholder: 'Letters, digits, underscore and hyphen only',
     passwordLabel: 'Initial password',
-    passwordPlaceholder: '6-100 characters',
+    passwordPlaceholder: '6–100 characters',
     roleLabel: 'Role',
     errorUsername: 'Username must be 1–50 characters: letters, digits, underscore and hyphen only',
     errorPassword: 'Password must be 6–100 characters long',
