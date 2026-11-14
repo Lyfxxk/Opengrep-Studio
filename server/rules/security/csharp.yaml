@@ -38,7 +38,7 @@ rules:
 
         '
     by-side-effect: true
-  message: Detected a formatted string in a SQL statement. This could lead to SQL injection if variables in the SQL statement are not properly sanitized. Use a prepared statements instead. You can obtain a PreparedStatement using 'SqlCommand' and 'SqlParameter'.
+  message: Detected a formatted string in a SQL statement. This could lead to SQL injection if variables in the SQL statement are not properly sanitized. Use prepared statements instead. You can obtain a PreparedStatement using 'SqlCommand' and 'SqlParameter'.
   metadata:
     category: security
     technology:

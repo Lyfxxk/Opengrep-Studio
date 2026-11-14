@@ -3201,7 +3201,7 @@ rules:
       - pattern: django.template.Template.render(..., $CONTEXT, ...)
   severity: ERROR
 - id: python.nan-injection
-  message: Found user input going directly into typecast for bool(), float(), or complex(). This allows an attacker to inject Python's not-a-number (NaN) into the typecast. This results in undefind behavior, particularly when doing comparisons. Either cast to a different type, or add a guard checking for all capitalizations of the string 'nan'.
+  message: Found user input going directly into typecast for bool(), float(), or complex(). This allows an attacker to inject Python's not-a-number (NaN) into the typecast. This results in undefined behavior, particularly when doing comparisons. Either cast to a different type, or add a guard checking for all capitalizations of the string 'nan'.
   languages:
   - python
   severity: ERROR
@@ -7557,7 +7557,7 @@ rules:
           '
     - pattern: $DB.execute($SQL)
 - id: python.global-autoescape-off
-  message: 'Autoescape is globally disbaled for this Django application. If you are rendering any web pages, this exposes your application to cross-site scripting (XSS) vulnerabilities. Remove ''autoescape: False'' or set it to ''True''.'
+  message: 'Autoescape is globally disabled for this Django application. If you are rendering any web pages, this exposes your application to cross-site scripting (XSS) vulnerabilities. Remove ''autoescape: False'' or set it to ''True''.'
   metadata:
     cwe:
     - 'CWE-79: Improper Neutralization of Input During Web Page Generation (''Cross-site Scripting'')'
@@ -8229,7 +8229,7 @@ rules:
   - python
   severity: WARNING
 - id: python.insecure-cipher-algorithm-arc4
-  message: ARC4 (Alleged RC4) is a stream cipher with serious weaknesses in its initial stream output.  Its use is strongly discouraged. ARC4 does not use mode constructions. Use a strong symmetric cipher such as EAS instead. With the `cryptography` package it is recommended to use the `Fernet` which is a secure implementation of AES in CBC mode with a 128-bit key.  Alternatively, keep using the `Cipher` class from the hazmat primitives but use the AES algorithm instead.
+  message: ARC4 (Alleged RC4) is a stream cipher with serious weaknesses in its initial stream output.  Its use is strongly discouraged. ARC4 does not use mode constructions. Use a strong symmetric cipher such as AES instead. With the `cryptography` package it is recommended to use the `Fernet` which is a secure implementation of AES in CBC mode with a 128-bit key.  Alternatively, keep using the `Cipher` class from the hazmat primitives but use the AES algorithm instead.
   metadata:
     source-rule-url: https://github.com/PyCQA/bandit/blob/d5f8fa0d89d7b11442fc6ec80ca42953974354c8/bandit/blacklists/calls.py#L98
     cwe:
@@ -8341,7 +8341,7 @@ rules:
   - pattern: Cryptodome.Cipher.DES3.new(...)
   - pattern: Crypto.Cipher.DES3.new(...)
 - id: python.insecure-cipher-algorithm-idea
-  message: IDEA (International Data Encryption Algorithm) is a block cipher created in 1991.  It is an optional component of the OpenPGP standard. This cipher is susceptible to attacks when using weak keys.  It is recommended that you do not use this cipher for new applications. Use a strong symmetric cipher such as EAS instead. With the `cryptography` package it is recommended to use `Fernet` which is a secure implementation of AES in CBC mode with a 128-bit key.  Alternatively, keep using the `Cipher` class from the hazmat primitives but use the AES algorithm instead.
+  message: IDEA (International Data Encryption Algorithm) is a block cipher created in 1991.  It is an optional component of the OpenPGP standard. This cipher is susceptible to attacks when using weak keys.  It is recommended that you do not use this cipher for new applications. Use a strong symmetric cipher such as AES instead. With the `cryptography` package it is recommended to use `Fernet` which is a secure implementation of AES in CBC mode with a 128-bit key.  Alternatively, keep using the `Cipher` class from the hazmat primitives but use the AES algorithm instead.
   metadata:
     source-rule-url: https://github.com/PyCQA/bandit/blob/d5f8fa0d89d7b11442fc6ec80ca42953974354c8/bandit/blacklists/calls.py#L98
     cwe:
@@ -9898,7 +9898,7 @@ rules:
 - id: python.multiprocessing-recv
   languages:
   - python
-  message: 'The Connection.recv() method automatically unpickles the data it receives, which can be a security risk unless you can trust the process which sent the message. Therefore, unless the connection object was produced using Pipe() you should only use the recv() and send() methods after performing some sort of authentication. See more dettails: https://docs.python.org/3/library/multiprocessing.html?highlight=security#multiprocessing.connection.Connection'
+  message: 'The Connection.recv() method automatically unpickles the data it receives, which can be a security risk unless you can trust the process which sent the message. Therefore, unless the connection object was produced using Pipe() you should only use the recv() and send() methods after performing some sort of authentication. See more details: https://docs.python.org/3/library/multiprocessing.html?highlight=security#multiprocessing.connection.Connection'
   metadata:
     cwe:
     - 'CWE-502: Deserialization of Untrusted Data'
@@ -12528,7 +12528,7 @@ rules:
         language: generic
         pattern: <$TAG ...
 - id: python.reflected-data-httpresponse
-  message: Found user-controlled request data passed into HttpResponse. This could be vulnerable to XSS, leading to attackers gaining access to user cookies and protected information. Ensure that the request data is properly escaped or sanitzed.
+  message: Found user-controlled request data passed into HttpResponse. This could be vulnerable to XSS, leading to attackers gaining access to user cookies and protected information. Ensure that the request data is properly escaped or sanitized.
   metadata:
     cwe:
     - 'CWE-79: Improper Neutralization of Input During Web Page Generation (''Cross-site Scripting'')'
@@ -12953,7 +12953,7 @@ rules:
 
         '
 - id: python.reflected-data-httpresponsebadrequest
-  message: Found user-controlled request data passed into a HttpResponseBadRequest. This could be vulnerable to XSS, leading to attackers gaining access to user cookies and protected information. Ensure that the request data is properly escaped or sanitzed.
+  message: Found user-controlled request data passed into a HttpResponseBadRequest. This could be vulnerable to XSS, leading to attackers gaining access to user cookies and protected information. Ensure that the request data is properly escaped or sanitized.
   metadata:
     cwe:
     - 'CWE-79: Improper Neutralization of Input During Web Page Generation (''Cross-site Scripting'')'
@@ -16988,7 +16988,7 @@ rules:
   - python
   severity: WARNING
 - id: python.user-exec
-  message: Found user data in a call to 'exec'. This is extremely dangerous because it can enable an attacker to execute arbitrary remote code on the system. Instead, refactor your code to not use 'eval' and instead use a safe library for the specific functionality you need.
+  message: Found user data in a call to 'exec'. This is extremely dangerous because it can enable an attacker to execute arbitrary remote code on the system. Instead, refactor your code to not use 'exec' and instead use a safe library for the specific functionality you need.
   metadata:
     cwe:
     - 'CWE-95: Improper Neutralization of Directives in Dynamically Evaluated Code (''Eval Injection'')'
@@ -17075,7 +17075,7 @@ rules:
   - python
   severity: WARNING
 - id: python.user-exec-format-string
-  message: Found user data in a call to 'exec'. This is extremely dangerous because it can enable an attacker to execute arbitrary remote code on the system. Instead, refactor your code to not use 'eval' and instead use a safe library for the specific functionality you need.
+  message: Found user data in a call to 'exec'. This is extremely dangerous because it can enable an attacker to execute arbitrary remote code on the system. Instead, refactor your code to not use 'exec' and instead use a safe library for the specific functionality you need.
   metadata:
     cwe:
     - 'CWE-95: Improper Neutralization of Directives in Dynamically Evaluated Code (''Eval Injection'')'

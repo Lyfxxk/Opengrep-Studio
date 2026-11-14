@@ -1976,7 +1976,7 @@ rules:
     - pattern: require($SINK)
     - focus-metavariable: $SINK
 - id: js-ts.sequelize-tls-disabled-cert-validation
-  message: Set "rejectUnauthorized" to false is a convenient way to resolve certificate error. But this method is unsafe because it disables the server certificate verification, making the Node app open to MITM attack. "rejectUnauthorized" option must be alway set to True (default value). With self -signed certificate or custom CA, use "ca" option to define Root Certificate. This rule checks TLS configuration only for Postgresql, MariaDB and MySQL. SQLite is not really concerned by TLS configuration. This rule could be extended for MSSQL, but the dialectOptions is specific for Tedious.
+  message: Set "rejectUnauthorized" to false is a convenient way to resolve certificate error. But this method is unsafe because it disables the server certificate verification, making the Node app open to MITM attack. "rejectUnauthorized" option must be always set to True (default value). With self -signed certificate or custom CA, use "ca" option to define Root Certificate. This rule checks TLS configuration only for Postgresql, MariaDB and MySQL. SQLite is not really concerned by TLS configuration. This rule could be extended for MSSQL, but the dialectOptions is specific for Tedious.
   metadata:
     cwe:
     - 'CWE-94: Improper Control of Generation of Code (''Code Injection'')'
@@ -5822,7 +5822,7 @@ rules:
 
         '
 - id: js-ts.express-ssrf
-  message: 'The following request $REQUEST.$METHOD() was found to be crafted from user-input `$REQ` which can lead to Server-Side Request Forgery (SSRF) vulnerabilities. It is recommended where possible to not allow user-input to craft the base request, but to be treated as part of the path or query parameter. When user-input is necessary to craft the request, it is recommeneded to follow OWASP best practices to prevent abuse. '
+  message: 'The following request $REQUEST.$METHOD() was found to be crafted from user-input `$REQ` which can lead to Server-Side Request Forgery (SSRF) vulnerabilities. It is recommended where possible to not allow user-input to craft the base request, but to be treated as part of the path or query parameter. When user-input is necessary to craft the request, it is recommended to follow OWASP best practices to prevent abuse. '
   metadata:
     references:
     - https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
@@ -7348,7 +7348,7 @@ rules:
         metavariable: $FUNCTION
         regex: (?i)(.*password.*)
 - id: js-ts.monaco-hover-htmlsupport
-  message: If user input reaches `HoverProvider` while `supportHml` is set to `true` it may introduce an XSS vulnerability. Do not produce HTML for hovers with dynamically generated input.
+  message: If user input reaches `HoverProvider` while `supportHtml` is set to `true` it may introduce an XSS vulnerability. Do not produce HTML for hovers with dynamically generated input.
   metadata:
     cwe:
     - 'CWE-79: Improper Neutralization of Input During Web Page Generation (''Cross-site Scripting'')'
@@ -10123,7 +10123,7 @@ rules:
 
       $PARSER.on(''doctype'',...);'
 - id: js-ts.sequelize-enforce-tls
-  message: 'If TLS is disabled on server side (Postgresql server), Sequelize establishes connection without TLS and no error will be thrown. To prevent MITN (Man In The Middle) attack, TLS must be enforce by Sequelize. Set "ssl: true" or define settings "ssl: {...}"'
+  message: 'If TLS is disabled on server side (Postgresql server), Sequelize establishes connection without TLS and no error will be thrown. To prevent MITM (Man In The Middle) attack, TLS must be enforce by Sequelize. Set "ssl: true" or define settings "ssl: {...}"'
   metadata:
     cwe:
     - 'CWE-319: Cleartext Transmission of Sensitive Information'
