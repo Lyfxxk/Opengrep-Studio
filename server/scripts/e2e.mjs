@@ -793,7 +793,7 @@ assert(
 const reportKoRes = await fetchRetry(`${BASE}/api/scans/${s2.id}/report?format=html&lang=ko`);
 const reportKo = await reportKoRes.text();
 assert(
-  reportKoRes.ok && reportKo.includes('코드 감사 테스트 보고서') && reportKo.includes('위험 분포')
+  reportKoRes.ok && reportKo.includes('코드 감사 테스트 리포트') && reportKo.includes('위험 분포')
     && reportKo.includes('문제 상세') && reportKo.includes('방법 및 근거') && reportKo.includes('수정 완료'),
   'HTML 报告 ko 章节随 ?lang= 渲染');
 const reportSummaryRes = await fetchRetry(`${BASE}/api/scans/${s2.id}/report?format=html&detail=summary`);
