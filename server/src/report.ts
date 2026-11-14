@@ -200,7 +200,7 @@ const REPORT_TEXT_ZH = {
 
 const REPORT_TEXT_HANT: typeof REPORT_TEXT_ZH = {
   htmlLang: 'zh-Hant',
-  brand: 'Opengrep Studio · 碼審工作台',
+  brand: 'Opengrep Studio · 程式碼稽核工作台',
   docTitle: '程式碼稽核測試報告',
   severity: HANT_SEVERITY,
   comparison: HANT_COMPARISON,
@@ -222,7 +222,7 @@ const REPORT_TEXT_HANT: typeof REPORT_TEXT_ZH = {
   metrics: { total: '風險總數', critical: '嚴重', high: '高危', files: '涉及檔案' },
   distTitle: '風險分佈',
   top5Title: '問題最多的 5 個檔案',
-  top5Hint: '按條數排序，不代表風險優先級；風險優先級見「行動清單」。',
+  top5Hint: '按筆數排序，不代表風險優先順序；風險優先順序見「行動清單」。',
   thFile: '檔案',
   thCount: '合計',
   thMaxSeverity: '最高等級',
@@ -230,19 +230,19 @@ const REPORT_TEXT_HANT: typeof REPORT_TEXT_ZH = {
   baselineLabel: '基線對比',
   distLabel: '問題分佈',
   distSentence: (total: number, files: number, rules: number) =>
-    `${total} 條問題落在 ${files} 個檔案、${rules} 條規則上`,
+    `${total} 筆問題落在 ${files} 個檔案、${rules} 條規則上`,
   firstScanNoBaseline: '首次掃描，無基線可比',
   baselineSentence: (id: string, added: number, remaining: number, fixed: number) =>
     `對比基線 ${id}：新增 ${added} · 遺留 ${remaining} · 已修復 ${fixed}`,
   actionsHint: (files: number) =>
     `共 ${files} 個檔案，排序為「最高等級優先，同級按問題數降序」。建議自上而下安排修復。`,
   thFileMainIssue: '檔案 / 主要問題',
-  groupCount: (count: number, files: number) => `${count} 條 · ${files} 個檔案`,
+  groupCount: (count: number, files: number) => `${count} 筆 · ${files} 個檔案`,
   groupHint: {
-    critical: '可直接導致遠端程式碼執行或憑證洩露，建議立即修復並單獨出具說明。',
+    critical: '可直接導致遠端程式碼執行或憑證外洩，建議立即修復並單獨出具說明。',
     high: '位於常見攻擊路徑上，建議本迭代內修復。',
     medium: '需特定前置條件或影響有限，建議納入下個迭代的技術債清單。',
-    low: '編碼規範與可維護性問題，隨日常改動順手修即可。',
+    low: '編碼規範與可維護性問題，隨日常改動順便修正即可。',
   },
   fixedHeading: (count: number) => `已修復（對比基線，${count} 項）`,
   appendixHint: (rules: number) =>
@@ -253,25 +253,25 @@ const REPORT_TEXT_HANT: typeof REPORT_TEXT_ZH = {
   unknownPath: '（未知路徑）',
   methodSub: { packs: '規則集', repro: '引擎與可重現性', review: '複核與覆蓋', exclusions: '排除項', boundaries: '覆蓋邊界' },
   packThName: '規則包',
-  packThId: '標識',
+  packThId: '識別碼',
   noPacks: '未記錄規則包',
   sarifImport: (tool?: string) => (tool ? `SARIF 匯入（${tool}）` : 'SARIF 匯入'),
   filesChecked: '掃描檔案',
   filesUnit: (n: number) => `${n} 個`,
-  issuesUnit: (n: number) => `${n} 條`,
+  issuesUnit: (n: number) => `${n} 筆`,
   durationSeconds: (s: number) => `${s} 秒`,
   durationMinutes: (m: number, s: number) => `${m} 分 ${s} 秒`,
   exclusions: '遵循專案 .gitignore；跳過 node_modules 與 .git',
   notCovered: '本報告只反映已載入規則的命中結果，不代表不存在其他缺陷',
   reviewLabel: '人工複核',
   reviewLine: (s: ReportReviewSummary) =>
-    `已複核 ${s.reviewed} 條：確認 ${s.confirmed} · 誤報 ${s.falsePositives} · 已接受 ${s.accepted}。`,
+    `已複核 ${s.reviewed} 筆：確認 ${s.confirmed} · 誤報 ${s.falsePositives} · 已接受 ${s.accepted}。`,
   reviewNone: '本次掃描未進行人工複核，全部問題為引擎原始判定結果。',
   noIssues: '本次掃描未發現風險問題。',
   snippetOverflow: (limit: number) =>
     `程式碼片段超過上限，僅展示前 ${limit} 條，其餘請結合掃描結果頁查看。`,
   footer: (time: string) =>
-    `本報告由 Opengrep Studio 碼審工作台自動產生 · 產生時間 ${time} · 規則命中與嚴重度由 opengrep 引擎產出，請結合業務上下文人工複核。`,
+    `本報告由 Opengrep Studio 程式碼稽核工作台自動產生 · 產生時間 ${time} · 規則命中與嚴重度由 opengrep 引擎產出，請結合業務上下文人工複核。`,
   listSeparator: '、',
   sentenceSeparator: '',
   severityPhrase: (label: string, count: number) => `${label} ${count} 項`,
@@ -282,7 +282,7 @@ const REPORT_TEXT_HANT: typeof REPORT_TEXT_ZH = {
   comparisonSentence: (baseline: string, added: number, remaining: number, fixed: number) =>
     `與基線掃描 ${baseline} 相比：新增 ${added} 項、遺留 ${remaining} 項、已修復 ${fixed} 項。`,
   urgentHint: (urgent: number) => `建議優先處理嚴重與高危問題（共 ${urgent} 項），修復後重新掃描回歸驗證。`,
-  nonUrgentHint: () => '目前無嚴重/高危問題，建議依業務優先度安排中低危問題的修復。',
+  nonUrgentHint: () => '目前無嚴重/高危問題，建議依業務優先順序安排中低危問題的修復。',
   summaryReview: (s: ReportReviewSummary) =>
     ` 人工複核已完成 ${s.reviewed} 項（確認 ${s.confirmed}、誤報 ${s.falsePositives}、有條件接受 ${s.accepted}）。`,
 };
@@ -364,7 +364,7 @@ const REPORT_TEXT_EN: typeof REPORT_TEXT_ZH = {
   noPacks: 'No rule packs recorded',
   sarifImport: (tool?: string) => (tool ? `SARIF import (${tool})` : 'SARIF import'),
   filesChecked: 'Files scanned',
-  filesUnit: (n: number) => `${n} files`,
+  filesUnit: (n: number) => (n === 1 ? '1 file' : `${n} files`),
   issuesUnit: (n: number) => (n === 1 ? '1 issue' : `${n} issues`),
   durationSeconds: (s: number) => `${s}s`,
   durationMinutes: (m: number, s: number) => `${m}m ${s}s`,
@@ -372,7 +372,7 @@ const REPORT_TEXT_EN: typeof REPORT_TEXT_ZH = {
   notCovered: 'This report only reflects hits from the loaded rules; absence of findings is not proof of absence of defects.',
   reviewLabel: 'Manual review',
   reviewLine: (s: ReportReviewSummary) =>
-    `${s.reviewed} reviewed: ${s.confirmed} confirmed · ${s.falsePositives} false positive · ${s.accepted} accepted.`,
+    `${s.reviewed} reviewed: ${s.confirmed} confirmed · ${s.falsePositives} false positive${s.falsePositives === 1 ? '' : 's'} · ${s.accepted} accepted.`,
   reviewNone: 'No manual review was performed; all findings are raw engine verdicts.',
   noIssues: 'No risk issues were found in this scan.',
   snippetOverflow: (limit: number) =>
@@ -393,7 +393,7 @@ const REPORT_TEXT_EN: typeof REPORT_TEXT_ZH = {
   nonUrgentHint: () =>
     'No critical or high issues remain; schedule medium and low fixes by business priority.',
   summaryReview: (s: ReportReviewSummary) =>
-    ` Manual review: ${s.reviewed} reviewed (${s.confirmed} confirmed, ${s.falsePositives} false positive, ${s.accepted} accepted).`,
+    ` Manual review: ${s.reviewed} reviewed (${s.confirmed} confirmed, ${s.falsePositives} false positive${s.falsePositives === 1 ? '' : 's'}, ${s.accepted} accepted).`,
 };
 
 const JA_SEVERITY: Record<Severity, string> = {
@@ -455,7 +455,7 @@ const REPORT_TEXT_JA: typeof REPORT_TEXT_ZH = {
   thFileMainIssue: 'ファイル / 主な問題',
   groupCount: (count: number, files: number) => `${count} 件 · ${files} 件のファイル`,
   groupHint: {
-    critical: 'リモートコード実行や認証情報の漏えいに直結する可能性があります。直ちに修正し、別途で説明を作成することをお勧めします。',
+    critical: 'リモートコード実行や認証情報の漏えいに直結する可能性があります。直ちに修正し、別途、説明を作成することをお勧めします。',
     high: '一般的な攻撃パス上に位置します。今回のイテレーション内での修正をお勧めします。',
     medium: '特定の前提条件が必要か、影響が限定的です。次のイテレーションの技術的負債リストに追加することをお勧めします。',
     low: 'コーディング規約や保守性に関する問題です。日常の変更の際に随時修正すれば十分です。',
@@ -526,7 +526,7 @@ const KO_REVIEW: Record<ReviewStatus, string> = {
 const REPORT_TEXT_KO: typeof REPORT_TEXT_ZH = {
   htmlLang: 'ko',
   brand: 'Opengrep Studio · 코드 감사 워크벤치',
-  docTitle: '코드 감사 테스트 보고서',
+  docTitle: '코드 감사 테스트 리포트',
   severity: KO_SEVERITY,
   comparison: KO_COMPARISON,
   review: KO_REVIEW,
@@ -540,7 +540,7 @@ const REPORT_TEXT_KO: typeof REPORT_TEXT_ZH = {
     engine: '스캔 엔진',
     sourceHash: '소스 코드 해시',
     commandLine: '엔진 명령줄',
-    generatedAt: '보고서 생성 일시',
+    generatedAt: '리포트 생성 일시',
     finishedAt: '완료 일시',
     rulesLabel: '규칙',
   },
@@ -571,8 +571,8 @@ const REPORT_TEXT_KO: typeof REPORT_TEXT_ZH = {
   },
   fixedHeading: (count: number) => `수정 완료(베이스라인 대비, ${count}건)`,
   appendixHint: (rules: number) =>
-    `${rules}개 규칙을 최고 심각도 순으로 정렬했습니다(같은 심각도 내에서는 탐지 횟수 순). 같은 규칙의 전체 설명(수정 제안 포함)은 여기에 한 번만 표시됩니다.`,
-  ruleStat: (count: number, files: number) => `탐지 ${count}회 · ${files}개 파일`,
+    `${rules}개 규칙을 최고 심각도 순으로 정렬했습니다(같은 심각도 내에서는 적중 횟수순). 같은 규칙의 전체 설명(수정 제안 포함)은 여기에 한 번만 표시됩니다.`,
+  ruleStat: (count: number, files: number) => `적중 ${count}회 · 파일 ${files}개`,
   noMessage: '(설명 없음)',
   noDescription: '(결과에 설명이 제공되지 않았습니다)',
   unknownPath: '(알 수 없는 경로)',
@@ -587,7 +587,7 @@ const REPORT_TEXT_KO: typeof REPORT_TEXT_ZH = {
   durationSeconds: (s: number) => `${s}초`,
   durationMinutes: (m: number, s: number) => `${m}분 ${s}초`,
   exclusions: '프로젝트의 .gitignore를 따르며, node_modules와 .git은 건너뜁니다',
-  notCovered: '이 보고서는 로드된 규칙의 탐지 결과만을 반영한 것으로, 다른 결함이 존재하지 않음을 보장하지 않습니다',
+  notCovered: '이 리포트는 로드된 규칙의 적중 결과만을 반영한 것으로, 다른 결함이 존재하지 않음을 보장하지 않습니다',
   reviewLabel: '수동 검토',
   reviewLine: (s: ReportReviewSummary) =>
     `${s.reviewed}건 검토 완료: 확인됨 ${s.confirmed} · 오탐 ${s.falsePositives} · 수용됨 ${s.accepted}.`,
@@ -596,7 +596,7 @@ const REPORT_TEXT_KO: typeof REPORT_TEXT_ZH = {
   snippetOverflow: (limit: number) =>
     `코드 조각이 상한을 초과하여 앞의 ${limit}건만 표시합니다. 나머지는 스캔 결과 페이지에서 확인해 주세요.`,
   footer: (time: string) =>
-    `이 보고서는 Opengrep Studio 코드 감사 워크벤치에서 자동 생성되었습니다 · 생성 일시 ${time} · 규칙 탐지 결과와 심각도는 opengrep 엔진이 산출합니다. 비즈니스 맥락을 고려해 수동 검토를 진행해 주세요.`,
+    `이 리포트는 Opengrep Studio 코드 감사 워크벤치에서 자동 생성되었습니다 · 생성 일시 ${time} · 규칙 적중 결과와 심각도는 opengrep 엔진이 산출합니다. 비즈니스 맥락을 고려해 수동 검토를 진행해 주세요.`,
   listSeparator: ', ',
   sentenceSeparator: ' ',
   severityPhrase: (label: string, count: number) => `${label} ${count}건`,
