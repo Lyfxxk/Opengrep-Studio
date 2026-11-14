@@ -418,7 +418,7 @@
   "js-ts.tofastproperties-code-execution": "潜在的な任意コード実行：`toFastProperties` に渡すものはすべてそのまま eval() に入ります。",
   "js-ts.unknown-value-in-redirect": "'$UNK' はユーザー入力から読み取られ、リダイレクト先として使用されています。'$UNK' が外部から制御されていないことを確認してください。そうしない場合、オープンリダイレクトの脆弱性が生じます。",
   "js-ts.unknown-value-with-script-tag": "'$UNK' が何であるかを判別できませんが、'<script>' タグ内で使用されているため、クロスサイトスクリプティング（XSS）のリスクが生じる可能性があります。'$UNK' が外部から制御されていないことを確認するか、当該データをサニタイズしてください。",
-  "js-ts.unsafe-argon2-config": "可能な限り Argon2id を選択してください。RFC 9016 のセクション 4 では、攻撃者が計算環境に直接アクセスできないことを保証できる場合を除き、既定で Argon2id を選択することを IETF は推奨しています。",
+  "js-ts.unsafe-argon2-config": "可能な限り Argon2id を選択してください。RFC 9106 のセクション 4 では、攻撃者が計算環境に直接アクセスできないことを保証できる場合を除き、既定で Argon2id を選択することを IETF は推奨しています。",
   "js-ts.unsafe-dynamic-method": "非静的なデータを使ってオブジェクトから関数を取得して実行するのは危険です。データがユーザー制御可能な場合、任意のコードを実行できてしまいます。",
   "js-ts.unsafe-formatstring": "util.format / console.log 内に、非リテラルの変数との文字列連結が検出されました。攻撃者が文字列にフォーマット指定子を注入すると、ログメッセージを偽装できてしまいます。フォーマット文字列にはできる限り定数を使用してください。",
   "js-ts.unsafe-serialize-javascript": "`serialize-javascript` を `unsafe` パラメーターと併用すると、XSS のリスクが生じる可能性があります。",

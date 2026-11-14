@@ -10647,7 +10647,7 @@ rules:
   - pattern: $OTHERFUNC(..., <... "=~/.*<script.*/" ...>, ...)
   - pattern: $UNK
 - id: js-ts.unsafe-argon2-config
-  message: Prefer Argon2id where possible. Per RFC9016, section 4 IETF recommends selecting Argon2id unless you can guarantee an adversary has no direct access to the computing environment.
+  message: Prefer Argon2id where possible. Per RFC 9106, section 4 IETF recommends selecting Argon2id unless you can guarantee an adversary has no direct access to the computing environment.
   metadata:
     references:
     - https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html

@@ -418,7 +418,7 @@
   "js-ts.tofastproperties-code-execution": "Potential arbitrary code execution, whatever is provided to `toFastProperties` is sent straight to eval()",
   "js-ts.unknown-value-in-redirect": "It looks like '$UNK' is read from user input and it is used to as a redirect. Ensure '$UNK' is not externally controlled, otherwise this is an open redirect.",
   "js-ts.unknown-value-with-script-tag": "Cannot determine what '$UNK' is and it is used with a '<script>' tag. This could be susceptible to cross-site scripting (XSS). Ensure '$UNK' is not externally controlled, or sanitize this data.",
-  "js-ts.unsafe-argon2-config": "Prefer Argon2id where possible. Per RFC9016, section 4 IETF recommends selecting Argon2id unless you can guarantee an adversary has no direct access to the computing environment.",
+  "js-ts.unsafe-argon2-config": "Prefer Argon2id where possible. Per RFC 9106, section 4 IETF recommends selecting Argon2id unless you can guarantee an adversary has no direct access to the computing environment.",
   "js-ts.unsafe-dynamic-method": "Using non-static data to retrieve and run functions from the object is dangerous. If the data is user-controlled, it may allow executing arbitrary code.",
   "js-ts.unsafe-formatstring": "Detected string concatenation with a non-literal variable in a util.format / console.log function. If an attacker injects a format specifier in the string, it will forge the log message. Try to use constant values for the format string.",
   "js-ts.unsafe-serialize-javascript": "`serialize-javascript` used with `unsafe` parameter, this could be vulnerable to XSS.",

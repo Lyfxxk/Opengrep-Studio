@@ -418,7 +418,7 @@
   "js-ts.tofastproperties-code-execution": "潜在的任意代码执行：传给 `toFastProperties` 的任何内容都会直接进入 eval()。",
   "js-ts.unknown-value-in-redirect": "'$UNK' 读自用户输入并被用作重定向目标。请确保它不受外部控制，否则构成开放重定向漏洞。",
   "js-ts.unknown-value-with-script-tag": "无法确定 '$UNK' 是什么，而它被用于 '<script>' 标签中，可能存在跨站脚本（XSS）风险。请确保 '$UNK' 不受外部控制，或对该数据做净化。",
-  "js-ts.unsafe-argon2-config": "尽量选用 Argon2id。按 RFC 9016 第 4 节，IETF 建议默认选择 Argon2id，除非你能保证对手无法直接访问计算环境。",
+  "js-ts.unsafe-argon2-config": "尽量选用 Argon2id。按 RFC 9106 第 4 节，IETF 建议默认选择 Argon2id，除非你能保证对手无法直接访问计算环境。",
   "js-ts.unsafe-dynamic-method": "用非静态数据从对象中取函数并执行是危险的：若数据可被用户控制，就可能执行任意代码。",
   "js-ts.unsafe-formatstring": "检测到 util.format / console.log 中与非字面量变量做字符串拼接。攻击者若在字符串中注入格式说明符，即可伪造日志消息。格式化字符串请尽量使用常量。",
   "js-ts.unsafe-serialize-javascript": "`serialize-javascript` 与 `unsafe` 参数同用，可能存在 XSS 风险。",
