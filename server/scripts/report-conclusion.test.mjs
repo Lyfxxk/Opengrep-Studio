@@ -60,7 +60,7 @@ test('五语 HTML 报告都带「无严重/高危」那句，非简体不夹简�
   const issues = [issue('m', 'medium'), issue('l', 'low')];
   const cases = [
     ['zh', '当前无严重/高危问题，建议按业务优先级安排中低危问题的修复。'],
-    ['zh-Hant', '目前無嚴重/高危問題，建議依業務優先度安排中低危問題的修復。'],
+    ['zh-Hant', '目前無嚴重/高危問題，建議依業務優先順序安排中低危問題的修復。'],
     ['en', 'No critical or high issues remain; schedule medium and low fixes by business priority.'],
     ['ja', '現在、重大/高の問題はないため、ビジネスの優先度に応じて中・低の問題の修正を進めてください。'],
     ['ko', '현재 심각/높음 문제가 없으므로, 비즈니스 우선순위에 따라 중간·낮음 문제의 수정을 진행하세요.'],
