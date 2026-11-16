@@ -7,7 +7,7 @@
 <p>
 <a href="https://github.com/Lyfxxk/Opengrep-Studio/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/Lyfxxk/Opengrep-Studio/ci.yml?branch=main&label=CI&style=flat-square" alt="CI"/></a>
 <a href="#license"><img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="License: MIT"/></a>
-<a href="https://github.com/opengrep/opengrep"><img src="https://img.shields.io/badge/engine-opengrep%20v1.33.1-22c55e?style=flat-square" alt="Engine"/></a>
+<a href="https://github.com/opengrep/opengrep"><img src="https://img.shields.io/badge/engine-opengrep%20v2.0.0-22c55e?style=flat-square" alt="Engine"/></a>
 <a href="#requirements"><img src="https://img.shields.io/badge/node-%E2%89%A522.12-3c873a?style=flat-square&logo=nodedotjs&logoColor=white" alt="Node"/></a>
 <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-64748b?style=flat-square" alt="Platform"/>
 </p>
@@ -120,7 +120,7 @@ The dashboard "Engine status" card shows the **actually installed** version and 
 ### Requirements
 
 - **Node.js ≥ 22.12** — built-in `node:sqlite` needs 22.5+, and Vite 8 in the frontend needs 22.12+; still no native dependencies
-- The scan engine is downloaded and SHA-256-verified automatically (~50 MB), nothing to preinstall; Git is only needed for repo-clone import
+- The scan engine is downloaded and SHA-256-verified automatically (Windows ~42 MB zip, ~208 MB unpacked; Linux/macOS ~154–167 MB); Git is only needed for repo-clone import
 
 ### Option 1: One-click launch (recommended)
 
@@ -138,7 +138,7 @@ The script checks your Node version, installs dependencies, downloads the engine
 git clone https://github.com/Lyfxxk/Opengrep-Studio.git
 cd Opengrep-Studio
 npm run install:all   # root + server + code dependencies in one go
-npm run setup:engine  # download opengrep v1.33.1 and verify SHA-256
+npm run setup:engine  # download opengrep v2.0.0, verify SHA-256 and unpack Windows DLLs
 npm run dev           # backend (:8787) + frontend (:1022) together
 ```
 
@@ -149,13 +149,13 @@ npm run docker:build
 npm run docker:run    # = docker run --rm -p 8787:8787 -v ogstudio-data:/data opengrep-studio
 ```
 
-The image ships with the engine and the built frontend — open <http://localhost:8787> and you're in; data persists in the `ogstudio-data` volume.
+The image ships with the engine and the built frontend — open <http://localhost:8787> and you're in; data persists in the `ogstudio-data` volume. The v2 Linux engine is ~154 MB, so the image is substantially larger. The base image is Debian/glibc; v2 does not provide a musllinux/Alpine asset.
 
 One caveat on upgrades: a one-click upgrade writes to the container layer (`/app/opengrep-tool`), so it survives container restarts but is lost when the container is recreated (`docker compose down && up`), falling back to the version pinned in `engines.json`. For a long-term engine bump, change `server/scripts/engines.json` and rebuild the image.
 
 ### Option 4: Windows portable exe (no Node.js needed)
 
-Download `OpengrepStudio.exe` from the [Releases](https://github.com/Lyfxxk/Opengrep-Studio/releases) page, put it in a writable folder (Desktop, Downloads — not `Program Files`) and double-click: the browser opens the console automatically. On first launch the runtime files are unpacked next to the exe along with a `data/` folder. The scan engine is not bundled — install it in one click from the dashboard "Engine status" card (~50 MB, SHA-256-verified) or point `OPENGREP_BIN` at an existing engine. No Node.js installation is required. If Windows SmartScreen warns about an unknown publisher, click "More info → Run anyway" (the binary is not code-signed; that's expected). Only the Git-clone import needs a local Git installation.
+Download `OpengrepStudio.exe` from the [Releases](https://github.com/Lyfxxk/Opengrep-Studio/releases) page, put it in a writable folder (Desktop, Downloads — not `Program Files`) and double-click: the browser opens the console automatically. On first launch the runtime files are unpacked next to the exe along with a `data/` folder. The scan engine is not bundled — install it in one click from the dashboard "Engine status" card (Windows ~42 MB zip, SHA-256-verified) or point `OPENGREP_BIN` at an existing engine. Windows v2 requires the **entire `opengrep-tool/` directory** next to the portable exe, with `opengrep.exe` and all six DLLs together (~208 MB unpacked); distributing only the engine exe will not work. No Node.js installation is required. If Windows SmartScreen warns about an unknown publisher, click "More info → Run anyway" (the binary is not code-signed; that's expected). Only the Git-clone import needs a local Git installation.
 
 ### First run
 
@@ -197,7 +197,7 @@ Want to see it before touching your own code? `npm run seed` seeds three demo pr
 ```mermaid
 flowchart LR
     U["Browser UI<br/>React 19 + Vite"] -->|"REST /api"| S["Express backend<br/>:8787"]
-    S -->|"child process<br/>--json --dataflow-traces"| E["opengrep engine<br/>v1.33.1"]
+    S -->|"child process<br/>--json --dataflow-traces"| E["opengrep engine<br/>v2.0.0"]
     S --> DB[("SQLite<br/>server/data/studio.db")]
     S --> FS[("immutable source snapshots<br/>data/workspace/")]
 ```

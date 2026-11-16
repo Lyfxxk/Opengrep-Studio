@@ -1,8 +1,10 @@
 # syntax=docker/dockerfile:1
 
-# 引擎单独成 stage：缓存键只有清单与安装脚本，业务代码改动不会让 50MB 引擎重新下载。
+# 引擎单独成 stage：业务代码改动不会重新下载引擎；zip 解压依赖 adm-zip。
 FROM node:22-bookworm-slim AS engine
 WORKDIR /build
+COPY server/package.json server/package-lock.json ./server/
+RUN --mount=type=cache,target=/root/.npm npm ci --omit=dev --prefix server
 COPY server/scripts/engines.json server/scripts/setup-engine.mjs server/scripts/engine-install.mjs ./server/scripts/
 RUN node server/scripts/setup-engine.mjs
 
