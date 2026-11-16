@@ -224,8 +224,8 @@ Browser tests live in `code/e2e/` and write to `code/e2e/.tmp/`, so they never t
 Honest disclosure — please read:
 
 - **Local single-machine tool**: binds `127.0.0.1` only by default; code and results never leave the machine, no telemetry
-- **The login gate is a frontend-only guard against mis-clicks** (fixed account `admin` / `123456`); **the backend API has no authentication** — do not expose the service to the public internet; if you truly need it on the LAN, set `HOST` yourself and add access control
-- Docker mode defaults to `HOST=0.0.0.0`; use it only inside an intranet / behind protection
+- **The backend enforces authentication and roles**: `/api` requires a signed session cookie, except `GET /api/health`; write operations require an auditor or admin as appropriate. The initial `admin` account uses the public default password `123456` — change it immediately after first login. Password changes invalidate existing sessions.
+- **Local-first is not internet-ready**: there is no built-in HTTPS or login rate limiting. The server binds `127.0.0.1` by default. Docker listens on `0.0.0.0` inside the container, while the provided Compose file publishes only on host `127.0.0.1`; `docker run -p 8787:8787` exposes the port on all host interfaces. Restrict access or add HTTPS and external access controls before any LAN deployment; never expose it directly to the public internet.
 - Upload & unzip are hardened against Zip-Slip / symlinks / size & file-count bombs; Git clone is https-only with credential interaction disabled
 
 ## FAQ

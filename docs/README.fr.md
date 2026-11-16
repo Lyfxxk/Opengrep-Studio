@@ -223,8 +223,8 @@ Les tests navigateur vivent dans `code/e2e/` et écrivent dans `code/e2e/.tmp/`,
 Divulgation honnête — veuillez lire :
 
 - **Outil local mono-poste** : lié à `127.0.0.1` uniquement par défaut ; le code et les résultats ne quittent jamais la machine, aucune télémétrie
-- **La barrière de connexion n’est qu’une garde anti-clic accidentel côté frontend** (compte fixe `admin` / `123456`) ; **l’API backend n’a pas d’authentification** — n’exposez pas le service sur l’internet public ; si vous en avez vraiment besoin sur le LAN, définissez `HOST` vous-même et ajoutez un contrôle d’accès
-- Le mode Docker met `HOST=0.0.0.0` par défaut ; à n’utiliser qu’à l’intérieur d’un intranet / derrière une protection
+- **Le backend contrôle les sessions et les rôles** : toutes les requêtes `/api`, sauf `GET /api/health` public, exigent une session signée ; les écritures requièrent les droits auditor ou admin selon l’opération. Le compte `admin` initial utilise le mot de passe public `123456` : changez-le dès la première connexion. Les anciennes sessions sont invalidées après ce changement
+- **Local ne veut pas dire prêt pour Internet** : le service n’intègre ni HTTPS ni limitation des tentatives de connexion. Dans le conteneur Docker, il écoute sur `0.0.0.0`, mais le fichier Compose fourni publie le port uniquement sur `127.0.0.1` de l’hôte. `docker run -p 8787:8787` publie le port sur toutes les interfaces de l’hôte. Pour un accès LAN, ajoutez des restrictions d’accès et HTTPS ; ne l’exposez jamais directement à Internet
 - Le chargement et la décompression sont durcis contre Zip-Slip / liens symboliques / bombes de taille et de nombre de fichiers ; le clonage Git est en https uniquement avec interaction d’identifiants désactivée
 
 ## FAQ
