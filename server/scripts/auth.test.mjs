@@ -98,6 +98,26 @@ test('重置密码、变更角色或删除用户后旧会话立即失效', () =>
   assert.equal(getSessionUser(fakeRequest(promoted.header())), undefined);
 });
 
+test('初始管理员修改公开默认密码后，旧会话失效且仅新密码可登录', () => {
+  const admin = getUserByUsername('admin');
+  const { res, header } = cookieCapture();
+  issueSessionCookie(res, admin);
+  const oldSession = header();
+  const nextPassword = 'changed-admin-password';
+
+  updateUserPassword(admin.id, hashPassword(nextPassword));
+  const updated = getUserByUsername('admin');
+  assert.equal(verifyPassword('123456', updated.passwordHash), false);
+  assert.equal(verifyPassword(nextPassword, updated.passwordHash), true);
+  assert.equal(getSessionUser(fakeRequest(oldSession)), undefined);
+
+  const renewed = cookieCapture();
+  issueSessionCookie(renewed.res, updated);
+  assert.equal(getSessionUser(fakeRequest(renewed.header())).role, 'admin');
+  ensureInitialAdmin();
+  assert.equal(verifyPassword('123456', getUserByUsername('admin').passwordHash), false);
+});
+
 test('登出清空会话 cookie', () => {
   const { res, header } = cookieCapture();
   clearSessionCookie(res);
