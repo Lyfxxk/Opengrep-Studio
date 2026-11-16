@@ -47,8 +47,25 @@ function toStep(
   return { role, path: loc.path, line: loc.line, ...(loc.col !== undefined ? { col: loc.col } : {}), ...(text ? { text } : {}) };
 }
 
-export function extractTaintFlow(raw: unknown): TaintStep[] | undefined {
-  if (typeof raw !== 'object' || raw === null) return undefined;
+function parseFlatTrace(raw: unknown): TaintStep[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const steps: TaintStep[] = [];
+  for (const item of raw) {
+    if (typeof item !== 'object' || item === null) continue;
+    const { kind, location, content } = item as { kind?: unknown; location?: unknown; content?: unknown };
+    const role = kind === 'through' ? 'intermediate' : kind;
+    if (role !== 'source' && role !== 'intermediate' && role !== 'sink') continue;
+    const loc = parseLocation(location);
+    if (!loc) continue;
+    steps.push(toStep(role, loc, typeof content === 'string' ? content.slice(0, MAX_TEXT) : undefined));
+  }
+  if (steps.length === 0) return undefined;
+  if (steps.length <= MAX_STEPS) return steps;
+  return [...steps.slice(0, MAX_STEPS - 1), steps[steps.length - 1]];
+}
+
+function parseLegacyTrace(raw: unknown): TaintStep[] | undefined {
+  if (Array.isArray(raw) || typeof raw !== 'object' || raw === null) return undefined;
   const trace = raw as {
     taint_source?: unknown;
     intermediate_vars?: unknown;
@@ -75,6 +92,12 @@ export function extractTaintFlow(raw: unknown): TaintStep[] | undefined {
   if (steps.length === 0) return undefined;
   if (steps.length <= MAX_STEPS) return steps;
   return [...steps.slice(0, MAX_STEPS - 1), steps[steps.length - 1]];
+}
+
+export function extractTaintFlow(raw: unknown): TaintStep[] | undefined {
+  const steps = parseFlatTrace(raw) ?? parseLegacyTrace(raw);
+  if (!steps && raw != null) console.warn('[taint] 未识别的数据流结构，已跳过可视化');
+  return steps;
 }
 
 export function relativizeTaintFlow(
