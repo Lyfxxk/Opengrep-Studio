@@ -15,6 +15,7 @@ import {
 import path from 'node:path';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
+import AdmZip from 'adm-zip';
 
 export const GITHUB_REPO = 'opengrep/opengrep';
 export const GITHUB_DOWNLOAD_BASE = `https://github.com/${GITHUB_REPO}/releases/download`;
@@ -57,6 +58,7 @@ export function sha256File(file) {
   return createHash('sha256').update(readFileSync(file)).digest('hex');
 }
 
+/** @type {[RegExp, string][]} */
 const LEGACY_CHANNEL_CODES = [
   [/^镜像 /, 'mirror'],
   [/^github\.com 直链$/, 'github-direct'],
@@ -72,6 +74,10 @@ function normalizeChannel(raw) {
   return value;
 }
 
+/**
+ * @param {string} toolDir
+ * @returns {InstalledInfo | undefined}
+ */
 export function readInstalledManifest(toolDir) {
   const file = path.join(toolDir, INSTALLED_MANIFEST_NAME);
   try {
@@ -83,6 +89,7 @@ export function readInstalledManifest(toolDir) {
       version,
       sha256,
       assetFile: parsed?.assetFile ? String(parsed.assetFile) : undefined,
+      members: Array.isArray(parsed?.members) && parsed.members.every(safeArchiveMember) ? parsed.members : undefined,
       channel: parsed?.channel ? normalizeChannel(parsed.channel) : undefined,
       installedAt: parsed?.installedAt ? String(parsed.installedAt) : undefined,
     };
@@ -98,6 +105,7 @@ export function writeInstalledManifest(toolDir, info) {
     version: info.version,
     assetFile: info.assetFile,
     sha256: info.sha256,
+    ...(info.members ? { members: info.members } : {}),
     channel: info.channel,
     installedAt: info.installedAt ?? new Date().toISOString(),
   };
@@ -105,6 +113,16 @@ export function writeInstalledManifest(toolDir, info) {
   return target;
 }
 
+/** @typedef {{ version: string, assetFile?: string, sha256: string, members?: string[], channel?: string, installedAt?: string }} InstalledInfo */
+
+/**
+ * @param {{
+ *   catalog: { version: string, assets: Record<string, { file: string, sha256: string, archive?: 'zip', binPath?: string, members?: string[] }> },
+ *   installed?: InstalledInfo,
+ *   platform?: string,
+ * }} args
+ * @returns {{ version: string, assetFile: string, sha256: string, archive?: 'zip', binPath?: string, members?: string[], source: string }}
+ */
 export function resolveTarget({ catalog, installed, platform }) {
   const key = platformKey(platform);
   const asset = catalog?.assets?.[key];
@@ -117,6 +135,9 @@ export function resolveTarget({ catalog, installed, platform }) {
       version: installed.version,
       assetFile: installed.assetFile || asset.file,
       sha256: installed.sha256,
+      archive: installed.assetFile?.endsWith('.zip') ? 'zip' : undefined,
+      binPath: installed.assetFile?.endsWith('.zip') ? 'opengrep.exe' : undefined,
+      members: installed.assetFile?.endsWith('.zip') ? (installed.members ?? (installed.assetFile === asset.file ? asset.members : undefined)) : undefined,
       source: INSTALLED_MANIFEST_NAME,
     };
   }
@@ -124,6 +145,9 @@ export function resolveTarget({ catalog, installed, platform }) {
     version: catalog.version,
     assetFile: asset.file,
     sha256: String(asset.sha256 ?? '').toLowerCase(),
+    archive: asset.archive,
+    binPath: asset.binPath,
+    members: asset.members,
     source: 'engines.json',
   };
 }
@@ -157,9 +181,9 @@ export function probeVersion(binPath, timeoutMs = 8000) {
       clearTimeout(timer);
       done(undefined);
     });
-    child.on('close', () => {
+    child.on('close', (code) => {
       clearTimeout(timer);
-      const match = out.match(/\d+\.\d+\.\d+/);
+      const match = code === 0 ? out.match(/\d+\.\d+\.\d+/) : null;
       done(match ? match[0] : undefined);
     });
   });
@@ -315,11 +339,32 @@ export async function downloadAsset({
   });
 }
 
+async function renameWithRetry(from, to) {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      renameSync(from, to);
+      return;
+    } catch (error) {
+      if (attempt >= 4 || !['EPERM', 'EACCES'].includes(error?.code)) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 100 * 2 ** attempt));
+    }
+  }
+}
+
+function safeArchiveMember(name) {
+  return typeof name === 'string' && name !== '' && name !== '.' &&
+    !path.isAbsolute(name) && !name.includes('\\') &&
+    name.split('/').every((part) => part !== '' && part !== '.' && part !== '..' && !part.includes(':'));
+}
+
 export async function installEngineAsset({
   tag,
   assetFile,
   sha256,
   assetUrl,
+  archive,
+  binPath,
+  members,
   toolDir,
   installedName,
   onProgress,
@@ -333,22 +378,34 @@ export async function installEngineAsset({
     });
   }
 
+  if (archive && archive !== 'zip') throw new Error(`不支持的引擎归档类型：${archive}`);
+  if (archive === 'zip' && (!Array.isArray(members) || !members.includes(binPath) ||
+    new Set(members).size !== members.length || !members.every(safeArchiveMember) ||
+    binPath !== installedName || members.some((name) => name.includes('/')))) {
+    throw new Error('引擎归档成员清单不合法');
+  }
   mkdirSync(toolDir, { recursive: true });
   const installedPath = path.join(toolDir, installedName);
-  const stagingPath = `${installedPath}.${process.pid}.download`;
-  const backupPath = `${installedPath}.${process.pid}.old`;
-  rmSync(stagingPath, { force: true });
-  rmSync(backupPath, { force: true });
+  const runId = `${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const stagingPath = path.join(toolDir, `.download-${runId}`);
+  const stagingDir = path.join(toolDir, `.staging-${runId}`);
+  const backupDir = path.join(toolDir, `.backup-${runId}`);
 
-  const { channel } = await downloadAsset({
-    tag,
-    assetFile,
-    target: stagingPath,
-    assetUrl,
-    expectedSha256: expected,
-    log,
-    onProgress: (pct) => onProgress?.({ phase: 'downloading', percent: pct }),
-  });
+  let channel;
+  try {
+    ({ channel } = await downloadAsset({
+      tag,
+      assetFile,
+      target: stagingPath,
+      assetUrl,
+      expectedSha256: expected,
+      log,
+      onProgress: (pct) => onProgress?.({ phase: 'downloading', percent: pct }),
+    }));
+  } catch (error) {
+    rmSync(stagingPath, { force: true });
+    throw error;
+  }
 
   const actual = sha256File(stagingPath);
   if (actual !== expected) {
@@ -360,62 +417,92 @@ export async function installEngineAsset({
   }
 
   onProgress?.({ phase: 'verifying' });
-  if (process.platform !== 'win32') chmodSync(stagingPath, 0o755);
-  const version = await probeVersion(stagingPath);
-  if (!version) {
-    rmSync(stagingPath, { force: true });
-    throw withInfo(new Error('下载的引擎无法运行（--version 无输出），已放弃安装'), {
+  let candidate = stagingPath;
+  const replacement = archive === 'zip' ? members : [installedName];
+  try {
+    if (archive === 'zip') {
+      let zip;
+      try {
+        zip = new AdmZip(stagingPath);
+        mkdirSync(stagingDir, { recursive: true });
+        const entries = new Map(zip.getEntries().map((entry) => [entry.entryName, entry]));
+        for (const name of members) {
+          const entry = entries.get(name);
+          if (!entry || entry.isDirectory) {
+            throw withInfo(new Error(`归档中缺少必需成员：${name}`), {
+              code: name === binPath ? 'engine.binNotFoundInArchive' : 'engine.memberMissing',
+              params: { member: name },
+            });
+          }
+          zip.extractEntryTo(entry, stagingDir, false, false);
+        }
+      } catch (error) {
+        if (errorInfo(error)) throw error;
+        throw withInfo(new Error(`引擎归档解压失败：${error.message}`), {
+          code: 'engine.archiveExtractFailed',
+        });
+      }
+      candidate = path.join(stagingDir, binPath);
+    }
+    if (process.platform !== 'win32') chmodSync(candidate, 0o755);
+    const version = await probeVersion(candidate);
+    if (!version) throw withInfo(new Error('下载的引擎无法运行（--version 无输出），已放弃安装'), {
       code: 'engine.probeNoOutput',
     });
-  }
-  if (compareVersions(version, tag) !== 0) {
-    rmSync(stagingPath, { force: true });
-    throw withInfo(new Error(`下载的引擎版本 ${version} 与目标 ${tag} 不一致，已放弃安装`), {
-      code: 'engine.versionMismatch',
-      params: { version, tag },
-    });
-  }
-
-  onProgress?.({ phase: 'installing' });
-  let parked = false;
-  try {
-    if (existsSync(installedPath)) {
-      renameSync(installedPath, backupPath);
-      parked = true;
+    if (compareVersions(version, tag) !== 0) {
+      throw withInfo(new Error(`下载的引擎版本 ${version} 与目标 ${tag} 不一致，已放弃安装`), {
+        code: 'engine.versionMismatch', params: { version, tag },
+      });
     }
-    renameSync(stagingPath, installedPath);
-  } catch (error) {
-    if (parked && !existsSync(installedPath)) {
-      try {
-        renameSync(backupPath, installedPath);
-      } catch {
+
+    onProgress?.({ phase: 'installing' });
+    const parked = [];
+    const placed = [];
+    let manifestWasPresent = false;
+    try {
+      mkdirSync(backupDir, { recursive: true });
+      const manifestPath = path.join(toolDir, INSTALLED_MANIFEST_NAME);
+      manifestWasPresent = existsSync(manifestPath);
+      for (const name of replacement) {
+        const current = path.join(toolDir, name);
+        if (existsSync(current)) {
+          await renameWithRetry(current, path.join(backupDir, name));
+          parked.push(name);
+        }
       }
+      for (const name of replacement) {
+        await renameWithRetry(archive === 'zip' ? path.join(stagingDir, name) : stagingPath, path.join(toolDir, name));
+        placed.push(name);
+      }
+      if (manifestWasPresent) await renameWithRetry(manifestPath, path.join(backupDir, INSTALLED_MANIFEST_NAME));
+      writeInstalledManifest(toolDir, { version: tag, assetFile, sha256: actual, channel, members: archive === 'zip' ? members : undefined });
+    } catch (error) {
+      for (const name of placed.reverse()) {
+        try { rmSync(path.join(toolDir, name), { force: true }); } catch (cleanupError) {
+          log?.(`回滚时移除新成员 ${name} 失败：${cleanupError}`);
+        }
+      }
+      const restoreErrors = [];
+      for (const name of parked.reverse()) {
+        try { await renameWithRetry(path.join(backupDir, name), path.join(toolDir, name)); }
+        catch (restoreError) { restoreErrors.push(`${name}: ${restoreError.message}`); }
+      }
+      try {
+        if (!manifestWasPresent || existsSync(path.join(backupDir, INSTALLED_MANIFEST_NAME))) {
+          rmSync(path.join(toolDir, INSTALLED_MANIFEST_NAME), { force: true });
+          if (manifestWasPresent) await renameWithRetry(path.join(backupDir, INSTALLED_MANIFEST_NAME), path.join(toolDir, INSTALLED_MANIFEST_NAME));
+        }
+      } catch (restoreError) { restoreErrors.push(`installed.json: ${restoreError.message}`); }
+      const detail = `${error.message}${restoreErrors.length ? `；回滚失败：${restoreErrors.join('、')}` : ''}`;
+      throw withInfo(new Error(`替换引擎文件失败（可能有扫描或规则实验正在占用它）：${detail}`), {
+        code: 'engine.replaceFailed', params: { detail },
+      });
     }
+    try { rmSync(backupDir, { recursive: true, force: true }); }
+    catch { log?.(`备份目录 ${backupDir} 清理失败，已保留`); }
+    return { installedPath, version, sha256: actual, channel };
+  } finally {
     rmSync(stagingPath, { force: true });
-    throw withInfo(
-      new Error(
-        `替换引擎文件失败（可能有扫描或规则实验正在占用它）：${
-          error instanceof Error ? error.message : String(error)
-        }`,
-      ),
-      {
-        code: 'engine.replaceFailed',
-        params: { detail: error instanceof Error ? error.message : String(error) },
-      },
-    );
+    rmSync(stagingDir, { recursive: true, force: true });
   }
-  writeInstalledManifest(toolDir, {
-    version: tag,
-    assetFile,
-    sha256: actual,
-    channel,
-  });
-  try {
-    rmSync(backupPath, { force: true });
-  } catch {
-    log?.(`备份文件 ${backupPath} 清理失败（可能仍被占用），已保留，可手工删除`);
-  }
-  if (process.platform !== 'win32') chmodSync(installedPath, 0o755);
-
-  return { installedPath, version, sha256: actual, channel };
 }

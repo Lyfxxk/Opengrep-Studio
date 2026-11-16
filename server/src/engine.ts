@@ -24,7 +24,7 @@ export function engineInstallHint(binPath: string = config.opengrepBin): string 
   }
   const lines = [
     `未找到 opengrep 引擎：${binPath}`,
-    '请在仓库根目录运行 npm run setup:engine 自动下载并校验引擎（约 50MB，按平台自动选择），',
+    '请在仓库根目录运行 npm run setup:engine 自动下载并校验对应平台的引擎资产（Windows 需同时保留 DLL），',
     '或设置环境变量 OPENGREP_BIN 指向已安装的引擎可执行文件。',
   ];
   if (process.platform === 'darwin') {
@@ -43,7 +43,7 @@ export function engineAvailable(): boolean {
 export function engineNotRunnableHint(binPath: string = config.opengrepBin): string {
   const lines = [
     `引擎文件存在但无法运行：${binPath}`,
-    '可能是文件损坏、不完整，或被杀毒软件隔离/拦截。',
+    '可能是文件损坏、不完整、同目录 DLL 缺失，或被杀毒软件隔离/拦截。',
     '请在仓库根目录运行 npm run setup:engine --force 重新下载并校验引擎，',
     '或设置环境变量 OPENGREP_BIN 指向可正常运行的引擎可执行文件。',
   ];
@@ -414,6 +414,7 @@ export async function startEngineUpgrade(): Promise<EngineUpgradeState> {
     const from = info.current;
     const to = normalizeVersion(info.latestTag);
     const { latestTag: tag, assetName, assetSha256: sha256, assetUrl } = info;
+    const target = engineTarget();
 
     upgradeState = {
       state: 'running',
@@ -431,6 +432,9 @@ export async function startEngineUpgrade(): Promise<EngineUpgradeState> {
           assetFile: assetName,
           sha256,
           assetUrl,
+          archive: target?.archive,
+          binPath: target?.binPath,
+          members: target?.members,
           toolDir: engineToolDir,
           installedName: engineExecutableName,
           onProgress: ({ phase, percent }: { phase: EngineUpgradePhase; percent?: number }) => {

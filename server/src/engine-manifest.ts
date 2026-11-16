@@ -14,6 +14,9 @@ const catalogPath = path.join(serverRoot, 'scripts', 'engines.json');
 export interface EngineAsset {
   file: string;
   sha256: string;
+  archive?: 'zip';
+  binPath?: string;
+  members?: string[];
 }
 
 export interface EngineCatalog {
@@ -26,6 +29,9 @@ export interface EngineTarget {
   version: string;
   assetFile: string;
   sha256: string;
+  archive?: 'zip';
+  binPath?: string;
+  members?: string[];
   source: string;
 }
 

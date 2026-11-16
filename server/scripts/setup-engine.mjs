@@ -11,7 +11,7 @@ import {
   platformKey,
   readInstalledManifest,
   resolveTarget,
-  sha256File,
+  probeVersion,
 } from './engine-install.mjs';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
@@ -48,8 +48,8 @@ const installedManifest = readInstalledManifest(toolDir);
 const manualHint = [
   `手动安装替代方案：`,
   `  1. 打开 https://github.com/${GITHUB_REPO}/releases/tag/${explicitVersion ?? catalog.version}`,
-  '  2. 下载对应平台的二进制并重命名为 ' + installedName,
-  `  3. 放入 ${toolDir}（或放到任意位置并设置环境变量 OPENGREP_BIN 指向它）`,
+  '  2. 下载对应平台资产；Windows 解压 zip，保持 opengrep.exe 与全部 DLL 同目录；其他平台将二进制命名为 ' + installedName,
+  `  3. 放入 ${toolDir}（或放到任意位置并设置环境变量 OPENGREP_BIN 指向可执行文件）`,
 ].join('\n');
 
 function fail(message) {
@@ -68,9 +68,9 @@ function progress({ phase, percent }) {
   if (phase === 'downloading' && typeof percent === 'number') {
     process.stdout.write(`\r[setup:engine] 下载中 ${percent}%`);
   } else if (phase === 'verifying') {
-    process.stdout.write('\r[setup:engine] 校验下载文件（SHA-256 + 版本探测）…          \n');
+    process.stdout.write('\r[setup:engine] 校验资产 SHA-256、解压所需成员并探测版本…          \n');
   } else if (phase === 'installing') {
-    process.stdout.write('[setup:engine] 正在替换引擎文件…\n');
+    process.stdout.write('[setup:engine] 正在替换引擎成员…\n');
   }
 }
 
@@ -85,10 +85,19 @@ function resolveInstallTarget() {
     console.error('[setup:engine] 请加 --sha256 <hex>（可从该版本 release 资产的 digest 字段取得），或更新 engines.json 后重试。');
     process.exit(1);
   }
+  const legacyAsset = compareVersions(version, 'v2.0.0') < 0 && !sameAsInstalled;
+  const assetFile = sameAsInstalled ? installedManifest.assetFile || asset.file : legacyAsset
+    ? ({ 'win32-x64': 'opengrep_windows_x86.exe', 'linux-x64': 'opengrep_manylinux_x86',
+      'linux-arm64': 'opengrep_manylinux_aarch64', 'darwin-arm64': 'opengrep_osx_arm64',
+      'darwin-x64': 'opengrep_osx_x86' })[platformKey()]
+    : asset.file;
   return {
     version,
-    assetFile: asset.file,
+    assetFile,
     sha256: (explicitSha ?? (sameAsInstalled ? installedManifest.sha256 : asset.sha256)).toLowerCase(),
+    archive: assetFile.endsWith('.zip') ? 'zip' : undefined,
+    binPath: assetFile.endsWith('.zip') ? asset.binPath : installedName,
+    members: assetFile.endsWith('.zip') ? (sameAsInstalled ? installedManifest.members ?? asset.members : asset.members) : undefined,
     source: '命令行指定',
   };
 }
@@ -107,16 +116,15 @@ async function main() {
   const target = resolveInstallTarget();
 
   if (!force && existsSync(installedPath)) {
-    const actual = sha256File(installedPath);
-    if (actual === target.sha256) {
-      console.log(`[setup:engine] 引擎已就绪且校验通过，跳过下载：${installedPath}`);
-      console.log(`[setup:engine] 当前版本 ${target.version}（来源：${target.source}），如需重新下载请加 --force`);
-      if (installedManifest && installedManifest.sha256 === actual) {
-        console.log(`[setup:engine] 安装记录：${path.join(toolDir, INSTALLED_MANIFEST_NAME)}（${installedManifest.version}）`);
-      }
+    const membersReady = !target.archive || target.members?.every((name) => existsSync(path.join(toolDir, name)));
+    const actualVersion = membersReady ? await probeVersion(installedPath) : undefined;
+    if (actualVersion && compareVersions(actualVersion, target.version) === 0 &&
+        installedManifest?.sha256 === target.sha256 && installedManifest.assetFile === target.assetFile &&
+        (!target.archive || (Array.isArray(target.members) && target.members.every((name) => installedManifest.members?.includes(name))))) {
+      console.log(`[setup:engine] 引擎已就绪且版本、成员与安装记录匹配，跳过下载：${installedPath}`);
       return;
     }
-    console.log('[setup:engine] 现有引擎与目标版本或哈希不一致，将重新下载。');
+    console.log('[setup:engine] 现有引擎与目标版本、成员或安装记录不一致，将重新下载。');
   }
 
   console.log(`[setup:engine] 版本 ${target.version}  平台 ${platformKey()}（来源：${target.source}）`);
@@ -128,6 +136,9 @@ async function main() {
       tag: target.version,
       assetFile: target.assetFile,
       sha256: target.sha256,
+      archive: target.archive,
+      binPath: target.binPath,
+      members: target.members,
       toolDir,
       installedName,
       onProgress: progress,
@@ -142,7 +153,8 @@ async function main() {
     installedManifest && compareVersions(installedManifest.version, result.version) !== 0
       ? `（原 ${installedManifest.version}）`
       : '';
-  console.log(`[setup:engine] 已安装：${result.installedPath}（${sizeMb}MB，opengrep ${result.version}${upgradedFrom}）`);
+  console.log(`[setup:engine] 已安装：${result.installedPath}（可执行文件 ${sizeMb}MB，opengrep ${result.version}${upgradedFrom}）`);
+  if (target.archive === 'zip') console.log(`[setup:engine] 同目录依赖：${target.members.filter((name) => name !== installedName).join('、')}`);
   console.log(`[setup:engine] 下载通道：${result.channel}`);
   console.log('[setup:engine] 引擎来自上游 opengrep/opengrep（LGPL-2.1），未做任何修改；该目录不入 git 仓库。');
 }

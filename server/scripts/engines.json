@@ -1,26 +1,41 @@
 {
-  "version": "v1.33.1",
-  "notes": "opengrep 引擎二进制清单：版本与各平台资产的 SHA256。升级引擎 = 换版本后更新资产名与哈希，重跑 npm run setup:engine；下载通道由 OPENGREP_DOWNLOAD_BASE → github.com → api.github.com 依次降级，不在清单里配置。哈希于 2026-10-29 实测：win32-x64 取自本机已安装的 1.33.1 二进制（与 opengrep --version 自报版本一致），其余 4 个平台从官方 Release 直链下载后本地计算（已核对 ELF/Mach-O 魔数与资产大小）。",
+  "version": "v2.0.0",
+  "notes": "v2.0.0 官方 Release 五平台资产于 2026-11-16 逐一下载并计算 SHA-256；Windows 哈希针对原始 zip，安装时校验解压后的 exe 与六个 DLL。下载通道依次为 OPENGREP_DOWNLOAD_BASE → github.com → api.github.com。Docker 使用 glibc 镜像；v2 不提供 musllinux 资产。",
   "assets": {
     "win32-x64": {
-      "file": "opengrep_windows_x86.exe",
-      "sha256": "132e606e071bdd3928286fddc893198a6106a90820d46e21197e0ace1a23e0c1"
+      "file": "opengrep_windows_x86.zip",
+      "sha256": "899a17e2b15863367cfd15032c93cdf482fd4e7ec8719c69de46f4f38b227864",
+      "archive": "zip",
+      "binPath": "opengrep.exe",
+      "members": [
+        "opengrep.exe",
+        "libgcc_s_seh-1.dll",
+        "libgmp-10.dll",
+        "libpcre2-8-0.dll",
+        "libstdc++-6.dll",
+        "libwinpthread-1.dll",
+        "libzstd-1.dll"
+      ]
     },
     "darwin-arm64": {
       "file": "opengrep_osx_arm64",
-      "sha256": "a17c1881bb40e3214266a7a291cf4f2ae3bc56c1715628b5712d2ec816bc3e2d"
+      "sha256": "b51b3d83f165a2e0934497b8f1b08abb1c3041ef20ef911c97e04cb39af1ad55",
+      "binPath": "opengrep"
     },
     "darwin-x64": {
       "file": "opengrep_osx_x86",
-      "sha256": "c3bd18e0d898d44e28419d95dad57c8928bb46ab32889a0ee1f72a87ad9627af"
+      "sha256": "51d2f918d7aad0afc1426bb4fbf56e32fc70c3ffd5ddb78e32e7d61e51c029a2",
+      "binPath": "opengrep"
     },
     "linux-x64": {
-      "file": "opengrep_manylinux_x86",
-      "sha256": "46e8133cc490f9f50518061590ce2f6be5a08afaeda034471c0ceda4b3899808"
+      "file": "opengrep_linux_x86",
+      "sha256": "37e93f4da5fd04a18c5c1febbdd12f7e98dfccd4d0c9cf2593bcb25eeb462da0",
+      "binPath": "opengrep"
     },
     "linux-arm64": {
-      "file": "opengrep_manylinux_aarch64",
-      "sha256": "d1433f63a90b8bc0b6ad4b498a13b372b856ce9a754a43484ba4920fe2d76dcf"
+      "file": "opengrep_linux_aarch64",
+      "sha256": "6257b65423a744b704af2ff9beeb8f222c2f6925236af386b56b031d4c06d6d8",
+      "binPath": "opengrep"
     }
   }
 }
