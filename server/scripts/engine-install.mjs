@@ -131,13 +131,15 @@ export function resolveTarget({ catalog, installed, platform }) {
     throw new Error(`暂无 ${key} 平台的自动下载支持（可用平台：${supported}）`);
   }
   if (installed?.version && compareVersions(installed.version, catalog.version) > 0) {
+    const assetFile = installed.assetFile || asset.file;
+    const isZip = assetFile.endsWith('.zip');
     return {
       version: installed.version,
-      assetFile: installed.assetFile || asset.file,
+      assetFile,
       sha256: installed.sha256,
-      archive: installed.assetFile?.endsWith('.zip') ? 'zip' : undefined,
-      binPath: installed.assetFile?.endsWith('.zip') ? 'opengrep.exe' : undefined,
-      members: installed.assetFile?.endsWith('.zip') ? (installed.members ?? (installed.assetFile === asset.file ? asset.members : undefined)) : undefined,
+      archive: isZip ? 'zip' : undefined,
+      binPath: isZip ? 'opengrep.exe' : undefined,
+      members: isZip ? (installed.members ?? (assetFile === asset.file ? asset.members : undefined)) : undefined,
       source: INSTALLED_MANIFEST_NAME,
     };
   }
