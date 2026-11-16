@@ -77,6 +77,8 @@ jobs:
             sleep 2
           done
           echo "后端启动超时"; exit 1
+      - name: 内置规则正反样本回归
+        run: npm --prefix server run test-packs -- --builtin-samples
       - name: E2E 回归
         run: |
           set -o pipefail

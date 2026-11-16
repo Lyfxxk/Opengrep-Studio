@@ -16,9 +16,6 @@ const builtinCases = [
 
 function checkBuiltinSamples() {
   const errors = [];
-  if (!existsSync(config.opengrepBin)) {
-    return { sampled: 0, errors: ['内置规则样本回归需要已安装的 opengrep 引擎'] };
-  }
   for (const { file, ruleId, suffix } of builtinCases) {
     const sampleDir = path.join(builtinDir, 'samples', ruleId);
     if (!existsSync(path.join(sampleDir, `positive.${suffix}`)) ||
@@ -174,7 +171,9 @@ for (const pack of packs) {
   results.push({ ...record, ok });
 }
 
-const builtinSamples = checkBuiltinSamples();
+const builtinSamples = process.argv.includes('--builtin-samples')
+  ? checkBuiltinSamples()
+  : { sampled: 0, errors: [] };
 const summary = {
   packs: results.length,
   rules: totalRules,
@@ -198,8 +197,10 @@ if (asJson) {
     for (const line of r.structuralErrors) console.log(`      结构错误: ${line}`);
     for (const line of r.details) console.log(`      ${line}`);
   }
-  console.log(`[test-packs] 内置规则样本：抽检 ${summary.builtinSamples} 条（正例命中、反例不命中）`);
-  for (const error of builtinSamples.errors) console.log(`      样本错误: ${error}`);
+  if (process.argv.includes('--builtin-samples')) {
+    console.log(`[test-packs] 内置规则样本：抽检 ${summary.builtinSamples} 条（正例命中、反例不命中）`);
+    for (const error of builtinSamples.errors) console.log(`      样本错误: ${error}`);
+  }
   console.log(
     `[test-packs] 汇总：verified ${summary.ok} · basic ${summary.basic} · 失败 ${summary.failed}`,
   );
