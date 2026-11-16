@@ -1,6 +1,6 @@
 {
   "name": "opengrep-studio",
-  "version": "0.3.3",
+  "version": "0.4.0",
   "private": true,
   "engines": {
     "node": ">=22.12.0"
