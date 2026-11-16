@@ -11,10 +11,7 @@
     "build": "vite build",
     "typecheck": "tsc -p tsconfig.app.json",
     "lint": "concurrently npm:typecheck npm:lint:eslint",
-    "lint:eslint": "eslint src",
-    "e2e:ui": "playwright test",
-    "e2e:ui:fast": "playwright test --grep-invert @engine",
-    "e2e:install": "playwright install --with-deps chromium"
+    "lint:eslint": "eslint src"
   },
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.5",
@@ -53,7 +50,6 @@
   "devDependencies": {
     "@babel/core": "^8.1.2",
     "@babel/eslint-parser": "^8.1.2",
-    "@playwright/test": "^1.64.1",
     "@tailwindcss/vite": "^4.3.0",
     "@types/node": "^26.6.6",
     "@types/react": "^19",

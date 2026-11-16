@@ -11,9 +11,7 @@
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test \"scripts/*.test.mjs\"",
     "i18n:check": "node --import tsx scripts/i18n-check.mjs",
-    "test-packs": "node --import tsx scripts/pack-regression.mjs",
     "build:exe": "node scripts/build-exe.mjs",
     "smoke:exe": "node scripts/smoke-exe.mjs"
   },

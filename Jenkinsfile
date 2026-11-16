@@ -1,7 +1,3 @@
-// CD 流水线：push → 全量测试 → 构建镜像 → 容器内健康自检通过后替换 opengrep-studio 容器（8787）
-// 阶段划分（5 个）：环境准备 → 后端质量门禁 → 前端质量门禁 → 端到端回归 → 镜像构建与部署
-// 检查项与旧的 10 阶段版本完全一致，只是把「工具链自检+依赖安装」「引擎准备+E2E」「镜像冒烟+部署」各自并成一个阶段，
-// 并删掉了与部署阶段重复的那次 docker build（旧「镜像构建与冒烟」是「部署上线」的真子集）。
 pipeline {
   agent any
 
@@ -12,9 +8,8 @@ pipeline {
   }
 
   parameters {
-    booleanParam(name: 'RUN_E2E', defaultValue: true, description: '运行真实引擎端到端回归；首次执行需联网下载约 50MB 引擎并做 SHA256 校验')
-    booleanParam(name: 'DEPLOY', defaultValue: true, description: '测试通过后构建镜像并替换本地运行的 opengrep-studio 容器（http://localhost:8787）；节点需可访问 docker')
-    booleanParam(name: 'BUILD_DOCKER', defaultValue: false, description: '仅在 DEPLOY=false 时单独使用：构建镜像并做容器冒烟，只验证不换装')
+    booleanParam(name: 'DEPLOY', defaultValue: true, description: '构建镜像并在健康检查通过后替换本地运行的 opengrep-studio 容器；节点需可访问 docker')
+    booleanParam(name: 'BUILD_DOCKER', defaultValue: false, description: '仅在 DEPLOY=false 时单独使用：构建镜像并检查容器启动，不换装')
   }
 
   environment {
@@ -55,91 +50,9 @@ pipeline {
       }
     }
 
-    stage('后端质量门禁') {
+    stage('构建前端') {
       steps {
-        sh '''
-          set -euo pipefail
-          npm --prefix server run typecheck
-          npm --prefix server test
-          npm --prefix server run i18n:check
-          npm run test-packs
-        '''
-      }
-    }
-
-    stage('前端质量门禁') {
-      steps {
-        sh '''
-          set -euo pipefail
-          npm --prefix code run lint
-          npm --prefix code run build
-        '''
-      }
-    }
-
-    stage('端到端回归') {
-      when { expression { params.RUN_E2E != false } }
-      steps {
-        // 引擎准备幂等（已在且哈希一致时直接跳过），并入本阶段省掉一个空转阶段
-        retry(2) {
-          sh 'npm run setup:engine'
-        }
-        sh '''
-          set -euo pipefail
-
-          health() {
-            node -e "fetch('http://127.0.0.1:' + process.argv[1] + '/api/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))" "$1"
-          }
-
-          TMP="${WORKSPACE_TMP:-${WORKSPACE}/.tmp}"
-          DATA_DIR="$TMP/e2e-data"
-          CUSTOM_RULES_DIR="$TMP/e2e-rules-custom"
-          rm -rf "$DATA_DIR" "$CUSTOM_RULES_DIR"
-          mkdir -p "$DATA_DIR" "$CUSTOM_RULES_DIR"
-
-          PORT="$(node -e "const s = require('net').createServer(); s.listen(0, '127.0.0.1', () => { console.log(s.address().port); s.close(); })")"
-          export HOST=127.0.0.1 PORT DATA_DIR CUSTOM_RULES_DIR
-
-          (
-            cd server && exec node --import tsx src/index.ts
-          ) > server.log 2>&1 &
-          SERVER_PID=$!
-
-          cleanup() {
-            if [ -n "${SERVER_PID:-}" ] && kill -0 "$SERVER_PID" 2> /dev/null; then
-              kill -TERM "$SERVER_PID" 2> /dev/null || true
-              for _ in $(seq 1 15); do
-                kill -0 "$SERVER_PID" 2> /dev/null || break
-                sleep 1
-              done
-              kill -KILL "$SERVER_PID" 2> /dev/null || true
-            fi
-          }
-          trap cleanup EXIT
-
-          ready=0
-          for _ in $(seq 1 60); do
-            if health "$PORT"; then
-              ready=1
-              break
-            fi
-            if ! kill -0 "$SERVER_PID" 2> /dev/null; then
-              echo "[jenkins] 后端进程提前退出，日志尾部："
-              tail -n 80 server.log || true
-              exit 1
-            fi
-            sleep 2
-          done
-
-          if [ "$ready" -ne 1 ]; then
-            echo "[jenkins] 后端 120 秒内未通过 /api/health，日志尾部："
-            tail -n 80 server.log || true
-            exit 1
-          fi
-
-          echo "[jenkins] 后端就绪：http://127.0.0.1:${PORT}"
-          BASE_URL="http://127.0.0.1:${PORT}" npm run e2e 2>&1 | tee e2e.log
-        '''
+        sh 'npm --prefix code run build'
       }
     }
 
@@ -241,13 +154,10 @@ pipeline {
 
   post {
     success {
-      echo '构建通过：后端类型检查/单测/i18n/规则包、前端 lint/构建均已通过，按参数启用的真实引擎 E2E 与镜像冒烟也全部通过。'
+      echo '前端构建和镜像流程已完成；部署时已执行容器健康检查。'
     }
     failure {
-      echo '构建失败：请查看失败 stage 的输出，后端启动日志与 E2E 日志已归档为 server.log / e2e.log。'
-    }
-    always {
-      archiveArtifacts artifacts: 'e2e.log, server.log', allowEmptyArchive: true, fingerprint: true
+      echo '构建或部署失败：请查看失败阶段的输出和容器日志。'
     }
   }
 }

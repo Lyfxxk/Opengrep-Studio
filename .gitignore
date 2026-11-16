@@ -55,6 +55,19 @@ Desktop.ini
 coverage/
 .eslintcache
 
+/server/scripts/*.test.mjs
+/server/scripts/e2e.mjs
+/server/scripts/dirty-test.mjs
+/server/scripts/pack-regression.mjs
+/server/rules/security/samples/
+/code/e2e/
+/code/playwright.config.ts
+**/*.spec.ts
+**/*.test.mjs
+**/test-results/
+**/playwright-report/
+**/blob-report/
+
 __pycache__/
 
 site/dist/

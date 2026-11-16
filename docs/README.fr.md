@@ -206,18 +206,6 @@ flowchart LR
 - SQLite stocke projets / scans / résultats / revues / configurations — aucune dépendance à un service externe ; toutes les données vivent dans `server/data/`
 - Jusqu’à 2 scans tournent en parallèle (les supplémentaires passent automatiquement en file d’attente) pour exploiter les ressources locales ; le laboratoire de règles et les scans s’excluent mutuellement
 
-## Tests
-
-```sh
-npm test             # tests unitaires du backend
-npm run test-packs   # structure des packs de règles + échantillons embarqués
-npm run e2e          # bout en bout HTTP contre un backend en cours (moteur réel)
-npm run e2e:ui       # bout en bout navigateur (Playwright ; compile le frontend, démarre un backend isolé sur :8799)
-npm run e2e:ui:fast  # bout en bout navigateur sans le cas de scan dépendant du moteur
-```
-
-Les tests navigateur vivent dans `code/e2e/` et écrivent dans `code/e2e/.tmp/`, ils ne touchent donc jamais votre `server/data/`. La CI lance les deux suites sur le moteur réel.
-
 ## Modèle de sécurité
 
 Divulgation honnête — veuillez lire :
