@@ -1,12 +1,56 @@
 
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { config } from '../src/config.ts';
 import { parseRuleYaml, runPackCheck } from '../src/rule-lab.ts';
 import { parsePackManifest } from '../src/pack-format.ts';
 import { collectRuleFiles } from '../src/rulepacks.ts';
 
 const builtinDir = path.join(config.rulesDir, 'security');
+const builtinCases = [
+  { file: 'js-ts.yaml', ruleId: 'js-ts.eval-detected', suffix: 'js' },
+  { file: 'python.yaml', ruleId: 'python.eval-detected', suffix: 'py' },
+  { file: 'python.yaml', ruleId: 'python.insecure-hash-algorithm-md5', suffix: 'py' },
+];
+
+function checkBuiltinSamples() {
+  const errors = [];
+  if (!existsSync(config.opengrepBin)) {
+    return { sampled: 0, errors: ['内置规则样本回归需要已安装的 opengrep 引擎'] };
+  }
+  for (const { file, ruleId, suffix } of builtinCases) {
+    const sampleDir = path.join(builtinDir, 'samples', ruleId);
+    if (!existsSync(path.join(sampleDir, `positive.${suffix}`)) ||
+        !existsSync(path.join(sampleDir, `negative.${suffix}`))) {
+      errors.push(`${ruleId}: 缺少正例或反例样本`);
+      continue;
+    }
+    const run = spawnSync(config.opengrepBin, [
+      'scan', '--config', path.join(builtinDir, file), '--json', '--no-git-ignore', sampleDir,
+    ], { encoding: 'utf8', timeout: 60_000, maxBuffer: 64 * 1024 * 1024, windowsHide: true });
+    if (run.error || run.status !== 0) {
+      errors.push(`${ruleId}: 引擎执行失败（${run.error?.message ?? run.stderr?.slice(-300) ?? run.status}）`);
+      continue;
+    }
+    try {
+      const output = JSON.parse(run.stdout);
+      if (!Array.isArray(output.results) || !Array.isArray(output.errors) || output.errors.length > 0) {
+        errors.push(`${ruleId}: 引擎结果不完整或含错误`);
+        continue;
+      }
+      const caseResults = output.results.filter((item) => item.check_id?.endsWith(ruleId));
+      const positive = caseResults.filter((item) => path.basename(item.path ?? '') === `positive.${suffix}`);
+      const negative = caseResults.filter((item) => path.basename(item.path ?? '') === `negative.${suffix}`);
+      if (positive.length === 0 || negative.length > 0) {
+        errors.push(`${ruleId}: 正例命中 ${positive.length}，反例命中 ${negative.length}`);
+      }
+    } catch (error) {
+      errors.push(`${ruleId}: 引擎结果无法解析（${error instanceof Error ? error.message : String(error)}）`);
+    }
+  }
+  return { sampled: builtinCases.length, errors };
+}
 const customDir = config.customRulesDir;
 const asJson = process.argv.includes('--json');
 
@@ -130,16 +174,18 @@ for (const pack of packs) {
   results.push({ ...record, ok });
 }
 
+const builtinSamples = checkBuiltinSamples();
 const summary = {
   packs: results.length,
   rules: totalRules,
   ok: results.filter((r) => r.ok && r.tier === 'verified').length,
   basic: results.filter((r) => r.ok && r.tier === 'basic').length,
-  failed: results.filter((r) => !r.ok).length,
+  failed: results.filter((r) => !r.ok).length + builtinSamples.errors.length,
+  builtinSamples: builtinSamples.sampled,
 };
 
 if (asJson) {
-  console.log(JSON.stringify({ summary, packs: results }, null, 2));
+  console.log(JSON.stringify({ summary, packs: results, builtinSampleErrors: builtinSamples.errors }, null, 2));
 } else {
   console.log(`[test-packs] 规则包回归：${summary.packs} 个包 / ${summary.rules} 条规则`);
   for (const r of results) {
@@ -152,6 +198,8 @@ if (asJson) {
     for (const line of r.structuralErrors) console.log(`      结构错误: ${line}`);
     for (const line of r.details) console.log(`      ${line}`);
   }
+  console.log(`[test-packs] 内置规则样本：抽检 ${summary.builtinSamples} 条（正例命中、反例不命中）`);
+  for (const error of builtinSamples.errors) console.log(`      样本错误: ${error}`);
   console.log(
     `[test-packs] 汇总：verified ${summary.ok} · basic ${summary.basic} · 失败 ${summary.failed}`,
   );
