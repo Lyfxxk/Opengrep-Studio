@@ -17,7 +17,7 @@ COPY code/ ./code/
 RUN npm run build --prefix code
 
 COPY server/package.json server/package-lock.json ./server/
-RUN --mount=type=cache,target=/root/.npm npm ci --prefix server
+RUN --mount=type=cache,target=/root/.npm npm ci --omit=dev --prefix server
 
 FROM node:22-bookworm-slim
 LABEL org.opencontainers.image.title="Opengrep Studio" \
