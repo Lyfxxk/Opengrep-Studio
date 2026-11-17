@@ -144,10 +144,6 @@ function toScanSummary(
   return rest;
 }
 
-function resolveScanEngineVersion(scan: ScanRecord): string | undefined {
-  return scan.engineVersion;
-}
-
 scanRoutes.post('/api/projects/:id/scans', requireRole('auditor'), asyncHandler(async (req, res) => {
   if (engineUpgradeRunning()) {
     throw new HttpError(409, '引擎升级进行中，请升级完成后再发起扫描', {
@@ -386,8 +382,7 @@ scanRoutes.get('/api/scans/:scanId/report', asyncHandler(async (req, res) => {
     throw new HttpError(404, '扫描所属项目不存在或已被删除', { code: 'srv.projectNotFound' });
   }
   const issues = listIssues(scan.id);
-  const engineVersion = await resolveScanEngineVersion(scan);
-  const data = buildReportData(scan, project, issues, engineVersion, listReviews(scan.projectId));
+  const data = buildReportData(scan, project, issues, scan.engineVersion, listReviews(scan.projectId));
 
   const format = String(req.query.format ?? 'json');
   if (format === 'html') {
@@ -429,8 +424,7 @@ scanRoutes.get('/api/scans/:scanId/sarif', asyncHandler(async (req, res) => {
     throw new HttpError(400, '仅已完成的扫描可导出 SARIF', { code: 'srv.sarifNotCompleted' });
   }
   const issues = listIssues(scan.id);
-  const engineVersion = await resolveScanEngineVersion(scan);
-  const sarif = buildSarifReport(scan, issues, engineVersion);
+  const sarif = buildSarifReport(scan, issues, scan.engineVersion);
   res.setHeader(
     'Content-Disposition',
     `attachment; filename="sarif-${asciiFilename(scan.id)}.json"; filename*=UTF-8''${encodeURIComponent(`SARIF-${scan.id}.json`)}`,
@@ -498,7 +492,7 @@ scanRoutes.post(
 scanRoutes.get('/api/scans/:scanId/manifest', asyncHandler(async (req, res) => {
   const scan = requireScan(paramStr(req.params.scanId));
   const project = getProject(scan.projectId);
-  const engineVersion = await resolveScanEngineVersion(scan);
+  const engineVersion = scan.engineVersion;
   const lang = parseProductLang(req.query.lang);
   res.json({
     scanId: scan.id,

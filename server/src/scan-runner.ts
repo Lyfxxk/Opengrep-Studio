@@ -75,10 +75,6 @@ setInterval(() => {
   }
 }, INSTANCE_HEARTBEAT_MS).unref();
 
-export function getScanInstanceToken(): string {
-  return INSTANCE_TOKEN;
-}
-
 function acquireScanSlot(): { queued: boolean; ready: Promise<void> } {
   if (activeScans < MAX_CONCURRENT_SCANS) {
     activeScans += 1;

@@ -153,8 +153,6 @@ export const Layout = () => {
   let crumbs: Crumb[];
   if (navLabel && segments[0] !== 'projects') {
     crumbs = [{ label: t(navLabel) }];
-  } else if (segments[0] === 'lab') {
-    crumbs = [{ label: t('nav.rules') }];
   } else if (segments.length === 0) {
     crumbs = [{ label: t('nav.projects') }];
   } else {

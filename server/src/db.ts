@@ -147,10 +147,6 @@ export interface User {
 fs.mkdirSync(path.dirname(dbPath), { recursive: true });
 export const db = new DatabaseSync(dbPath);
 
-export function closeDatabase(): void {
-  db.close();
-}
-
 db.exec(`
 PRAGMA journal_mode = WAL;
 

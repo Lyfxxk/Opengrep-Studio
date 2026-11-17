@@ -34,22 +34,10 @@ export function withEngineJobBusy<T>(
   return run().finally(() => setEngineJobBusy(false));
 }
 
+const PRODUCT_LANGS = ['zh-Hant', 'en', 'ja', 'ko', 'ru', 'fr', 'de'] as const;
+
 export function parseProductLang(value: unknown): ReportLang {
-  return value === 'zh-Hant'
-    ? 'zh-Hant'
-    : value === 'en'
-      ? 'en'
-      : value === 'ja'
-        ? 'ja'
-        : value === 'ko'
-          ? 'ko'
-          : value === 'ru'
-            ? 'ru'
-            : value === 'fr'
-              ? 'fr'
-              : value === 'de'
-                ? 'de'
-                : 'zh';
+  return PRODUCT_LANGS.find((lang) => lang === value) ?? 'zh';
 }
 
 export const asyncHandler =

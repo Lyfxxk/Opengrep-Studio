@@ -3,7 +3,6 @@
 import {
   DOWNLOAD_CHANNEL_HINT,
   GITHUB_REPO,
-  INSTALLED_MANIFEST_NAME,
   compareVersions,
   engineExecutableName,
   installEngineAsset,
