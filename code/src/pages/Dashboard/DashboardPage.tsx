@@ -78,10 +78,7 @@ export default function DashboardPage() {
       [projectRes, scanRes, packRes, summaryRes].some((res) => res.status === 'rejected'),
     );
     setProjects(projectRes.status === 'fulfilled' ? projectRes.value : null);
-    setScans((prev) => {
-      if (scanRes.status !== 'fulfilled') return null;
-      return JSON.stringify(prev) === JSON.stringify(scanRes.value) ? prev : scanRes.value;
-    });
+    setScans(scanRes.status === 'fulfilled' ? scanRes.value : null);
     setPacks(packRes.status === 'fulfilled' ? packRes.value : null);
     setHealth(healthRes.status === 'fulfilled' ? healthRes.value : null);
     setSummary(summaryRes.status === 'fulfilled' ? summaryRes.value : null);
