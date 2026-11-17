@@ -148,11 +148,11 @@ export default function ProjectDetailPage() {
     };
   }, []);
 
-  const handleConfigChange = async (configId: string) => {
+  const patchProject = async (patch: { configId?: string; baselineScanId?: string | null }) => {
     if (!id) return;
     const requestId = id;
     try {
-      const updated = await api.updateProject(id, { configId });
+      const updated = await api.updateProject(id, patch);
       if (activeIdRef.current !== requestId) return;
       setProject(updated);
     } catch (error) {
@@ -285,32 +285,6 @@ export default function ProjectDetailPage() {
     }
   };
 
-  const handleSetBaseline = async (scanId: string) => {
-    if (!id) return;
-    const requestId = id;
-    try {
-      const updated = await api.updateProject(id, { baselineScanId: scanId });
-      if (activeIdRef.current !== requestId) return;
-      setProject(updated);
-    } catch (error) {
-      if (activeIdRef.current !== requestId) return;
-      toast.error(error instanceof Error ? error.message : String(error));
-    }
-  };
-
-  const handleUnsetBaseline = async () => {
-    if (!id) return;
-    const requestId = id;
-    try {
-      const updated = await api.updateProject(id, { baselineScanId: null });
-      if (activeIdRef.current !== requestId) return;
-      setProject(updated);
-    } catch (error) {
-      if (activeIdRef.current !== requestId) return;
-      toast.error(error instanceof Error ? error.message : String(error));
-    }
-  };
-
   const [importingSarif, setImportingSarif] = useState(false);
   const sarifInputRef = useRef<HTMLInputElement>(null);
 
@@ -378,7 +352,7 @@ export default function ProjectDetailPage() {
               <Select
                 value={project.configId ?? ''}
                 disabled={!canWrite}
-                onValueChange={(value) => void handleConfigChange(value)}
+                onValueChange={(value) => void patchProject({ configId: value })}
               >
                 <SelectTrigger className="h-8 w-52">
                   <SelectValue placeholder={t('projectDetail.configUnboundPlaceholder')} />
@@ -498,8 +472,8 @@ export default function ProjectDetailPage() {
             scans={recentScans}
             baselineScanId={project.baselineScanId}
             canSetBaseline={canWrite}
-            onSetBaseline={(scanId) => void handleSetBaseline(scanId)}
-            onUnsetBaseline={() => void handleUnsetBaseline()}
+            onSetBaseline={(scanId) => void patchProject({ baselineScanId: scanId })}
+            onUnsetBaseline={() => void patchProject({ baselineScanId: null })}
             onView={(scanId) => navigate(`/projects/${project.id}/scans/${scanId}`)}
           />
         </CardContent>
