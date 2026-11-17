@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/table';
 import ScanStatusBadge from '@/components/ScanStatusBadge';
 import RulePackCell from '@/components/RulePackCell';
+import ListStatusBlock from '@/components/ListStatusBlock';
 import BatchDeleteBar, { BatchDeleteConfirm } from '@/components/BatchDeleteBar';
 import CompareDialog from '@/pages/ScanResult/CompareDialog';
 import {
@@ -111,50 +112,22 @@ export default function ScansCenterPage() {
         countLabel={t('scans.filterCount', { count: filteredScans.length })}
       />
 
-      {loadFailed && scans !== null && (
-        <div className="rounded-lg border border-warning/40 bg-warning/10 px-4 py-2 text-sm text-muted-foreground">
-          {t('common.loadFailedHint')}
-          <button
-            type="button"
-            className="ml-2 font-medium text-primary hover:underline"
-            onClick={() => void load()}
-          >
-            {t('common.retry')}
-          </button>
-        </div>
-      )}
-
-      {scans === null ? (
-        <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
-          {loadFailed ? (
-            <>
-              {t('common.loadFailedHint')}
-              <button
-                type="button"
-                className="ml-2 text-sm font-medium text-primary hover:underline"
-                onClick={() => void load()}
-              >
-                {t('common.retry')}
-              </button>
-            </>
-          ) : (
-            t('common.loading')
-          )}
-        </div>
-      ) : filteredScans.length === 0 && scans.length === 0 ? (
-        <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
-          {t('scans.emptyPrefix')}
-          <Link to="/projects" className="mx-1 text-primary hover:underline">
-            {t('nav.projects')}
-          </Link>
-          {t('scans.emptySuffix')}
-        </div>
-      ) : (
-        filteredScans.length === 0 ? (
-          <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
-            {t('scans.filterEmpty')}
-          </div>
-        ) : (
+      <ListStatusBlock
+        rowCount={scans?.length ?? null}
+        filteredCount={filteredScans.length}
+        loadFailed={loadFailed}
+        onRetry={() => void load()}
+        emptyState={
+          <>
+            {t('scans.emptyPrefix')}
+            <Link to="/projects" className="mx-1 text-primary hover:underline">
+              {t('nav.projects')}
+            </Link>
+            {t('scans.emptySuffix')}
+          </>
+        }
+        filterEmptyText={t('scans.filterEmpty')}
+      >
           <div className="w-full overflow-x-auto">
           <Table>
             <TableHeader>
@@ -257,8 +230,7 @@ export default function ScansCenterPage() {
             </TableBody>
           </Table>
         </div>
-        )
-      )}
+      </ListStatusBlock>
 
       <Pagination page={safePage} pageCount={pageCount} onPage={setPage} />
 

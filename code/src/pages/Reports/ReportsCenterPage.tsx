@@ -15,6 +15,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import RulePackCell from '@/components/RulePackCell';
+import ListStatusBlock from '@/components/ListStatusBlock';
 import { filterScans, usePagedList, useScanRows } from '@/lib/usePagedList';
 import { formatDateTime } from '@/lib/format';
 import { api } from '@/lib/api';
@@ -50,50 +51,22 @@ export default function ReportsCenterPage() {
         countLabel={t('reports.filterCount', { count: filteredRows.length })}
       />
 
-      {loadFailed && rows !== null && (
-        <div className="rounded-lg border border-warning/40 bg-warning/10 px-4 py-2 text-sm text-muted-foreground">
-          {t('common.loadFailedHint')}
-          <button
-            type="button"
-            className="ml-2 font-medium text-primary hover:underline"
-            onClick={() => void load()}
-          >
-            {t('common.retry')}
-          </button>
-        </div>
-      )}
-
-      {rows === null ? (
-        <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
-          {loadFailed ? (
-            <>
-              {t('common.loadFailedHint')}
-              <button
-                type="button"
-                className="ml-2 text-sm font-medium text-primary hover:underline"
-                onClick={() => void load()}
-              >
-                {t('common.retry')}
-              </button>
-            </>
-          ) : (
-            t('common.loading')
-          )}
-        </div>
-      ) : filteredRows.length === 0 && rows.length === 0 ? (
-        <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
-          {t('reports.emptyPrefix')}
-          <Link to="/scans" className="mx-1 text-primary hover:underline">
-            {t('nav.scans')}
-          </Link>
-          {t('reports.emptySuffix')}
-        </div>
-      ) : (
-        filteredRows.length === 0 ? (
-          <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
-            {t('reports.filterEmpty')}
-          </div>
-        ) : (
+      <ListStatusBlock
+        rowCount={rows?.length ?? null}
+        filteredCount={filteredRows.length}
+        loadFailed={loadFailed}
+        onRetry={() => void load()}
+        emptyState={
+          <>
+            {t('reports.emptyPrefix')}
+            <Link to="/scans" className="mx-1 text-primary hover:underline">
+              {t('nav.scans')}
+            </Link>
+            {t('reports.emptySuffix')}
+          </>
+        }
+        filterEmptyText={t('reports.filterEmpty')}
+      >
           <div className="w-full overflow-x-auto">
           <Table>
             <TableHeader>
@@ -160,8 +133,7 @@ export default function ReportsCenterPage() {
             </TableBody>
           </Table>
         </div>
-        )
-      )}
+      </ListStatusBlock>
 
       <Pagination page={safePage} pageCount={pageCount} onPage={setPage} />
     </div>
