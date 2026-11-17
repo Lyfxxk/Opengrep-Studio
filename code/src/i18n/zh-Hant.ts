@@ -942,6 +942,7 @@ const zhHant: typeof zh = {
       resultInvalid: 'SARIF results 陣列的每一項必須是物件',
       ruleIdInvalid: 'SARIF result 的 ruleId 必須是字串',
       messageInvalid: 'SARIF result 的 message.text 必須是字串',
+      locationsInvalid: 'SARIF result 的 locations 必須是陣列',
     },
     pack: {
       manifestInvalid: 'pack.yaml 解析失敗：{{reason}}',

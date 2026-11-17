@@ -937,6 +937,7 @@ const ja: typeof zh = {
       resultInvalid: 'SARIF results 配列の各要素はオブジェクトである必要があります',
       ruleIdInvalid: 'SARIF result の ruleId は文字列である必要があります',
       messageInvalid: 'SARIF result の message.text は文字列である必要があります',
+      locationsInvalid: 'SARIF result の locations は配列である必要があります',
     },
     pack: {
       manifestInvalid: 'pack.yaml の解析に失敗しました：{{reason}}',

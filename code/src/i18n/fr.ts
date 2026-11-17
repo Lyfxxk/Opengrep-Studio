@@ -941,6 +941,7 @@ const fr: typeof zh = {
       resultInvalid: 'Chaque élément du tableau results du SARIF doit être un objet',
       ruleIdInvalid: "Le champ ruleId d'un résultat SARIF doit être une chaîne",
       messageInvalid: "Le champ message.text d'un résultat SARIF doit être une chaîne",
+      locationsInvalid: "Le champ locations d'un résultat SARIF doit être un tableau",
     },
     pack: {
       manifestInvalid: "Échec de l'analyse de pack.yaml : {{reason}}",

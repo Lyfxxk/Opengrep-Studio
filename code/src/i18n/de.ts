@@ -941,6 +941,7 @@ const de: typeof zh = {
       resultInvalid: 'Jedes Element des results-Arrays in SARIF muss ein Objekt sein',
       ruleIdInvalid: 'Die ruleId eines SARIF-Ergebnisses muss eine Zeichenkette sein',
       messageInvalid: 'Das message.text eines SARIF-Ergebnisses muss eine Zeichenkette sein',
+      locationsInvalid: 'Das locations eines SARIF-Ergebnisses muss ein Array sein',
     },
     pack: {
       manifestInvalid: 'pack.yaml konnte nicht geparst werden: {{reason}}',

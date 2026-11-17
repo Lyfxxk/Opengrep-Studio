@@ -941,6 +941,7 @@ const ru: typeof zh = {
       resultInvalid: 'Каждый элемент массива results в SARIF должен быть объектом',
       ruleIdInvalid: 'Поле ruleId в SARIF result должно быть строкой',
       messageInvalid: 'Поле message.text в SARIF result должно быть строкой',
+      locationsInvalid: 'Поле locations в SARIF result должно быть массивом',
     },
     pack: {
       manifestInvalid: 'Не удалось разобрать pack.yaml: {{reason}}',

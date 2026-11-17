@@ -974,6 +974,7 @@ const en: typeof zh = {
       resultInvalid: 'Every item in the SARIF results array must be an object',
       ruleIdInvalid: 'The ruleId of a SARIF result must be a string',
       messageInvalid: 'The message.text of a SARIF result must be a string',
+      locationsInvalid: 'The locations of a SARIF result must be an array',
     },
     pack: {
       manifestInvalid: 'Failed to parse pack.yaml: {{reason}}',

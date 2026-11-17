@@ -937,6 +937,7 @@ const ko: typeof zh = {
       resultInvalid: 'SARIF results 배열의 각 항목은 객체여야 합니다',
       ruleIdInvalid: 'SARIF result의 ruleId는 문자열이어야 합니다',
       messageInvalid: 'SARIF result의 message.text는 문자열이어야 합니다',
+      locationsInvalid: 'SARIF result의 locations는 배열이어야 합니다',
     },
     pack: {
       manifestInvalid: 'pack.yaml을 파싱하지 못했습니다: {{reason}}',

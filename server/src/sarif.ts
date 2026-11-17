@@ -285,6 +285,9 @@ export function parseSarifImport(input: string): SarifImportResult {
           || (result.message.text !== undefined && result.message.text !== null && typeof result.message.text !== 'string'))) {
         throw new HttpError(400, 'SARIF result 的 message.text 必须是字符串', { code: 'sarif.messageInvalid' });
       }
+      if (result.locations !== undefined && result.locations !== null && !Array.isArray(result.locations)) {
+        throw new HttpError(400, 'SARIF result 的 locations 必须是数组', { code: 'sarif.locationsInvalid' });
+      }
       totalResults += 1;
       if (totalResults > config.maxImportEntries) {
         throw new HttpError(400, `SARIF 结果数超过 ${config.maxImportEntries} 上限`, {

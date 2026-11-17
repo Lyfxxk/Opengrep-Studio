@@ -939,6 +939,7 @@ const zh = {
       resultInvalid: 'SARIF results 数组的每一项必须是对象',
       ruleIdInvalid: 'SARIF result 的 ruleId 必须是字符串',
       messageInvalid: 'SARIF result 的 message.text 必须是字符串',
+      locationsInvalid: 'SARIF result 的 locations 必须是数组',
     },
     pack: {
       manifestInvalid: 'pack.yaml 解析失败：{{reason}}',
