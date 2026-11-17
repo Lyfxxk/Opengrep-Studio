@@ -6,7 +6,7 @@
   python server/scripts/sync-messages-zh.py --merge draft.json # 把已翻译的初稿条目合并进 messages-zh.json
 
 流程：全量收录后先 --draft 导出缺失条目，翻译（人工或机翻初稿+人工抽查）后 --merge 入库。
---merge 只写简体 messages-zh.json；繁体 messages-zh-Hant.json 需按同键手工同步，npm run i18n:check 会校验简繁同键。
+--merge 只写简体 messages-zh.json；其余 messages-*.json（zh-Hant/ja/ko/ru/fr/de）需按同键同步，npm run i18n:check 会校验各语言同键。
 非内置包条目（自定义规则等）只报告、永不改动。规则 ID 上线后不可修改，基线对比依赖 ID 稳定。
 """
 
@@ -77,7 +77,7 @@ def main():
             f.write("\n")
         print(f"已合并 {added} 条到 {ZH_FILE}")
         if added:
-            print("提示：请同步 server/rules/messages-zh-Hant.json 对应条目，npm run i18n:check 会拦截", file=sys.stderr)
+            print("提示：请同步其余 server/rules/messages-*.json（zh-Hant/ja/ko/ru/fr/de）对应条目，npm run i18n:check 会拦截", file=sys.stderr)
 
     covered = len(rules) - len(missing)
     print(f"内置规则 {len(rules)} 条：中文映射 {covered} 条，缺失 {len(missing)} 条，非内置/已下线 {len(stale)} 条（保留不动）")
@@ -87,7 +87,7 @@ def main():
         print("非内置示例（最多 10 条）：" + "、".join(stale[:10]))
     if missing and not (args.draft or args.merge):
         print("提示：用 --draft 导出缺失条目，翻译后 --merge 入库", file=sys.stderr)
-        print("提示：--merge 只写简体，请同步 server/rules/messages-zh-Hant.json 对应条目，npm run i18n:check 会拦截", file=sys.stderr)
+        print("提示：--merge 只写简体，请同步其余 server/rules/messages-*.json（zh-Hant/ja/ko/ru/fr/de）对应条目，npm run i18n:check 会拦截", file=sys.stderr)
 
 if __name__ == "__main__":
     main()
