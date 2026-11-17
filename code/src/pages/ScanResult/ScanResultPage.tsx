@@ -150,6 +150,9 @@ export default function ScanResultPage() {
 
   useEffect(() => {
     void Promise.resolve().then(() => void load());
+    return () => {
+      requestSeqRef.current += 1;
+    };
   }, [load]);
 
   const routeKey = `${id ?? ''}|${scanId ?? ''}`;

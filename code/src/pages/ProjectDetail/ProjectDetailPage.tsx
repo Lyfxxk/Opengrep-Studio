@@ -120,21 +120,32 @@ export default function ProjectDetailPage() {
 
   useEffect(() => {
     void Promise.resolve().then(() => void refresh());
+    return () => {
+      requestSeqRef.current += 1;
+    };
   }, [refresh]);
 
   useEffect(() => {
+    let cancelled = false;
     api
       .listConfigs()
-      .then(setConfigs)
+      .then((rows) => {
+        if (!cancelled) setConfigs(rows);
+      })
       .catch(() => {
-        setConfigs([]);
+        if (!cancelled) setConfigs([]);
       });
     api
       .listRulePacks()
-      .then(setRulePacks)
+      .then((rows) => {
+        if (!cancelled) setRulePacks(rows);
+      })
       .catch(() => {
-        setRulePacks([]);
+        if (!cancelled) setRulePacks([]);
       });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleConfigChange = async (configId: string) => {

@@ -62,6 +62,9 @@ export function useScanRows(options?: { completedOnly?: boolean }) {
 
   useEffect(() => {
     void Promise.resolve().then(reload);
+    return () => {
+      requestSeqRef.current += 1;
+    };
   }, [reload]);
 
   return { scans, projects, loadFailed, reload };
