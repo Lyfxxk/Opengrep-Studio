@@ -487,6 +487,7 @@ const SITE_I18N = {
     title: 'Opengrep Studio 规则百科',
     statsLangs: '界面语言',
     searchPlaceholder: '搜索规则 ID、说明、CWE、OWASP…',
+    clearSearch: '清除搜索',
     filterPack: '语言包',
     filterSeverity: '严重级',
     filterCwe: 'CWE',
@@ -522,6 +523,7 @@ const SITE_I18N = {
     title: 'Opengrep Studio Rule Wiki',
     statsLangs: 'Interface language',
     searchPlaceholder: 'Search rule ID, description, CWE, OWASP…',
+    clearSearch: 'Clear search',
     filterPack: 'Rule pack',
     filterSeverity: 'Severity',
     filterCwe: 'CWE',
@@ -557,6 +559,7 @@ const SITE_I18N = {
     title: 'Opengrep Studio 規則百科',
     statsLangs: '介面語言',
     searchPlaceholder: '搜尋規則 ID、說明、CWE、OWASP…',
+    clearSearch: '清除搜尋',
     filterPack: '語言包',
     filterSeverity: '嚴重度',
     filterCwe: 'CWE',
@@ -592,6 +595,7 @@ const SITE_I18N = {
     title: 'Opengrep Studio ルール百科',
     statsLangs: '表示言語',
     searchPlaceholder: 'ルール ID・説明・CWE・OWASP を検索',
+    clearSearch: '検索をクリア',
     filterPack: 'ルールパック',
     filterSeverity: '重要度',
     filterCwe: 'CWE',
@@ -627,6 +631,7 @@ const SITE_I18N = {
     title: 'Opengrep Studio 규칙 백과',
     statsLangs: '인터페이스 언어',
     searchPlaceholder: '규칙 ID·설명·CWE·OWASP 검색',
+    clearSearch: '검색 지우기',
     filterPack: '규칙 팩',
     filterSeverity: '심각도',
     filterCwe: 'CWE',
@@ -662,6 +667,7 @@ const SITE_I18N = {
     title: 'Opengrep Studio Regelwiki',
     statsLangs: 'Oberflächensprache',
     searchPlaceholder: 'Regel-ID, Beschreibung, CWE, OWASP durchsuchen',
+    clearSearch: 'Suche löschen',
     filterPack: 'Regelpaket',
     filterSeverity: 'Schweregrad',
     filterCwe: 'CWE',
@@ -697,6 +703,7 @@ const SITE_I18N = {
     title: 'Opengrep Studio Wiki des règles',
     statsLangs: 'Langue de l’interface',
     searchPlaceholder: 'Rechercher par ID de règle, description, CWE, OWASP…',
+    clearSearch: 'Effacer la recherche',
     filterPack: 'Paquet',
     filterSeverity: 'Gravité',
     filterCwe: 'CWE',
@@ -732,6 +739,7 @@ const SITE_I18N = {
     title: 'Opengrep Studio вики правил',
     statsLangs: 'Язык интерфейса',
     searchPlaceholder: 'Поиск по ID правила, описанию, CWE, OWASP…',
+    clearSearch: 'Очистить поиск',
     filterPack: 'Пакет',
     filterSeverity: 'Серьёзность',
     filterCwe: 'CWE',
@@ -1007,7 +1015,7 @@ function renderHome() {
 </div>
 <ul id="rules" class="rules"></ul>
 <footer id="footer" class="footer"></footer>
-<noscript><p class="count error">需要启用 JavaScript 才能浏览规则列表。</p></noscript>
+<noscript><p class="count error">需要启用 JavaScript 才能浏览规则列表。JavaScript is required to browse the rule list.</p></noscript>
 </div>
 <script>
 (function () {
@@ -1086,6 +1094,7 @@ function renderHome() {
     document.title = t('title');
     qEl.placeholder = t('searchPlaceholder');
     qEl.setAttribute('aria-label', t('searchPlaceholder'));
+    clearQEl.setAttribute('aria-label', t('clearSearch'));
     langEl.setAttribute('aria-label', t('statsLangs'));
     footerEl.textContent = fmt('updated', { time: String(data.generatedAt || '').slice(0, 10) });
   }
