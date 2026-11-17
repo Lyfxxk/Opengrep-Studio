@@ -7,7 +7,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const rulesDir = path.resolve(here, '..', 'rules');
 const securityDir = path.join(rulesDir, 'security');
 const distDir = path.resolve(here, '..', '..', 'site', 'dist');
-const expectedRuleCount = 812;
+const expectedRuleCount = JSON.parse(fs.readFileSync(path.join(securityDir, 'rule-count.json'), 'utf8')).ruleCount;
 const upstreamBase = 'https://github.com/opengrep/opengrep-rules/tree/main/';
 
 const asStringArray = (value) =>
@@ -148,7 +148,7 @@ function validate(collected, messages, cwe) {
 
   if (collected.items.length !== expectedRuleCount) {
     problems.push(
-      `规则数应为 ${expectedRuleCount}，实际 ${collected.items.length}；规则集变化时请同步更新本脚本的 expectedRuleCount 与全部 messages-*.json / cwe-*.json 词典`,
+      `规则数应为 ${expectedRuleCount}，实际 ${collected.items.length}；规则集变化时请同步更新 server/rules/security/rule-count.json 与全部 messages-*.json / cwe-*.json 词典`,
     );
   }
 

@@ -1,0 +1,4 @@
+{
+  "ruleCount": 812,
+  "notes": "规则集数量守卫：build-rules-site.mjs 建站时比对。规则集有意变更时，同步更新此数值与全部 messages-*.json / cwe-*.json 词典。"
+}
