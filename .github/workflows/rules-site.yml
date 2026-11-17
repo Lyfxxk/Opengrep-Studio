@@ -3,6 +3,10 @@ name: 发布规则百科站（GitHub Pages）
 on:
   push:
     branches: [main]
+    paths:
+      - 'server/rules/**'
+      - 'server/scripts/build-rules-site.mjs'
+      - '.github/workflows/rules-site.yml'
 
 concurrency:
   group: pages
