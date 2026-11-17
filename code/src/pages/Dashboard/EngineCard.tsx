@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { CheckCircle2, DownloadCloud, Loader2, RefreshCw, XCircle } from 'lucide-react';
@@ -46,19 +46,27 @@ export default function EngineCard({ health, scanRunning, onUpgraded }: EngineCa
     ? translateApiError(update.errorCode, update.errorParams, update.error ?? '')
     : '';
 
+  const checkSeqRef = useRef(0);
   const check = useCallback(async (force: boolean) => {
+    const seq = ++checkSeqRef.current;
     setChecking(true);
     try {
-      setUpdate(await api.checkEngineUpdate(force));
+      const info = await api.checkEngineUpdate(force);
+      if (checkSeqRef.current !== seq) return;
+      setUpdate(info);
     } catch (error) {
+      if (checkSeqRef.current !== seq) return;
       toast.error(error instanceof Error ? error.message : String(error));
     } finally {
-      setChecking(false);
+      if (checkSeqRef.current === seq) setChecking(false);
     }
   }, []);
 
   useEffect(() => {
     if (ready && managed) void Promise.resolve().then(() => void check(false));
+    return () => {
+      checkSeqRef.current += 1;
+    };
   }, [ready, managed, check]);
 
   useEffect(() => {
@@ -71,6 +79,8 @@ export default function EngineCard({ health, scanRunning, onUpgraded }: EngineCa
           if (cancelled) return;
           setUpgrade(next);
           if (next.state === 'done') {
+            cancelled = true;
+            clearInterval(timer);
             void check(true);
             onUpgraded();
           }
