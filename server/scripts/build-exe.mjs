@@ -172,6 +172,9 @@ async function main() {
   }
 
   const sizeMb = (fs.statSync(exePath).size / 1000 / 1000).toFixed(1);
+  for (const intermediate of [bundlePath, blobPath, seaConfigPath]) {
+    fs.rmSync(intermediate, { force: true });
+  }
   console.log('');
   console.log(`[build-exe] 构建完成：${exePath}（${sizeMb} MB）`);
   console.log('[build-exe] 下一步：把 exe 放到可写目录（桌面、下载等）后双击运行；首次启动会在同目录解压 server/、code/ 并生成 data/。');
