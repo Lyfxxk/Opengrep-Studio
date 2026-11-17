@@ -82,7 +82,7 @@ function parseLegacyTrace(raw: unknown): TaintStep[] | undefined {
       const { location, content } = item as { location?: unknown; content?: unknown };
       const loc = parseLocation(location);
       if (!loc) continue;
-      steps.push(toStep('intermediate', loc, typeof content === 'string' ? content : undefined));
+      steps.push(toStep('intermediate', loc, typeof content === 'string' ? content.slice(0, MAX_TEXT) : undefined));
     }
   }
 
